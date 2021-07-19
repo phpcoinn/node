@@ -135,4 +135,78 @@ class DB extends PDO
             return $result;
         }
     }
+
+    public function setConfig($name, $value) {
+	    $sql="select val from config where cfg = :cfg";
+	    $row = $this->row($sql,['cfg'=>$name]);
+	    if($row) {
+		    $sql="update config set val = :val where cfg = :cfg";
+	    } else {
+		    $sql="insert into config (val, cfg) values (:val, :cfg)";
+	    }
+	    $this->run($sql, ['val'=>$value, 'cfg'=>$name]);
+    }
+
+    public function isSqlite() {
+    	global $_config;
+    	return substr($_config['db_connect'], 0, 6)=== "sqlite";
+    }
+
+    public function lockTables() {
+    	if(!$this->isSqlite()) {
+	        $this->exec("LOCK TABLES blocks WRITE, accounts WRITE, transactions WRITE, mempool WRITE, masternode WRITE, peers write, config WRITE, logs WRITE");
+	    }
+    }
+
+    function unlockTables() {
+	    if(!$this->isSqlite()) {
+		    $this->exec("UNLOCK TABLES");
+	    }
+    }
+
+    function fkCheck($enable = true) {
+	    if($this->isSqlite()) {
+		    $this->run("PRAGMA foreign_keys = ".($enable ? "on" : "off").";");
+	    } else {
+		    $this->run("SET foreign_key_checks=".($enable ? "1": "0").";");
+	    }
+    }
+
+    function truncate($table) {
+        _log("truncate table $table");
+	    if($this->isSqlite()) {
+			$this->run("delete from $table");
+	    } else {
+	        $this->run("TRUNCATE TABLE $table");
+	    }
+    }
+
+    static function unixTimeStamp() {
+    	global $db;
+	    if($db->isSqlite()) {
+			return "strftime('%s', 'now')";
+	    } else {
+			return 'UNIX_TIMESTAMP()';
+	    }
+    }
+
+    static function random() {
+	    global $db;
+	    if($db->isSqlite()) {
+		    return "random()";
+	    } else {
+		    return 'rand()';
+	    }
+    }
+
+    static function autoInc() {
+	    global $db;
+	    if($db->isSqlite()) {
+		    return "integer primary key autoincrement";
+	    } else {
+		    return 'int auto_increment primary key';
+	    }
+    }
+
+
 }

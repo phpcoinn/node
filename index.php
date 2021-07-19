@@ -1,323 +1,159 @@
 <?php
-/*
-The MIT License (MIT)
-Copyright (c) 2018 AroDev
-
-www.arionum.com
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
-OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-
 require_once __DIR__.'/include/init.inc.php';
 $block = new Block();
 $current = $block->current();
+global $_config;
 ?>
-<!DOCTYPE html>
-<html>
+
+<!doctype html>
+<html lang="en">
+
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Arionum Node</title>
+
+    <meta charset="utf-8" />
+    <title><?php echo COIN_NAME ?> Node</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
+    <meta content="Themesbrand" name="author" />
+    <!-- App favicon -->
+    <link rel="shortcut icon" href="assets/images/favicon.ico">
+
+    <!-- preloader css -->
+    <link rel="stylesheet" href="/apps/common/css/preloader.min.css" type="text/css" />
+
+    <!-- Bootstrap Css -->
+    <link href="/apps/common/css/bootstrap.min.css" id="bootstrap-style" rel="stylesheet" type="text/css" />
+    <!-- Icons Css -->
+    <link href="/apps/common/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <!-- App Css-->
+    <link href="/apps/common/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
+
     <style>
-        .title:not(:last-child) {
-            margin-bottom: 1.5rem;
+        .coming-content {
+            align-items: normal;
         }
-
-        body, h1, html {
-            margin: 0;
-            padding: 0;
-        }
-
-        h1 {
-            font-size: 100%;
-            font-weight: 400;
-        }
-
-        html {
-            box-sizing: border-box;
-            background-color: #fff;
-            font-size: 16px;
-            -moz-osx-font-smoothing: grayscale;
-            -webkit-font-smoothing: antialiased;
-            min-width: 300px;
-            overflow-x: hidden;
-            overflow-y: scroll;
-            text-rendering: optimizeLegibility;
-            -webkit-text-size-adjust: 100%;
-            -moz-text-size-adjust: 100%;
-            -ms-text-size-adjust: 100%;
-            text-size-adjust: 100%;
-        }
-
-        *, ::after, ::before {
-            box-sizing: inherit;
-        }
-
-        section {
-            display: block;
-        }
-
-        body {
-            font-family: "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-            color: #4a4a4a;
-            font-size: 1rem;
-            font-weight: 400;
-            line-height: 1.5;
-        }
-
-        span {
-            font-style: inherit;
-            font-weight: inherit;
-        }
-
-        strong {
-            color: #363636;
-            font-weight: 700;
-        }
-
-        .container {
-            position: relative;
-            margin: 0 auto;
-        }
-
-        .field.is-grouped {
-            display: flex;
-            justify-content: flex-start;
-        }
-
-        .field.is-grouped > .control {
-            flex-shrink: 0;
-        }
-
-        .field.is-grouped > .control:not(:last-child) {
-            margin-bottom: 0;
-            margin-right: .75rem;
-        }
-
-        .field.is-grouped.is-grouped-multiline {
-            flex-wrap: wrap;
-        }
-
-        .field.is-grouped.is-grouped-multiline > .control:last-child, .field.is-grouped.is-grouped-multiline > .control:not(:last-child) {
-            margin-bottom: .75rem;
-        }
-
-        .field.is-grouped.is-grouped-multiline:last-child {
-            margin-bottom: -.75rem;
-        }
-
-        .control {
-            font-size: 1rem;
-            position: relative;
-            text-align: left;
-        }
-
-        .tags {
-            align-items: center;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-start;
-        }
-
-        .tags .tag {
-            margin-bottom: .5rem;
-        }
-
-        .tags .tag:not(:last-child) {
-            margin-right: .5rem;
-        }
-
-        .tags:last-child {
-            margin-bottom: -.5rem;
-        }
-
-        .tags.has-addons .tag {
-            margin-right: 0;
-        }
-
-        .tags.has-addons .tag:not(:first-child) {
-            border-bottom-left-radius: 0;
-            border-top-left-radius: 0;
-        }
-
-        .tags.has-addons .tag:not(:last-child) {
-            border-bottom-right-radius: 0;
-            border-top-right-radius: 0;
-        }
-
-        .tag:not(body) {
-            align-items: center;
-            background-color: #f5f5f5;
-            border-radius: 4px;
-            color: #4a4a4a;
-            display: inline-flex;
-            font-size: .75rem;
-            height: 2em;
-            justify-content: center;
-            line-height: 1.5;
-            padding-left: .75em;
-            padding-right: .75em;
-            white-space: nowrap;
-        }
-
-        .tag:not(body).is-light {
-            background-color: #f5f5f5;
-            color: #363636;
-        }
-
-        .tag:not(body).is-info {
-            background-color: #209cee;
-            color: #fff;
-        }
-        .tag:not(body).is-danger {
-            background-color: #f48f42;
-            color: #fff;
-        }
-
-        .tag:not(body).is-success {
-            background-color: #23d160;
-            color: #fff;
-        }
-
-        .title {
-            word-break: break-word;
-            color: #363636;
-            font-size: 2rem;
-            font-weight: 600;
-            line-height: 1.125;
-        }
-
-        .hero {
-            align-items: stretch;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .hero.is-dark {
-            background-color: #363636;
-            color: #f5f5f5;
-        }
-
-        .hero.is-dark strong {
-            color: inherit;
-        }
-
-        .hero.is-dark .title {
-            color: #f5f5f5;
-        }
-
-        .hero.is-fullheight .hero-body {
-            align-items: center;
-            display: flex;
-        }
-
-        .hero.is-fullheight .hero-body > .container {
-            flex-grow: 1;
-            flex-shrink: 1;
-        }
-
-        .hero.is-fullheight {
-            min-height: 100vh;
-        }
-
-        .hero-body {
-            flex-grow: 1;
-            flex-shrink: 0;
-            padding: 3rem 1.5rem;
-        }
-
-        a {
-            color: #3273dc;
-            cursor: pointer;
-            text-decoration: none;
-        }
-
-        a:hover {
-            color: #363636;
-        }
-
-        a.is-dark {
-            color: #fff;
-        }
-
-        @media screen and (min-width: 1088px) {
-
-            .container {
-                max-width: 960px;
-                width: 960px;
-            }
-        }
-
-        @media screen and (min-width: 1280px) {
-
-            .container {
-                max-width: 1152px;
-                width: 1152px;
-            }
-        }
-
-        @media screen and (min-width: 1472px) {
-
-            .container {
-                max-width: 1344px;
-                width: 1344px;
-            }
+        .bottom-links {
+            position: absolute;
+            bottom: 14px;
+            z-index: 9;
+            left: 50%;
+            -webkit-transform: translateX(-50%);
+            transform: translateX(-50%);
+            text-align: center;
         }
     </style>
+
 </head>
 
 <body>
-<section class="hero is-dark is-fullheight">
-    <div class="hero-body">
-        <div class="container">
-            <h1 class="title">Arionum Node</h1>
 
-            <div class="field is-grouped is-grouped-multiline">
-                <div class="control">
-                    <div class="tags has-addons">
-                        <strong class="tag is-success">Current Block</strong>
-                        <span class="tag is-light"><?= $current['height']; ?></span>
-                    </div>
-                </div>
-                <div class="control">
-                    <div class="tags has-addons">
-                        <strong class="tag is-danger">Version</strong>
-                        <span class="tag is-light"><?= VERSION; ?></span>
-                    </div>
-                </div>
-
-                <div class="control">
-                    <div class="tags has-addons">
-                        <strong class="tag is-info">Public API</strong>
-                        <span class="tag is-light"><?= ($_config['public_api']) ? 'yes' : 'no'; ?></span>
-                    </div>
-                </div>
-
-                <div class="control">
-                    <a class="tags is-dark" href="./doc/" target="_blank">
-                        <strong class="tag is-info">Documentation</strong>
-                    </a>
-                </div>
+<div class="preview-img">
+    <div class="swiper-container preview-thumb">
+        <div class="swiper-wrapper">
+            <div class="swiper-slide">
+                <div class="slide-bg" style="background-image: url(/apps/common/img/bg.jpg);"></div>
             </div>
         </div>
     </div>
-</section>
+</div>
+<!-- preview bg -->
+<div class="bg-overlay bg-primary"></div>
+<!--<ul class="bg-bubbles">-->
+<!--    <li></li>-->
+<!--    <li></li>-->
+<!--    <li></li>-->
+<!--    <li></li>-->
+<!--    <li></li>-->
+<!--    <li></li>-->
+<!--    <li></li>-->
+<!--    <li></li>-->
+<!--    <li></li>-->
+<!--    <li></li>-->
+<!--</ul>-->
+<div class="coming-content min-vh-100 p-0">
+
+    <div class="container d-flex flex-column justify-content-between">
+
+        <!--        <div class="row justify-content-center">-->
+        <!--            <div class="col-lg-8">-->
+        <!--                <div class="text-center py-4 py-sm-5">-->
+
+        <div></div>
+
+
+        <div class="container">
+            <div class="mb-5 text-center">
+                <a href="/">
+                    <img src="/apps/common/img/logo.png" alt="" height="60" class="me-1">
+                    <span class="logo-txt text-white font-size-24"><?php echo COIN_NAME ?> Node
+                            </span>
+                </a>
+            </div>
+            <div class="row">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-2 col-6 my-3">
+                    <div class="d-grid gap-2">
+                        <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/explorer">
+                            <h5 class="mb-3 text-white">Explorer</h5>
+                            <i class="fas fa-binoculars fa-2x"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="col-sm-2 col-6 my-3">
+                    <div class="d-grid gap-2">
+                        <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/wallet">
+                            <h5 class="mb-3 text-white">Wallet</h5>
+                            <i class="fas fa-wallet fa-2x"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="col-sm-2 col-6 my-3">
+                    <div class="d-grid gap-2">
+                        <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/miner">
+                            <h5 class="mb-3 text-white">Miner</h5>
+                            <i class="fas fa-hammer fa-2x"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="col-sm-2 col-6 my-3">
+                    <div class="d-grid gap-2" data-bs-toggle="tooltip" title="Coming soon...">
+                        <button class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" disabled="disabled">
+                            <h5 class="mb-3 text-white">Apps</h5>
+                            <i class="fas fa-cubes fa-2x"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-sm-2"></div>
+            </div>
+        </div>
+
+        <div class="text-center text-white-50 font-size-14 pb-2">
+            <a href="https://phpcoin.net" target="_blank" class="text-white">phpcoin.net</a>
+            <br/>
+            Block <?php echo $current['height'] ?> ◦
+            Version <?php echo VERSION ?>
+        </div>
+        <!--                </div>-->
+        <!--            </div>-->
+        <!--        </div>-->
+    </div>
+
+
+    <!-- end container -->
+</div>
+<!-- coming-content -->
+
+<!-- JAVASCRIPT -->
+<script src="/apps/common/js/jquery.min.js"></script>
+<script src="/apps/common/js/bootstrap.bundle.min.js"></script>
+<script>
+    $(function(){
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    })
+</script>
 </body>
 </html>
+

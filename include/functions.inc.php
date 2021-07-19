@@ -28,7 +28,7 @@ function api_err($data)
     if (!headers_sent()) {
         header('Content-Type: application/json');
     }
-    echo json_encode(["status" => "error", "data" => $data, "coin" => $_config['coin']]);
+    echo json_encode(["status" => "error", "data" => $data, "coin" => COIN]);
     exit;
 }
 
@@ -40,7 +40,8 @@ function api_echo($data)
     if (!headers_sent()) {
         header('Content-Type: application/json');
     }
-    echo json_encode(["status" => "ok", "data" => $data, "coin" => $_config['coin']]);
+    _log($data, 4);
+    echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN]);
     exit;
 }
 
@@ -48,15 +49,17 @@ function api_echo($data)
 function _log($data, $verbosity = 0)
 {
     global $_config;
-    if ($_config['log_verbosity'] < $verbosity) {
+/*    if ($_config['log_verbosity'] < $verbosity) {
         return;
-    }
+    }*/
     $date = date("[Y-m-d H:i:s]");
     $trace = debug_backtrace();
     $loc = count($trace) - 1;
     $file = substr($trace[$loc]['file'], strrpos($trace[$loc]['file'], "/") + 1);
 
-    $res = "$date ".$file.":".$trace[$loc]['line'];
+    global $log_prefix;
+
+    $res = "$date $log_prefix ".$file.":".$trace[$loc]['line'];
 
     if (!empty($trace[$loc]['class'])) {
         $res .= "---".$trace[$loc]['class'];
@@ -65,11 +68,13 @@ function _log($data, $verbosity = 0)
         $res .= '->'.$trace[$loc]['function'].'()';
     }
     $res .= " $data \n";
-    if (php_sapi_name() === 'cli') {
-        echo $res;
-    }
-    if ($_config['enable_logging'] == true && $_config['log_verbosity'] >= $verbosity) {
-        @file_put_contents($_config['log_file'], $res, FILE_APPEND);
+    if ($_config && $_config['enable_logging'] == true && $_config['log_verbosity'] >= $verbosity) {
+	    if (php_sapi_name() === 'cli') {
+	        echo $res;
+	    } else {
+	        error_log($res);
+	    }
+        file_put_contents($_config['log_file'], $res, FILE_APPEND);
     }
 }
 
@@ -185,7 +190,7 @@ function base58_decode($base58)
     return $output;
 }
 
-// converts PEM key to the base58 version used by ARO
+// converts PEM key to the base58 version used by PHP
 function pem2coin($data)
 {
     $data = str_replace("-----BEGIN PUBLIC KEY-----", "", $data);
@@ -212,6 +217,14 @@ function coin2pem($data, $is_private_key = false)
         return "-----BEGIN EC PRIVATE KEY-----\n".$data."\n-----END EC PRIVATE KEY-----\n";
     }
     return "-----BEGIN PUBLIC KEY-----\n".$data."\n-----END PUBLIC KEY-----\n";
+}
+
+function priv2pub($private_key) {
+	$pk = coin2pem($private_key, true);
+	$pkey = openssl_pkey_get_private($pk);
+	$pub = openssl_pkey_get_details($pkey);
+	$public_key = pem2coin($pub['key']);
+	return $public_key;
 }
 
 // sign data with private key
@@ -260,16 +273,13 @@ function isValidURL($url)
 function peer_post($url, $data = [], $timeout = 60, $debug = false)
 {
     global $_config;
-    if ($debug) {
-        echo "\nPeer post: $url\n";
-    }
     if (!isValidURL($url)) {
         return false;
     }
     $postdata = http_build_query(
         [
             'data' => json_encode($data),
-            "coin" => $_config['coin'],
+            "coin" => COIN,
         ]
     );
 
@@ -281,19 +291,37 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
                 'header'  => 'Content-type: application/x-www-form-urlencoded',
                 'content' => $postdata,
             ],
+	    "ssl"=>array(
+		    "verify_peer"=>!DEVELOPMENT,
+		    "verify_peer_name"=>!DEVELOPMENT,
+	    ),
     ];
 
-    $context = stream_context_create($opts);
+//    $context = stream_context_create($opts);
 
-    $result = file_get_contents($url, false, $context);
-    if ($debug) {
-        echo "\nPeer response: $result\n";
-    }
+    _log("Posting to $url data ".$postdata, 4);
+
+	$ch = curl_init();
+
+	curl_setopt($ch, CURLOPT_URL,$url);
+	curl_setopt($ch, CURLOPT_POST, 1);
+	curl_setopt($ch, CURLOPT_POSTFIELDS,$postdata );
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
+	$result = curl_exec($ch);
+	curl_close ($ch);
+
+
+//    $result = file_get_contents($url, false, $context);
+    _log("Peer response: ".$result, 4);
     $res = json_decode($result, true);
 
     // the function will return false if something goes wrong
-    if ($res['status'] != "ok" || $res['coin'] != $_config['coin']) {
+    if ($res['status'] != "ok" || $res['coin'] != COIN) {
         return false;
+    } else {
+    	Peer::storePing($url);
     }
     return $res['data'];
 }
@@ -310,4 +338,39 @@ function coin2hex($data)
 {
     $bin = base58_decode($data);
     return bin2hex($bin);
+}
+
+function gmp_hexdec($n) {
+	$gmp = gmp_init(0);
+	$mult = gmp_init(1);
+	for ($i=strlen($n)-1;$i>=0;$i--,$mult=gmp_mul($mult, 16)) {
+		$gmp = gmp_add($gmp, gmp_mul($mult, hexdec($n[$i])));
+	}
+	return $gmp;
+}
+
+function display_date($ts) {
+	$s = "";
+	if(!empty($ts)) {
+		$s = '<span class="text-nowrap" title="'.$ts.'">' . date("Y-m-d H:i:s", $ts) .'</span>';
+	}
+	return $s;
+}
+
+function num($val) {
+	return number_format($val, COIN_DECIMALS, '.', '');
+}
+
+function hashimg($hash, $title=null) {
+	if(empty($title)) {
+		$title=$hash;
+	}
+	$hash = $hash . "00";
+	$parts = str_split($hash, 6);
+	$s= '<div class="hash" title="'.$title.'" data-bs-toggle="tooltip">';
+	foreach ($parts as $part) {
+		$s.='<div style="background-color: #'.$part.'"></div>';
+	}
+	$s.='</div>';
+	return $s;
 }

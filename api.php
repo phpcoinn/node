@@ -2,8 +2,9 @@
 /*
 The MIT License (MIT)
 Copyright (c) 2018 AroDev
+Copyright (c) 2021 PHPCoin
 
-www.arionum.com
+phpcoin.net
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -67,13 +68,13 @@ header('Content-Type: application/json');
  *     }
  */
 
-use Arionum\Blacklist;
+use PHPCoin\Blacklist;
 
 require_once __DIR__.'/include/init.inc.php';
 
-$ip = san_ip($_SERVER['REMOTE_ADDR']);
+$ip = Nodeutil::getRemoteAddr();
 $ip = filter_var($ip, FILTER_VALIDATE_IP);
-
+global $_config;
 if ($_config['public_api'] == false && !in_array($ip, $_config['allowed_hosts'])) {
     api_err("private-api");
 }
@@ -93,7 +94,7 @@ if (!empty($_POST['data'])) {
  * @api {get} /api.php?q=getAddress  02. getAddress
  * @apiName getAddress
  * @apiGroup API
- * @apiDescription Converts the public key to an ARO address.
+ * @apiDescription Converts the public key to an PHP address.
  *
  * @apiParam {string} public_key The public key
  *
@@ -105,7 +106,7 @@ if ($q == "getAddress") {
     if (strlen($public_key) < 32) {
         api_err("Invalid public key");
     }
-    api_echo($acc->get_address($public_key));
+    api_echo(Account::getAddress($public_key));
 } elseif ($q == "base58") {
     /**
      * @api {get} /api.php?q=base58  03. base58
@@ -124,67 +125,69 @@ if ($q == "getAddress") {
      * @api {get} /api.php?q=getBalance  04. getBalance
      * @apiName getBalance
      * @apiGroup API
-     * @apiDescription Returns the balance of a specific account or public key.
+     * @apiDescription Returns the balance of a specific address or public key.
      *
      * @apiParam {string} [public_key] Public key
-     * @apiParam {string} [account] Account id / address
-     * @apiParam {string} [alias] alias
+     * @apiParam {string} [address] Address
      *
-     * @apiSuccess {string} data The ARO balance
+     * @apiSuccess {string} data The PHP balance
      */
 
     $public_key = $data['public_key'];
-    $account = $data['account'];
-    $alias = $data['alias'];
+    $address = $data['address'];
     if (!empty($public_key) && strlen($public_key) < 32) {
         api_err("Invalid public key");
     }
     if (!empty($public_key)) {
-        $account = $acc->get_address($public_key);
+	    $address = Account::getAddress($public_key);
     }
-    if (!empty($alias)) {
-        $account = $acc->alias2account($alias);
+    if (empty($address)) {
+        api_err("Invalid address");
     }
-    if (empty($account)) {
-        api_err("Invalid account id");
-    }
-    $account = san($account);
-    api_echo($acc->balance($account));
+	$address = san($address);
+    if(Account::valid($address)) {
+        api_echo(Account::getBalance($address));
+    } else {
+    	api_err("Invalid address");
+	}
 } elseif ($q == "getPendingBalance") {
     /**
      * @api {get} /api.php?q=getPendingBalance  05. getPendingBalance
      * @apiName getPendingBalance
      * @apiGroup API
-     * @apiDescription Returns the pending balance, which includes pending transactions, of a specific account or public key.
+     * @apiDescription Returns the pending balance, which includes pending transactions, of a specific address or public key.
      *
      * @apiParam {string} [public_key] Public key
-     * @apiParam {string} [account] Account id / address
+     * @apiParam {string} [address] Address
      *
-     * @apiSuccess {string} data The ARO balance
+     * @apiSuccess {string} data The PHP balance
      */
 
-    $account = $data['account'];
+    $address = $data['address'];
     $public_key = san($data['public_key'] ?? '');
     if (!empty($public_key) && strlen($public_key) < 32) {
         api_err("Invalid public key");
     }
     if (!empty($public_key)) {
-        $account = $acc->get_address($public_key);
+	    $address = Account::getAddress($public_key);
     }
-    if (empty($account)) {
-        api_err("Invalid account id");
+    if (empty($address)) {
+        api_err("Invalid address");
     }
-    $account = san($account);
-    api_echo($acc->pending_balance($account));
+	$address = san($address);
+    if(!Account::valid($address)) {
+	    api_err("Invalid address");
+    }
+    api_echo(Account::pendingBalance($address));
 } elseif ($q == "getTransactions") {
     /**
      * @api {get} /api.php?q=getTransactions  06. getTransactions
      * @apiName getTransactions
      * @apiGroup API
-     * @apiDescription Returns the latest transactions of an account.
+     * @apiDescription Returns the latest transactions of an address.
      *
      * @apiParam {string} [public_key] Public key
-     * @apiParam {string} [account] Account id / address
+     * @apiParam {string} [address] Address
      * @apiParam {numeric} [limit] Number of confirmed transactions, max 100, min 1
      *
      * @apiSuccess {string} block  Block ID
@@ -203,21 +206,22 @@ if ($q == "getAddress") {
      * @apiSuccess {numeric} version Transaction version
      */
 
-    $account = san($data['account']);
+    $address = san($data['address']);
     $public_key = san($data['public_key'] ?? '');
     if (!empty($public_key) && strlen($public_key) < 32) {
         api_err("Invalid public key");
     }
     if (!empty($public_key)) {
-        $account = $acc->get_address($public_key);
+	    $address = Account::getAddress($public_key);
     }
-    if (empty($account)) {
-        api_err("Invalid account id");
+    if (empty($address)) {
+        api_err("Invalid address");
     }
-
+	if(!Account::valid($address)) {
+		api_err("Invalid address");
+	}
     $limit = intval($data['limit']);
-    $transactions = $acc->get_mempool_transactions($account);
-    $transactions = array_merge($transactions, $acc->get_transactions($account, $limit));
+	$transactions = Transaction::getByAddress($address, $limit);
     api_echo($transactions);
 } elseif ($q == "getTransaction") {
     /**
@@ -258,18 +262,21 @@ if ($q == "getAddress") {
      * @api {get} /api.php?q=getPublicKey  08. getPublicKey
      * @apiName getPublicKey
      * @apiGroup API
-     * @apiDescription Returns the public key of a specific account.
+     * @apiDescription Returns the public key of a specific address.
      *
-     * @apiParam {string} account Account id / address
+     * @apiParam {string} address Address
      *
      * @apiSuccess {string} data The public key
      */
 
-    $account = san($data['account']);
-    if (empty($account)) {
+    $address = san($data['address']);
+    if (empty($address)) {
         api_err("Invalid account id");
     }
-    $public_key = $acc->public_key($account);
+	if(!Account::valid($address)) {
+		api_err("Invalid address");
+	}
+    $public_key = Account::publicKey($address);
     if ($public_key === false) {
         api_err("No public key found for this account");
     } else {
@@ -287,8 +294,7 @@ if ($q == "getAddress") {
      * @apiSuccess {string} private_key Private key
      */
 
-    $acc = new Account();
-    $res = $acc->generate_account();
+    $res = Account::generateAcccount();
     api_echo($res);
 } elseif ($q == "currentBlock") {
     /**
@@ -386,6 +392,7 @@ if ($q == "getAddress") {
      */
     api_echo(VERSION);
 } elseif ($q == "send") {
+	_log("API send");
     /**
      * @api {get} /api.php?q=send  14. send
      * @apiName send
@@ -405,43 +412,42 @@ if ($q == "getAddress") {
      */
     $current = $block->current();
 
-    if ($current['height'] > 10790 && $current['height'] < 10810) {
+/*    if ($current['height'] > 10790 && $current['height'] < 10810) {
         api_err("Hard fork in progress. Please retry the transaction later!"); //10800
-    }
+    }*/
 
     $acc = new Account();
     $block = new Block();
 
     $trx = new Transaction();
-    $version = intval($data['version']);
+    $type = intval($data['type']);
     $dst = san($data['dst']);
-    if ($version < 1) {
-        $version = 1;
+    if ($type < TX_TYPE_SEND) {
+        $type = TX_TYPE_SEND;
     }
 
   
     
-    if ($version==1) {
-        if (!$acc->valid($dst)) {
+    if ($type==TX_TYPE_SEND) {
+        if (!Account::valid($dst)) {
             api_err("Invalid destination address");
         }
-        $dst_b = base58_decode($dst);
-        if (strlen($dst_b) != 64) {
-            api_err("Invalid destination address");
-        }
-    } elseif ($version==2) {
-        $dst=strtoupper($dst);
-        $dst = san($dst);
-        if (!$acc->valid_alias($dst)) {
-            api_err("Invalid destination alias");
-        }
+//        $dst_b = base58_decode($dst);
+//        if (strlen($dst_b) != 64) {
+//            api_err("Invalid destination address");
+//        }
+
+//    } elseif ($version==TX_VERSION_ALIAS_SEND) {
+//        $dst=strtoupper($dst);
+//        $dst = san($dst);
+//        if (!$acc->valid_alias($dst)) {
+//            api_err("Invalid destination alias");
+//        }
     }
 
- 
-    
 
     $public_key = san($data['public_key']);
-    if (!$acc->valid_key($public_key)) {
+    if (!Account::validKey($public_key)) {
         api_err("Invalid public key");
     }
     if ($_config['use_official_blacklist']!==false) {
@@ -450,14 +456,12 @@ if ($q == "getAddress") {
         }
     }
 
-
-
     $private_key = san($data['private_key']);
-    if (!$acc->valid_key($private_key)) {
+    if (!Account::validKey($private_key)) {
         api_err("Invalid private key");
     }
     $signature = san($data['signature']);
-    if (!$acc->valid_key($signature)) {
+    if (!Account::validKey($signature)) {
         api_err("Invalid signature");
     }
     $date = $data['date'] + 0;
@@ -478,22 +482,22 @@ if ($q == "getAddress") {
         api_err("The message must be less than 128 chars");
     }
     $val = $data['val'] + 0;
-    $fee = $val * 0.0025;
-    if ($fee < 0.00000001) {
-        $fee = 0.00000001;
-    }
+    $fee = $val * TX_FEE;
+/*    if ($fee < TX_MIN_FEE) {
+        $fee = TX_MIN_FEE;
+    }*/
 
 
-    if ($fee > 10 && $current['height'] > 10800) {
+/*    if ($fee > 10 && $current['height'] > 10800) {
         $fee = 10; //10800
-    }
+    }*/
     if ($val < 0) {
         api_err("Invalid value");
     }
 
 
     // set alias
-    if ($version==3) {
+/*    if ($version==3) {
         $fee=10;
         $message = san($message);
         $message=strtoupper($message);
@@ -503,9 +507,9 @@ if ($q == "getAddress") {
         if ($acc->has_alias($public_key)) {
             api_err("This account already has an alias");
         }
-    }
+    }*/
 
-    if ($version>=100&&$version<110) {
+/*    if ($version>=100&&$version<110) {
         if ($version==100) {
             $message=preg_replace("/[^0-9\.]/", "", $message);
             if (!filter_var($message, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
@@ -513,10 +517,10 @@ if ($q == "getAddress") {
             }
             $val=100000;
         }
-    }
+    }*/
 
-    $val = number_format($val, 8, '.', '');
-    $fee = number_format($fee, 8, '.', '');
+    $val = num($val);
+    $fee = num($fee);
 
 
     if (empty($public_key) && empty($private_key)) {
@@ -542,55 +546,15 @@ if ($q == "getAddress") {
         "dst"        => $dst,
         "public_key" => $public_key,
         "date"       => $date,
-        "version"    => $version,
+        "type"    => $type,
         "message"    => $message,
         "signature"  => $signature,
     ];
 
-    if (!empty($private_key)) {
-        $signature = $trx->sign($transaction, $private_key);
-        $transaction['signature'] = $signature;
-    }
-
-
-    $hash = $trx->hash($transaction);
-    $transaction['id'] = $hash;
-
-
-
-
-    if (!$trx->check($transaction)) {
-        api_err("Transaction signature failed");
-    }
-
-    $res = $db->single("SELECT COUNT(1) FROM mempool WHERE id=:id", [":id" => $hash]);
-    if ($res != 0) {
-        api_err("The transaction is already in mempool");
-    }
-
-    $res = $db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $hash]);
-    if ($res != 0) {
-        api_err("The transaction is already in a block");
-    }
-
-
-    $src = $acc->get_address($public_key);
-    $transaction['src'] = $src;
-    $balance = $db->single("SELECT balance FROM accounts WHERE id=:id", [":id" => $src]);
-    if ($balance < $val + $fee) {
-        api_err("Not enough funds");
-    }
-
-
-    $memspent = $db->single("SELECT SUM(val+fee) FROM mempool WHERE src=:src", [":src" => $src]);
-    if ($balance - $memspent < $val + $fee) {
-        api_err("Not enough funds (mempool)");
-    }
-
-
-    $trx->add_mempool($transaction, "local");
-    $hash=escapeshellarg(san($hash));
-    system("php propagate.php transaction $hash > /dev/null 2>&1  &");
+	$hash = Transaction::addToMemPool($transaction, $public_key, $error);
+	if($hash === false) {
+		api_err($error);
+	}
     api_echo($hash);
 } elseif ($q == "mempoolSize") {
     /**
@@ -603,39 +567,6 @@ if ($q == "getAddress") {
      */
 
     $res = $db->single("SELECT COUNT(1) FROM mempool");
-    api_echo($res);
-} elseif ($q == 'randomNumber') {
-    /**
-     * @api {get} /api.php?q=randomNumber 16. randomNumber
-     * @apiName randomNumber
-     * @apiGroup API
-     * @apiDescription Returns a random number based on an ARO block id.
-     *
-     * @apiParam {numeric} height The height of the block on which the random number will be based on (should be a future block when starting)
-     * @apiParam {numeric} min Minimum number (default 1)
-     * @apiParam {numeric} max Maximum number
-     * @apiParam {string} seed A seed to generate different numbers for each use cases.
-     * @apiSuccess {numeric} data  The random number
-     */
-
-    $height = san($_GET['height']);
-    $max = intval($_GET['max']);
-    if (empty($_GET['min'])) {
-        $min = 1;
-    } else {
-        $min = intval($_GET['min']);
-    }
-
-    $blk = $db->single("SELECT id FROM blocks WHERE height=:h", [":h" => $height]);
-    if ($blk === false) {
-        api_err("Unknown block. Future?");
-    }
-    $base = hash("sha256", $blk.$_GET['seed']);
-
-    $seed1 = hexdec(substr($base, 0, 12));
-    // generate random numbers based on the seed
-    mt_srand($seed1, MT_RAND_MT19937);
-    $res = mt_rand($min, $max);
     api_echo($res);
 } elseif ($q == "checkSignature") {
     /**
@@ -655,8 +586,7 @@ if ($q == "getAddress") {
     $public_key=san($data['public_key']);
     $signature=san($data['signature']);
     $data=$data['data'];
-
-    api_echo(ec_verify($data, $signature, $public_key));
+    api_echo(Account::checkSignature($data, $signature, $public_key));
 } elseif ($q == "masternodes") {
     /**
      * @api {get} /api.php?q=masternodes  18. masternodes
@@ -668,6 +598,7 @@ if ($q == "getAddress") {
      *
      * @apiSuccess {json} data masternode date
      */
+    api_err("Not supported");
     $bind=[];
     $whr='';
     $public_key=san($data['public_key']);
@@ -691,8 +622,8 @@ if ($q == "getAddress") {
      *
      * @apiSuccess {string} data alias
      */
-
-    $public_key = $data['public_key'];
+	api_err("Not supported");
+/*    $public_key = $data['public_key'];
     $account = $data['account'];
     if (!empty($public_key) && strlen($public_key) < 32) {
         api_err("Invalid public key");
@@ -706,7 +637,7 @@ if ($q == "getAddress") {
     }
     $account = san($account);
 
-    api_echo($acc->account2alias($account));
+    api_echo($acc->account2alias($account));*/
 } elseif ($q === 'sanity') {
     /**
      * @api            {get} /api.php?q=sanity  20. sanity
@@ -719,7 +650,7 @@ if ($q == "getAddress") {
      * @apiSuccess {number}  data.last_sanity The timestamp for the last time the sanity process was run.
      * @apiSuccess {boolean} data.sanity_sync Whether the sanity process is currently synchronising.
      */
-    $sanity = file_exists(__DIR__.'/tmp/sanity-lock');
+    $sanity = file_exists(Nodeutil::getSanityFile());
 
     $lastSanity = (int)$db->single("SELECT val FROM config WHERE cfg='sanity_last'");
     $sanitySync = (bool)$db->single("SELECT val FROM config WHERE cfg='sanity_sync'");
@@ -747,7 +678,7 @@ if ($q == "getAddress") {
     $tr = $db->single("SELECT COUNT(1) FROM transactions");
     $masternodes = $db->single("SELECT COUNT(1) FROM masternode");
     $mempool = $db->single("SELECT COUNT(1) FROM mempool");
-    $peers = $db->single("SELECT COUNT(1) FROM peers WHERE blacklisted<UNIX_TIMESTAMP()");
+    $peers = Peer::getCount();
     api_echo([
         'hostname'     => $hostname,
         'version'      => VERSION,
@@ -765,30 +696,26 @@ if ($q == "getAddress") {
      * @apiGroup       API
      * @apiDescription Checks the validity of an address.
      *
-     * @apiParam {string} account Account id / address
+     * @apiParam {string} address Address
      * @apiParam {string} [public_key] Public key
      *
      * @apiSuccess {boolean} data True if the address is valid, false otherwise.
      */
 
-    $address=$data['account'];
+    $address=$data['address'];
     $public_key=$data['public_key'];
     $acc = new Account();
-    if (!$acc->valid($address)) {
+    if (!Account::valid($address)) {
         api_err(false);
     }
 
-    $dst_b = base58_decode($address);
-    if (strlen($dst_b) != 64) {
-        api_err(false);
-    }
     if (!empty($public_key)) {
-        if($acc->get_address($public_key)!=$address){
+        if(Account::getAddress($public_key)!=$address){
             api_err(false);
         }
     }
     api_echo(true);
-} elseif ($q === "assetBalance"){
+/*} elseif ($q === "assetBalance"){
 
     $asset = san($data['asset']);
     $public_key = san($data['public_key']);
@@ -824,9 +751,9 @@ if ($q == "getAddress") {
     if ($r) 
         api_echo($r);
     else
-        api_err("An asset or an account not found");
+        api_err("An asset or an account not found");*/
         
-} elseif ($q === "asset-orders"){
+/*} elseif ($q === "asset-orders"){
     $asset = san($data['asset']);
     $account = san($data['account']);
     if(empty($asset)&&empty($account)){
@@ -844,9 +771,9 @@ if ($q == "getAddress") {
     }
 
     $r=$db->run("SELECT * FROM assets_market WHERE $whr", $bind);
-    api_echo($r);
+    api_echo($r);*/
 
-} elseif ($q === "assets"){
+/*} elseif ($q === "assets"){
     $asset = san($data['asset']);
     $whr="";
     $bind=[];
@@ -855,7 +782,7 @@ if ($q == "getAddress") {
         $bind[':asset']=$asset;
     }
     $r=$db->run("SELECT assets.*, accounts.alias, accounts.balance FROM assets LEFT JOIN accounts ON accounts.id=assets.id $whr LIMIT 1000",$bind);
-    api_echo($r);
+    api_echo($r);*/
 
 } else {
     api_err("Invalid request");

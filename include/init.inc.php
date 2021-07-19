@@ -1,19 +1,30 @@
 <?php
-// ARO version
-define("VERSION", "1.0.0-alpha.6");
 // UTC timezone by default
 date_default_timezone_set("UTC");
+require_once dirname(__DIR__).'/vendor/autoload.php';
 
-// error_reporting(E_ALL & ~E_NOTICE);
-error_reporting(0);
-ini_set('display_errors', 0);
-ini_set('display_startup_errors', 0); 
+ error_reporting(E_ALL & ~E_NOTICE);
+//error_reporting(0);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
 // not accessible directly
-if (php_sapi_name() !== 'cli' && substr_count($_SERVER['PHP_SELF'], "/") > 1) {
+if (php_sapi_name() !== 'cli' && substr_count($_SERVER['PHP_SELF'], "/") > 1
+	&& substr($_SERVER['PHP_SELF'], 0, 5) != "/apps") {
     die("This application should only be run in the main directory /");
 }
 
-require_once __DIR__.'/Exception.php';
+define("ROOT", dirname(__DIR__));
+
+$config_file = ROOT.'/config/config.inc.php';
+
+require_once $config_file;
+require_once __DIR__.'/db.inc.php';
+global $_config;
+
+require_once ROOT.'/apps/apps.functions.php';
+
+
+/*require_once __DIR__.'/Exception.php';
 require_once __DIR__.'/config.inc.php';
 require_once __DIR__.'/db.inc.php';
 require_once __DIR__.'/functions.inc.php';
@@ -21,7 +32,7 @@ require_once __DIR__.'/Blacklist.php';
 require_once __DIR__.'/InitialPeers.php';
 require_once __DIR__.'/block.inc.php';
 require_once __DIR__.'/account.inc.php';
-require_once __DIR__.'/transaction.inc.php';
+require_once __DIR__.'/transaction.inc.php';*/
 
 if ($_config['db_pass'] == "ENTER-DB-PASS") {
     die("Please update your config file and set your db password");
@@ -45,6 +56,9 @@ if (!extension_loaded('PDO')) {
 if (!extension_loaded("bcmath")) {
     api_err("bcmath php extension missing");
 }
+if (!extension_loaded("curl")) {
+    api_err("curl php extension missing");
+}
 if (!defined("PASSWORD_ARGON2I")) {
     api_err("The php version is not compiled with argon2i support");
 }
@@ -55,17 +69,25 @@ if (floatval(phpversion()) < 7.2) {
 
 // Getting extra configs from the database
 $query = $db->run("SELECT cfg, val FROM config");
-foreach ($query as $res) {
-    $_config[$res['cfg']] = trim($res['val']);
+if(is_array($query)) {
+	foreach ($query as $res) {
+	    $_config[$res['cfg']] = trim($res['val']);
+	}
 }
+
+//check db update
+_log("checking schema update", 4);
+require_once __DIR__.'/schema.inc.php';
 
 // nothing is allowed while in maintenance
 if ($_config['maintenance'] == 1) {
     api_err("under-maintenance");
 }
 
+$db_update_file = dirname(__DIR__)."/tmp/db-update";
+
 // update the db schema, on every git pull or initial install
-if (file_exists("tmp/db-update")) {
+if (file_exists($db_update_file)) {
     //checking if the server has at least 2GB of ram
     $ram=file_get_contents("/proc/meminfo");
     $ramz=explode("MemTotal:",$ram);
@@ -74,7 +96,7 @@ if (file_exists("tmp/db-update")) {
     if($ram<1700000) {
         die("The node requires at least 2 GB of RAM");
     }
-    $res = unlink("tmp/db-update");
+    $res = unlink($db_update_file);
     if ($res) {
         echo "Updating db schema! Please refresh!\n";
         require_once __DIR__.'/schema.inc.php';
@@ -84,14 +106,9 @@ if (file_exists("tmp/db-update")) {
 }
 
 // something went wront with the db schema
-if ($_config['dbversion'] < 2) {
+/*if ($_config['dbversion'] < 2) {
     exit;
-}
-
-// separate blockchain for testnet
-if ($_config['testnet'] == true) {
-    $_config['coin'] .= "-testnet";
-}
+}*/
 
 // current hostname
 $hostname = (!empty($_SERVER['HTTPS']) ? 'https' : 'http')."://".san_host($_SERVER['HTTP_HOST']);
@@ -107,5 +124,41 @@ if (empty($_config['hostname']) || $_config['hostname'] == "http://" || $_config
 // run sanity
 $t = time();
 if ($t - $_config['sanity_last'] > $_config['sanity_interval'] && php_sapi_name() !== 'cli') {
-    system("php sanity.php  > /dev/null 2>&1  &");
+	_log("Running sanity ".($t - $_config['sanity_last'])." / ".$_config['sanity_interval'], 4);
+	$dir = ROOT."/cli";
+    _log("php $dir/sanity.php  > /dev/null 2>&1  &", 4);
+    system("php $dir/sanity.php  > /dev/null 2>&1  &");
+} else {
+	_log("No time for sanity ".($t - $_config['sanity_last'])." / ".$_config['sanity_interval'], 4);
 }
+
+
+
+//run miner
+if(!defined("MINER_RUN")) {
+	define("MINER_LOCK_PATH", ROOT . '/tmp/miner-lock');
+	if ($_config['miner'] == true && isset($_config['miner_public_key']) && isset($_config['miner_private_key'])) {
+		_log("Miner enabled", 4);
+		_log("minerFile=".MINER_LOCK_PATH." exists=" . file_exists(MINER_LOCK_PATH), 4);
+		if (!file_exists(MINER_LOCK_PATH)) {
+			_log("File not exists - Staring miner", 0);
+
+			$res = shell_exec("ps uax | grep miner.php | grep -v grep");
+			_log("Res len=".strlen($res)." var=".json_encode($res)." empty=".empty($res));
+			if(empty($res)) {
+				$dir = ROOT."/cli";
+				system("php $dir/miner.php > /dev/null 2>&1  &");
+				$peers = Peer::getCount(true);
+				if(!empty($peers)) {
+					_log( "php $dir/miner.php > /dev/null 2>&1  &", 0);
+				}
+			} else {
+				_log("Miner process already running",0);
+			}
+		} else {
+			_log("Miner already started. File exists", 4);
+		}
+	}
+}
+
+

@@ -1,2 +1,15 @@
 /include/config.inc.php
 /composer.lock
+/tmp/
+
+/build/doc/
+/build/node_modules/
+/build/package-lock.json
+/apps/
+/dapps/
+/db/
+/dev/
+/dist/
+/node_modules/
+/tmp/
+/tmp/
