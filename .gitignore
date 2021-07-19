@@ -12,4 +12,5 @@
 /dist/
 /node_modules/
 /tmp/
-/tmp/
+/.idea/
+/config/config.inc.php
