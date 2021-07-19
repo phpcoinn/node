@@ -27,5 +27,9 @@ function extractAppsArchive() {
 	shell_exec($cmd);
 	$cmd = "cd ".ROOT." && find apps -type d -exec touch {} +";
 	shell_exec($cmd);
+	if (php_sapi_name() == 'cli') {
+		$cmd = "cd ".ROOT." && chown -R www-data:www-data apps";
+		shell_exec($cmd);
+	}
 	opcache_reset();
 }

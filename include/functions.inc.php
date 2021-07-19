@@ -72,7 +72,11 @@ function _log($data, $verbosity = 0)
 	    } else {
 	        error_log($res);
 	    }
-        file_put_contents($_config['log_file'], $res, FILE_APPEND);
+	    $log_file = $_config['log_file'];
+	    if(substr($log_file, 0, 1)!= "/") {
+		    $log_file = ROOT . "/" . $log_file;
+	    }
+        file_put_contents($log_file, $res, FILE_APPEND);
     }
 }
 
