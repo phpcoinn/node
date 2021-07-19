@@ -413,10 +413,6 @@ if ($q == "getAddress") {
      */
     $current = $block->current();
 
-/*    if ($current['height'] > 10790 && $current['height'] < 10810) {
-        api_err("Hard fork in progress. Please retry the transaction later!"); //10800
-    }*/
-
     $acc = new Account();
     $block = new Block();
 
@@ -433,17 +429,6 @@ if ($q == "getAddress") {
         if (!Account::valid($dst)) {
             api_err("Invalid destination address");
         }
-//        $dst_b = base58_decode($dst);
-//        if (strlen($dst_b) != 64) {
-//            api_err("Invalid destination address");
-//        }
-
-//    } elseif ($version==TX_VERSION_ALIAS_SEND) {
-//        $dst=strtoupper($dst);
-//        $dst = san($dst);
-//        if (!$acc->valid_alias($dst)) {
-//            api_err("Invalid destination alias");
-//        }
     }
 
 
@@ -484,41 +469,10 @@ if ($q == "getAddress") {
     }
     $val = $data['val'] + 0;
     $fee = $val * TX_FEE;
-/*    if ($fee < TX_MIN_FEE) {
-        $fee = TX_MIN_FEE;
-    }*/
 
-
-/*    if ($fee > 10 && $current['height'] > 10800) {
-        $fee = 10; //10800
-    }*/
     if ($val < 0) {
         api_err("Invalid value");
     }
-
-
-    // set alias
-/*    if ($version==3) {
-        $fee=10;
-        $message = san($message);
-        $message=strtoupper($message);
-        if (!$acc->free_alias($message)) {
-            api_err("Invalid alias");
-        }
-        if ($acc->has_alias($public_key)) {
-            api_err("This account already has an alias");
-        }
-    }*/
-
-/*    if ($version>=100&&$version<110) {
-        if ($version==100) {
-            $message=preg_replace("/[^0-9\.]/", "", $message);
-            if (!filter_var($message, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-                api_err("Invalid Node IP - $message !");
-            }
-            $val=100000;
-        }
-    }*/
 
     $val = num($val);
     $fee = num($fee);
@@ -716,74 +670,7 @@ if ($q == "getAddress") {
         }
     }
     api_echo(true);
-/*} elseif ($q === "assetBalance"){
 
-    $asset = san($data['asset']);
-    $public_key = san($data['public_key']);
-    $account = san($data['account']);
-    if (!empty($public_key) && strlen($public_key) < 32) {
-        api_err("Invalid public key");
-    }
-    if (!empty($public_key)) {
-        $account = $acc->get_address($public_key);
-    }
-
-    if(empty($asset)&&empty($account)){
-        api_err("An asset or an account are necessary");
-    }
-
-    if(!empty($asset)&&!empty($account)){
-        api_err("Choose either account or asset parameter");
-    }
-
-    $whr="WHERE assets_balance.";
-    $bind=[];
-    if(!empty($asset)){
-        $whr.="asset=:asset ";
-        $bind[':asset']=$asset;
-    }
-    elseif(!empty($account)){
-        $whr.="account=:account ";
-        $bind[':account']=$account;
-    }
-
-    $r=$db->run("SELECT asset, alias, account, assets_balance.balance FROM assets_balance LEFT JOIN accounts ON accounts.id=assets_balance.asset $whr LIMIT 1000",$bind);
-    
-    if ($r) 
-        api_echo($r);
-    else
-        api_err("An asset or an account not found");*/
-        
-/*} elseif ($q === "asset-orders"){
-    $asset = san($data['asset']);
-    $account = san($data['account']);
-    if(empty($asset)&&empty($account)){
-        api_err("An asset or an account are necessary");
-    }
-    $whr="status=0";
-    $bind=[];
-    if(!empty($asset)){
-        $whr.=" AND asset=:asset ";
-        $bind[':asset']=$asset;
-    }
-    if(!empty($account)){
-        $whr.=" AND account=:account ";
-        $bind[':account']=$account;
-    }
-
-    $r=$db->run("SELECT * FROM assets_market WHERE $whr", $bind);
-    api_echo($r);*/
-
-/*} elseif ($q === "assets"){
-    $asset = san($data['asset']);
-    $whr="";
-    $bind=[];
-    if(!empty($asset)){
-        $whr.=" WHERE assets.id=:asset ";
-        $bind[':asset']=$asset;
-    }
-    $r=$db->run("SELECT assets.*, accounts.alias, accounts.balance FROM assets LEFT JOIN accounts ON accounts.id=assets.id $whr LIMIT 1000",$bind);
-    api_echo($r);*/
 
 } else {
     api_err("Invalid request");

@@ -50,9 +50,6 @@ function api_echo($data)
 function _log($data, $verbosity = 0)
 {
     global $_config;
-/*    if ($_config['log_verbosity'] < $verbosity) {
-        return;
-    }*/
     $date = date("[Y-m-d H:i:s]");
     $trace = debug_backtrace();
     $loc = count($trace) - 1;

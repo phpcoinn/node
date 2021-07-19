@@ -23,17 +23,6 @@ global $_config;
 
 require_once ROOT.'/apps/apps.functions.php';
 
-
-/*require_once __DIR__.'/Exception.php';
-require_once __DIR__.'/config.inc.php';
-require_once __DIR__.'/db.inc.php';
-require_once __DIR__.'/functions.inc.php';
-require_once __DIR__.'/Blacklist.php';
-require_once __DIR__.'/InitialPeers.php';
-require_once __DIR__.'/block.inc.php';
-require_once __DIR__.'/account.inc.php';
-require_once __DIR__.'/transaction.inc.php';*/
-
 if ($_config['db_pass'] == "ENTER-DB-PASS") {
     die("Please update your config file and set your db password");
 }
@@ -104,11 +93,6 @@ if (file_exists($db_update_file)) {
     }
     echo "Could not access the tmp/db-update file. Please give full permissions to this file\n";
 }
-
-// something went wront with the db schema
-/*if ($_config['dbversion'] < 2) {
-    exit;
-}*/
 
 // current hostname
 $hostname = (!empty($_SERVER['HTTPS']) ? 'https' : 'http')."://".san_host($_SERVER['HTTP_HOST']);

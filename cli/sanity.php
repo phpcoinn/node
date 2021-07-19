@@ -184,37 +184,6 @@ if ($arg == "microsanity" && !empty($arg2)) {
 		    break;
 	    }
 
-
-	    // the blockchain with the most transactions wins the fork (to encourage the miners to include as many transactions as possible) / might backfire on garbage
-
-        // transform the first 12 chars into an integer and choose the blockchain with the biggest value
-/*        $no1 = hexdec(substr(coin2hex($current['id']), 0, 12));
-        $no2 = hexdec(substr(coin2hex($data['id']), 0, 12));
-
-        if (gmp_cmp($no1, $no2) != -1) {
-            echo "Block hex larger than current\n";
-            break;
-        }*/
-        
-        // make sure the block is valid
-        /*$prev = $block->get($current['height'] - 1);
-        $public = $acc->public_key($data['generator']);
-        if (!$block->mine(
-            $public,
-            $data['nonce'],
-            $data['argon'],
-            $block->difficulty($current['height'] - 1),
-            $prev['id'],
-            $prev['height'],
-            $data['date']
-        )) {
-            echo "Invalid prev-block\n";
-            break;
-        }
-        if (!$block->check($data)) {
-            break;
-        }*/
-
         // delete the last block
         $block->pop(1);
 
@@ -723,16 +692,6 @@ if ($current['height'] < $largest_height && $largest_height > 1 && false) {
 	            $current = $block->current();
             }
 
-//            if ($last_good==$current['height']-1) {
-//                $try_pop=$block->pop(1);
-//                if($try_pop==false){
-//                    // we can't pop the last block, we should resync
-//                    $block_parse_failed=true;
-//                }
-//            }
-
-
-
             // if last 10 blocks are good, verify all the blocks
             if ($invalid == false) {
                 $cblock = [];
@@ -748,9 +707,6 @@ if ($current['height'] < $largest_height && $largest_height > 1 && false) {
                 // check if the block mining data is correct
                 for ($i = $last_good + 1; $i <= $largest_height; $i++) {
                 	_log("checking block $i",3);
-//                    if (($i-1)%3==2&&$cblock[$i - 1]['height']<80458) {
-//                        continue;
-//                    }
                     if (!$block->mine(
                         $cblock[$i]['public_key'],
                         $cblock[$i]['nonce'],
@@ -1008,21 +964,6 @@ if ($_config['sanity_recheck_blocks'] > 0) {
     }
 }
 
-// not too often to not cause load
-/*if (rand(0, 10)==1) {
-    // after 10000 blocks, clear asset internal transactions
-//    $db->run("DELETE FROM transactions WHERE (version=".TX_VERSION_ASSETS_INTERNAL_GENERATE_ID." or version=".TX_VERSION_ASSETS_INTERNAL_MARKET." or version=".TX_VERSION_ASSETS_DISTRIBUTE_DIVIDENDS.") AND height<:height", [":height"=>$current['height']-10000]);
-
-    // remove market orders that have been filled, after 10000 blocks
-    $r=$db->run("SELECT id FROM assets_market WHERE val_done=val or status=2");
-    foreach ($r as $x) {
-        $last=$db->single("SELECT height FROM transactions WHERE (public_key=:id or dst=:id2) ORDER by height DESC LIMIT 1", [":id"=>$x['id'], ":id2"=>$x['id']]);
-        if ($current['height']-$last>10000) {
-            $db->run("DELETE FROM assets_market WHERE id=:id", [":id"=>$x['id']]);
-        }
-    }
-}*/
-
 if ($_config['masternode']==true&&!empty($_config['masternode_public_key'])&&!empty($_config['masternode_voting_public_key'])&&!empty($_config['masternode_voting_private_key'])) {
     echo "Masternode votes\n";
     $r=$db->run("SELECT * FROM masternode WHERE status=1 ORDER by ".DB::random()." LIMIT 3");
@@ -1045,49 +986,6 @@ if ($_config['masternode']==true&&!empty($_config['masternode_public_key'])&&!em
             $blacklist=1;
         }
 
-/*        if ($blacklist) {
-            echo "Blacklisting masternode $x[public_key]\n";
-            $val='0.00000000';
-            $fee=TX_MIN_FEE;
-	        $fee=number_format($fee, 8, ".", "");
-            $date=time();
-            $version=TX_VERSION_MASTERNODE_BLACKLISTING;
-            $msg=san($x['public_key']);
-            $address=$acc->get_address($x['public_key']);
-            $public_key=$_config['masternode_public_key'];
-            $private_key=$_config['masternode_voting_private_key'];
-            $info=$val."-".$fee."-".$address."-".$msg."-$version-".$public_key."-".$date;
-            _log("TX info: ".$info);
-            $signature=ec_sign($info, $private_key);
-
-
-            $transaction = [
-                "src"        => $acc->get_address($_config['masternode_public_key']),
-                "val"        => $val,
-                "fee"        => $fee,
-                "dst"        => $address,
-                "public_key" => $public_key,
-                "date"       => $date,
-                "version"    => $version,
-                "message"    => $msg,
-                "signature"  => $signature,
-            ];
-
-            $hash = $trx->hash($transaction);
-            $transaction['id'] = $hash;
-            if (!$trx->check($transaction)) {
-                print("Blacklist transaction signature failed\n");
-            }
-            $res = $db->single("SELECT COUNT(1) FROM mempool WHERE id=:id", [":id" => $hash]);
-            if ($res != 0) {
-                print("Blacklist transaction already in mempool\n");
-            }
-            $trx->add_mempool($transaction, "local");
-            $hash=escapeshellarg(san($hash));
-	        $dir = __DIR__;
-            system(RUN_ENV . "php $dir/propagate.php transaction $hash > /dev/null 2>&1  &");
-            echo "Blacklist Hash: $hash\n";
-        }*/
     }
 }
 

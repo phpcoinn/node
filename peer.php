@@ -209,13 +209,6 @@ if ($q == "peer") {
 			    $accept_new = true;
 		    }
 
-            // convert the first 12 characters from hex to decimal and the block with the largest number wins
-/*            $no1 = hexdec(substr(coin2hex($current['id']), 0, 12));
-            $no2 = hexdec(substr(coin2hex($data['id']), 0, 12));
-            if (gmp_cmp($no1, $no2) == 1) {
-                $accept_new = true;
-            }*/
-        
         if ($accept_new) {
             // if the new block is accepted, run a microsanity to sync it
             _log('['.$ip."] Starting microsanity - $data[height]",1);

@@ -403,6 +403,3 @@ if(window) {
     window.sign = sign
 }
 
-// var a = '123'
-//
-// global.b = "ABC";

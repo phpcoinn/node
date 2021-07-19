@@ -399,11 +399,6 @@ elseif ($cmd == "check-address") {
     if (!Account::valid($dst)) {
         die("Invalid address");
     }
-/*    $dst_b = base58_decode($dst);
-    if (strlen($dst_b) != 64) {
-        die("Invalid address - ".strlen($dst_b)." bytes");
-    }*/
-
     echo "The address is valid\n";
 }
 /**
@@ -440,45 +435,6 @@ elseif ($cmd == 'get-address') {
 } elseif ($cmd == 'clean-blacklist') {
     Peer::cleanBlacklist();
     echo "All the peers have been removed from the blacklist\n";
-/*} elseif ($cmd == 'resync-accounts') {
-    die("Currently disabled due to asset implementation.");
-    // resyncs the balance on all accounts
-    if (file_exists("tmp/sanity-lock")) {
-        die("Sanity running. Wait for it to finish");
-    }
-    touch("tmp/sanity-lock");
-    // lock table to avoid race conditions on blocks
-    $db->exec("LOCK TABLES blocks WRITE, accounts WRITE, transactions WRITE, mempool WRITE, masternode WRITE, peers write, config WRITE, assets WRITE, assets_balance WRITE, assets_market WRITE");
-
-
-    $r=$db->run("SELECT * FROM accounts");
-    foreach ($r as $x) {
-        $alias=$x['alias'];
-        if (empty($alias)) {
-            $alias="A";
-        }
-        $rec=$db->single("SELECT SUM(val) FROM transactions WHERE (dst=:id or dst=:alias) AND (height<80000 OR version!=100) and version<111", [":id"=>$x['id'], ":alias"=>$alias]);
-        $releases=$db->single("SELECT COUNT(1) FROM transactions WHERE dst=:id AND version=103", [":id"=>$x['id']]);
-
-        if ($releases>0) { //masternode releases
-            $rec+=$releases*100000;
-
-        }
-        $spent=$db->single("SELECT SUM(val+fee) FROM transactions WHERE public_key=:pub AND version>0", [":pub"=>$x['public_key']]);
-        if ($spent==false) {
-            $spent=0;
-        }
-        $balance=round(($rec-$spent), 8);
-        if ($x['balance']!=$balance) {
-            echo "rec: $rec, spent: $spent, bal: $x[balance], should be: $balance - $x[id] $x[public_key]\n";
-            if (trim($argv[2])!="check") {
-                $db->run("UPDATE accounts SET balance=:bal WHERE id=:id", [":id"=>$x['id'], ":bal"=>$balance]);
-            }
-        }
-    }
-    $db->exec("UNLOCK TABLES");
-    echo "All done";
-    unlink("tmp/sanity-lock");*/
 } elseif ($cmd=="compare-blocks") {
     $block=new Block();
 
