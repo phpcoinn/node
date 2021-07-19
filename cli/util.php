@@ -591,6 +591,8 @@ elseif ($cmd == 'get-address') {
 
 } else if ($cmd == "rewards-scheme") {
 	Nodeutil::printRewardScheme();
+} else if ($cmd == "download-apps") {
+	Nodeutil::downloadApps();
 
 } else {
     echo "Invalid command\n";
@@ -621,6 +623,7 @@ elseif ($cmd == 'get-address') {
     recheck-external-blocks
     validate-public-key
     rewards-scheme
+    download-apps
     ";
 
 }

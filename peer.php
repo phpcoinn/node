@@ -391,42 +391,7 @@ elseif ($q == "getPeers") {
 		if($res === false) {
 			_log("No response from repo server",2);
 		} else {
-			$hash = $res['hash'];
-			$signature = $res['signature'];
-			$verify = Account::checkSignature($hash, $signature, APPS_REPO_SERVER_PUBLIC_KEY);
-			_log("Verify repo response hash=$hash signature=$signature verify=$verify",3);
-			if(!$verify) {
-				_log("Not verified signature from repo server",2);
-			} else {
-				$link = APPS_REPO_SERVER."/tmp/apps.tar.gz";
-				_log("Downloading archive file from link $link",3);
-				$arrContextOptions=array(
-					"ssl"=>array(
-						"verify_peer"=>!DEVELOPMENT,
-						"verify_peer_name"=>!DEVELOPMENT,
-					),
-				);
-				$res = file_put_contents(ROOT . "/tmp/apps.tar.gz", fopen($link, "r", false,  stream_context_create($arrContextOptions)));
-				if($res === false) {
-					_log("Error downloading apps from repo server",2);
-				} else {
-					$size = filesize(ROOT . "/tmp/apps.tar.gz");
-					if(!$size) {
-						_log("Downloaded empty file from repo server",1);
-					} else {
-						extractAppsArchive();
-						_log("Extracted archive",3);
-						$calHash = calcAppsHash();
-						_log("Calculated new hash: ".$calHash,3);
-						if($hash != $calHash) {
-							_log("Error extracting apps transfered",2);
-						} else {
-							file_put_contents($appsHashFile, $calHash);
-							_log("Stored new hash",3);
-						}
-					}
-				}
-			}
+			Nodeutil::downloadApps();
 		}
 	}
 } else {

@@ -5,7 +5,6 @@
 /build/doc/
 /build/node_modules/
 /build/package-lock.json
-/apps/
 /dapps/
 /db/
 /dev/
