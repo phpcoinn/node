@@ -64,6 +64,7 @@ if ($q == "info") {
     api_echo($res);
     exit;
 } elseif ($q == "submitBlock") {
+//	_log("POSTDATA=".print_r($_POST, true));
     // in case the blocks are syncing, reject all
     if ($_config['sanity_sync'] == 1) {
         api_err("sanity-sync");

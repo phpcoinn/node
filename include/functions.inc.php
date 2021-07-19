@@ -24,6 +24,7 @@ function san_host($a)
 function api_err($data)
 {
     global $_config;
+    _log("api_err: ".$data,3);
 
     if (!headers_sent()) {
         header('Content-Type: application/json');

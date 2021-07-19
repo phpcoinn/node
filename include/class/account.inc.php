@@ -231,6 +231,7 @@ class Account
 	public static function pendingBalance($id)
     {
         global $db;
+        _log("id=$id");
         $res = $db->single("SELECT balance FROM accounts WHERE id=:id", [":id" => $id]);
         if ($res === false) {
             $res = 0;

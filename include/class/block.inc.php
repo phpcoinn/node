@@ -188,6 +188,8 @@ class Block
             $db->rollback();
             $db->unlockTables();
             return false;
+        } else {
+        	_log("Inserted new block height=$height id=$hash ",1);
         }
 
         // insert the reward transaction in the db
@@ -1139,6 +1141,8 @@ class Block
             return false;
         }
 
+//        _log("Block mine current_id=$current_id nonce=$nonce current_height=$current_height time=$time");
+
         // if no id is specified, we use the current
         if ($current_id === 0 || $current_height === 0) {
             $current = $this->current();
@@ -1536,6 +1540,8 @@ class Block
                 $db->rollback();
                 $db->unlockTables();
                 return false;
+            } else {
+            	_log("Deleted block id=".$x['id']." height=".$x['height'],1);
             }
 //            $this->reverse_log($x['id']);
         }
@@ -1593,6 +1599,7 @@ class Block
         $info = Block::getSignatureBase($generator, $height, $new_block_date, $nonce, $json, $difficulty, VERSION_CODE, $argon, $prev_block_id);
 
         $signature = ec_sign($info, $key);
+        _log("sign: $info | key=$key | signature=$signature", 4);
         return $signature;
     }
 

@@ -230,6 +230,7 @@ if ($q == "peer") {
     }
     // if it's not the next block
     if ($current['height'] != $data['height'] - 1) {
+    	_log("block submitted is lower than our current height, send them our current block",1);
         // if the height of the block submitted is lower than our current height, send them our current block
         if ($data['height'] < $current['height']) {
             $pr = Peer::getByIp($ip);

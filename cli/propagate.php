@@ -42,7 +42,7 @@ if (trim($argv[5]) == 'linear') {
 }
 $peer = san(trim($argv[3]));
 
-
+_log("Calling propagate.php",4);
 // broadcasting a block to all peers
 if ((empty($peer) || $peer == 'all') && $type == "block") {
     $whr = "";
@@ -53,6 +53,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
     $data = $block->export($id);
     $id = san($id);
     if ($data === false || empty($data)) {
+    	_log("Could not export block");
         die("Could not export block");
     }
     $data = json_encode($data);
@@ -60,6 +61,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 	$file = ROOT."/tmp/$id";
     $res = file_put_contents($file, $data);
     if ($res === false) {
+	    _log("Could not write the cache file");
         die("Could not write the cache file");
     }
     $r = Peer::getPeersForPropagate($linear);
@@ -82,6 +84,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
         } else {
 	        $cmd = "php $dir/propagate.php '$type' '$id' '$host' '$ip'  > /dev/null 2>&1  &";
         }
+        _log("Propagate cmd: $cmd",4);
         system( $cmd);
     }
     exit;
@@ -118,53 +121,68 @@ if ($type == "block") {
     } elseif ($response['request'] == "microsync") {
         // the peer requested us to send more blocks, as it's behind
         echo "Microsync request\n";
+        _log("Microsync request");
         $height = intval($response['height']);
         $bl = san($response['block']);
         $current = $block->current();
         // maximum microsync is 10 blocks, for more, the peer should sync by sanity
         if ($current['height'] - $height > 10) {
             echo "Height Differece too high\n";
+            _log("Height Differece too high");
             exit;
         }
         $last_block = $block->get($height);
         // if their last block does not match our blockchain/fork, ignore the request
         if ($last_block['id'] != $bl) {
             echo "Last block does not match\n";
+            _log("Last block does not match");
             exit;
         }
         echo "Sending the requested blocks\n";
+	    _log("Sending the requested blocks");
         //start sending the requested block
         for ($i = $height + 1; $i <= $current['height']; $i++) {
             $data = $block->export("", $i);
             $response = peer_post($hostname."/peer.php?q=submitBlock", $data, 60, $debug);
             if ($response != "block-ok") {
                 echo "Block $i not accepted. Exiting.\n";
+                _log("Block $i not accepted. Exiting");
                 exit;
             }
+            _log("Block\t$i\t accepted");
             echo "Block\t$i\t accepted\n";
         }
     } elseif ($response == "reverse-microsanity") {
         // the peer informe us that we should run a microsanity
         echo "Running microsanity\n";
+        _log("Running microsanity",3);
+        _log("ip arg = ".$argv[4],3);
         $ip = trim($argv[4]);
+        _log("tremmed ip = ".$ip,3);
         $ip = Peer::validateIp($ip);
+        _log("Filtered ip=".$ip,3);
         if ($ip === false) {
+            _log("Invalid IP",2);
             die("Invalid IP");
         }
         // fork a microsanity in a new process
 	    $dir = ROOT . "/cli";
+        _log("caliing propagate: php $dir/sanity.php microsanity '$ip'  > /dev/null 2>&1  &",3);
         system("php $dir/sanity.php microsanity '$ip'  > /dev/null 2>&1  &");
     } else {
+    	_log("Block not accepted ".$response,1);
         echo "Block not accepted!\n";
     }
 }
 // broadcast a transaction to some peers
 if ($type == "transaction") {
+	_log("Propagate transaction");
     $trx = new Transaction();
     // get the transaction data
     $data = $trx->export($id);
 
     if (!$data) {
+	    _log("Invalid transaction id");
         echo "Invalid transaction id\n";
         exit;
     }
@@ -174,12 +192,19 @@ if ($type == "transaction") {
     } else {
         $r = Peer::getActive(intval($_config['transaction_propagation_peers']));
     }
+    _log("Transaction propagate peers: ".print_r($r, 1));
+    if(count($r)==0) {
+    	_log("Transaction not propagated - no peers");
+    }
     foreach ($r as $x) {
     	$url = $x['hostname']."/peer.php?q=submitTransaction";
+    	_log("Propagating to peer: ".$url);
         $res = peer_post($url, $data);
         if (!$res) {
+	        _log("Transaction not accepted");
             echo "Transaction not accepted\n";
         } else {
+	        _log("Transaction accepted");
             echo "Transaction accepted\n";
         }
     }

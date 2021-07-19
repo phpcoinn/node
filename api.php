@@ -103,6 +103,7 @@ if (!empty($_POST['data'])) {
 
 if ($q == "getAddress") {
     $public_key = $data['public_key'];
+//	_log("API: getAddress ".$public_key);
     if (strlen($public_key) < 32) {
         api_err("Invalid public key");
     }

@@ -61,6 +61,7 @@ if (file_exists(SANITY_LOCK_PATH)) {
     }
 
     if (!$ignore_lock) {
+	    _log("Sanity lock in place", 4);
         die("Sanity lock in place".PHP_EOL);
     }
 }
@@ -70,7 +71,7 @@ $lock = fopen(SANITY_LOCK_PATH, "w");
 fclose($lock);
 $arg = trim($argv[1]);
 $arg2 = trim($argv[2]);
-echo "Sleeping for 3 seconds\n";
+//echo "Sleeping for 3 seconds\n";
 // sleep for 3 seconds to make sure there's a delay between starting the sanity and other processes
 if ($arg != "microsanity") {
     sleep(3);
@@ -139,22 +140,27 @@ if ($current['height']==1 && BOOTSTRAPING) {
 
     $current = $block->current();
 }
+//TODO check microsanity feature
 // the microsanity process is an anti-fork measure that will determine the best blockchain to choose for the last block
 $microsanity = false;
 if ($arg == "microsanity" && !empty($arg2)) {
     do {
+	    _log("Find peer by ip = $arg2", 3);
         // the microsanity runs only against 1 specific peer
         $x = Peer::findByIp($arg2);
 
         if (!$x) {
             echo "Invalid node - $arg2\n";
+            _log("Invalid node $arg2");
             break;
         }
+        _log("Get block ".$current['height']." from peer ".$x['hostname']);
         $url = $x['hostname']."/peer.php?q=";
         $data = peer_post($url."getBlock", ["height" => $current['height']]);
 
         if (!$data) {
             echo "Invalid getBlock result\n";
+            _log("Invalid getBlock result");
             break;
         }
         $data['id'] = san($data['id']);
@@ -162,6 +168,7 @@ if ($arg == "microsanity" && !empty($arg2)) {
         // nothing to be done, same blockchain
         if ($data['id'] == $current['id']) {
             echo "Same block\n";
+            _log("nothing to be done, same blockchain",3);
             break;
         }
 
@@ -270,6 +277,7 @@ $largest_most_common_height = 0;
 Peer::deleteDeadPeers();
 
 $total_peers = Peer::getCount(true);
+_log("Total peers: ".$total_peers, 4);
 
 $peered = [];
 // if we have no peers, get the seed list from the official site
@@ -288,6 +296,8 @@ if ($total_peers == 0) {
         if(!Peer::validate($peer)) {
 	        continue;
         }
+
+        _log("Process peer ".$peer);
 
 	    if($peer === $_config['hostname']) {
 		    continue;
@@ -688,6 +698,7 @@ if ($current['height'] < $largest_height && $largest_height > 1 && false) {
                     _log("Could not get block from $host - $i");
                     break;
                 }
+                _log("Get block $i from peer $url",3);
                 $ext = $block->get($i);
                 if ($i == $current['height'] - 100 && $ext['id'] != $data['id']) {
                     _log("100 blocks ago was still on a different chain. Ignoring.");
@@ -711,6 +722,17 @@ if ($current['height'] < $largest_height && $largest_height > 1 && false) {
 	            }
 	            $current = $block->current();
             }
+
+//            if ($last_good==$current['height']-1) {
+//                $try_pop=$block->pop(1);
+//                if($try_pop==false){
+//                    // we can't pop the last block, we should resync
+//                    $block_parse_failed=true;
+//                }
+//            }
+
+
+
             // if last 10 blocks are good, verify all the blocks
             if ($invalid == false) {
                 $cblock = [];
@@ -739,6 +761,7 @@ if ($current['height'] < $largest_height && $largest_height > 1 && false) {
                         $cblock[$i]['date']
                     )) {
                         $invalid = true;
+                        _log("INVALID BLOCK id=".$cblock[$i]['id']." height=".$cblock[$i]['height'],1);
                         break;
                     }
                 }
@@ -765,7 +788,9 @@ if ($current['height'] < $largest_height && $largest_height > 1 && false) {
 //            continue;
         }
         // start syncing all blocks
+	    _log("start syncing all blocks", 3);
         while ($current['height'] < $largest_height) {
+        	_log("getting blocks from height ".$current['height'], 3);
             $data = peer_post($url."getBlocks", ["height" => $current['height'] + 1]);
 
             if ($data === false) {
@@ -776,7 +801,8 @@ if ($current['height'] < $largest_height && $largest_height > 1 && false) {
             foreach ($data as $b) {
                 $b['id'] = san($b['id']);
                 $b['height'] = san($b['height']);
-                
+                _log("Checking block ".json_encode($b), 3);
+
                 if (!$block->check($b)) {
                     $block_parse_failed=true;
                     _log("Block check: could not add block - $b[id] - $b[height]", 1);
