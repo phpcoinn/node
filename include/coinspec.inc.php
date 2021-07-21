@@ -54,3 +54,4 @@ const REWARD_SCHEME = [
 
 //calculate max supply with
 const TOTAL_SUPPLY = 714990;
+const GIT_URL = "https://github.com/phpcoinn/testnet";

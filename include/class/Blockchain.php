@@ -6,6 +6,9 @@ class Blockchain
 
 	static function getHashRate($blocks) {
 		$blockCount = Block::getHeight();
+		if( $blockCount < $blocks) {
+			return 0;
+		}
 		$latestBlock = Block::getAtHeight($blockCount);
 		$prev10block = Block::getAtHeight($blockCount - $blocks);
 		$elapsed = $latestBlock['date'] - $prev10block['date'];
@@ -18,6 +21,9 @@ class Blockchain
 
 	static function getAvgBlockTime($blocks) {
 		$blockCount = Block::getHeight();
+		if( $blockCount < $blocks) {
+			return "-";
+		}
 		$latestBlock = Block::getAtHeight($blockCount);
 		$prev10block = Block::getAtHeight($blockCount - $blocks);
 		$elapsed = $latestBlock['date'] - $prev10block['date'];

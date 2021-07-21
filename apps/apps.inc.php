@@ -69,6 +69,9 @@ $nodeScore = $_config['node_score'];
 $dev = false;//DEVELOPMENT;
 $adminView = (strpos($_SERVER['REQUEST_URI'], "/apps/admin")===0);
 
+//check and show git version
+$gitRev = shell_exec("cd . ".ROOT." && git rev-parse HEAD");
+
 if(!$dev) {
 	$peers = Peer::getActive();
 	_log("get random peers: ".json_encode($peers),3);

@@ -23,6 +23,10 @@
         <div class="row">
             <div class="col-sm-6 text-center text-md-start mb-2 mb-sm-0">
 	            <?php echo COIN_NAME ?> - <?php echo $_config['testnet'] ? 'TESTNET' : '' ?> - <?php echo VERSION ?>
+                <?php
+                if(!empty($gitRev)) { ?>
+                    - <a href="<?php echo GIT_URL ?>/tree/<?php echo $gitRev ?>" target="_blank"><?php echo substr($gitRev, 0, 8) ?></a>
+                <?php } ?>
             </div>
             <div class="col-sm-6">
                 <div class="text-center text-md-end d-flex justify-content-center justify-content-sm-end align-items-center mb-2 mb-sm-0">
