@@ -3,32 +3,26 @@
 class Miner {
 
 
-	public $public_key;
+	public $address;
 	public $private_key;
 	public $node;
 	public $miningStat;
 	public $cnt = 0;
-	public $miningPeerFn = null;
-	public $checkRunningFn = null;
 	public $block_cnt = 0;
 
 	private $running = true;
 
-	function __construct($public_key, $private_key, $node)
+	function __construct($address, $node)
 	{
-		$this->public_key = $public_key;
-		$this->private_key = $private_key;
+		$this->address = $address;
 		$this->node = $node;
 	}
 
 	function getMiningInfo() {
 
-		if($this->miningPeerFn !== null) {
-			return call_user_func($this->miningPeerFn, $this);
-		}
 		$url = $this->node."/mine.php?q=info&".XDEBUG;
 		_log("Getting info from url ". $url, 3);
-		$info = @file_get_contents($url);
+		$info = url_get($url);
 		if(!$info) {
 			_log("Error contacting peer");
 			return false;
@@ -48,7 +42,6 @@ class Miner {
 
 	function start() {
 		global $_config;
-		$acc = new Account();
 		$block = new Block();
 		$tx = new Transaction();
 		$this->miningStat = [
@@ -74,7 +67,6 @@ class Miner {
 				return false;
 			}
 
-			$generator = Account::getAddress($this->public_key);
 			$height = $info['data']['height']+1;
 			$block_date = $info['data']['date'];
 			$difficulty = $info['data']['difficulty'];
@@ -92,14 +84,13 @@ class Miner {
 			while (!$blockFound) {
 				$attempt++;
 				usleep(500 * 1000);
-				$this->checkRunning();
 				$now = time();
 				$elapsed = $now - $offset - $block_date;
 				$new_block_date = $block_date + $elapsed;
 				_log("Time=now=$now nodeTime=$nodeTime offset=$offset elapsed=$elapsed",4);
 				$argon = null;
-				$nonce = Block::calculateNonce($generator, $block_date, $elapsed, $argon);
-				$hit = $block->calculateHit($nonce, $this->public_key, $height, $difficulty, $new_block_date, $elapsed);
+				$nonce = Block::calculateNonce($this->address, $block_date, $elapsed, $argon);
+				$hit = $block->calculateHit($nonce, $this->address, $height, $difficulty, $new_block_date, $elapsed);
 				$target = $block->calculateTarget($difficulty, $elapsed);
 				$blockFound = ($hit > 0 && $target>=0 &&  $hit > $target);
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target blockFound=$blockFound", 3);
@@ -121,33 +112,22 @@ class Miner {
 				continue;
 			}
 
-			//add reward transaction
-			$reward_tx = $tx->getRewardTransaction($generator, $new_block_date, $this->public_key, $this->private_key, $reward);
-			$data[$reward_tx['id']]=$reward_tx;
-			ksort($data);
-			$signature = $block->sign($generator, $height, $new_block_date, $nonce, $data, $this->private_key, $difficulty, $argon, $prev_block_id);
 			$postData = http_build_query(
 				[
 					'argon' => $argon,
 					'nonce' => $nonce,
 					'height' => $height,
 					'difficulty' => $difficulty,
-					'public_key' => $this->public_key,
-					'signature' => $signature,
-					'elapsed' => $elapsed,
-					'data' => json_encode($data)
+					'address' => $this->address,
+					'date'=> $new_block_date,
+					'data' => json_encode($data),
+					'elapsed' => $elapsed
 				]
 			);
-			$opts = [
-				'http' =>
-					[
-						'method' => 'POST',
-						'header' => 'Content-type: application/x-www-form-urlencoded',
-						'content' => $postData,
-					],
-			];
-			$context = stream_context_create($opts);
-			$res = file_get_contents($this->node . "/mine.php?q=submitBlock&" . XDEBUG, false, $context);
+
+			$res = url_post($this->node . "/mine.php?q=submitHash&" . XDEBUG, $postData);
+
+
 			$this->miningStat['submits']++;
 			$data = json_decode($res, true);
 			if ($data['status'] == "ok") {
@@ -173,19 +153,8 @@ class Miner {
 		_log("Miner stopped", 0);
 	}
 
-	function checkRunning() {
-		if($this->checkRunningFn !== null) {
-			$this->running = call_user_func($this->checkRunningFn);
-		}
-	}
-
 	static function getStatFile() {
-		$network = getenv("NETOWRK");
-		if(!empty($network)) {
-			$file = ROOT . "/tmp/$network.miner_stat.json";
-		} else {
-			$file = ROOT . "/tmp/miner_stat.json";
-		}
+		$file = getcwd() . "/miner_stat.json";
 		return $file;
 	}
 

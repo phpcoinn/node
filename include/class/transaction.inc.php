@@ -103,15 +103,15 @@ class Transaction
                     continue; //duplicate transaction
                 }
 
-                $res = $db->single(
-                    "SELECT COUNT(1) FROM accounts WHERE id=:id AND balance>=:balance",
-                    [":id" => $x['src'], ":balance" => $balance[$x['src']]]
-                );
+	                $res = $db->single(
+	                    "SELECT COUNT(1) FROM accounts WHERE id=:id AND balance>=:balance",
+	                    [":id" => $x['src'], ":balance" => $balance[$x['src']]]
+	                );
 
-                if ($res == 0) {
-                    _log("$x[id] - Not enough funds in balance");
-                    continue; // not enough balance for the transactions
-                }
+	                if ($res == 0) {
+	                    _log("$x[id] - Not enough funds in balance");
+	                    continue; // not enough balance for the transactions
+	                }
                 $i++;
                 ksort($trans);
                 $transactions[$x['id']] = $trans;
@@ -287,6 +287,11 @@ class Transaction
                 _log("$x[id] - Invalid destination address", 3);
                 return false;
             }
+            $src = Account::getAddress($x['public_key']);
+            if($src==$x['dst']) {
+	            _log("$x[id] - Invalid destination address", 3);
+	            return false;
+            }
         }
 
 
@@ -442,7 +447,7 @@ class Transaction
 
             if ($x['type'] == TX_TYPE_REWARD) {
                 $trans['type'] = "mining";
-            } elseif ($x['type'] == TX_TYPE_SEND/*||$x['version'] == TX_VERSION_ALIAS_SEND*/) {
+            } elseif ($x['type'] == TX_TYPE_SEND) {
                 if ($x['dst'] == $id) {
                     $trans['type'] = "credit";
                 } else {
@@ -486,11 +491,11 @@ class Transaction
         return $trans;
     }
 
-    function getRewardTransaction($generator,$date,$public_key,$private_key,$reward) {
+    function getRewardTransaction($dst,$date,$public_key,$private_key,$reward) {
 	    $msg = '';
 	    $acc = new Account();
 	    $transaction = [
-		    "dst"        => $generator,
+		    "dst"        => $dst,
 		    "val"        => $reward,
 		    "fee"        => "0.00000000",
 		    "message"    => $msg,
@@ -561,9 +566,9 @@ class Transaction
 	    }
 
 	    $trx->add_mempool($transaction, "local");
-	    $hash=escapeshellarg(san($hash));
+	    $hashp=escapeshellarg(san($hash));
 	    $dir = dirname(dirname(__DIR__)) . "/cli";
-	    system("php $dir/propagate.php transaction $hash > /dev/null 2>&1  &");
+	    system("php $dir/propagate.php transaction $hashp > /dev/null 2>&1  &");
 	    return $hash;
     }
 

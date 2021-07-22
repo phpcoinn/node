@@ -30,4 +30,23 @@ class Blockchain
 		return $elapsed / $blocks;
 	}
 
+	static function getMineInfo() {
+		$block = new Block();
+		$txn = new Transaction();
+		$diff = $block->difficulty();
+		$current = $block->current();
+		$data = $txn->mempool($block->max_transactions());
+		$reward = Block::reward($current['height']+1);
+		$res = [
+			"difficulty" => $diff,
+			"block"      => $current['id'],
+			"height"     => $current['height'],
+			"date"=>$current['date'],
+			"data"=>$data,
+			"time"=>time(),
+			"reward"=>num($reward['miner']),
+			"version"=>VERSION_CODE
+		];
+		return $res;
+	}
 }

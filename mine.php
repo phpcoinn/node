@@ -43,24 +43,7 @@ if (!in_array($ip, $_config['allowed_hosts']) && !empty($ip) && !in_array(
 }
 
 if ($q == "info") {
-    // provides the mining info to the miner
-    $diff = $block->difficulty();
-    $current = $block->current();
-    $current_height=$current['height'];
-	$txn = new Transaction();
-	$block = new Block();
-	$data = $txn->mempool($block->max_transactions());
-	$reward = Block::reward($current['height']+1);
-    $res = [
-        "difficulty" => $diff,
-        "block"      => $current['id'],
-        "height"     => $current['height'],
-	    "date"=>$current['date'],
-	    "data"=>$data,
-	    "time"=>time(),
-	    "reward"=>num($reward['miner']),
-	    "version"=>VERSION_CODE
-    ];
+    $res = Blockchain::getMineInfo();
     api_echo($res);
     exit;
 } elseif ($q == "submitBlock") {
@@ -72,7 +55,7 @@ if ($q == "info") {
 
     $peers = Peer::getCount(true);
     _log("Getting peers count = ".$peers);
-    if($peers === 0) {
+    if($peers === 0 && !DEVELOPMENT) {
 	    api_err("no-live-peers");
     }
 
@@ -98,12 +81,14 @@ if ($q == "info") {
 	if(abs($date - $now) > 1) {
 		api_err("rejected - date not match date=$date now=$now");
 	}
+
+	if ($date <= $prev_block['date']) {
+		api_err("rejected - date");
+	}
+
     $result = $block->mine($public_key, $nonce, $argon, $difficulty, $id, $height, $date);
 
     if ($result) {
-        if ($date <= $prev_block['date']) {
-            api_err("rejected - date");
-        }
 
         $current = $block->current();
         $height = $current['height'] += 1;
@@ -150,6 +135,113 @@ if ($q == "info") {
         }
     }
     api_err("rejected");
+} elseif ($q == "submitHash") {
+
+	if (empty($_config['mining'])) {
+		api_err("mining-disabled");
+	}
+
+	if (empty($_config['node_public_key']) && empty($_config['node_private_key'])) {
+		api_err("mining-not-configured");
+	}
+
+	if ($_config['sanity_sync'] == 1) {
+		api_err("sanity-sync");
+	}
+
+	$peers = Peer::getCount(true);
+	_log("Getting peers count = " . $peers);
+	if ($peers === 0 && false) {
+		api_err("no-live-peers");
+	}
+
+	$nonce = san($_POST['nonce']);
+	$version = VERSION_CODE;
+	$address = san($_POST['address']);
+	$elapsed = intval($_POST['elapsed']);
+	$difficulty = san($_POST['difficulty']);
+	$height = san($_POST['height']);
+	$argon = $_POST['argon'];
+	$data=json_decode($_POST['data'], true);
+
+	_log("Submitted new hash from miner $ip height=$height", 4);
+
+	$blockchainHeight = Block::getHeight();
+	if ($blockchainHeight != $height - 1) {
+		api_err("rejected - not top block height=$height blockchainHeight=$blockchainHeight");
+	}
+
+	$now = time();
+	$prev_block = $block->get($height - 1);
+	$date = $prev_block['date'] + $elapsed;
+	if (abs($date - $now) > 1 && false) {
+		api_err("rejected - date not match date=$date now=$now");
+	}
+
+	$public_key = Account::publicKey($address);
+	if (empty($public_key)) {
+		api_err("rejected - no public key");
+	}
+
+	if ($date <= $prev_block['date']) {
+		api_err("rejected - date");
+	}
+
+	$tx = new Transaction();
+	$lastBlock = $block->current();
+	$block_date = $lastBlock['date'];
+	$new_block_date = $block_date + $elapsed;
+	$rewardInfo = Block::reward($height);
+	$minerReward = num($rewardInfo['miner']);
+	$reward_tx = $tx->getRewardTransaction($address, $new_block_date, $_config['node_public_key'], $_config['node_private_key'], $minerReward);
+	$data[$reward_tx['id']] = $reward_tx;
+
+	$generator = Account::getAddress($_config['node_public_key']);
+	$generatorReward = num($rewardInfo['generator']);
+	$reward_tx = $tx->getRewardTransaction($generator, $new_block_date, $_config['node_public_key'], $_config['node_private_key'], $generatorReward);
+	$data[$reward_tx['id']] = $reward_tx;
+
+	ksort($data);
+	$prev_block_id = $lastBlock['id'];
+	$signature = $block->sign($generator, $height, $new_block_date, $nonce, $data, $_config['node_private_key'], $difficulty, $argon, $prev_block_id);
+
+	$result = $block->mine($public_key, $nonce, $argon, $difficulty, $signature, $height, $date);
+
+	if ($result) {
+
+		$res = $block->add(
+			$height,
+			$_config['node_public_key'],
+			$nonce,
+			$data,
+			$date,
+			$signature,
+			$difficulty,
+			null,
+			$argon,
+			$prev_block['id']
+		);
+
+		if ($res) {
+			$current = $block->current();
+			$current['id'] = escapeshellarg(san($current['id']));
+			$dir = ROOT . "/cli";
+			$cmd = "php " . XDEBUG_CLI . " $dir/propagate.php block {$current['id']}  > /dev/null 2>&1  &";
+			_log("Call propagate " . $cmd);
+			shell_exec($cmd);
+			_log("Accepted block from miner $ip block_height=$height block_id=" . $current['id'], 3);
+			api_echo("accepted");
+		} else {
+			api_err("rejected - add");
+		}
+
+	}
+} else if ($q=="checkAddress") {
+	if (!isset($_POST['address'])) {
+		api_err("address-not-specified");
+	}
+	$address = $_POST['address'];
+	Account::publicKey($address);
 } else {
     api_err("invalid command");
 }

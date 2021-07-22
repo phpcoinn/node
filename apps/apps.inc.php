@@ -3,6 +3,8 @@ if(defined("DEVELOPMENT") || true) {
 	error_reporting(E_ALL);
 	ini_set('display_errors', true);
 }
+
+
 require_once dirname(__DIR__).'/include/init.inc.php';
 define("APPS_VERSION","1.0.17");
 function relativePath($from, $to, $ps = DIRECTORY_SEPARATOR)
@@ -66,7 +68,7 @@ $appsHash = file_get_contents($appsHashFile);
 
 $nodeScore = $_config['node_score'];
 
-$dev = false;//DEVELOPMENT;
+$dev = DEVELOPMENT;
 $adminView = (strpos($_SERVER['REQUEST_URI'], "/apps/admin")===0);
 
 //check and show git version
@@ -97,7 +99,7 @@ if(!$peerAppsHash || $peerAppsHash != $appsHash || $force_repo_check) {
 	_log("Checking apps from repo server",3);
 	$repoServer = isRepoServer();
 
-	if(!$repoServer) {
+	if(!$repoServer && !DEVELOPMENT) {
 		_log("Contancting repo server",3);
 		$res = peer_post(APPS_REPO_SERVER . "/peer.php?q=getApps", null, 1);
 		_log("Response from repo server ".json_encode($res),3);

@@ -96,21 +96,42 @@ if(!$loggedIn) {
     exit;
 }
 $acc=new Account();
+
+$accPublicKey = Account::publicKey($address);
+
+
+
 ?>
 <?php
 require_once __DIR__. '/../common/include/top.php';
 ?>
 
-    <div class="row h4">
-        <div class="col-sm-2">Address</div>
+    <div class="row">
+        <div class="col-sm-2 h4">Address</div>
         <div class="col-sm-8" style="word-break: break-all">
-            <?php echo $address ?>
+            <div class="h4"><?php echo $address ?></div>
+            <?php if (empty($accPublicKey)) { ?>
+                <div class="alert alert-warning clearfix">
+                    <span><strong>Your account is not verified</strong> - so you can not use it for mining.</span>
+                    <br/>
+                    Verify it by send some small amount to other address or faucet.
+                    <br/>
+                    If you do not have balance you can get it from
+                    <a target="_blank" href="https://node1.testnet.phpcoin.net/apps/faucet" class="alert-link">faucet</a>.
+                </div>
+            <?php } ?>
         </div>
         <div class="col-sm-2 text-end">
             <a href="/apps/wallet/?action=logout" class="btn btn-outline-primary">Logout</a>
         </div>
     </div>
-    <div class="row h4" id="private-key-row">
+    <div class="row h5">
+        <div class="col-sm-2">Public key</div>
+        <div class="col-sm-8" style="word-break: break-all">
+		    <?php echo $public_key ?>
+        </div>
+    </div>
+    <div class="row h5" id="private-key-row">
         <div class="col-sm-2">Private key</div>
         <div class="col-sm-8">
             <div class="input-group auth-pass-inputgroup">
@@ -210,7 +231,7 @@ require_once __DIR__. '/../common/include/top.php';
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form method="post" action="">
+                    <form method="post" action="" id="send-form">
                         <div>
                             <label class="form-label">Receiver address:</label>
                             <input type="text" name="dst" id="dst" value="" class="form-control" required>
@@ -258,18 +279,18 @@ require_once __DIR__. '/../common/include/top.php';
     }
     function processSend() {
         try {
-            let privateKey = $("#private_key").val().trim()
-            let amount = Number($("#amount").val()).toFixed(8);
-            let fee = Number($("#fee").val()).toFixed(8);
-            let dst = $("#dst").val()
-            let msg = $("#msg").val()
+            let privateKey = $("#send-form #private_key").val().trim()
+            let amount = Number($("#send-form #amount").val()).toFixed(8);
+            let fee = Number($("#send-form #fee").val()).toFixed(8);
+            let dst = $("#send-form #dst").val()
+            let msg = $("#send-form #msg").val()
             let date = Math.round(new Date().getTime()/1000)
             let data = amount + '-' + fee + '-' + dst + '-' + msg + '-' + '<?php echo TX_TYPE_SEND ?>' + '-'
                 + '<?php echo $public_key ?>' + '-' + date
             let sig = sign(data, privateKey)
-            $("#signature").val(sig)
-            $("#date").val(date)
-            $("form").submit()
+            $("#send-form #signature").val(sig)
+            $("#send-form #date").val(date)
+            $("#send-form").submit()
         } catch (e) {
             console.error(e)
             Swal.fire(
@@ -290,7 +311,7 @@ require_once __DIR__ . '/../common/include/bottom.php';
     $(function(){
         $('#sendModal').on('show.bs.modal', function (e) {
             if(localStorage.getItem('privateKey')) {
-                $("#private_key").val(localStorage.getItem('privateKey'))
+                $("#send-form #private_key").val(localStorage.getItem('privateKey'))
             }
         })
 

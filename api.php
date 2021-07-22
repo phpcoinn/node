@@ -419,8 +419,8 @@ if ($q == "getAddress") {
     $trx = new Transaction();
     $type = intval($data['type']);
     $dst = san($data['dst']);
-    if ($type < TX_TYPE_SEND) {
-        $type = TX_TYPE_SEND;
+    if (!in_array($type, [TX_TYPE_SEND])) {
+	    api_err("Invalid transaction type");
     }
 
   
@@ -487,7 +487,7 @@ if ($q == "getAddress") {
         api_err("Either the private_key or the signature must be sent");
     }
 
-
+    
 
     if (empty($public_key)) {
         $pk = coin2pem($private_key, true);

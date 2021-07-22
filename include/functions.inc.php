@@ -310,6 +310,7 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
 	curl_setopt($ch, CURLOPT_POSTFIELDS,$postdata );
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+	curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, !DEVELOPMENT);
 	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
 	$result = curl_exec($ch);
 	curl_close ($ch);
@@ -326,6 +327,40 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
     	Peer::storePing($url);
     }
     return $res['data'];
+}
+
+function url_get($url) {
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL,$url);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+	curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, !DEVELOPMENT);
+	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
+	$result = curl_exec($ch);
+	if($result === false) {
+		$err = curl_error($ch);
+		_log("Curl error: url=$url error=$err");
+	}
+	curl_close ($ch);
+	return $result;
+}
+
+function url_post($url, $postdata) {
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL,$url);
+	curl_setopt($ch, CURLOPT_POST, 1);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata );
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+	curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, !DEVELOPMENT);
+	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
+	$result = curl_exec($ch);
+	if($result === false) {
+		$err = curl_error($ch);
+		_log("Curl error: url=$url error=$err");
+	}
+	curl_close ($ch);
+	return $result;
 }
 
 // convers hex to base58

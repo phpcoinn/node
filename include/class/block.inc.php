@@ -202,30 +202,36 @@ class Block
 	    $total = 0;
 	    $miner = 0;
 	    $mn_reward = 0;
+	    $generator = 0;
 	    $pos_reward = 0;
 	    if($id == 1) {
 	    	//genesis
 		    $total = GENESIS_REWARD;
 		    $miner = $total;
 		    $mn_reward = 0;
+		    $generator = 0;
 		    $pos_reward = 0;
 	    } else if ($id <= $launch_blocks ) {
 			//launch from 1
 		    $total = $launch_reward;
-		    $miner = $total;
+		    $miner = $total * 0.9;
+		    $generator = $total * 0.1;
 		    $mn_reward = 0;
 		    $pos_reward = 0;
 	    } else if ($id <= $mining_end_block) {
 		    //mining from 210000
 		    $total = ($mining_segments - floor(($id -1 - $launch_blocks) / $mining_segment_block)) * $mining_decrease_per_segment;
-		    $miner = $total;
+		    $miner = $total * 0.9;
+		    $generator = $total * 0.1;
 		    $mn_reward = 0;
 		    $pos_reward = 0;
 	    } else if ($id <= $combined_end_block) {
 			// combined
 		    $total = $base_reward;
-		    $miner = ($combined_segmnets - 1 - floor(($id - 1 - $mining_end_block) / $combined_segment_block)) * $combined_decrease_per_segment;
-		    $remain_reward = $base_reward - $miner;
+		    $miner_reward = ($combined_segmnets - 1 - floor(($id - 1 - $mining_end_block) / $combined_segment_block)) * $combined_decrease_per_segment;
+		    $remain_reward = $base_reward - $miner_reward;
+		    $miner = $miner_reward * 0.9;
+		    $generator = $miner_reward * 0.1;
 		    $pos_ratio = 0.2;
 		    $pos_reward = $pos_ratio * $remain_reward;
 		    $mn_reward = $remain_reward - $pos_reward;
@@ -236,18 +242,21 @@ class Block
 		    $pos_reward = $pos_ratio * $total;
 		    $mn_reward = $total - $pos_reward;
 		    $miner = 0;
+		    $generator = 0;
 	    } else {
 		    $total = 0;
 		    $miner = 0;
 		    $mn_reward = 0;
 		    $pos_reward = 0;
+		    $generator = 0;
 	    }
 	    return [
 	    	'total'=>$total,
 		    'miner'=>$miner,
+		    'generator'=>$generator,
 		    'masternode'=>$mn_reward,
 		    'pos'=>$pos_reward,
-		    'key'=>"$total-$miner-$mn_reward-$pos_reward"
+		    'key'=>"$total-$miner-$generator-$mn_reward-$pos_reward"
 	    ];
     }
 
@@ -348,7 +357,7 @@ class Block
 	    }
 
 
-	    $hit = $this->calculateHit($calcNonce, $public_key, $current_height, $difficulty, $current_date, $elapsed);
+	    $hit = $this->calculateHit($calcNonce, $generator, $current_height, $difficulty, $current_date, $elapsed);
 	    $target = $this->calculateTarget($difficulty, $elapsed);
 	    _log("Check hit= " . $hit. " target=" . $target . " current_height=".$current_height.
 		    " difficulty=".$difficulty." elapsed=".$elapsed, 4);
@@ -401,29 +410,40 @@ class Block
                     _log("Transaction already on the blockchain - $x[id]", 3);
                     return false;
                 }
+
+	            $type = $x['type'];
+
+	            if($type == TX_TYPE_SEND) {
+		            if (!$bootstrapping) {
+
+		            	if($x['src'] == $x['dst']) {
+		            		_log("Transaction now allowed to itself");
+				            return false;
+			            }
+
+			            // check if the account has enough balance to perform the transaction
+			            foreach ($balance as $id => $bal) {
+				            $res = $db->single(
+					            "SELECT COUNT(1) FROM accounts WHERE id=:id AND balance>=:balance",
+					            [":id" => $id, ":balance" => $bal]
+				            );
+				            if ($res == 0) {
+					            _log("Not enough balance for transaction - $id", 3);
+					            return false; // not enough balance for the transactions
+				            }
+			            }
+		            }
+	            }
             }
         }
         //only a single masternode transaction per block for any masternode
-        if (count($mns) != count(array_unique($mns))) {
-            _log("Too many masternode transactions", 3);
-            return false;
-        }
+//        if (count($mns) != count(array_unique($mns))) {
+//            _log("Too many masternode transactions", 3);
+//            return false;
+//        }
 
-        if($x['type'] != TX_TYPE_REWARD) {
-	        if (!$bootstrapping) {
-		        // check if the account has enough balance to perform the transaction
-		        foreach ($balance as $id => $bal) {
-			        $res = $db->single(
-				        "SELECT COUNT(1) FROM accounts WHERE id=:id AND balance>=:balance",
-				        [":id" => $id, ":balance" => $bal]
-			        );
-			        if ($res == 0) {
-				        _log("Not enough balance for transaction - $id", 3);
-				        return false; // not enough balance for the transactions
-			        }
-		        }
-	        }
-        }
+
+
         // if the test argument is false, add the transactions to the blockchain
         if ($test == false) {
             foreach ($data as $d) {
@@ -633,9 +653,9 @@ class Block
         return $block;
     }
 
-    function calculateHit($nonce, $public_key, $height, $difficulty, $block_date, $elapsed) {
+    function calculateHit($nonce, $address, $height, $difficulty, $block_date, $elapsed) {
 //	    _log("calculateHit difficulty=$difficulty {$block_date}-{$elapsed} = $nonce");
-	    $base = $public_key . "-" . $nonce . "-" . $height . "-" . $difficulty;
+	    $base = $address . "-" . $nonce . "-" . $height . "-" . $difficulty;
 //	    _log("base=$base");
 	    $hash = hash("sha256", $base);
 	    $hash = hash("sha256", $hash);

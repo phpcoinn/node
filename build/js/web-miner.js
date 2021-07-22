@@ -68,10 +68,9 @@ function sign (message, private_key) {
 
 class WebMiner {
 
-    constructor(node, publicKey, privateKey, hashingConfig, block_time, callbacks) {
+    constructor(node, address, hashingConfig, block_time, callbacks) {
         this.node = node
-        this.publicKey = publicKey
-        this.privateKey = privateKey
+        this.address = address
         this.hashingConfig = hashingConfig
         this.block_time = block_time
         this.callbacks = callbacks
@@ -132,7 +131,7 @@ class WebMiner {
                 console.error("Can not start Miner")
                 return
             }
-            let generator = await this.getAddress()
+            let address = this.address
             let block_date = parseInt(info.data.date)
             let now = Math.round(Date.now() / 1000)
             let nodeTime = info.data.time
@@ -150,7 +149,6 @@ class WebMiner {
             let calOffset = 0
             let blockFound = false
             let times = {}
-            let reward = info.data.reward
             let version = info.data.version
             let attempt = 0
 
@@ -159,7 +157,7 @@ class WebMiner {
             }
 
             this.miner = {
-                generator,
+                address,
                 block_date,
                 now,
                 nodeTime,
@@ -235,7 +233,7 @@ class WebMiner {
 
                 let hash = await argon2.hash({
                     pass: argonBase,
-                    salt: generator.substr(0, 16),
+                    salt: address.substr(0, 16),
                     mem: this.hashingConfig.mem,
                         time: this.hashingConfig.time,
                         parallelism: this.hashingConfig.parallelism,
@@ -246,7 +244,7 @@ class WebMiner {
                 times.t1 = Date.now()
 
                 argon = hash.encoded
-                nonceBase = `${generator}-${block_date}-${elapsed}-${argon}`
+                nonceBase = `${address}-${block_date}-${elapsed}-${argon}`
                 this.miner.argon = argon
                 this.miner.nonceBase = nonceBase
 
@@ -254,7 +252,7 @@ class WebMiner {
 
                 times.t2 = Date.now()
 
-                hitBase = `${this.publicKey}-${calcNonce}-${height}-${difficulty}`
+                hitBase = `${address}-${calcNonce}-${height}-${difficulty}`
                 this.miner.calcNonce = calcNonce
                 this.miner.hitBase = hitBase
                 let hash1 = await this.sha256(hitBase)
@@ -291,29 +289,20 @@ class WebMiner {
 
             this.miningStat.submits++
 
-            //reward tx
-            let rewardTx = await this.getRewardTx(generator, reward, new_block_date, this.publicKey)
-            // console.log(rewardTx)
-            data[rewardTx.id]=rewardTx
-            data = sortTx(data)
-            json = JSON.stringify(data)
-            signatureBase = `${generator}-${height}-${new_block_date}-${calcNonce}-${json}-${difficulty}-${version}-${argon}-${block}`
-            signature = sign(signatureBase, this.privateKey)
-            // console.log("signatureBase",signatureBase,signature)
-            this.miner.calOffset = calOffset
-            this.miner.json = json
-            this.miner.version = version
-            this.miner.signatureBase = signatureBase
-            this.miner.signature = signature
+
             let postData = {
-                argon, nonce: calcNonce, height, difficulty,
-                public_key: this.publicKey, signature,
-                date: new_block_date, data: JSON.stringify(data),
+                argon,
+                nonce: calcNonce,
+                height,
+                difficulty,
+                address,
+                date: new_block_date,
+                data: JSON.stringify(data),
                 elapsed
             }
             response = await axios({
                 method: 'post',
-                url: this.node + '/mine.php?q=submitBlock',
+                url: this.node + '/mine.php?q=submitHash',
                 headers: {'Content-type': 'application/x-www-form-urlencoded'},
                 data: new URLSearchParams(postData).toString()
             })
@@ -394,6 +383,19 @@ class WebMiner {
         let sig = sign(data, this.privateKey)
         // console.log("sig", sig)
         return sig
+    }
+
+    async checkAddress(address) {
+        let response = await axios({
+            method: 'get',
+            url: this.node + '/api.php?q=getPublicKey&address='+address,
+        })
+        let info = response.data
+        if(info.status !== 'ok') {
+            return null
+        } else {
+            return info.data
+        }
     }
 
 }

@@ -255,7 +255,8 @@ elseif ($cmd == "peers") {
 elseif ($cmd == "mempool") {
     $res = $db->single("SELECT COUNT(1) from mempool");
     echo "Mempool size: $res\n";
-} /**
+}
+/**
  * @api {php util.php} delete-peer Delete-peer
  * @apiName delete-peer
  * @apiGroup UTIL

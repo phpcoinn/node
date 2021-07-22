@@ -11,8 +11,8 @@ require_once __DIR__. '/../common/include/top.php';
 
         <div class="card">
             <div class="card-header">
-                <h4 class="card-title">Mining configuration</h4>
-                <p class="card-title-desc">Fill your credentials and start mining right away</p>
+                <h4 class="card-title">Web mining</h4>
+                <p class="card-title-desc">Enter your address to start mining</p>
             </div>
             <div class="card-body p-0">
                 <form id="miningConfig" class="collapse show p-4">
@@ -21,12 +21,11 @@ require_once __DIR__. '/../common/include/top.php';
                         <input class="form-control" type="text" id="node" v-model="node" disabled="disabled"/>
                     </div>
                     <div class="mb-1">
-                        <label class="form-label" for="public_key">Public key</label>
-                        <input class="form-control" type="text" id="public_key" v-model="publicKey" placeholder="Enter your public key"/>
-                    </div>
-                    <div class="mb-1">
-                        <label class="form-label" for="private_key">Private key</label>
-                        <input class="form-control" type="password" id="private_key" v-model="privateKey" placeholder="Enter your private key"/>
+                        <label class="form-label" for="public_key">Address</label>
+                        <input class="form-control" type="text" id="public_key" v-model="address" placeholder="Enter your address"/>
+                        <div class="help-block text-muted text-info">
+                            In order to mine with address you must have recorded sent transaction on blockchain
+                        </div>
                     </div>
                     <div class="form-group">
                         <div class="form-check">
@@ -193,10 +192,9 @@ require_once __DIR__. '/../common/include/top.php';
         var app = new Vue({
             el: '#app',
             data: {
-                publicKey: null,
+                address: null,
                 privateKey: null,
 	            node: '<?php echo $_config['hostname'] ?>',
-                address: null,
                 miner: {},
                 running: false,
                 miningStat: {},
@@ -205,9 +203,6 @@ require_once __DIR__. '/../common/include/top.php';
                 minerInBackground: false
             },
             mounted() {
-                this.publicKey = localStorage.getItem('publicKey')
-                this.privateKey = localStorage.getItem('privateKey')
-                this.setupMiner()
                 this.minerInBackground = localStorage.getItem('minerInBackground')!= null &&
                     localStorage.getItem('minerInBackground') === "1"
                 if(this.minerInBackground) {
@@ -217,7 +212,7 @@ require_once __DIR__. '/../common/include/top.php';
             methods: {
                 setupMiner() {
                     this.webMiner = new WebMiner(this.node,
-                        this.publicKey, this.privateKey, hashingConfig, <?php echo BLOCK_TIME ?> , {
+                        this.address, hashingConfig, <?php echo BLOCK_TIME ?> , {
                             onMinerUpdate: (miner, miningStat)=>{
                                 this.miner = miner
                                 this.miningStat = miningStat
@@ -242,25 +237,24 @@ require_once __DIR__. '/../common/include/top.php';
                     if(this.minerInBackground) {
                         localStorage.setItem('minerInBackground', "1");
                     }
-                    if(!this.publicKey || !this.privateKey) {
+                    this.address = this.address.trim()
+                    if(!this.address) {
                         Swal.fire(
                             {
-                                title: 'Credentials required!',
-                                text: 'Please fill public and private key',
+                                title: 'Address required!',
+                                text: 'Please fill valid address',
                                 icon: 'error'
                             }
                         )
                         return
                     }
-                    localStorage.setItem('publicKey', this.publicKey)
-                    localStorage.setItem('privateKey', this.privateKey)
                     this.setupMiner()
-                    this.address = await this.webMiner.getAddress()
-                    if(!this.address) {
+
+                    if(!await this.webMiner.checkAddress(this.address)) {
                         Swal.fire(
                             {
-                                title: 'Address not retrieved!',
-                                text: 'Please check public and private key',
+                                title: 'Address not found',
+                                text: 'You must have recorded sent transaction on blockchain in order to start mining',
                                 icon: 'error'
                             }
                         )

@@ -289,7 +289,11 @@ class Wallet
 			return false;
 		}
 
-		return $peer;
+		if(DEVELOPMENT) {
+			return "https://spectre:8000";
+		} else {
+			return $peer;
+		}
 	}
 
 	function wallet_peer_post($url, $data = [], $timeout = 60, $debug = false) {
@@ -307,23 +311,22 @@ class Wallet
 			]
 		);
 
-		$opts = [
-			'http' =>
-				[
-					'timeout' => $timeout,
-					'method'  => 'POST',
-					'header'  => 'Content-type: application/x-www-form-urlencoded',
-					'content' => $postdata,
-				],
-		];
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL,$url);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS,$postdata );
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, !DEVELOPMENT);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
+		$result = curl_exec($ch);
+		curl_close ($ch);
 
-		$context = stream_context_create($opts);
-
-		$result = file_get_contents($url, false, $context);
-//		if ($debug) {
-//			echo "\nPeer response: $result\n";
-//		}
 		$res = json_decode($result, true);
+
+
+
+
 
 		return $res;
 	}
