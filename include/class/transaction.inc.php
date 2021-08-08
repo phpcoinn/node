@@ -255,6 +255,11 @@ class Transaction
             return false;
         }
 
+	    if ($x['val'] == 0) {
+		    _log("$x[id] - Value 0", 3);
+		    return false;
+	    }
+
         // the fee must be >=0
         if ($x['fee'] < 0) {
             _log("$x[id] - Fee below 0", 3);

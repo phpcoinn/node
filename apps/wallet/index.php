@@ -250,18 +250,18 @@ require_once __DIR__. '/../common/include/top.php';
                             <input type="hidden" name="fee" id="fee" value="<?php echo TX_FEE ?>"/>
                             <input type="hidden" name="date" id="date" value=""/>
                         </div>
-                        <div class="mt-3">
-                            <label class="form-label">
-                                Private key:
-                            </label>
-                            <input type="password" id="private_key" value="" class="form-control" required>
-                        </div>
-                        <div class="mt-3">
-                            <label class="form-label">
-                                Message (optional):
-                            </label>
-                            <input type="text" id="msg" name="msg" value="" class="form-control">
-                        </div>
+                            <div class="mt-3">
+                                <label class="form-label">
+                                    Private key:
+                                </label>
+                                <input type="password" id="private_key" value="" class="form-control" required>
+                            </div>
+                            <div class="mt-3">
+                                <label class="form-label">
+                                    Message (optional):
+                                </label>
+                                <input type="text" id="msg" name="msg" value="" class="form-control">
+                            </div>
                     </form>
                 </div>
                 <div class="modal-footer">

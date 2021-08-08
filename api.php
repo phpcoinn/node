@@ -419,6 +419,7 @@ if ($q == "getAddress") {
     $trx = new Transaction();
     $type = intval($data['type']);
     $dst = san($data['dst']);
+
     if (!in_array($type, [TX_TYPE_SEND])) {
 	    api_err("Invalid transaction type");
     }

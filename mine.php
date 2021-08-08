@@ -235,6 +235,8 @@ if ($q == "info") {
 			api_err("rejected - add");
 		}
 
+	} else {
+		api_err("rejected - mine");
 	}
 } else if ($q=="checkAddress") {
 	if (!isset($_POST['address'])) {

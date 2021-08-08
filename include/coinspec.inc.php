@@ -27,7 +27,7 @@ const TX_TYPE_REWARD = 0;
 const TX_TYPE_SEND = 1;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
-const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 1, "threads" => 1];
+const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
 const REMOTE_PEERS_LIST_URL = "https://node1.testnet.phpcoin.net/peers.php";
 
 const REWARD_SCHEME = [

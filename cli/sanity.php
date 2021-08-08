@@ -25,7 +25,6 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-
 global $_config;
 //TODO: implement bootstrap feature
 const BOOTSTRAPING = false;
@@ -245,7 +244,7 @@ $largest_most_common_height = 0;
 // delete the dead peers
 Peer::deleteDeadPeers();
 
-$total_peers = Peer::getCount(true);
+$total_peers = Peer::getCount(false);
 _log("Total peers: ".$total_peers, 4);
 
 $peered = [];

@@ -61,14 +61,12 @@ class Wallet
 			$this->public_key= $res['public_key'];
 			$this->address = $res['address'];
 
-			$wallet=COIN.":".$this->private_key.":".$this->public_key;
+			$wallet=COIN."\n".$this->private_key."\n".$this->public_key;
 			if (strlen($this->private_key)<20||strlen($this->public_key)<20) {
 				die("Could not generate the EC key pair. Please check the openssl binaries.");
 			}
 			if ($encrypt===true) {
-				$password = substr(hash('sha256', $pass, true), 0, 32);
-				$iv=random_bytes(16);
-				$wallet = base64_encode($iv.base64_encode(openssl_encrypt($wallet, 'aes-256-cbc', $password, OPENSSL_RAW_DATA, $iv)));
+				$wallet = $this->encryptWallet($wallet, $pass);
 			}
 
 			$res=file_put_contents($this->wallet, $wallet);
@@ -85,15 +83,7 @@ class Wallet
 				echo "This wallet is encrypted.\n";
 				do {
 					$pass=$this->readPasswordSilently("Password:");
-
-					$w=base64_decode($wallet);
-					$iv=substr($w, 0, 16);
-
-
-					$enc=substr($w, 16);
-					$password = substr(hash('sha256', $pass, true), 0, 32);
-					$decrypted = openssl_decrypt(base64_decode($enc), 'aes-256-cbc', $password, OPENSSL_RAW_DATA, $iv);
-
+					$decrypted = $this->decryptWallet($wallet, $pass);
 					if (substr($decrypted, 0, strlen(COIN))==COIN) {
 						$wallet=$decrypted;
 						break;
@@ -101,7 +91,7 @@ class Wallet
 					echo "Invalid password!\n";
 				} while (1);
 			}
-			$a=explode(":", $wallet);
+			$a=explode("\n", $wallet);
 			$this->public_key=trim($a[2]);
 			$this->private_key=trim($a[1]);
 
@@ -109,6 +99,24 @@ class Wallet
 			$this->address=Account::getAddress($this->public_key);
 			echo "Your address is: ".$this->address."\n\n";
 		}
+	}
+
+	function encryptWallet($wallet, $pass) {
+		$passphrase = substr(hash('sha256', $pass, false),0,32);
+		$iv = substr(bin2hex(random_bytes(16)), 0, 16);
+		$enc = openssl_encrypt($wallet, 'aes-256-cbc', $passphrase, OPENSSL_RAW_DATA, $iv);
+		$enc2 = $iv . base64_encode($enc);
+		$enc3 = base64_encode($enc2);
+		return $enc3;
+	}
+
+	function decryptWallet($encrypted, $pass) {
+		$passphrase = substr(hash('sha256', $pass, false),0,32);
+		$enc2 = base64_decode($encrypted);
+		$iv = substr($enc2, 0, 16);
+		$enc = base64_decode(substr($enc2, 16));
+		$wallet = openssl_decrypt($enc, 'aes-256-cbc', $passphrase, OPENSSL_RAW_DATA, $iv);
+		return $wallet;
 	}
 
 	function processCommand() {
@@ -137,6 +145,9 @@ class Wallet
 				break;
 			case "send":
 				$this->send(@$this->arg2,@$this->arg3,@$this->arg4);
+				break;
+			case "login-link":
+				$this->loginLink();
 				break;
 			default:
 				echo !$this->create ? "Invalid command\n" : "";
@@ -184,10 +195,8 @@ class Wallet
 				echo "The passwords did not match!\n";
 			}
 		} while (1);
-		$wallet=COIN.":{$this->private_key}:{$this->public_key}";
-		$password = substr(hash('sha256', $pass, true), 0, 32);
-		$iv=random_bytes(16);
-		$wallet = base64_encode($iv.base64_encode(openssl_encrypt($wallet, 'aes-256-cbc', $password, OPENSSL_RAW_DATA, $iv)));
+		$wallet=COIN."\n{$this->private_key}\n{$this->public_key}";
+		$wallet = $this->encryptWallet($wallet, $pass);
 		$res=file_put_contents($this->wallet, $wallet);
 		if ($res===false||$res<30) {
 			echo "Your Public Key is: $this->public_key\n";
@@ -197,7 +206,7 @@ class Wallet
 	}
 
 	function decrypt() {
-		$wallet=COIN.":$this->private_key:$this->public_key";
+		$wallet=COIN."\n$this->private_key\n$this->public_key";
 		$res=file_put_contents($this->wallet, $wallet);
 		if ($res===false||$res<30) {
 			echo "Your Public Key is: $this->public_key\n";
@@ -264,6 +273,15 @@ class Wallet
 				"message" => $msg, "date" => $date));
 		$this->checkApiResponse($res);
 		echo "Transaction sent! Transaction id: {$res['data']}\n";
+	}
+
+	function loginLink() {
+		$loginCode = rand(100000, 999999);
+		$signature = ec_sign($loginCode, $this->private_key);
+		$url=$this->get_peer_server()."/apps/wallet/login.php?action=login-link&login_code={$loginCode}&public_key={$this->public_key}&login_key={$signature}";
+		echo "Your login link:".PHP_EOL;
+		echo $url;
+		echo PHP_EOL;
 	}
 
 	function checkApiResponse($res) {
@@ -382,6 +400,7 @@ decrypt                         decrypts the wallet
 transactions                    show the latest transactions
 transaction <id>                shows data about a specific transaction
 send <address> <value> <msg>    sends a transaction (message optional)
+login-link                      generate login link
 
 ");
 	}

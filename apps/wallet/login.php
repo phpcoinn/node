@@ -6,43 +6,89 @@ session_start();
 
 //print_r($_POST);
 
+function proccessLogin($public_key, $login_key, $login_code) {
+	if (Account::valid($public_key)) {
+		$address = $public_key;
+		$public_key = Account::publicKey($address);
+		if (empty($public_key)) {
+			$_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Invalid address or public key']];
+			header("location: /apps/wallet/login.php");
+			exit;
+		}
+	} else {
+		$acc = new Account();
+		$address = Account::getAddress($public_key);
+		if (!Account::valid($address)) {
+			$_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Invalid address or public key']];
+			header("location: /apps/wallet/login.php");
+			exit;
+		}
+	}
+	$verify = Account::checkSignature($login_code, $login_key, $public_key);
+	if (!$verify) {
+		$_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Invalid login data']];
+		header("location: /apps/wallet/login.php");
+		exit;
+	} else {
+		$_SESSION['public_key'] = $public_key;
+		header("location: /apps/wallet/index.php");
+		exit;
+	}
+}
+
 if(isset($_POST['login'])) {
-    if(!isset($_POST['public_key']) || !isset($_POST['signature']) || !isset($_POST['nonce'])) {
-        $_SESSION['msg']=[['icon'=>'warning', 'text'=>'Not filled required data']];
-        header("location: /apps/wallet/login.php");
-        exit;
-    }
-	$nonce = $_POST['nonce'];
-	$signature = $_POST['signature'];
-    $public_key = $_POST['public_key'];
-    if(Account::valid($public_key)) {
-        $address = $public_key;
-	    $acc = new Account();
-	    $public_key = Account::publicKey($address);
-	    if(empty($public_key)) {
-		    $_SESSION['msg']=[['icon'=>'warning', 'text'=>'Invalid address or public key']];
+
+
+	    if (!isset($_POST['public_key']) || !isset($_POST['signature']) || !isset($_POST['nonce'])) {
+		    $_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Not filled required data']];
 		    header("location: /apps/wallet/login.php");
 		    exit;
-        }
-    } else {
-        $acc = new Account();
-	    $address = Account::getAddress($public_key);
-	    if(!Account::valid($address)) {
-		    $_SESSION['msg']=[['icon'=>'warning', 'text'=>'Invalid address or public key']];
+	    }
+	    $nonce = $_POST['nonce'];
+	    $signature = $_POST['signature'];
+	    $public_key = $_POST['public_key'];
+	    if (Account::valid($public_key)) {
+		    $address = $public_key;
+		    $acc = new Account();
+		    $public_key = Account::publicKey($address);
+		    if (empty($public_key)) {
+			    $_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Invalid address or public key']];
+			    header("location: /apps/wallet/login.php");
+			    exit;
+		    }
+	    } else {
+		    $acc = new Account();
+		    $address = Account::getAddress($public_key);
+		    if (!Account::valid($address)) {
+			    $_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Invalid address or public key']];
+			    header("location: /apps/wallet/login.php");
+			    exit;
+		    }
+	    }
+	    $verify = Account::checkSignature($nonce, $signature, $public_key);
+	    if (!$verify) {
+		    $_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Invalid login data']];
 		    header("location: /apps/wallet/login.php");
 		    exit;
-        }
-    }
-    $verify = Account::checkSignature($nonce, $signature, $public_key);
-    if(!$verify) {
-	    $_SESSION['msg']=[['icon'=>'warning', 'text'=>'Invalid login data']];
+	    } else {
+		    $_SESSION['public_key'] = $public_key;
+		    header("location: /apps/wallet/index.php");
+		    exit;
+	    }
+}
+
+if(isset($_GET['action']) && $_GET['action']=="login-link") {
+    $login_code = $_GET['login_code'];
+    $public_key = $_GET['public_key'];
+    $login_key = $_GET['login_key'];
+    if(empty($login_code) || empty($public_key) || empty($login_key)) {
+	    $_SESSION['msg']=[['icon'=>'warning', 'text'=>'Invalid data received']];
 	    header("location: /apps/wallet/login.php");
 	    exit;
-    } else {
-	    $_SESSION['public_key']=$public_key;
-	    header("location: /apps/wallet/index.php");
-	    exit;
     }
+
+	proccessLogin($public_key, $login_key, $login_code);
+
 }
 
 if(isset($_GET['action']) && $_GET['action']=="signup") {
@@ -80,33 +126,32 @@ require_once __DIR__. '/../common/include/top.php';
                                             In order to login with address you must have recorded transaction on blockchain
                                         </div>
                                     </div>
-                                    <div class="mb-3">
-                                        <div class="d-flex align-items-start">
-                                            <div class="flex-grow-1">
-                                                <label class="form-label" for="private_key">Private key</label>
+                                        <div class="mb-3">
+                                            <div class="d-flex align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <label class="form-label" for="private_key">Private key</label>
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        <div class="input-group auth-pass-inputgroup">
-                                            <input type="password" class="form-control" placeholder="Enter private key" aria-label="Password"
-                                                   aria-describedby="password-addon" id="private_key" name="private_key" required="required"/>
-                                            <button class="btn btn-light shadow-none ms-0" type="button" id="password-addon"><i class="mdi mdi-eye-outline"></i></button>
-                                        </div>
-                                    </div>
-                                    <div class="row mb-4">
-                                        <div class="col">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="rememberPrivateKey">
-                                                <label class="form-check-label" for="rememberPrivateKey">
-                                                    Remember private key
-                                                </label>
-                                            </div>
-                                            <div class="help-block text-muted text-info">
-                                                Private key will be stored only locally in browser
+                                            <div class="input-group auth-pass-inputgroup">
+                                                <input type="password" class="form-control" placeholder="Enter private key" aria-label="Password"
+                                                       aria-describedby="password-addon" id="private_key" name="private_key" required="required"/>
+                                                <button class="btn btn-light shadow-none ms-0" type="button" id="password-addon"><i class="mdi mdi-eye-outline"></i></button>
                                             </div>
                                         </div>
-
-                                    </div>
+                                        <div class="row mb-4">
+                                            <div class="col">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="rememberPrivateKey">
+                                                    <label class="form-check-label" for="rememberPrivateKey">
+                                                        Remember private key
+                                                    </label>
+                                                </div>
+                                                <div class="help-block text-muted text-info">
+                                                    Private key will be stored only locally in browser
+                                                </div>
+                                            </div>
+                                        </div>
                                     <div class="mb-3">
                                         <button class="btn btn-primary w-100 waves-effect waves-light" type="button" onclick="processLogin()">Log In</button>
                                     </div>
@@ -248,38 +293,38 @@ require_once __DIR__ . '/../common/include/bottom.php';
 <script type="text/javascript">
 
     function processLogin() {
-        let publicKey = $("#public_key").val().trim()
-        let privateKey = $("#private_key").val().trim()
-        if(publicKey.length === 0 || privateKey.length === 0) {
-            Swal.fire(
-                {
-                    title: 'Please fill login data!',
-                    icon: 'error'
-                }
-            )
-            return;
-        }
-        try {
-            let sig = sign('<?php echo $loginNonce ?>', privateKey)
-            $("#signature").val(sig)
-            $("form").submit()
-        } catch (e) {
-            console.error(e)
-            Swal.fire(
-                {
-                    title: 'Can not sign login form!',
-                    text: 'Please check you private key',
-                    icon: 'error'
-                }
-            )
-            return;
-        }
+            let publicKey = $("#public_key").val().trim()
+            let privateKey = $("#private_key").val().trim()
+            if(publicKey.length === 0 || privateKey.length === 0) {
+                Swal.fire(
+                    {
+                        title: 'Please fill login data!',
+                        icon: 'error'
+                    }
+                )
+                return;
+            }
+            try {
+                let sig = sign('<?php echo $loginNonce ?>', privateKey)
+                $("#signature").val(sig)
+                $("form").submit()
+            } catch (e) {
+                console.error(e)
+                Swal.fire(
+                    {
+                        title: 'Can not sign login form!',
+                        text: 'Please check you private key',
+                        icon: 'error'
+                    }
+                )
+                return;
+            }
 
-        if($("#rememberPrivateKey").is(":checked")) {
-            localStorage.setItem("privateKey", privateKey)
-        } else {
-            localStorage.removeItem("privateKey")
-        }
+            if($("#rememberPrivateKey").is(":checked")) {
+                localStorage.setItem("privateKey", privateKey)
+            } else {
+                localStorage.removeItem("privateKey")
+            }
 
     }
 

@@ -1,12 +1,12 @@
 <?php
 const GENESIS_DATA = [
-"signature" => 'AN1rKvteyMk5xSuWMUgrEeSviXWxYb93BVxZMDKtPVRYFRHkTz4EBTXmtWYZ1jPFnvoDyYgDvNANcN8BmoS3kBXj2izmxxaQ7',
-"public_key" => 'PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCxqw42srjQNJX8zQ2qNBpRAUPRC713jVKXUpu5k7BdSJvyDL98YZJizDN2x3RuRRG3CdZKJMH4ocEq44ZaBmkFpe6',
-"reward_signature" => 'AN1rKvteyMk5xSuWMUgrEeSviXWxYb93BVxZMDKtPVRYFRHkTz4EBTXmtWYZ1jPFnvoDyYgDvNANcN8BmoS3kBXj2izmxxaQ7',
-"argon" => '$argon2i$v=19$m=2048,t=1,p=1$TGdyMmRYSk55OHpodmNrUQ$4tV6y6WN8TGZ+dRe7BoDhp+1lPM14nyJC4xOF3eJZgE',
+"signature" => 'AN1rKvtiVrVapQMhDq5SaCNHiYze5pY2hfLboc8naGFiQwCACURuAzzsFkvbG4HkHGPT5Xcx8e7U1G2qYBDuR77pPk7XtXhQA',
+"public_key" => 'PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCxjhpSHA7R6hnTXuACvGPFLQtnsyHwwZMvviwkPioKwjSDsap9duUSqcZqoCrZYp7JrYDF12Z4NXWpwcBrMvxTP5E',
+"reward_signature" => 'AN1rKvtiVrVapQMhDq5SaCNHiYze5pY2hfLboc8naGFiQwCACURuAzzsFkvbG4HkHGPT5Xcx8e7U1G2qYBDuR77pPk7XtXhQA',
+"argon" => '$argon2i$v=19$m=2048,t=2,p=1$TEtkc3pDbnNDTXJuNzE0Vw$KNrgKD82Ljd4KOYjdf9feu2Fpdzrih2XvYZUaUI27/I',
 "difficulty" => '30000',
-"nonce" => 'ba0add0769fc495e3f0772f59fb241ec9243e33a5b36446e518d79db451f2cd6',
-"date" => '1626889274',
-"reward_tx" => '{"7xP8F4RFtkrE3PXKc4DNbGzGnqwyUPn1mftmT4vdy9Mw":{"date":1626889274,"dst":"Lgr2dXJNy8zhvckQw3S7Lhq5hLUVPGY2wW","fee":"0.00000000","id":"7xP8F4RFtkrE3PXKc4DNbGzGnqwyUPn1mftmT4vdy9Mw","message":"","public_key":"PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCxqw42srjQNJX8zQ2qNBpRAUPRC713jVKXUpu5k7BdSJvyDL98YZJizDN2x3RuRRG3CdZKJMH4ocEq44ZaBmkFpe6","signature":"iKx1CJMRNjUSgXwLAjLZa4VvkEjZhxueJtiJDN7pMNCPdYgpoK1QSjhntouR4QBs7kJWiCdfJuydZrEThGyz9wkzAe1vFyKMC6","src":"Lgr2dXJNy8zhvckQw3S7Lhq5hLUVPGY2wW","type":0,"val":10000}}',
+"nonce" => '83f01949e7ed875f49090541c21a92b0c62ff377610b4f5d77ad3da419acfa6a',
+"date" => '1628105772',
+"reward_tx" => '{"5nAULVcp2zDxbnKwM4WnXh8Yo8rKdC2ia2sHknBG2cZ7":{"date":1628105772,"dst":"LKdszCnsCMrn714WRy5J4R5LBySxfdVzR6","fee":"0.00000000","id":"5nAULVcp2zDxbnKwM4WnXh8Yo8rKdC2ia2sHknBG2cZ7","message":"","public_key":"PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCxjhpSHA7R6hnTXuACvGPFLQtnsyHwwZMvviwkPioKwjSDsap9duUSqcZqoCrZYp7JrYDF12Z4NXWpwcBrMvxTP5E","signature":"381yXZM5pVHzDs2iQdXbJD69oKDM3XctbYXMm5zNnk7dYkDpYUiGbSRQT2KnJD3YnuxYhZupFhp8JgRBUkwiu4S183iegp3c","src":"LKdszCnsCMrn714WRy5J4R5LBySxfdVzR6","type":0,"val":10000}}',
 ];
-const GENESIS_TIME = 1626889274;
+const GENESIS_TIME = 1628105772;

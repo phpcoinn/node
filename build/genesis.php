@@ -10,7 +10,7 @@ print_r($account);
 
 $public_key = $account['public_key'];
 $private_key = $account['private_key'];
-$wallet = COIN.":".$private_key.":".$public_key;
+$wallet = COIN."\n".$private_key."\n".$public_key;
 
 $wallet_file = ROOT."/dist/genesis.dat";
 
