@@ -13,3 +13,6 @@
 /tmp/
 /.idea/
 /config/config.inc.php
+/utils/miner.conf
+/utils/miner_stat.json
+/utils/phpcoin.dat
