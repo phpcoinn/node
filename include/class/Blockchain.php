@@ -49,4 +49,8 @@ class Blockchain
 		];
 		return $res;
 	}
+
+	static function addBlock(Block $block) {
+
+	}
 }

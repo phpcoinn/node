@@ -206,6 +206,7 @@ elseif ($cmd == "recheck-blocks") {
 
         if (!$block->mine(
             $key,
+            $data['miner'],
             $data['nonce'],
             $data['argon'],
             $data['difficulty'],
@@ -522,6 +523,7 @@ elseif ($cmd == 'get-address') {
 
         if (!$block->mine(
             $c['public_key'],
+            $c['miner'],
             $c['nonce'],
             $c['argon'],
             $c['difficulty'],
@@ -553,6 +555,7 @@ elseif ($cmd == 'get-address') {
 
 	if (!$block->mine(
 		$b['public_key'],
+		$b['miner'],
 		$b['nonce'],
 		$b['argon'],
 		$b['difficulty'],
@@ -594,6 +597,8 @@ elseif ($cmd == 'get-address') {
 	Nodeutil::printRewardScheme();
 } else if ($cmd == "download-apps") {
 	Nodeutil::downloadApps();
+} else if ($cmd == "verify-blocks") {
+	Nodeutil::verifyBlocks();
 
 } else {
     echo "Invalid command\n";
@@ -625,6 +630,7 @@ elseif ($cmd == 'get-address') {
     validate-public-key
     rewards-scheme
     download-apps
+    verify-blocks
     ";
 
 }

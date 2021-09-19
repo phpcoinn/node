@@ -33,7 +33,7 @@ class DB extends PDO
     {
         global $_config;
         if (!$this->debugger) {
-            return;
+//            return;
         }
         $error = ["Error" => $this->error];
         if (!empty($this->sql)) {
@@ -85,9 +85,13 @@ class DB extends PDO
         $this->sql = trim($sql);
         $this->bind = $this->cleanup($bind, $sql);
         $this->error = "";
+        $time1 = microtime(true);
         try {
             $pdostmt = $this->prepare($this->sql);
             if ($pdostmt->execute($this->bind) !== false) {
+	            $time2 = microtime(true);
+	            $diff = round(($time2-$time1)*1000);
+	            _log("SQL EXEC time=$diff ms sql=$sql", 4);
                 return $pdostmt->fetchColumn();
             }
         } catch (PDOException $e) {
@@ -102,13 +106,20 @@ class DB extends PDO
         $this->sql = trim($sql);
         $this->bind = $this->cleanup($bind, $sql);
         $this->error = "";
+	    $time1 = microtime(true);
 
         try {
             $pdostmt = $this->prepare($this->sql);
             if ($pdostmt->execute($this->bind) !== false) {
                 if (preg_match("/^(".implode("|", ["select", "describe", "pragma"]).") /i", $this->sql)) {
+	                $time2 = microtime(true);
+	                $diff = round(($time2-$time1)*1000);
+	                _log("SQL EXEC time=$diff ms sql=$sql", 4);
                     return $pdostmt->fetchAll(PDO::FETCH_ASSOC);
                 } elseif (preg_match("/^(".implode("|", ["delete", "insert", "update"]).") /i", $this->sql)) {
+	                $time2 = microtime(true);
+	                $diff = round(($time2-$time1)*1000);
+	                _log("SQL EXEC time=$diff ms sql=$sql", 4);
                     return $pdostmt->rowCount();
                 }
             }

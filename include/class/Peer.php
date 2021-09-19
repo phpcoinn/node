@@ -131,6 +131,7 @@ class Peer
 
 	static function blacklist($id, $reason = '') {
 		global $db;
+		_log("Blacklist peer $id reason=$reason");
 		$db->run(
 			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*3600), 
 				blacklist_reason=:blacklist_reason WHERE id=:id",
@@ -140,6 +141,7 @@ class Peer
 
 	static function blacklistStuck($id, $reason = '') {
 		global $db;
+		_log("Blacklist peer stuck $id reason=$reason");
 		$db->run(
 			"UPDATE peers SET stuckfail=stuckfail+1, blacklisted=".DB::unixTimeStamp()."+7200,
 			    blacklist_reason=:reason WHERE id=:id",
@@ -149,6 +151,7 @@ class Peer
 
 	static function blacklistBroken($host, $reason = '') {
 		global $db;
+		_log("Blacklist peer broken $host reason=$reason");
 		$db->run("UPDATE peers SET blacklisted=".DB::unixTimeStamp()."+1800 
 			blacklist_reason=:reason WHERE hostname=:host LIMIT 1",[':host'=>$host, ':reason'=>$reason]);
 	}
@@ -241,6 +244,16 @@ class Peer
 		$db->run("update peers set ping = ".DB::unixTimeStamp()." where hostname like :hostname",
 			[ ":hostname"=>"%$hostname%"]);
 
+	}
+
+	public static function findByHostname($hostName)
+	{
+		global $db;
+		$x = $db->row(
+			"SELECT id,hostname FROM peers WHERE reserve=0 AND blacklisted<".DB::unixTimeStamp()." AND hostname=:hostname",
+			[":hostname" => $hostName]
+		);
+		return $x;
 	}
 
 }

@@ -105,11 +105,13 @@ if(!defined("PAGE")) exit;
                                     <i class="fas fa-home me-2"></i><span data-key="t-dashboards">Home</span>
                                 </a>
                             </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle arrow-none <?php if (APP_NAME == "Miner") { ?>active<?php } ?>" href="/apps/miner" id="topnav-dashboard" role="button">
-                                    <i class="fas fa-hammer me-2"></i><span data-key="t-dashboards">Miner</span>
-                                </a>
-                            </li>
+                            <?php if (Nodeutil::miningEnabled()) { ?>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle arrow-none <?php if (APP_NAME == "Miner") { ?>active<?php } ?>" href="/apps/miner" id="topnav-dashboard" role="button">
+                                        <i class="fas fa-hammer me-2"></i><span data-key="t-dashboards">Miner</span>
+                                    </a>
+                                </li>
+                            <?php } ?>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle arrow-none <?php if (APP_NAME == "Explorer") { ?>active<?php } ?>" href="/apps/explorer" id="topnav-dashboard" role="button">
                                     <i class="fas fa-binoculars me-2"></i><span data-key="t-dashboards">Explorer</span>
@@ -120,6 +122,13 @@ if(!defined("PAGE")) exit;
                                     <i class="fas fa-wallet me-2"></i><span data-key="t-dashboards">Wallet</span>
                                 </a>
                             </li>
+                            <?php if ($_config['faucet']) { ?>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle arrow-none <?php if (APP_NAME == "Faucet") { ?>active<?php } ?>" href="/apps/faucet" id="topnav-dashboard" role="button">
+                                        <i class="fas fa-faucet me-2"></i><span data-key="t-dashboards">Faucet</span>
+                                    </a>
+                                </li>
+                            <?php } ?>
                         </ul>
                         <ul class="navbar-nav d-flex">
 	                        <?php if($_config['admin']) { ?>

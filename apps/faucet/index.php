@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__)."/apps.inc.php";
+require_once ROOT. '/apps/explorer/include/functions.php';
 define("PAGE", true);
 define("APP_NAME", "Faucet");
 session_start();
@@ -23,6 +24,19 @@ if(isset($_POST['action'])) {
 	    exit;
     }
 
+    $txs = Account::getMempoolTransactions($address);
+    if(count($txs)>0) {
+	    $_SESSION['msg']=[['icon'=>'error', 'text'=>'Address was already used']];
+	    header("location: /apps/faucet/index.php");
+	    exit;
+    }
+
+    if(Account::exists($address)) {
+	    $_SESSION['msg']=[['icon'=>'error', 'text'=>'Address was already used']];
+	    header("location: /apps/faucet/index.php");
+	    exit;
+    }
+
     $accountPublicKey = Account::publicKey($address);
 
     if(!empty($accountPublicKey)) {
@@ -38,7 +52,7 @@ if(isset($_POST['action'])) {
 	$info = $tx->getSignatureBase([
 		'val' => $val,
 		'fee' => $fee,
-		'dst' => $address,
+		'dst' => $address,//Lhh3Swby5jVw9VxSsUW7eZS1NqHEN3vQRN
 		'message' => $msg,
 		'type' => TX_TYPE_SEND,
 		'public_key' => $_config['faucet_public_key'],
@@ -74,21 +88,41 @@ if(isset($_POST['action'])) {
 require_once __DIR__. '/../common/include/top.php';
 ?>
 
-Use this faucet to receive some amunt of COIN in order to start using it.
-
-Faucet address: <?php echo $faucetAddress ?>
-<br/>
-Faucet balance: <?php echo num($faucetBalance) ?>
-
-<div>
-	<form method="post">
-
-		Address:
-		<input type="text" id="address" name="address" value=""/>
-		<input type="hidden" name="action" value="faucet"/>
-		<button type="submit">Receive</button>
-
-	</form>
+<div class="row">
+    <div class="col-7">
+        <form method="post">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">PHPCoin Faucet</h4>
+                    <p class="card-title-desc">Use this faucet to receive some amount of PHP coin</p>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-1">
+                        <label class="form-label" for="address">Address</label>
+                        <input type="text" id="address" name="address" class="form-control" value=""/>
+                        <input type="hidden" name="action" value="faucet"/>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top text-muted">
+                    <button type="submit" class="btn btn-success">Receive</button>
+                </div>
+            </div>
+        </div>
+    </form>
+    <div class="col-5">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title-desc mb-2">Faucet address</h4>
+                <p class="h4"><?php echo explorer_address_link($faucetAddress) ?></p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title-desc mb-2">Faucet balance</h4>
+                <p class="h4"><?php echo num($faucetBalance) ?></p>
+            </div>
+        </div>
+    </div>
 </div>
 
 

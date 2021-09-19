@@ -90,7 +90,7 @@ class Miner {
 				_log("Time=now=$now nodeTime=$nodeTime offset=$offset elapsed=$elapsed",4);
 				$argon = null;
 				$nonce = Block::calculateNonce($this->address, $block_date, $elapsed, $argon);
-				$hit = $block->calculateHit($nonce, $this->address, $height, $difficulty, $new_block_date, $elapsed);
+				$hit = $block->calculateHit($nonce, $this->address, $height, $difficulty);
 				$target = $block->calculateTarget($difficulty, $elapsed);
 				$blockFound = ($hit > 0 && $target>=0 &&  $hit > $target);
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target blockFound=$blockFound", 3);

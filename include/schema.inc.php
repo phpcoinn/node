@@ -166,6 +166,10 @@ if ($dbversion == 2) {
 	$db->run("alter table peers add blacklist_reason varchar(100)");
 	$dbversion = 3;
 }
+if ($dbversion == 3) {
+	$db->run("alter table blocks add miner varchar(128) null;");
+	$dbversion = 4;
+}
 
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {

@@ -25,17 +25,16 @@ $height = 1;
 $generator = Account::getAddress($public_key);
 $data = [];
 
-$reward_tx = $txn->getRewardTransaction($generator, $block_date, $public_key, $private_key, GENESIS_REWARD);
+$reward_tx = $txn->getRewardTransaction($generator, $block_date, $public_key, $private_key, num(GENESIS_REWARD));
 $data[$reward_tx['id']]=$reward_tx;
 ksort($data);
 
 $nonce = Block::calculateNonce($generator, $block_date, $elapsed, $argon);
-$signature = $block->sign($generator, $height, $block_date, $nonce, $data, $private_key, $difficulty, $argon, "");
+$signature = $block->sign($generator, $generator, $height, $block_date, $nonce, $data, $private_key, $difficulty, $argon, "");
 
 $genesisData = [
 	'signature' => $signature,
 	'public_key' => $public_key,
-	'reward_signature'=>$signature,
 	'argon'=>$argon,
 	'difficulty'=>$difficulty,
 	'nonce'=>$nonce,

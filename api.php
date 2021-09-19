@@ -152,34 +152,44 @@ if ($q == "getAddress") {
     	api_err("Invalid address");
 	}
 } elseif ($q == "getPendingBalance") {
-    /**
-     * @api {get} /api.php?q=getPendingBalance  05. getPendingBalance
-     * @apiName getPendingBalance
-     * @apiGroup API
-     * @apiDescription Returns the pending balance, which includes pending transactions, of a specific address or public key.
-     *
-     * @apiParam {string} [public_key] Public key
-     * @apiParam {string} [address] Address
-     *
-     * @apiSuccess {string} data The PHP balance
-     */
+	/**
+	 * @api {get} /api.php?q=getPendingBalance  05. getPendingBalance
+	 * @apiName getPendingBalance
+	 * @apiGroup API
+	 * @apiDescription Returns the pending balance, which includes pending transactions, of a specific address or public key.
+	 *
+	 * @apiParam {string} [public_key] Public key
+	 * @apiParam {string} [address] Address
+	 *
+	 * @apiSuccess {string} data The PHP balance
+	 */
 
-    $address = $data['address'];
-    $public_key = san($data['public_key'] ?? '');
-    if (!empty($public_key) && strlen($public_key) < 32) {
-        api_err("Invalid public key");
-    }
-    if (!empty($public_key)) {
-	    $address = Account::getAddress($public_key);
-    }
-    if (empty($address)) {
-        api_err("Invalid address");
-    }
+	$address = $data['address'];
+	$public_key = san($data['public_key'] ?? '');
+	if (!empty($public_key) && strlen($public_key) < 32) {
+		api_err("Invalid public key");
+	}
+	if (!empty($public_key)) {
+		$address = Account::getAddress($public_key);
+	}
+	if (empty($address)) {
+		api_err("Invalid address");
+	}
 	$address = san($address);
-    if(!Account::valid($address)) {
-	    api_err("Invalid address");
-    }
-    api_echo(Account::pendingBalance($address));
+	if (!Account::valid($address)) {
+		api_err("Invalid address");
+	}
+	api_echo(Account::pendingBalance($address));
+} elseif ($q=="getMempoolBalance") {
+	$address = $data['address'];
+	if (empty($address)) {
+		api_err("Invalid address");
+	}
+	$address = san($address);
+	if (!Account::valid($address)) {
+		api_err("Invalid address");
+	}
+	api_echo(Account::mempoolBalance($address));
 } elseif ($q == "getTransactions") {
     /**
      * @api {get} /api.php?q=getTransactions  06. getTransactions
@@ -335,7 +345,7 @@ if ($q == "getAddress") {
      * @apiSuccess {string} argon Mining argon hash
      */
     $height = san($data['height']);
-    $ret = $block->get($height);
+	$ret = $block->export("", $height);
     if ($ret == false) {
         api_err("Invalid block");
     } else {
@@ -635,6 +645,8 @@ if ($q == "getAddress") {
     $masternodes = $db->single("SELECT COUNT(1) FROM masternode");
     $mempool = $db->single("SELECT COUNT(1) FROM mempool");
     $peers = Peer::getCount();
+    $block = new Block();
+    $current = $block->current();
     api_echo([
         'hostname'     => $hostname,
         'version'      => VERSION,
@@ -643,36 +655,40 @@ if ($q == "getAddress") {
         'transactions' => $tr,
         'mempool'      => $mempool,
         'masternodes'  => $masternodes,
-        'peers'        => $peers
+        'peers'        => $peers,
+	    'height'       => $current['height'],
+	    'block'       => $current['id'],
+	    'time'       => time(),
     ]);
 } elseif ($q === 'checkAddress') {
-    /**
-     * @api            {get} /api.php?q=checkAddress  22. checkAddress
-     * @apiName        checkAddress
-     * @apiGroup       API
-     * @apiDescription Checks the validity of an address.
-     *
-     * @apiParam {string} address Address
-     * @apiParam {string} [public_key] Public key
-     *
-     * @apiSuccess {boolean} data True if the address is valid, false otherwise.
-     */
+	/**
+	 * @api            {get} /api.php?q=checkAddress  22. checkAddress
+	 * @apiName        checkAddress
+	 * @apiGroup       API
+	 * @apiDescription Checks the validity of an address.
+	 *
+	 * @apiParam {string} address Address
+	 * @apiParam {string} [public_key] Public key
+	 *
+	 * @apiSuccess {boolean} data True if the address is valid, false otherwise.
+	 */
 
-    $address=$data['address'];
-    $public_key=$data['public_key'];
-    $acc = new Account();
-    if (!Account::valid($address)) {
-        api_err(false);
-    }
+	$address = $data['address'];
+	$public_key = $data['public_key'];
+	$acc = new Account();
+	if (!Account::valid($address)) {
+		api_err(false);
+	}
 
-    if (!empty($public_key)) {
-        if(Account::getAddress($public_key)!=$address){
-            api_err(false);
-        }
-    }
-    api_echo(true);
-
-
+	if (!empty($public_key)) {
+		if (Account::getAddress($public_key) != $address) {
+			api_err(false);
+		}
+	}
+	api_echo(true);
+} else if ($q === 'getPeers') {
+	$peers = Peer::getAll();
+	api_echo($peers);
 } else {
     api_err("Invalid request");
 }

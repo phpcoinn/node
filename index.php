@@ -115,9 +115,8 @@ global $_config;
                             </span>
                 </a>
             </div>
-            <div class="row">
-                <div class="col-sm-2"></div>
-                <div class="col-sm-2 col-6 my-3">
+            <div class="row justify-content-center">
+                <div class="col-sm-6 col-md-2 col-6 my-3">
                     <div class="d-grid gap-2">
                         <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/explorer">
                             <h5 class="mb-3 text-white">Explorer</h5>
@@ -125,7 +124,7 @@ global $_config;
                         </a>
                     </div>
                 </div>
-                <div class="col-sm-2 col-6 my-3">
+                <div class="col-sm-6 col-md-2 col-6 my-3">
                     <div class="d-grid gap-2">
                         <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/wallet">
                             <h5 class="mb-3 text-white">Wallet</h5>
@@ -133,15 +132,27 @@ global $_config;
                         </a>
                     </div>
                 </div>
-                <div class="col-sm-2 col-6 my-3">
-                    <div class="d-grid gap-2">
-                        <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/miner">
-                            <h5 class="mb-3 text-white">Miner</h5>
-                            <i class="fas fa-hammer fa-2x"></i>
-                        </a>
+                <?php if($_config['faucet']) { ?>
+                    <div class="col-sm-6 col-md-2 col-6 my-3">
+                        <div class="d-grid gap-2">
+                            <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/faucet">
+                                <h5 class="mb-3 text-white">Faucet</h5>
+                                <i class="fas fa-faucet fa-2x"></i>
+                            </a>
+                        </div>
                     </div>
-                </div>
-                <div class="col-sm-2 col-6 my-3">
+                <?php } ?>
+                <?php if (Nodeutil::miningEnabled()) { ?>
+                    <div class="col-sm-6 col-md-2 col-6 my-3">
+                        <div class="d-grid gap-2">
+                            <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/miner">
+                                <h5 class="mb-3 text-white">Miner</h5>
+                                <i class="fas fa-hammer fa-2x"></i>
+                            </a>
+                        </div>
+                    </div>
+                <?php } ?>
+                <div class="col-sm-6 col-md-2 col-6 my-3">
                     <div class="d-grid gap-2" data-bs-toggle="tooltip" title="Coming soon...">
                         <button class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" disabled="disabled">
                             <h5 class="mb-3 text-white">Apps</h5>
@@ -149,7 +160,6 @@ global $_config;
                         </button>
                     </div>
                 </div>
-                <div class="col-sm-2"></div>
             </div>
         </div>
 

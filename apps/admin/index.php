@@ -1,5 +1,7 @@
 <?php
 require_once dirname(__DIR__)."/apps.inc.php";
+require_once ROOT. '/apps/explorer/include/functions.php';
+
 define("PAGE", true);
 define("APP_NAME", "Admin");
 global $db, $_config;
@@ -159,16 +161,16 @@ if(isset($_GET['action'])) {
     if($action == "miner_enable") {
 	    $db->setConfig("miner", true);
 	    @unlink(ROOT. "/tmp/miner-lock");
-	    header("location: ".APP_URL."/?view=config");
+	    header("location: ".APP_URL."/?view=server");
     }
 	if($action == "miner_disable") {
 		$db->setConfig("miner", false);
 		@unlink(ROOT. "/tmp/miner-lock");
-		header("location: ".APP_URL."/?view=config");
+		header("location: ".APP_URL."/?view=server");
 	}
 	if($action == "miner_restart") {
 		@unlink(ROOT. "/tmp/miner-lock");
-		header("location: ".APP_URL."/?view=config");
+		header("location: ".APP_URL."/?view=server");
 	}
 	if($action == "delete_peers") {
 	    Peer::deleteAll();
@@ -188,7 +190,7 @@ if(isset($_GET['view'])) {
     if($view == "server") {
         $serverData = [];
 	    $serverData['hostname']=gethostname();
-	    $minerStatFile = Miner::getStatFile();
+	    $minerStatFile = NodeMiner::getStatFile();
 	    if(file_exists($minerStatFile)) {
 	        $minerStat = file_get_contents($minerStatFile);
 		    $minerStat = json_decode($minerStat, true);
@@ -403,6 +405,14 @@ require_once __DIR__. '/../common/include/top.php';
             <br/>
             Lock: <?php echo $miner_lock ? 'Yes' : 'No' ?>
             <br/>
+            <a href="<?php echo APP_URL ?>/?action=miner_enable" onclick="if(!confirm('Enable miner?')) return false">Enable</a>
+            |
+            <a href="<?php echo APP_URL ?>/?action=miner_disable" onclick="if(!confirm('Disable miner?')) return false">Disable</a>
+            |
+            <a href="<?php echo APP_URL ?>/?action=miner_restart" onclick="if(!confirm('Restart miner?')) return false">Restart</a>
+            <br/>
+            Miner address: <?php echo explorer_address_link(Account::getAddress($_config['miner_public_key'])) ?>
+            <br/>
             <?php if ($minerStat) { ?>
             Miner stat:<br/>
                 Started: <?php echo display_date($minerStat['started']) ?><br/>
@@ -541,16 +551,6 @@ require_once __DIR__. '/../common/include/top.php';
                 </tr>
                 <?php } ?>
             </table>
-
-            Miner
-            <span class="badge bg-<?php echo $_config['miner'] ? 'success' : 'danger' ?>">
-                <?php echo $_config['miner'] ? 'On' : 'Off' ?>
-            </span>
-            <a href="<?php echo APP_URL ?>/?action=miner_enable" onclick="if(!confirm('Enable miner?')) return false">Enable</a>
-            |
-            <a href="<?php echo APP_URL ?>/?action=miner_disable" onclick="if(!confirm('Disable miner?')) return false">Disable</a>
-            |
-            <a href="<?php echo APP_URL ?>/?action=miner_restart" onclick="if(!confirm('Restart miner?')) return false">Restart</a>
             <br/>
             Logging
                 <a href="<?php echo APP_URL ?>/?action=logging&value=<?php echo $_config['enable_logging'] ? 0 : 1 ?>">

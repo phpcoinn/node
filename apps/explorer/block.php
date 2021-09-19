@@ -2,6 +2,10 @@
 require_once dirname(__DIR__)."/apps.inc.php";
 define("PAGE", true);
 define("APP_NAME", "Explorer");
+
+$blc = new Block();
+$tx=new Transaction();
+
 $blockCount = Block::getHeight();
 $height = $blockCount;
 if(isset($_GET['height'])) {
@@ -22,6 +26,27 @@ if(isset($_GET['height'])) {
 		exit;
 	}
 	$height = $block['height'];
+}
+
+
+
+if(isset($_GET['action'])) {
+	$action = $_GET['action'];
+	if($action == "check") {
+		$id = $_GET['id'];
+		if(empty($id)) {
+			header("location: /apps/explorer");
+			exit;
+		}
+		$block = $blc->export($id);
+		$res = Block::verifyBlock($block);
+		if (!$res) {
+			die("Block not valid");
+		}
+
+		die("Block is valid");
+
+	}
 }
 
 
@@ -91,6 +116,14 @@ require_once __DIR__. '/../common/include/top.php';
                 </td>
             </tr>
             <tr>
+                <td>Miner</td>
+                <td>
+                    <a href="/apps/explorer/address.php?address=<?php echo $block['miner'] ?>">
+                        <?php echo $block['miner'] ?>
+                    </a>
+                </td>
+            </tr>
+            <tr>
                 <td>Date</td>
                 <td>
                     <?php echo date("Y-m-d H:i:s",$block['date']) . " (" . $block['date'].")" ?>
@@ -134,6 +167,7 @@ require_once __DIR__. '/../common/include/top.php';
         </tbody>
     </table>
 </div>
+<a href="<?php echo $_SERVER['PHP_SELF'] ?>?id=<?php echo $block['id'] ?>&action=check" class="btn btn-info">Check</a>
     <h4>Transactions</h4>
 <div class="table-responsive">
     <table class="table table-striped table-hover table-sm">

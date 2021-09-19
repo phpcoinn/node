@@ -61,6 +61,14 @@ class Account
         return num($rez);
     }
 
+	public static function mempoolBalance($id)
+	{
+		global $db;
+		$mem = $db->single("SELECT SUM(if(src=:id1, -(val+fee), (val+fee))) FROM mempool WHERE src=:id2 or dst=:id3", [":id1" => $id,":id2" => $id,":id3" => $id]);
+		return num($mem);
+	}
+
+
     static function getTransactions($id, $dm)
     {
         global $db;
@@ -101,21 +109,27 @@ class Account
 			        "type" => $x['type'],
 			        "date" => $x['date'],
 			        "public_key" => $x['public_key'],
+			        "src" => Account::getAddress($x['public_key']),
 		        ];
 		        $trans['confirmations'] = $current['height'] - $x['height'];
 
 		        // version 0 -> reward transaction, version 1 -> normal transaction
+		        $sign="";
 		        if ($x['type'] == TX_TYPE_REWARD) {
 			        $trans['type'] = "mining";
+			        $sign="+";
 		        } elseif ($x['type'] == TX_TYPE_SEND) {
 			        if ($x['dst'] == $id) {
 				        $trans['type'] = "credit";
+				        $sign="+";
 			        } else {
 				        $trans['type'] = "debit";
+				        $sign="-";
 			        }
 		        } else {
 			        $trans['type'] = "other";
 		        }
+		        $trans['sign'] = $sign;
 		        ksort($trans);
 		        $transactions[] = $trans;
 	        }
@@ -157,6 +171,15 @@ class Account
             $trans['type'] = "mempool";
             // they are unconfirmed, so they will have -1 confirmations.
             $trans['confirmations'] = -1;
+	        $sign="";
+	        if ($x['type'] == TX_TYPE_SEND) {
+		        if ($x['src'] == $id) {
+			        $sign = "-";
+		        } else {
+			        $sign = "+";
+		        }
+	        }
+	        $trans['sign']=$sign;
             ksort($trans);
             $transactions[] = $trans;
         }
@@ -168,6 +191,12 @@ class Account
         $res = $db->single("SELECT public_key FROM accounts WHERE id=:id", [":id" => $id]);
         return $res;
     }
+
+	static function exists($id) {
+		global $db;
+		$res = $db->single("SELECT 1 FROM accounts WHERE id=:id", [":id" => $id]);
+		return $res == 1;
+	}
 
     static function getCount() {
 	    global $db;
@@ -276,6 +305,9 @@ class Account
 		$addressHex=bin2hex($addressBin);
 		$addressChecksum=substr($addressHex, -8);
 		$baseAddress = substr($addressHex, 0, -8);
+		if(substr($baseAddress, 0, 2) != NETWORK_PREFIX) {
+			return false;
+		}
 		$checksumCalc1=hash('sha256', $baseAddress);
 		$checksumCalc2=hash('sha256', $checksumCalc1);
 		$checksumCalc3=hash('sha256', $checksumCalc2);

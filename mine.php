@@ -67,6 +67,7 @@ if ($q == "info") {
 	$height = san($_POST['height']);
 	$id = san($_POST['signature']);
 	$argon = $_POST['argon'];
+	$miner = $_POST['miner'];
 
 	_log("Submitted new block from miner $ip height=$height",4);
 
@@ -86,7 +87,7 @@ if ($q == "info") {
 		api_err("rejected - date");
 	}
 
-    $result = $block->mine($public_key, $nonce, $argon, $difficulty, $id, $height, $date);
+    $result = $block->mine($public_key, $miner, $nonce, $argon, $difficulty, $id, $height, $date);
 
     if ($result) {
 
@@ -103,19 +104,16 @@ if ($q == "info") {
         // sign the block
         $signature = san($_POST['signature']);
 
-        // reward transaction and signature
-        $reward_signature = san($_POST['reward_signature']);
-
         // add the block to the blockchain
         $res = $block->add(
             $height,
             $public_key,
+            $miner,
             $nonce,
             $data,
             $date,
             $signature,
             $difficulty,
-            $reward_signature,
             $argon,
 	        $prev_block['id']
         );
@@ -136,22 +134,33 @@ if ($q == "info") {
     }
     api_err("rejected");
 } elseif ($q == "submitHash") {
-
+	//TODO: not working ok - must set generator to node who mined !!!
 	if (empty($_config['mining'])) {
 		api_err("mining-disabled");
+	}
+
+	$nodeScore = $_config['node_score'];
+	if($nodeScore != 100) {
+		api_err("node-not-ok");
 	}
 
 	if (empty($_config['node_public_key']) && empty($_config['node_private_key'])) {
 		api_err("mining-not-configured");
 	}
 
+	$generator = Account::getAddress($_config['node_public_key']);
+//	$generator_public_key = Account::publicKey($generator);
+//	if (empty($generator_public_key)) {
+//		api_err("rejected - no public key for generator");
+//	}
+
 	if ($_config['sanity_sync'] == 1) {
 		api_err("sanity-sync");
 	}
 
-	$peers = Peer::getCount(true);
+	$peers = Peer::getCount();
 	_log("Getting peers count = " . $peers);
-	if ($peers === 0 && false) {
+	if ($peers < 3) {
 		api_err("no-live-peers");
 	}
 
@@ -196,28 +205,27 @@ if ($q == "info") {
 	$reward_tx = $tx->getRewardTransaction($address, $new_block_date, $_config['node_public_key'], $_config['node_private_key'], $minerReward);
 	$data[$reward_tx['id']] = $reward_tx;
 
-	$generator = Account::getAddress($_config['node_public_key']);
 	$generatorReward = num($rewardInfo['generator']);
 	$reward_tx = $tx->getRewardTransaction($generator, $new_block_date, $_config['node_public_key'], $_config['node_private_key'], $generatorReward);
 	$data[$reward_tx['id']] = $reward_tx;
 
 	ksort($data);
 	$prev_block_id = $lastBlock['id'];
-	$signature = $block->sign($generator, $height, $new_block_date, $nonce, $data, $_config['node_private_key'], $difficulty, $argon, $prev_block_id);
+	$signature = $block->sign($generator, $address, $height, $new_block_date, $nonce, $data, $_config['node_private_key'], $difficulty, $argon, $prev_block_id);
 
-	$result = $block->mine($public_key, $nonce, $argon, $difficulty, $signature, $height, $date);
+	$result = $block->mine($public_key, $address, $nonce, $argon, $difficulty, $signature, $height, $date);
 
 	if ($result) {
 
 		$res = $block->add(
 			$height,
 			$_config['node_public_key'],
+			$address,
 			$nonce,
 			$data,
 			$date,
 			$signature,
 			$difficulty,
-			null,
 			$argon,
 			$prev_block['id']
 		);

@@ -1,5 +1,9 @@
 <?php
 require_once dirname(__DIR__)."/apps.inc.php";
+if(!Nodeutil::miningEnabled()) {
+    header("location: /apps/explorer");
+    exit;
+}
 define("PAGE", true);
 define("APP_NAME", "Miner");
 ?>

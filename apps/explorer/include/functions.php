@@ -1,7 +1,7 @@
 <?php
 
 function explorer_address_link($address) {
-	return '<a href="/apps/explorer/address.php?address='.$address.'">'.$address.'</a>';
+	return '<a target="_blank" href="/apps/explorer/address.php?address='.$address.'">'.$address.'</a>';
 }
 function explorer_address_pubkey($pubkey, $show = 12) {
 	if(!empty($pubkey)) {

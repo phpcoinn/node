@@ -509,8 +509,8 @@ class Transaction
 		    "public_key" => $public_key,
 		    "src"=>Account::getAddress($public_key)
 	    ];
-	    $reward_signature = $this->sign($transaction, $private_key);
-	    $transaction['signature'] = $reward_signature;
+	    $signature = $this->sign($transaction, $private_key);
+	    $transaction['signature'] = $signature;
 	    $transaction['id'] = $this->hash($transaction);
 	    ksort($transaction);
 	    return $transaction;

@@ -19,6 +19,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Miner' => __DIR__ . '/../..' . '/include/class/miner.class.php',
         'NodeMiner' => __DIR__ . '/../..' . '/include/class/nodeminer.class.php',
+        'NodeSync' => __DIR__ . '/../..' . '/include/class/NodeSync.php',
         'Nodeutil' => __DIR__ . '/../..' . '/include/class/Nodeutil.php',
         'PHPCoin\\Blacklist' => __DIR__ . '/../..' . '/include/class/Blacklist.php',
         'Peer' => __DIR__ . '/../..' . '/include/class/Peer.php',

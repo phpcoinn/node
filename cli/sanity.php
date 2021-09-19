@@ -195,12 +195,12 @@ if ($arg == "microsanity" && !empty($arg2)) {
         $res = $block->add(
             $b['height'],
             $b['public_key'],
+            $b['miner'],
             $b['nonce'],
             $b['data'],
             $b['date'],
             $b['signature'],
             $b['difficulty'],
-            $b['reward_signature'],
             $b['argon'],
 	        $prev['id']
         );
@@ -302,6 +302,7 @@ if ($total_peers == 0) {
         // something went wrong, could not add any peers -> exit
         @unlink(SANITY_LOCK_PATH);
         _log("There are no active peers");
+	    $db->setConfig('node_score', 0);
         die("There are no active peers!\n");
     }
 }
@@ -319,7 +320,7 @@ foreach ($r as $x) {
     if ($_config['get_more_peers']==true && $_config['passive_peering']!=true) {
         $data = peer_post($url."getPeers", [], 30, true);
         if ($data === false) {
-            _log("Peer $x[hostname] unresponsive");
+            _log("Peer $x[hostname] unresponsive data=".json_encode($data));
             // if the peer is unresponsive, mark it as failed and blacklist it for a while
 	        _log("blacklist peer $url because is unresponsive");
             Peer::blacklist($x['id'], "Unresponsive");
@@ -388,7 +389,7 @@ foreach ($r as $x) {
     $data['height'] = san($data['height']);
 
     if ($current['height'] > 1 && $data['height'] < $current['height'] - 500) {
-	    _log("blacklist peer $url because is 500 blocks behind");
+	    _log("blacklist peer $url because is 500 blocks behind, our height=".$current['height']." peer_height=".$data['height']);
         Peer::blacklistStuck($x['id'],"500 blocks behind");
         continue;
     } else {
@@ -482,139 +483,18 @@ if($largest_height-$most_common_height>100 && $largest_size==1){
     }
 }
 
-$db->run("UPDATE config SET val=1 WHERE cfg='sanity_sync'");
 $peers = $block_peers[$largest_height_block];
 if(is_array($peers)) {
 	$peers_count = count($peers);
 	shuffle($peers);
 }
 
-$syncing = true;
-$loop_cnt = 0;
-while($syncing) {
-	$loop_cnt++;
-	if($loop_cnt > $largest_height) {
-		break;
-	}
-	$failed_peer = 0;
-	$failed_block = 0;
-	$ok_block = 0;
-	$height = $current['height'];
-	foreach ($peers as $host) {
-		if(!isset($peerBlocks[$host][$height])) {
-			$url = $host."/peer.php?q=";
-			_log("Reading blocks from $height from peer $host", 0);
-			$peer_blocks = peer_post($url."getBlocks", ["height" => $height], 5);
-			if ($peer_blocks === false) {
-				_log("Could not get block from $host - " . $height,0);
-				$failed_peer++;
-				continue;
-			}
-			if(is_array($peer_blocks)) {
-				foreach($peer_blocks as $peer_block) {
-					$peerBlocks[$host][$peer_block['height']]=$peer_block;
-				}
-			}
-		}
-
-		if(isset($peerBlocks[$host][$height])) {
-			$last_block = $peerBlocks[$host][$height];
-			_log("last_block=".$last_block['id']. " current_id=".$current['id']);
-			if ($last_block['id'] != $current['id']) {
-				$failed_block++;
-				_log("We have wrong block $height failed_block=$failed_block",0);
-			} else {
-				$ok_block++;
-				_log("We have ok block $height ok_block=$ok_block",0);
-			}
-		}
-
-	}
-
-	$db->setConfig('node_score', ($ok_block / ($peers_count - $failed_peer))*100);
-
-	if($failed_block > 0 && $failed_block > ($peers_count - $failed_peer) / 2 ) {
-		_log("Failed block on blockchain $failed_block - remove", 0);
-		$res=$block->pop();
-	} else if ($ok_block == ($peers_count - $failed_peer)) {
-		_log("last block $height is ok - get next", 0);
-		$failed_next_peer = 0;
-		$next_block_peers = [];
-		$height++;
-		foreach ($peers as $host) {
-			if(!isset($peerBlocks[$host][$height])) {
-				_log("Reading next blocks from $height from peer $host", 0);
-				$url = $host."/peer.php?q=";
-				$next_blocks = peer_post($url."getBlocks", ["height" => $height], 5);
-				if (!$next_blocks) {
-					_log("Could not get block from $host - " . $height);
-					$failed_next_peer++;
-					continue;
-				}
-				foreach($next_blocks as $next_block) {
-					$peerBlocks[$host][$next_block['height']]=$next_block;
-				}
-			}
-
-
-//			$next_blocks = peer_post($url."getBlocks", ["height" => $height], 5);
-			$next_block = $peerBlocks[$host][$height];
-			if (!$next_block) {
-				_log("Could not get block from $host - " . $height);
-				$failed_next_peer++;
-				continue;
-			}
-			$next_block_peers[$next_block['id']][$host]=$next_block;
-		}
-
-		if(count(array_keys($next_block_peers))==1) {
-			$id = array_keys($next_block_peers)[0];
-			if(count(array_keys($next_block_peers[$id])) == $peers_count - $failed_next_peer) {
-				_log("All peers return same block - checking block $height", 0);
-				$host = array_keys($next_block_peers[$id])[0];
-				$next_block = $next_block_peers[$id][$host];
-				if (!$block->check($next_block)
-				) {
-					_log("Invalid block mined at height ".$height);
-					$syncing = false;
-					break;
-				} else {
-					$res = $block->add(
-						$next_block['height'],
-						$next_block['public_key'],
-						$next_block['nonce'],
-						$next_block['data'],
-						$next_block['date'],
-						$next_block['signature'],
-						$next_block['difficulty'],
-						$next_block['reward_signature'],
-						$next_block['argon'],
-						$next_block['prev_block_id']
-					);
-					if (!$res) {
-						_log("Block add: could not add block at height $height", 3);
-						$syncing = false;
-						break;
-					}
-				}
-			}
-		}
-	}
-
-	$current = $block->current();
-	$syncing = (($current['height'] < $largest_height && $largest_height > 1)
-		|| ($current['height'] == $largest_height && $current['id']!=$most_common));
-	_log("check syncing syncing=$syncing current_height=".$current['height']." largest_height=$largest_height current_id=".
-		$current['id']." most_common=$most_common");
-}
-
-
-
-
-$db->run("UPDATE config SET val=0 WHERE cfg='sanity_sync'", [":time" => $t]);
-if($syncing) {
-	_log("Blockchain SYNCED",0);
-}
+//if(count($peers)>=3) {
+	$nodeSync = new NodeSync($peers);
+	$nodeSync->start($largest_height, $most_common);
+//} else {
+//	_log("Can not sync - not enough number of peers");
+//}
 
 $block_parse_failed=false;
 
@@ -708,6 +588,7 @@ if ($current['height'] < $largest_height && $largest_height > 1 && false) {
                 	_log("checking block $i",3);
                     if (!$block->mine(
                         $cblock[$i]['public_key'],
+                        $cblock[$i]['miner'],
                         $cblock[$i]['nonce'],
                         $cblock[$i]['argon'],
                         $cblock[$i]['difficulty'],
@@ -765,17 +646,19 @@ if ($current['height'] < $largest_height && $largest_height > 1 && false) {
                     $failed_syncs++;
                     break;
                 }
+	            $prev_block = Block::getAtHeight($b['height']-1);
+                $prev_block_id = $prev_block['id'];
                 $res = $block->add(
                     $b['height'],
                     $b['public_key'],
+                    $b['miner'],
                     $b['nonce'],
                     $b['data'],
                     $b['date'],
                     $b['signature'],
                     $b['difficulty'],
-                    $b['reward_signature'],
                     $b['argon'],
-                    $b['prev_block_id']
+	                $prev_block_id
                 );
                 if (!$res) {
                     $block_parse_failed=true;
@@ -856,7 +739,7 @@ $db->run("DELETE FROM `mempool` WHERE `date` < ".DB::unixTimeStamp()."-(3600*24*
 //rebroadcasting local transactions
 if ($_config['sanity_rebroadcast_locals'] == true && $_config['disable_repropagation'] == false) {
     $r = $db->run(
-        "SELECT id FROM mempool WHERE height<:current and peer='local' order by `height` asc LIMIT 20",
+        "SELECT id FROM mempool WHERE height<=:current and peer='local' order by `height` asc LIMIT 20",
         [":current" => $current['height']]
     );
     _log("Rebroadcasting local transactions - ".count($r), 3);
@@ -941,6 +824,7 @@ if ($_config['sanity_recheck_blocks'] > 0) {
 
         if (!$block->mine(
             $key,
+            $data['miner'],
             $data['nonce'],
             $data['argon'],
             $data['difficulty'],

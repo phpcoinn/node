@@ -39,7 +39,8 @@ if ($_POST['coin'] != COIN) {
     api_err("Invalid coin ".print_r($_REQUEST, 1));
 }
 $ip = Nodeutil::getRemoteAddr();
-_log("Peer request from IP = $ip",4);
+$requestId = $_POST['requestId'];
+_log("Peer request from IP = $ip requestId=$requestId",4);
 
 $ip = Peer::validateIp($ip);
 _log("Filtered IP = $ip",4);
@@ -257,12 +258,12 @@ if ($q == "peer") {
     $res = $block->add(
         $b['height'],
         $b['public_key'],
+        $b['miner'],
         $b['nonce'],
         $b['data'],
         $b['date'],
         $b['signature'],
         $b['difficulty'],
-        $b['reward_signature'],
         $b['argon'],
 	    $current['id']
     );
@@ -271,6 +272,15 @@ if ($q == "peer") {
         _log('['.$ip."] invalid block data - $data[height]",1);
         api_err("invalid-block-data");
     }
+
+	$bl = new Block();
+    $last_block = $bl->export("", $data['height']);
+    $res = Block::verifyBlock($last_block);
+
+	if (!$res) {
+		_log("Can not verify added block",1);
+		api_err("invalid-block-data");
+	}
 
     _log('['.$ip."] block ok, repropagating - $data[height]",1);
 

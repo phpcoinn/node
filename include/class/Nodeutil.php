@@ -195,18 +195,12 @@ class Nodeutil
 	}
 
 	static function getRemoteAddr() {
-		_log("call getRemoteAddr",4);
 		$ip = san_ip($_SERVER['REMOTE_ADDR']);
 		$ip = Peer::validateIp($ip);
-		_log("call getRemoteAddr ip1=$ip",4);
 		if(!$ip) {
 			$ip = san_ip($_SERVER['HTTP_X_FORWARDED_FOR']);
 			$ip = Peer::validateIp($ip);
-			_log("call getRemoteAddr ip2=$ip",4);
-		} else {
-			_log("ip1 is ok",4);
 		}
-		_log("return getRemoteAddr ip=$ip",4);
 		return $ip;
 	}
 
@@ -255,4 +249,50 @@ class Nodeutil
 			}
 		}
 	}
+
+	static function sync($current, $largest_height, $peers, $most_common) {
+
+
+
+	}
+
+	static function getConfig() {
+		global $db;
+		$config_file = ROOT.'/config/config.inc.php';
+		require_once $config_file;
+		$query = $db->run("SELECT cfg, val FROM config");
+		if(is_array($query)) {
+			foreach ($query as $res) {
+				$_config[$res['cfg']] = trim($res['val']);
+			}
+		}
+		return $_config;
+	}
+
+	static function miningEnabled() {
+		global $_config;
+		if(isset($_config['mining']) && $_config['mining']
+			&& !empty($_config['node_public_key']) && !empty($_config['node_private_key'])) {
+			return true;
+		} else {
+			return false;
+		}
+
+	}
+
+	static function verifyBlocks() {
+		$height = Block::getHeight();
+
+		for($i=1;$i<=$height;$i++) {
+			$blc = new Block();
+			$tx = new Transaction();
+			$block = $blc->export("",$i);
+			$res = Block::verifyBlock($block);
+			echo "Verify block $i / $height res=$res".PHP_EOL;
+			if(!$res) {
+				return;
+			}
+		}
+	}
+
 }

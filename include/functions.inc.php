@@ -276,28 +276,30 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
 {
     global $_config;
     if (!isValidURL($url)) {
+    	_log("Not valid peer post url $url");
         return false;
     }
     $postdata = http_build_query(
         [
             'data' => json_encode($data),
             "coin" => COIN,
+	        "requestId" => uniqid()
         ]
     );
 
-    $opts = [
-        'http' =>
-            [
-                'timeout' => $timeout,
-                'method'  => 'POST',
-                'header'  => 'Content-type: application/x-www-form-urlencoded',
-                'content' => $postdata,
-            ],
-	    "ssl"=>array(
-		    "verify_peer"=>!DEVELOPMENT,
-		    "verify_peer_name"=>!DEVELOPMENT,
-	    ),
-    ];
+//    $opts = [
+//        'http' =>
+//            [
+//                'timeout' => $timeout,
+//                'method'  => 'post',
+//                'header'  => 'content-type: application/x-www-form-urlencoded',
+//                'content' => $postdata,
+//            ],
+//	    "ssl"=>array(
+//		    "verify_peer"=>!development,
+//		    "verify_peer_name"=>!development,
+//	    ),
+//    ];
 
 //    $context = stream_context_create($opts);
 
@@ -312,16 +314,29 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 	curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, !DEVELOPMENT);
 	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
 	$result = curl_exec($ch);
+
+	$curl_error = curl_errno($ch);
+	if($curl_error) {
+		$error_msg = curl_error($ch);
+		_log("CURL error=".$curl_error." ".$error_msg);
+		//6 - Could not resolve host: miner1.testnet.phpcoin.net
+		//7 - Failed to connect to miner1.testnet.phpcoin.net port 80: Connection refused
+		//28 - Connection timed out after 5001 milliseconds
+		return false;
+	}
+
 	curl_close ($ch);
 
 
 //    $result = file_get_contents($url, false, $context);
-    _log("Peer response: ".$result, 4);
+//    _log("Peer response: ".$result, 4);
     $res = json_decode($result, true);
 
     // the function will return false if something goes wrong
     if ($res['status'] != "ok" || $res['coin'] != COIN) {
+    	_log("Peer response not ok res=".json_encode($res));
         return false;
     } else {
     	Peer::storePing($url);
@@ -334,8 +349,13 @@ function url_get($url) {
 	curl_setopt($ch, CURLOPT_URL,$url);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-	curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, !DEVELOPMENT);
-	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
+	if(DEVELOPMENT) {
+		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, 0);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, 0);
+	} else {
+		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, 2);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, 1);
+	}
 	$result = curl_exec($ch);
 	if($result === false) {
 		$err = curl_error($ch);
@@ -351,9 +371,15 @@ function url_post($url, $postdata) {
 	curl_setopt($ch, CURLOPT_POST, 1);
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata );
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-	curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, !DEVELOPMENT);
-	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
+	if(DEVELOPMENT) {
+		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, 0);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, 0);
+	} else {
+		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, 2);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, 1);
+	}
 	$result = curl_exec($ch);
 	if($result === false) {
 		$err = curl_error($ch);

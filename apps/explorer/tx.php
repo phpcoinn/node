@@ -18,7 +18,7 @@ if(isset($_GET['action'])) {
     if($action == "check") {
         $tx = Transaction::getById($id);
 	    $res = $txs->check($tx);
-	    if(!$res) {
+	    if($res) {
 	        die("Transaction valid");
         } else {
 	        die("Transaction not valid");

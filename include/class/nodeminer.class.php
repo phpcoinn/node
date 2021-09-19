@@ -30,7 +30,6 @@ class NodeMiner {
 	}
 
 	function start() {
-		global $_config;
 		$block = new Block();
 		$tx = new Transaction();
 		$this->miningStat = [
@@ -51,8 +50,22 @@ class NodeMiner {
 				return false;
 			}
 
+			$_config = Nodeutil::getConfig();
+
 			if (isset($_config['sanity_sync']) && $_config['sanity_sync'] == 1) {
 				_log("Sync in process - stop miner");
+				return false;
+			}
+
+			$peersCount = Peer::getCount();
+			if($peersCount < 3) {
+				_log("Not enough node peers");
+				return false;
+			}
+
+			$nodeScore = $_config['node_score'];
+			if($nodeScore != 100) {
+				_log("Node score not ok");
 				return false;
 			}
 
@@ -76,7 +89,7 @@ class NodeMiner {
 				_log("Time=now=$now elapsed=$elapsed",4);
 				$argon = null;
 				$nonce = Block::calculateNonce($generator, $block_date, $elapsed, $argon);
-				$hit = $block->calculateHit($nonce, $generator, $height, $difficulty, $new_block_date, $elapsed);
+				$hit = $block->calculateHit($nonce, $generator, $height, $difficulty);
 				$target = $block->calculateTarget($difficulty, $elapsed);
 				$blockFound = ($hit > 0 && $target>=0 &&  $hit > $target);
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target blockFound=$blockFound", 3);
@@ -84,8 +97,8 @@ class NodeMiner {
 				if($attempt % 10 == 0) {
 					$info = $this->getMiningInfo();
 					if($info!==false) {
-						_log("Checking new block from server ".$info['data']['block']. " with our block $prev_block_id", 4);
-						if($info['data']['block']!= $prev_block_id) {
+						_log("Checking new block from server ".$info['block']. " with our block $prev_block_id", 4);
+						if($info['block']!= $prev_block_id) {
 							_log("New block received", 3);
 							$this->miningStat['dropped']++;
 							break;
@@ -98,6 +111,13 @@ class NodeMiner {
 				continue;
 			}
 
+			$nodeScore = $_config['node_score'];
+			if($nodeScore != 100) {
+				_log("Node score not ok - mining dropped");
+				$this->miningStat['dropped']++;
+				break;
+			}
+
 			//add reward transaction
 			$rewardinfo = Block::reward($height);
 			$reward = $rewardinfo['miner'] + $rewardinfo['generator'];
@@ -106,27 +126,27 @@ class NodeMiner {
 			$data[$reward_tx['id']]=$reward_tx;
 			ksort($data);
 
-			$signature = $block->sign($generator, $height, $new_block_date, $nonce, $data, $this->private_key, $difficulty, $argon, $prev_block_id);
+			$signature = $block->sign($generator, $generator, $height, $new_block_date, $nonce, $data, $this->private_key, $difficulty, $argon, $prev_block_id);
 
 			$this->miningStat['submits']++;
 
 			$prev_block = $block->get($height-1);
 			$date = $prev_block['date']+$elapsed;
-			$result = $block->mine($this->public_key, $nonce, $argon, $difficulty, $signature, $height, $date);
+			$result = $block->mine($this->public_key, $generator, $nonce, $argon, $difficulty, $signature, $height, $date);
 
 
-
+			$miner = Account::getAddress($this->public_key);
 			if ($result) {
 
 				$res = $block->add(
 					$height,
 					$this->public_key,
+					$miner,
 					$nonce,
 					$data,
 					$date,
 					$signature,
 					$difficulty,
-					null,
 					$argon,
 					$prev_block['id']
 				);
@@ -162,12 +182,7 @@ class NodeMiner {
 	}
 
 	static function getStatFile() {
-		$network = getenv("NETOWRK");
-		if(!empty($network)) {
-			$file = ROOT . "/tmp/$network.miner_stat.json";
-		} else {
-			$file = ROOT . "/tmp/miner_stat.json";
-		}
+		$file = ROOT . "/tmp/miner_stat.json";
 		return $file;
 	}
 

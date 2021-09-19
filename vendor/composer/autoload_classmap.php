@@ -12,6 +12,7 @@ return array(
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
     'Miner' => $baseDir . '/include/class/miner.class.php',
     'NodeMiner' => $baseDir . '/include/class/nodeminer.class.php',
+    'NodeSync' => $baseDir . '/include/class/NodeSync.php',
     'Nodeutil' => $baseDir . '/include/class/Nodeutil.php',
     'PHPCoin\\Blacklist' => $baseDir . '/include/class/Blacklist.php',
     'Peer' => $baseDir . '/include/class/Peer.php',
