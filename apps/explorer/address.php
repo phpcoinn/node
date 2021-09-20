@@ -105,7 +105,7 @@ require_once __DIR__. '/../common/include/top.php';
             <th>Block</th>
             <th>Type</th>
             <th>Value</th>
-            <th>Fee</th>
+<!--            <th>Fee</th>-->
         </tr>
     </thead>
     <tbody>
@@ -113,13 +113,13 @@ require_once __DIR__. '/../common/include/top.php';
             <tr>
                 <td><a href="/apps/explorer/tx.php?id=<?php echo $transaction['id'] ?>"><?php echo $transaction['id'] ?></a></td>
                 <td><?php echo display_date($transaction['date']) ?></td>
-                <td><a href="/apps/explorer/block.php?height=<?php echo $transaction['block'] ?>">
+                <td><a href="/apps/explorer/block.php?height=<?php echo $transaction['height'] ?>">
                         <?php echo $transaction['height'] ?></a></td>
-                <td><a href="/apps/explorer/block.php?height=<?php echo $transaction['block'] ?>">
+                <td><a href="/apps/explorer/block.php?height=<?php echo $transaction['height'] ?>">
                         <?php echo $transaction['block'] ?></a></td>
                 <td><?php echo $transaction['type'] ?></td>
-                <td><?php echo num($transaction['val']) ?></td>
-                <td><?php echo num($transaction['fee']) ?></td>
+                <td class="<?php echo $transaction['sign']=='-' ? 'text-danger' : 'text-success' ?>"><?php echo $transaction['sign'] .  num($transaction['val']) ?></td>
+<!--                <td>--><?php //echo num($transaction['fee']) ?><!--</td>-->
             </tr>
     <?php } ?>
     </tbody>

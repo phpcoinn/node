@@ -599,6 +599,8 @@ elseif ($cmd == 'get-address') {
 	Nodeutil::downloadApps();
 } else if ($cmd == "verify-blocks") {
 	Nodeutil::verifyBlocks();
+} else if ($cmd == "exportchain") {
+	Nodeutil::exportChain();
 
 } else {
     echo "Invalid command\n";
@@ -631,6 +633,7 @@ elseif ($cmd == 'get-address') {
     rewards-scheme
     download-apps
     verify-blocks
+    exportchain
     ";
 
 }

@@ -180,7 +180,9 @@ class Block
     public static function reward($id, $data = [])
     {
 
-	    $launch_blocks = REWARD_SCHEME['launch']['blocks'];
+	    global $_config;
+
+    	$launch_blocks = REWARD_SCHEME['launch']['blocks'];
 	    $launch_reward = REWARD_SCHEME['launch']['reward'];
 	    $base_reward = BASE_REWARD;
 
@@ -244,12 +246,26 @@ class Block
 		    $mn_reward = $total - $pos_reward;
 		    $miner = 0;
 		    $generator = 0;
+		    if($_config['testnet']) {
+			    $total = 1;
+			    $miner = 0.9;
+			    $generator = 0.1;
+			    $mn_reward = 0;
+			    $pos_reward = 0;
+		    }
 	    } else {
 		    $total = 0;
 		    $miner = 0;
 		    $mn_reward = 0;
 		    $pos_reward = 0;
 		    $generator = 0;
+		    if($_config['testnet']) {
+			    $total = 1;
+			    $miner = 0.9;
+			    $generator = 0.1;
+			    $mn_reward = 0;
+			    $pos_reward = 0;
+		    }
 	    }
 	    return [
 	    	'total'=>$total,

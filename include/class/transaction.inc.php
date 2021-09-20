@@ -450,17 +450,22 @@ class Transaction
             ];
             $trans['confirmations'] = $current['height'] - $x['height'];
 
+	        $sign="";
             if ($x['type'] == TX_TYPE_REWARD) {
                 $trans['type'] = "mining";
+	            $sign="+";
             } elseif ($x['type'] == TX_TYPE_SEND) {
                 if ($x['dst'] == $id) {
                     $trans['type'] = "credit";
+	                $sign="+";
                 } else {
                     $trans['type'] = "debit";
+	                $sign="-";
                 }
             } else {
                 $trans['type'] = "other";
             }
+	        $trans['sign'] = $sign;
             ksort($trans);
             $res[] = $trans;
         }

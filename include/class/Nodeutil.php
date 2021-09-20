@@ -295,4 +295,21 @@ class Nodeutil
 		}
 	}
 
+	static function exportChain() {
+		$height = Block::getHeight();
+		$list = [];
+		$file = getcwd() . "/blockchain.json";
+		echo "Exporting blockchain to file: " . $file.PHP_EOL;
+		for($i=1;$i<=$height;$i++) {
+			$blc = new Block();
+			$block = $blc->export("",$i);
+			$list[]=$block;
+			if($i % 100 == 0) {
+				echo "Exporting block $i".PHP_EOL;
+			}
+		}
+		file_put_contents($file, json_encode($list));
+		echo "Export finished".PHP_EOL;
+	}
+
 }

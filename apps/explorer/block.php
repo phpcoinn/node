@@ -175,8 +175,8 @@ require_once __DIR__. '/../common/include/top.php';
             <tr>
                 <th>ID</th>
                 <th>Dst</th>
-                <th>Value</th>
-                <th>Fee</th>
+                <th class="text-end">Value</th>
+<!--                <th>Fee</th>-->
                 <th>Type</th>
                 <th>Date</th>
             </tr>
@@ -186,10 +186,10 @@ require_once __DIR__. '/../common/include/top.php';
                 <tr>
                     <td><a href="/apps/explorer/tx.php?id=<?php echo $tx['id'] ?>"><?php echo $tx['id'] ?><a/></td>
                     <td><a href="/apps/explorer/address.php?address=<?php echo $tx['dst'] ?>"><?php echo $tx['dst'] ?></a></td>
-                    <td><?php echo num($tx['val']) ?></td>
-                    <td><?php echo num($tx['fee']) ?></td>
+                    <td class="text-end <?php echo $tx['sign']=='-' ? 'text-danger' : 'text-success' ?>"><?php echo $tx['sign'] . num($tx['val']) ?></td>
+<!--                    <td>--><?php //echo num($tx['fee']) ?><!--</td>-->
                     <td><?php echo $tx['type'] ?></td>
-                    <td><?php echo date("Y-m-d H:i:s",$tx['date']) ?></td>
+                    <td><?php echo display_date($tx['date']) ?></td>
                 </tr>
             </tbody>
         <?php } ?>
