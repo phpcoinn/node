@@ -127,6 +127,13 @@ $_config['miner_public_key']="";
 $_config['miner_private_key']="";
 
 /**
+ * Generator config
+ */
+$_config['generator']=false;
+$_config['generator_public_key']="";
+$_config['generator_private_key']="";
+
+/**
  * Allow web admin of node
  */
 $_config['admin']=false;

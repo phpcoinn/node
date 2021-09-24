@@ -401,15 +401,15 @@ class Transaction
         $trans['confirmations'] = $current['height'] - $x['height'];
 
         if ($x['type'] == TX_TYPE_REWARD) {
-            $trans['type'] = "mining";
+            $trans['type_label'] = "mining";
         } elseif ($x['type'] == TX_TYPE_SEND) {
             if ($x['dst'] == $id) {
-                $trans['type'] = "credit";
+                $trans['type_label'] = "credit";
             } else {
-                $trans['type'] = "debit";
+                $trans['type_label'] = "debit";
             }
         } else {
-            $trans['type'] = "other";
+            $trans['type_label'] = "other";
         }
         ksort($trans);
         return $trans;
@@ -452,18 +452,18 @@ class Transaction
 
 	        $sign="";
             if ($x['type'] == TX_TYPE_REWARD) {
-                $trans['type'] = "mining";
+                $trans['type_label'] = "mining";
 	            $sign="+";
             } elseif ($x['type'] == TX_TYPE_SEND) {
                 if ($x['dst'] == $id) {
-                    $trans['type'] = "credit";
+                    $trans['type_label'] = "credit";
 	                $sign="+";
                 } else {
-                    $trans['type'] = "debit";
+                    $trans['type_label'] = "debit";
 	                $sign="-";
                 }
             } else {
-                $trans['type'] = "other";
+                $trans['type_label'] = "other";
             }
 	        $trans['sign'] = $sign;
             ksort($trans);

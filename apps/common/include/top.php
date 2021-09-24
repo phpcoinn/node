@@ -89,7 +89,7 @@ if(!defined("PAGE")) exit;
             <div class="container-fluid">
                 <nav class="navbar navbar-light navbar-expand-lg topnav-menu">
 
-                    <button type="button" class="btn btn-sm px-3 font-size-16 d-lg-none header-item waves-effect waves-light" data-bs-toggle="collapse" data-bs-target="#topnav-menu-content">
+                    <button type="button" class="btn btn-sm px-3 font-size-16 d-lg-none waves-effect waves-light" data-bs-toggle="collapse" data-bs-target="#topnav-menu-content">
                         <i class="fa fa-fw fa-bars"></i>
                     </button>
 

@@ -271,8 +271,8 @@ class Nodeutil
 
 	static function miningEnabled() {
 		global $_config;
-		if(isset($_config['mining']) && $_config['mining']
-			&& !empty($_config['node_public_key']) && !empty($_config['node_private_key'])) {
+		if(isset($_config['generator']) && $_config['generator']
+			&& !empty($_config['generator_public_key']) && !empty($_config['generator_private_key'])) {
 			return true;
 		} else {
 			return false;

@@ -38,6 +38,13 @@ class Block
                 _log("Parse block failed");
                 return false;
             }
+
+            $currentHeight = Block::getHeight();
+            _log("Checking block height currentHeight=$currentHeight height=$height");
+            if($height - $currentHeight != 1) {
+	            _log("Block height failed");
+	            return false;
+            }
         }
         // lock table to avoid race conditions on blocks
         $db->lockTables();
@@ -238,6 +245,13 @@ class Block
 		    $pos_ratio = 0.2;
 		    $pos_reward = $pos_ratio * $remain_reward;
 		    $mn_reward = $remain_reward - $pos_reward;
+		    if($miner == 0 && $_config['testnet']) {
+			    $total = 1;
+			    $miner = 0.9;
+			    $generator = 0.1;
+			    $mn_reward = 0;
+			    $pos_reward = 0;
+		    }
 	    } else if ($id <= $deflation_end_block) {
 	    	//deflation
 		    $total = ($deflation_segments - 1 - floor(($id -1 - $combined_end_block) / $deflation_segment_block))*$deflation_decrease_per_segment;
@@ -246,7 +260,7 @@ class Block
 		    $mn_reward = $total - $pos_reward;
 		    $miner = 0;
 		    $generator = 0;
-		    if($_config['testnet']) {
+		    if($miner == 0 && $_config['testnet']) {
 			    $total = 1;
 			    $miner = 0.9;
 			    $generator = 0.1;
@@ -259,7 +273,7 @@ class Block
 		    $mn_reward = 0;
 		    $pos_reward = 0;
 		    $generator = 0;
-		    if($_config['testnet']) {
+		    if($miner == 0 && $_config['testnet']) {
 			    $total = 1;
 			    $miner = 0.9;
 			    $generator = 0.1;
@@ -267,7 +281,7 @@ class Block
 			    $pos_reward = 0;
 		    }
 	    }
-	    return [
+	    $out = [
 	    	'total'=>$total,
 		    'miner'=>$miner,
 		    'generator'=>$generator,
@@ -275,6 +289,8 @@ class Block
 		    'pos'=>$pos_reward,
 		    'key'=>"$total-$miner-$generator-$mn_reward-$pos_reward"
 	    ];
+        //_log("Reward ", json_encode($out));
+	    return $out;
     }
 
     // checks the validity of a block

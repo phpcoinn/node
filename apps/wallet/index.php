@@ -136,7 +136,7 @@ require_once __DIR__. '/../common/include/top.php';
         <div class="col-sm-8">
             <div class="input-group auth-pass-inputgroup">
                 <input type="password" class="form-control" aria-label="Password" value=""
-                       aria-describedby="password-addon" id="private_key" name="private_key" required="required"/>
+                       aria-describedby="password-addon" id="private_key" required="required"/>
                 <button class="btn btn-light shadow-none ms-0" type="button" id="password-addon"><i class="mdi mdi-eye-outline"></i></button>
             </div>
         </div>
@@ -254,7 +254,12 @@ require_once __DIR__. '/../common/include/top.php';
                                 <label class="form-label">
                                     Private key:
                                 </label>
-                                <input type="password" id="private_key" value="" class="form-control" required>
+                                <div class="input-group auth-pass-inputgroup">
+                                    <input type="password" class="form-control" placeholder="Enter private key" aria-label="Password"
+                                           aria-describedby="password-addon" id="private_key" required="required"
+                                    />
+                                    <button class="btn btn-light shadow-none ms-0" type="button" id="password-addon-send"><i class="mdi mdi-eye-outline"></i></button>
+                                </div>
                             </div>
                             <div class="mt-3">
                                 <label class="form-label">
@@ -290,6 +295,7 @@ require_once __DIR__. '/../common/include/top.php';
             let sig = sign(data, privateKey)
             $("#send-form #signature").val(sig)
             $("#send-form #date").val(date)
+            $('input[type=password]').val('');
             $("#send-form").submit()
         } catch (e) {
             console.error(e)
@@ -315,7 +321,7 @@ require_once __DIR__ . '/../common/include/bottom.php';
             }
         })
 
-        $("#password-addon").on('click', function () {
+        $("#password-addon, #password-addon-send").on('click', function () {
             if ($(this).siblings('input').length > 0) {
                 $(this).siblings('input').attr('type') == "password" ? $(this).siblings('input').attr('type', 'input') : $(this).siblings('input').attr('type', 'password');
             }
@@ -326,4 +332,8 @@ require_once __DIR__ . '/../common/include/bottom.php';
             $("#private-key-row").show()
         }
     })
+
+    window.addEventListener("beforeunload", function(event) {
+        $('input[type=password]').val('');
+    });
 </script>

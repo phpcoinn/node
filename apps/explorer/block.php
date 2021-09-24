@@ -188,7 +188,7 @@ require_once __DIR__. '/../common/include/top.php';
                     <td><a href="/apps/explorer/address.php?address=<?php echo $tx['dst'] ?>"><?php echo $tx['dst'] ?></a></td>
                     <td class="text-end <?php echo $tx['sign']=='-' ? 'text-danger' : 'text-success' ?>"><?php echo $tx['sign'] . num($tx['val']) ?></td>
 <!--                    <td>--><?php //echo num($tx['fee']) ?><!--</td>-->
-                    <td><?php echo $tx['type'] ?></td>
+                    <td><?php echo $tx['type_label'] ?></td>
                     <td><?php echo display_date($tx['date']) ?></td>
                 </tr>
             </tbody>

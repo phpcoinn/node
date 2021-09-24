@@ -124,8 +124,8 @@ if(isset($_GET['action'])) {
             _log("Downloading from link $link");
 	        $arrContextOptions=array(
 		        "ssl"=>array(
-			        "verify_peer"=>!DEVELOPMENT,
-			        "verify_peer_name"=>!DEVELOPMENT,
+			        "verify_peer"=>true,
+			        "verify_peer_name"=>true,
 		        ),
 	        );
             $res = file_put_contents(ROOT . "/tmp/apps.tar.gz", fopen($link, "r", false, stream_context_create($arrContextOptions)));

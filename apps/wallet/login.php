@@ -121,7 +121,8 @@ require_once __DIR__. '/../common/include/top.php';
                                     <div class="mb-3">
                                         <label for="public_key" class="form-label">Public key / Address</label>
                                         <input type="text" class="form-control" id="public_key" name="public_key"
-                                               placeholder="Enter public key or address" value="<?php echo $public_key ?>" required="required"/>
+                                               placeholder="Enter public key or address" value="<?php echo $public_key ?>" required="required"
+                                        />
                                         <div class="help-block text-muted text-info">
                                             In order to login with address you must have recorded transaction on blockchain
                                         </div>
@@ -135,7 +136,8 @@ require_once __DIR__. '/../common/include/top.php';
 
                                             <div class="input-group auth-pass-inputgroup">
                                                 <input type="password" class="form-control" placeholder="Enter private key" aria-label="Password"
-                                                       aria-describedby="password-addon" id="private_key" name="private_key" required="required"/>
+                                                       aria-describedby="password-addon" id="private_key" name="private_key" required="required"
+                                                       />
                                                 <button class="btn btn-light shadow-none ms-0" type="button" id="password-addon"><i class="mdi mdi-eye-outline"></i></button>
                                             </div>
                                         </div>
@@ -219,7 +221,8 @@ require_once __DIR__. '/../common/include/top.php';
 <?php if (!empty($accountData)) { ?>
     <button id="offcanvas-trigger" class="btn btn-primary d-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas" aria-controls="offcanvas">Toggle right offcanvas</button>
 
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvas" aria-labelledby="offcanvasLabel" data-bs-backdrop="true">
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvas" aria-labelledby="offcanvasLabel"
+         data-bs-backdrop="false" style="margin-top:55px;">
         <div class="offcanvas-header">
             <h5 id="offcanvasLabel">Here are your generated credentials</h5>
             <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -307,6 +310,7 @@ require_once __DIR__ . '/../common/include/bottom.php';
             try {
                 let sig = sign('<?php echo $loginNonce ?>', privateKey)
                 $("#signature").val(sig)
+                $('#private_key').val('');
                 $("form").submit()
             } catch (e) {
                 console.error(e)
@@ -356,4 +360,8 @@ require_once __DIR__ . '/../common/include/bottom.php';
         <?php } ?>
 
     })
+
+    window.addEventListener("beforeunload", function(event) {
+        $('input[type=password]').val('');
+    });
 </script>

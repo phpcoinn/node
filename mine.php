@@ -135,8 +135,8 @@ if ($q == "info") {
     api_err("rejected");
 } elseif ($q == "submitHash") {
 	//TODO: not working ok - must set generator to node who mined !!!
-	if (empty($_config['mining'])) {
-		api_err("mining-disabled");
+	if (empty($_config['generator'])) {
+		api_err("generator-disabled");
 	}
 
 	$nodeScore = $_config['node_score'];
@@ -144,11 +144,11 @@ if ($q == "info") {
 		api_err("node-not-ok");
 	}
 
-	if (empty($_config['node_public_key']) && empty($_config['node_private_key'])) {
-		api_err("mining-not-configured");
+	if (empty($_config['generator_public_key']) && empty($_config['generator_private_key'])) {
+		api_err("generator-not-configured");
 	}
 
-	$generator = Account::getAddress($_config['node_public_key']);
+	$generator = Account::getAddress($_config['generator_public_key']);
 //	$generator_public_key = Account::publicKey($generator);
 //	if (empty($generator_public_key)) {
 //		api_err("rejected - no public key for generator");
@@ -202,16 +202,16 @@ if ($q == "info") {
 	$new_block_date = $block_date + $elapsed;
 	$rewardInfo = Block::reward($height);
 	$minerReward = num($rewardInfo['miner']);
-	$reward_tx = $tx->getRewardTransaction($address, $new_block_date, $_config['node_public_key'], $_config['node_private_key'], $minerReward);
+	$reward_tx = $tx->getRewardTransaction($address, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $minerReward);
 	$data[$reward_tx['id']] = $reward_tx;
 
 	$generatorReward = num($rewardInfo['generator']);
-	$reward_tx = $tx->getRewardTransaction($generator, $new_block_date, $_config['node_public_key'], $_config['node_private_key'], $generatorReward);
+	$reward_tx = $tx->getRewardTransaction($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $generatorReward);
 	$data[$reward_tx['id']] = $reward_tx;
 
 	ksort($data);
 	$prev_block_id = $lastBlock['id'];
-	$signature = $block->sign($generator, $address, $height, $new_block_date, $nonce, $data, $_config['node_private_key'], $difficulty, $argon, $prev_block_id);
+	$signature = $block->sign($generator, $address, $height, $new_block_date, $nonce, $data, $_config['generator_private_key'], $difficulty, $argon, $prev_block_id);
 
 	$result = $block->mine($public_key, $address, $nonce, $argon, $difficulty, $signature, $height, $date);
 
@@ -219,7 +219,7 @@ if ($q == "info") {
 
 		$res = $block->add(
 			$height,
-			$_config['node_public_key'],
+			$_config['generator_public_key'],
 			$address,
 			$nonce,
 			$data,
