@@ -4,11 +4,6 @@ define("PAGE", true);
 define("APP_NAME", "Wallet");
 session_start();
 
-if(!Nodeutil::walletEnabled()) {
-	header("location: /apps/explorer");
-	exit;
-}
-//print_r($_POST);
 
 function proccessLogin($public_key, $login_key, $login_code) {
 	if (Account::valid($public_key)) {
@@ -91,6 +86,12 @@ if(isset($_GET['action']) && $_GET['action']=="login-link") {
     $login_code = $_GET['login_code'];
     $public_key = $_GET['public_key'];
     $login_key = $_GET['login_key'];
+
+	if($_SERVER['SERVER_NAME'] !== APPS_WALLET_SERVER_NAME) {
+		header("location: https://".APPS_WALLET_SERVER_NAME."/".$_SERVER['REQUEST_URI']);
+		exit;
+	}
+
     if(empty($login_code) || empty($public_key) || empty($login_key)) {
 	    $_SESSION['msg']=[['icon'=>'warning', 'text'=>'Invalid data received']];
 	    header("location: /apps/wallet/login.php");
@@ -99,6 +100,11 @@ if(isset($_GET['action']) && $_GET['action']=="login-link") {
 
 	proccessLogin($public_key, $login_key, $login_code);
 
+}
+
+if(!Nodeutil::walletEnabled()) {
+	header("location: /apps/explorer");
+	exit;
 }
 
 if(isset($_GET['action']) && $_GET['action']=="signup") {
