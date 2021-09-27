@@ -2,6 +2,8 @@
 
 const APPS_REPO_SERVER = "https://repo.testnet.phpcoin.net";
 const APPS_REPO_SERVER_PUBLIC_KEY = "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwUKtSuRJEs8RrRrkZbND1WxVNomPtvowAo5hzQr6xe2TUyHYLnzu2ubVMfBAYM4cBZJLckvxWenHB2nULzmU8VHz";
+const APPS_WALLET_SERVER_NAME = "wallet.testnet.phpcoin.net";
+const APPS_WALLET_SERVER_PUBLIC_KEY = "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCxxo8UaTrKLceuCRRC4YopodMLvtPp31Bq1JJBmva3StkHMPa2WhgXhPyPLG9GiwEW3PwXDyroZGfNLE4ioqRtwyp";
 
 function calcAppsHash() {
 	_log("Executing calcAppsHash");

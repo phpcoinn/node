@@ -4,6 +4,10 @@ define("PAGE", true);
 define("APP_NAME", "Wallet");
 session_start();
 
+if(!Nodeutil::walletEnabled()) {
+	header("location: /apps/explorer");
+	exit;
+}
 //print_r($_POST);
 
 function proccessLogin($public_key, $login_key, $login_code) {
@@ -38,8 +42,12 @@ function proccessLogin($public_key, $login_key, $login_code) {
 
 if(isset($_POST['login'])) {
 
-
-	    if (!isset($_POST['public_key']) || !isset($_POST['signature']) || !isset($_POST['nonce'])) {
+        if($_SERVER['SERVER_NAME'] !== APPS_WALLET_SERVER_NAME) {
+	        $_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Invalid server access']];
+	        header("location: /apps/wallet/login.php");
+	        exit;
+        }
+	    if (!isset($_POST['public_key']) || !isset($_POST['signature']) || !isset($_POST['nonce'] ) || !isset($_POST['wallet_signature'] )) {
 		    $_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Not filled required data']];
 		    header("location: /apps/wallet/login.php");
 		    exit;
@@ -47,6 +55,7 @@ if(isset($_POST['login'])) {
 	    $nonce = $_POST['nonce'];
 	    $signature = $_POST['signature'];
 	    $public_key = $_POST['public_key'];
+	    $wallet_signature = $_POST['wallet_signature'];
 	    if (Account::valid($public_key)) {
 		    $address = $public_key;
 		    $acc = new Account();
@@ -66,7 +75,8 @@ if(isset($_POST['login'])) {
 		    }
 	    }
 	    $verify = Account::checkSignature($nonce, $signature, $public_key);
-	    if (!$verify) {
+	    $wallet_verify = Account::checkSignature($nonce, $wallet_signature, APPS_WALLET_SERVER_PUBLIC_KEY);
+	    if (!$verify || !$wallet_verify) {
 		    $_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Invalid login data']];
 		    header("location: /apps/wallet/login.php");
 		    exit;
@@ -100,7 +110,7 @@ if(isset($_GET['public_key'])) {
 }
 
 $loginNonce = hash("sha256", uniqid("login"));
-
+$walletSignature = ec_sign($loginNonce, $_config['wallet_private_key']);
 ?>
 <?php
 require_once __DIR__. '/../common/include/top.php';
@@ -161,6 +171,7 @@ require_once __DIR__. '/../common/include/top.php';
                                     <input type="hidden" id="signature" name="signature" value="" required>
                                     <input type="hidden" id="login" name="login" value="login" required>
                                     <input type="hidden" id="nonce" name="nonce"  value="<?php echo $loginNonce ?>" required>
+                                    <input type="hidden" id="wallet_signature" name="wallet_signature"  value="<?php echo $walletSignature ?>" required>
 
                                 </form>
 

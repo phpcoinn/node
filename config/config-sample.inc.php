@@ -138,3 +138,11 @@ $_config['generator_private_key']="";
  */
 $_config['admin']=false;
 $_config['admin_password']='';
+
+/**
+ * Allow wallet app on node
+ */
+$_config['wallet']=false;
+$_config['wallet_public_key']="";
+$_config['wallet_private_key']="";
+

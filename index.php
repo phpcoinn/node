@@ -124,14 +124,16 @@ global $_config;
                         </a>
                     </div>
                 </div>
-                <div class="col-sm-6 col-md-2 col-6 my-3">
-                    <div class="d-grid gap-2">
-                        <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/wallet">
-                            <h5 class="mb-3 text-white">Wallet</h5>
-                            <i class="fas fa-wallet fa-2x"></i>
-                        </a>
+	            <?php if (Nodeutil::walletEnabled()) { ?>
+                    <div class="col-sm-6 col-md-2 col-6 my-3">
+                        <div class="d-grid gap-2">
+                            <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="https://<?php echo APPS_WALLET_SERVER_NAME ?>/apps/wallet">
+                                <h5 class="mb-3 text-white">Wallet</h5>
+                                <i class="fas fa-wallet fa-2x"></i>
+                            </a>
+                        </div>
                     </div>
-                </div>
+                <?php } ?>
                 <?php if($_config['faucet']) { ?>
                     <div class="col-sm-6 col-md-2 col-6 my-3">
                         <div class="d-grid gap-2">

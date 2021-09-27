@@ -1,6 +1,10 @@
 <?php
 require_once dirname(__DIR__)."/apps.inc.php";
 require_once ROOT. '/apps/explorer/include/functions.php';
+if(!Nodeutil::walletEnabled()) {
+	header("location: /apps/explorer");
+	exit;
+}
 define("PAGE", true);
 define("APP_NAME", "Wallet");
 session_start();

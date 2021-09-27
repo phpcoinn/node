@@ -117,11 +117,13 @@ if(!defined("PAGE")) exit;
                                     <i class="fas fa-binoculars me-2"></i><span data-key="t-dashboards">Explorer</span>
                                 </a>
                             </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle arrow-none <?php if (APP_NAME == "Wallet") { ?>active<?php } ?>" href="/apps/wallet" id="topnav-dashboard" role="button">
-                                    <i class="fas fa-wallet me-2"></i><span data-key="t-dashboards">Wallet</span>
-                                </a>
-                            </li>
+	                        <?php if (Nodeutil::walletEnabled()) { ?>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle arrow-none <?php if (APP_NAME == "Wallet") { ?>active<?php } ?>" href="https://<?php echo APPS_WALLET_SERVER_NAME ?>/apps/wallet" id="topnav-dashboard" role="button">
+                                        <i class="fas fa-wallet me-2"></i><span data-key="t-dashboards">Wallet</span>
+                                    </a>
+                                </li>
+	                        <?php } ?>
                             <?php if ($_config['faucet']) { ?>
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle arrow-none <?php if (APP_NAME == "Faucet") { ?>active<?php } ?>" href="/apps/faucet" id="topnav-dashboard" role="button">
