@@ -49,8 +49,8 @@ if ($q == "info") {
 } elseif ($q == "submitBlock") {
 //	_log("POSTDATA=".print_r($_POST, true));
     // in case the blocks are syncing, reject all
-    if ($_config['sanity_sync'] == 1) {
-        api_err("sanity-sync");
+    if ($_config['sync'] == 1) {
+        api_err("sync");
     }
 
     $peers = Peer::getCount(true);
@@ -154,8 +154,8 @@ if ($q == "info") {
 //		api_err("rejected - no public key for generator");
 //	}
 
-	if ($_config['sanity_sync'] == 1) {
-		api_err("sanity-sync");
+	if ($_config['sync'] == 1) {
+		api_err("sync");
 	}
 
 	$peers = Peer::getCount();

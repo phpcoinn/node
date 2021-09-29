@@ -40,39 +40,39 @@ if (php_sapi_name() !== 'cli') {
 
 require_once dirname(__DIR__).'/include/init.inc.php';
 
-_log("Executing sanity", 2);
-define("SANITY_LOCK_PATH", Nodeutil::getSanityFile());
+_log("Executing sync", 2);
+define("SYNC_LOCK_PATH", Nodeutil::getSyncFile());
 
-// make sure there's only a single sanity process running at the same time
-if (file_exists(SANITY_LOCK_PATH)) {
+// make sure there's only a single sync process running at the same time
+if (file_exists(SYNC_LOCK_PATH)) {
     $ignore_lock = false;
     if ($argv[1] == "force") {
-        $res = intval(shell_exec("ps aux|grep sanity.php|grep -v grep|wc -l"));
+        $res = intval(shell_exec("ps aux|grep sync.php|grep -v grep|wc -l"));
         if ($res == 1) {
             $ignore_lock = true;
         }
     }
-    $pid_time = filemtime(SANITY_LOCK_PATH);
+    $pid_time = filemtime(SYNC_LOCK_PATH);
 
-    // If the process died, restart after 60 times the sanity interval
-    if (time() - $pid_time > ($_config['sanity_interval'] * 10 ?? 900 * 10)) {
-        @unlink(SANITY_LOCK_PATH);
+    // If the process died, restart after 60 times the sync interval
+    if (time() - $pid_time > ($_config['sync_interval'] * 10 ?? 900 * 10)) {
+        @unlink(SYNC_LOCK_PATH);
     }
 
     if (!$ignore_lock) {
-	    _log("Sanity lock in place", 4);
-        die("Sanity lock in place".PHP_EOL);
+	    _log("Sync lock in place", 4);
+        die("Sync lock in place".PHP_EOL);
     }
 }
 
-// set the new sanity lock
-$lock = fopen(SANITY_LOCK_PATH, "w");
+// set the new sync lock
+$lock = fopen(SYNC_LOCK_PATH, "w");
 fclose($lock);
 $arg = trim($argv[1]);
 $arg2 = trim($argv[2]);
 //echo "Sleeping for 3 seconds\n";
-// sleep for 3 seconds to make sure there's a delay between starting the sanity and other processes
-if ($arg != "microsanity") {
+// sleep for 3 seconds to make sure there's a delay between starting the sync and other processes
+if ($arg != "microsync") {
     sleep(3);
 }
 
@@ -81,10 +81,10 @@ if (DEVELOPMENT) {
     ini_set("display_errors", "on");
 }
 
-// the sanity can't run without the schema being installed
+// the sync can't run without the schema being installed
 if ($_config['dbversion'] < 1) {
     die("DB schema not created");
-    @unlink(SANITY_LOCK_PATH);
+    @unlink(SYNC_LOCK_PATH);
     exit;
 }
 
@@ -139,13 +139,13 @@ if ($current['height']==1 && BOOTSTRAPING) {
 
     $current = $block->current();
 }
-//TODO check microsanity feature
-// the microsanity process is an anti-fork measure that will determine the best blockchain to choose for the last block
-$microsanity = false;
-if ($arg == "microsanity" && !empty($arg2)) {
+//TODO check microsync feature
+// the microsync process is an anti-fork measure that will determine the best blockchain to choose for the last block
+$microsync = false;
+if ($arg == "microsync" && !empty($arg2)) {
     do {
 	    _log("Find peer by ip = $arg2", 3);
-        // the microsanity runs only against 1 specific peer
+        // the microsync runs only against 1 specific peer
         $x = Peer::findByIp($arg2);
 
         if (!$x) {
@@ -213,18 +213,18 @@ if ($arg == "microsanity" && !empty($arg2)) {
         _log("Synced block from ".$x[hostname]." - $b[height] $b[difficulty]");
     } while (0);
 
-    @unlink(SANITY_LOCK_PATH);
+    @unlink(SYNC_LOCK_PATH);
     exit;
 }
 
 
 $t = time();
-//if($t-$_config['sanity_last']<300) {@unlink("tmp/sanity-lock");  die("The sanity cron was already run recently"); }
+//if($t-$_config['sync_last']<300) {@unlink("tmp/sync-lock");  die("The sync cron was already run recently"); }
 
-_log("Starting sanity",4);
+_log("Starting sync",4);
 
-// update the last time sanity ran, to set the execution of the next run
-$db->run("UPDATE config SET val=:time WHERE cfg='sanity_last'", [":time" => $t]);
+// update the last time sync ran, to set the execution of the next run
+$db->run("UPDATE config SET val=:time WHERE cfg='sync_last'", [":time" => $t]);
 $block_peers = [];
 $longest_size = 0;
 $longest = 0;
@@ -300,7 +300,7 @@ if ($total_peers == 0) {
     $total_peers = Peer::getCount(true);
     if ($total_peers == 0) {
         // something went wrong, could not add any peers -> exit
-        @unlink(SANITY_LOCK_PATH);
+        @unlink(SYNC_LOCK_PATH);
         _log("There are no active peers");
 	    $db->setConfig('node_score', 0);
         die("There are no active peers!\n");
@@ -359,7 +359,7 @@ foreach ($r as $x) {
                 if ($test !== false) {
                     $total_peers++;
                     echo "Peered with: $peer[hostname]\n";
-                    // a single new peer per sanity
+                    // a single new peer per sync
                     $_config['get_more_peers']=false;
                 }
             }
@@ -459,12 +459,12 @@ echo "Current block: $current[height]\n";
 
 if($largest_height-$most_common_height>100&&$largest_size==1&&$current['id']==$largest_height_block){
     _log("Current node is alone on the chain and over 100 blocks ahead. Poping 200 blocks.");
-    $db->run("UPDATE config SET val=1 WHERE cfg='sanity_sync'");
+    $db->run("UPDATE config SET val=1 WHERE cfg='sync'");
     $block->pop(200);
-    $db->run("UPDATE config SET val=0 WHERE cfg='sanity_sync'");
-    _log("Exiting sanity, next sanity will sync from 200 blocks ago.");
+    $db->run("UPDATE config SET val=0 WHERE cfg='sync'");
+    _log("Exiting sync, next will sync from 200 blocks ago.");
 
-    @unlink(SANITY_LOCK_PATH);
+    @unlink(SYNC_LOCK_PATH);
     exit;
 }
 
@@ -501,8 +501,8 @@ $block_parse_failed=false;
 $failed_syncs=0;
 // if we're not on the largest height
 if ($current['height'] < $largest_height && $largest_height > 1 && false) {
-    // start  sanity sync / block all other transactions/blocks
-    $db->run("UPDATE config SET val=1 WHERE cfg='sanity_sync'");
+    // start sync / block all other transactions/blocks
+    $db->run("UPDATE config SET val=1 WHERE cfg='sync'");
     sleep(10);
     _log("Longest chain rule triggered - $largest_height - $largest_height_block",2);
     // choose the peers which have the larget height block
@@ -695,11 +695,11 @@ if ($current['height'] < $largest_height && $largest_height > 1 && false) {
                 $db->fkCheck(true);
                 
                 $resyncing=true;
-                $db->run("UPDATE config SET val=0 WHERE cfg='sanity_sync'", [":time" => $t]);
+                $db->run("UPDATE config SET val=0 WHERE cfg='sync'", [":time" => $t]);
                 
-                _log("Exiting sanity, next sanity will resync from scratch.");
+                _log("Exiting sync, will resync from scratch.");
 
-                @unlink(SANITY_LOCK_PATH);
+                @unlink(SYNC_LOCK_PATH);
                 exit;
             } elseif ($current['date']<time()-(3600*24)) {
                 _log("Removing 200 blocks, the blockchain is stale.");
@@ -711,7 +711,7 @@ if ($current['height'] < $largest_height && $largest_height > 1 && false) {
     }
 
 
-    $db->run("UPDATE config SET val=0 WHERE cfg='sanity_sync'", [":time" => $t]);
+    $db->run("UPDATE config SET val=0 WHERE cfg='sync'", [":time" => $t]);
 }
 
 
@@ -737,7 +737,7 @@ $db->run("DELETE FROM `mempool` WHERE `date` < ".DB::unixTimeStamp()."-(3600*24*
 
 
 //rebroadcasting local transactions
-if ($_config['sanity_rebroadcast_locals'] == true && $_config['disable_repropagation'] == false) {
+if ($_config['sync_rebroadcast_locals'] == true && $_config['disable_repropagation'] == false) {
     $r = $db->run(
         "SELECT id FROM mempool WHERE height<=:current and peer='local' order by `height` asc LIMIT 20",
         [":current" => $current['height']]
@@ -756,7 +756,7 @@ if ($_config['sanity_rebroadcast_locals'] == true && $_config['disable_repropaga
 
 //rebroadcasting transactions
 if ($_config['disable_repropagation'] == false) {
-    $forgotten = $current['height'] - $_config['sanity_rebroadcast_height'];
+    $forgotten = $current['height'] - $_config['sync_rebroadcast_height'];
     $r1 = $db->run(
         "SELECT id FROM mempool WHERE height<:forgotten ORDER by val DESC LIMIT 10",
         [":forgotten" => $forgotten]
@@ -803,11 +803,11 @@ foreach ($r as $x) {
 
 
 //recheck the last blocks
-if ($_config['sanity_recheck_blocks'] > 0) {
+if ($_config['sync_recheck_blocks'] > 0) {
     _log("Rechecking blocks",3);
     $blocks = [];
     $all_blocks_ok = true;
-    $start = $current['height'] - $_config['sanity_recheck_blocks'];
+    $start = $current['height'] - $_config['sync_recheck_blocks'];
     if ($start < 2) {
         $start = 2;
     }
@@ -832,13 +832,13 @@ if ($_config['sanity_recheck_blocks'] > 0) {
 	        $data['height'],
             $data['date']
         )) {
-            $db->run("UPDATE config SET val=1 WHERE cfg='sanity_sync'");
+            $db->run("UPDATE config SET val=1 WHERE cfg='sync'");
             _log("Invalid block detected. Deleting everything after $data[height] - $data[id]");
             sleep(10);
             $all_blocks_ok = false;
             $block->delete($i);
 
-            $db->run("UPDATE config SET val=0 WHERE cfg='sanity_sync'");
+            $db->run("UPDATE config SET val=0 WHERE cfg='sync'");
             break;
         }
     }
@@ -878,6 +878,6 @@ Nodeutil::cleanTmpFiles();
 
 
 
-_log("Finishing sanity",2);
+_log("Finishing sync",2);
 
-@unlink(SANITY_LOCK_PATH);
+@unlink(SYNC_LOCK_PATH);

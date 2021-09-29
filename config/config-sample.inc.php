@@ -50,14 +50,14 @@ $_config['transaction_propagation_peers'] = 5;
 // How many new peers to check from each peer
 $_config['max_test_peers'] = 5;
 
-// The initial peers to sync from in sanity
+// The initial peers to sync from
 $_config['initial_peer_list'] = [
     'https://node1.testnet.phpcoin.net',
     'https://node2.testnet.phpcoin.net',
     'https://node3.testnet.phpcoin.net'
 ];
 
-// does not peer with any of the peers. Uses the seed peers and syncs only from those peers. Requires a cronjob on sanity.php
+// does not peer with any of the peers. Uses the seed peers and syncs only from those peers. Requires a cronjob on sync.php
 $_config['passive_peering'] = false;
 
 
@@ -74,28 +74,28 @@ $_config['peer_max_mempool'] = 100;
 $_config['max_mempool_rebroadcast'] = 5000;
 
 // The number of blocks between rebroadcasting transactions
-$_config['sanity_rebroadcast_height'] = 30;
+$_config['sync_rebroadcast_height'] = 30;
 
 // Block accepting transfers from addresses blacklisted by the PHPCoin devs
 $_config['use_official_blacklist'] = true;
 
 /*
 |--------------------------------------------------------------------------
-| Sanity Configuration
+| Sync Configuration
 |--------------------------------------------------------------------------
 */
 
-// Recheck the last blocks on sanity
-$_config['sanity_recheck_blocks'] = 0;
+// Recheck the last blocks
+$_config['sync_recheck_blocks'] = 0;
 
-// The interval to run the sanity in seconds
-$_config['sanity_interval'] = 60;
+// The interval to run the sync in seconds
+$_config['sync_interval'] = 60;
 
 // Enable setting a new hostname (should be used only if you want to change the hostname)
 $_config['allow_hostname_change'] = false;
 
-// Rebroadcast local transactions when running sanity
-$_config['sanity_rebroadcast_locals'] = true;
+// Rebroadcast local transactions when running sync
+$_config['sync_rebroadcast_locals'] = true;
 
 // Get more peers?
 $_config['get_more_peers'] = true;

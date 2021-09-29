@@ -105,15 +105,15 @@ if (empty($_config['hostname']) || $_config['hostname'] == "http://" || $_config
     api_err("Invalid hostname");
 }
 
-// run sanity
+// run sync
 $t = time();
-if ($t - $_config['sanity_last'] > $_config['sanity_interval'] && php_sapi_name() !== 'cli') {
-	_log("Running sanity ".($t - $_config['sanity_last'])." / ".$_config['sanity_interval'], 4);
+if ($t - $_config['sync_last'] > $_config['sync_interval'] && php_sapi_name() !== 'cli') {
+	_log("Running sync ".($t - $_config['sync_last'])." / ".$_config['sync_interval'], 4);
 	$dir = ROOT."/cli";
-    _log("php $dir/sanity.php  > /dev/null 2>&1  &", 4);
-    system("php $dir/sanity.php  > /dev/null 2>&1  &");
+    _log("php $dir/sync.php  > /dev/null 2>&1  &", 4);
+    system("php $dir/sync.php  > /dev/null 2>&1  &");
 } else {
-	_log("No time for sanity ".($t - $_config['sanity_last'])." / ".$_config['sanity_interval'], 4);
+	_log("No time for sync ".($t - $_config['sync_last'])." / ".$_config['sync_interval'], 4);
 }
 
 

@@ -582,10 +582,10 @@ class Block
                     $db->unlockTables();
                             
               
-                    $db->run("UPDATE config SET val=0 WHERE cfg='sanity_sync'");
-                    @unlink(SANITY_LOCK_PATH);
+                    $db->run("UPDATE config SET val=0 WHERE cfg='sync'");
+                    @unlink(SYNC_LOCK_PATH);
 	                $dir = ROOT."/cli";
-                    system("php $dir/sanity.php  > /dev/null 2>&1  &");
+                    system("php $dir/sync.php  > /dev/null 2>&1  &");
                     exit;
                 }
                 $db->unlockTables();

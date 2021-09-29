@@ -125,7 +125,7 @@ if ($type == "block") {
         $height = intval($response['height']);
         $bl = san($response['block']);
         $current = $block->current();
-        // maximum microsync is 10 blocks, for more, the peer should sync by sanity
+        // maximum microsync is 10 blocks, for more, the peer should sync
         if ($current['height'] - $height > 10) {
             echo "Height Differece too high\n";
             _log("Height Differece too high");
@@ -152,10 +152,10 @@ if ($type == "block") {
             _log("Block\t$i\t accepted");
             echo "Block\t$i\t accepted\n";
         }
-    } elseif ($response == "reverse-microsanity") {
-        // the peer informe us that we should run a microsanity
-        echo "Running microsanity\n";
-        _log("Running microsanity",3);
+    } elseif ($response == "reverse-microsync") {
+        // the peer informe us that we should run a microsync
+        echo "Running microsync\n";
+        _log("Running microsync",3);
         _log("ip arg = ".$argv[4],3);
         $ip = trim($argv[4]);
         _log("tremmed ip = ".$ip,3);
@@ -165,10 +165,10 @@ if ($type == "block") {
             _log("Invalid IP",2);
             die("Invalid IP");
         }
-        // fork a microsanity in a new process
+        // fork a microsync in a new process
 	    $dir = ROOT . "/cli";
-        _log("caliing propagate: php $dir/sanity.php microsanity '$ip'  > /dev/null 2>&1  &",3);
-        system("php $dir/sanity.php microsanity '$ip'  > /dev/null 2>&1  &");
+        _log("caliing propagate: php $dir/sync.php microsync '$ip'  > /dev/null 2>&1  &",3);
+        system("php $dir/sync.php microsync '$ip'  > /dev/null 2>&1  &");
     } else {
     	_log("Block not accepted ".$response,1);
         echo "Block not accepted!\n";

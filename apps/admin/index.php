@@ -89,7 +89,7 @@ if(isset($_GET['action'])) {
     }
     if($action=="sync") {
 	    $dir = ROOT."/cli";
-	    system("php $dir/sanity.php force  > /dev/null 2>&1  &");
+	    system("php $dir/sync.php force  > /dev/null 2>&1  &");
 	    header("location: ".APP_URL."/?view=utils");
 	    exit;
     }
@@ -235,9 +235,9 @@ if(isset($_GET['view'])) {
 	    $serverData['stat']['disktotal']=$disktotal;
 	    $serverData['stat']['phpload']=$phpload;
 
-	    $res = shell_exec("ps aux | grep sanity.php | grep -v grep");
-	    $sanity_running = !empty(trim($res));
-	    $sanity_lock = file_exists(Nodeutil::getSanityFile());
+	    $res = shell_exec("ps aux | grep sync.php | grep -v grep");
+	    $sync_running = !empty(trim($res));
+	    $sync_lock = file_exists(Nodeutil::getSyncFile());
 
 	    $res = shell_exec("ps aux | grep miner.php | grep -v grep");
 	    $miner_running = !empty(trim($res));
@@ -422,10 +422,10 @@ require_once __DIR__. '/../common/include/top.php';
                 <?php echo $minerStat['rejected'] ?> rejected<br/>
             <?php } ?>
             <br/>
-            Sanity: <span class="badge bg-<?php echo $sanity_running ? 'success' : 'danger' ?>">
-                <?php echo $sanity_running ? 'Yes' : 'No' ?></span>
+            Sync: <span class="badge bg-<?php echo $sync_running ? 'success' : 'danger' ?>">
+                <?php echo $sync_running ? 'Yes' : 'No' ?></span>
             <br/>
-            Lock: <?php echo $sanity_lock ? 'Yes' : 'No' ?>
+            Lock: <?php echo $sync_lock ? 'Yes' : 'No' ?>
         <?php } ?>
 	    <?php if($view == "php") {
 	        phpinfo();

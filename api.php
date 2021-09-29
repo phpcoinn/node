@@ -581,23 +581,23 @@ if ($q == "getAddress") {
     $account = san($account);
 
     api_echo($acc->account2alias($account));*/
-} elseif ($q === 'sanity') {
+} elseif ($q === 'sync') {
     /**
-     * @api            {get} /api.php?q=sanity  20. sanity
-     * @apiName        sanity
+     * @api            {get} /api.php?q=sync  20. sync
+     * @apiName        sync
      * @apiGroup       API
-     * @apiDescription Returns details about the node's sanity process.
+     * @apiDescription Returns details about the node's sync process.
      *
-     * @apiSuccess {object}  data A collection of data about the sanity process.
-     * @apiSuccess {boolean} data.sanity_running Whether the sanity process is currently running.
-     * @apiSuccess {number}  data.last_sanity The timestamp for the last time the sanity process was run.
-     * @apiSuccess {boolean} data.sanity_sync Whether the sanity process is currently synchronising.
+     * @apiSuccess {object}  data A collection of data about the sync process.
+     * @apiSuccess {boolean} data.sync_running Whether the sync process is currently running.
+     * @apiSuccess {number}  data.last_sync The timestamp for the last time the sync process was run.
+     * @apiSuccess {boolean} data.sync Whether the sync process is currently synchronising.
      */
-    $sanity = file_exists(Nodeutil::getSanityFile());
+    $syncRunning = file_exists(Nodeutil::getSyncFile());
 
-    $lastSanity = (int)$db->single("SELECT val FROM config WHERE cfg='sanity_last'");
-    $sanitySync = (bool)$db->single("SELECT val FROM config WHERE cfg='sanity_sync'");
-    api_echo(['sanity_running' => $sanity, 'last_sanity' => $lastSanity, 'sanity_sync' => $sanitySync]);
+    $lastSync = (int)$db->single("SELECT val FROM config WHERE cfg='sync_last'");
+    $sync = (bool)$db->single("SELECT val FROM config WHERE cfg='sync'");
+    api_echo(['sync_running' => $syncRunning, 'last_sync' => $lastSync, 'sync' => $sync]);
 } elseif ($q === 'node-info') {
     /**
      * @api            {get} /api.php?q=node-info  21. node-info

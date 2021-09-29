@@ -170,6 +170,11 @@ if ($dbversion == 3) {
 	$db->run("alter table blocks add miner varchar(128) null;");
 	$dbversion = 4;
 }
+if ($dbversion == 4) {
+	$db->run("UPDATE config t SET t.cfg = 'sync_last' WHERE t.cfg = 'sanity_last'");
+	$db->run("UPDATE config t SET t.cfg = 'sync' WHERE t.cfg = 'sanity_sync'");
+	$dbversion = 5;
+}
 
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {

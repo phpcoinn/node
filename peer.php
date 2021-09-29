@@ -120,9 +120,9 @@ if ($q == "peer") {
     $current = $block->current();
 
 
-    // no transactions accepted if the sanity is syncing
-    if ($_config['sanity_sync'] == 1) {
-        api_err("sanity-sync");
+    // no transactions accepted if the sync is running
+    if ($_config['sync'] == 1) {
+        api_err("sync");
     }
 
     $data['id'] = san($data['id']);
@@ -179,10 +179,10 @@ if ($q == "peer") {
 } elseif ($q == "submitBlock") {
     // receive a  new block from a peer
 	_log("Receive new block from a peer $ip : id=".$data['id']." height=".$data['height'],1);
-    // if sanity sync, refuse all
-    if ($_config['sanity_sync'] == 1) {
-        _log('['.$ip."] Block rejected due to sanity sync");
-        api_err("sanity-sync");
+    // if sync, refuse all
+    if ($_config['sync'] == 1) {
+        _log('['.$ip."] Block rejected due to sync");
+        api_err("sync");
     }
     $data['id'] = san($data['id']);
     $current = $block->current();
@@ -211,15 +211,15 @@ if ($q == "peer") {
 		    }
 
         if ($accept_new) {
-            // if the new block is accepted, run a microsanity to sync it
-            _log('['.$ip."] Starting microsanity - $data[height]",1);
+            // if the new block is accepted, run a microsync to sync it
+            _log('['.$ip."] Starting microsync - $data[height]",1);
             $ip=escapeshellarg($ip);
             $dir = ROOT."/cli";
-            system(  "php $dir/sanity.php microsanity '$ip'  > /dev/null 2>&1  &");
-            api_echo("microsanity");
+            system(  "php $dir/sync.php microsync '$ip'  > /dev/null 2>&1  &");
+            api_echo("microsync");
         } else {
-            _log('['.$ip."] suggesting reverse-microsanity - $data[height]",1);
-            api_echo("reverse-microsanity"); // if it's not, suggest to the peer to get the block from us
+            _log('['.$ip."] suggesting reverse-microsync - $data[height]",1);
+            api_echo("reverse-microsync"); // if it's not, suggest to the peer to get the block from us
         }
     }
     // if it's not the next block
@@ -239,7 +239,7 @@ if ($q == "peer") {
 
             api_err("block-too-old");
         }
-        // if the block difference is bigger than 150, nothing should be done. They should sync via sanity
+        // if the block difference is bigger than 150, nothing should be done. They should sync
         if ($data['height'] - $current['height'] > 150) {
             _log('['.$ip."] block-out-of-sync - $data[height]",2);
             api_err("block-out-of-sync");

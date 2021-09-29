@@ -62,7 +62,7 @@ class Miner {
 				return false;
 			}
 
-			if (isset($_config['sanity_sync']) && $_config['sanity_sync'] == 1) {
+			if (isset($_config['sync']) && $_config['sync'] == 1) {
 				_log("Sync in process - stop miner");
 				return false;
 			}

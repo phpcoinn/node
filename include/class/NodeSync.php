@@ -17,7 +17,7 @@ class NodeSync
 		$block = new Block();
 
 		global $db;
-		$db->run("UPDATE config SET val=1 WHERE cfg='sanity_sync'");
+		$db->run("UPDATE config SET val=1 WHERE cfg='sync'");
 
 		$peers_count = count($this->peers);
 
@@ -208,7 +208,7 @@ class NodeSync
 		}
 
 		$t = time();
-		$db->run("UPDATE config SET val=0 WHERE cfg='sanity_sync'", [":time" => $t]);
+		$db->run("UPDATE config SET val=0 WHERE cfg='sync'", [":time" => $t]);
 		if($syncing) {
 			_log("Blockchain SYNCED",0);
 		}

@@ -30,9 +30,9 @@ class Nodeutil
 
 	static function clean() {
 		global $db;
-		$lockFile = Nodeutil::getSanityFile();
+		$lockFile = Nodeutil::getSyncFile();
 		if (file_exists($lockFile)) {
-			_log("Sanity running. Wait for it to finish");
+			_log("Sync running. Wait for it to finish");
 			return;
 		}
 		@touch($lockFile);
@@ -96,16 +96,16 @@ class Nodeutil
 	}
 
 	static function deleteLatestBlocks($no) {
-		$sanityFile = Nodeutil::getSanityFile();
-		if (file_exists($sanityFile)) {
-			_log("Sanity running. Wait for it to finish", 3);
+		$syncFile = Nodeutil::getSyncFile();
+		if (file_exists($syncFile)) {
+			_log("Sync running. Wait for it to finish", 3);
 			return;
 		}
-		touch($sanityFile);
+		touch($syncFile);
 		$no = intval($no);
 		$block = new Block();
 		$block->pop($no);
-		unlink($sanityFile);
+		unlink($syncFile);
 	}
 
 	static function deleteFromHeight($height) {
@@ -178,8 +178,8 @@ class Nodeutil
 		}
 	}
 
-	static function getSanityFile() {
-		$file = ROOT."/tmp/sanity-lock";
+	static function getSyncFile() {
+		$file = ROOT."/tmp/sync-lock";
 		return $file;
 	}
 
