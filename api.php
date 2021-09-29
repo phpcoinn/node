@@ -414,10 +414,9 @@ if ($q == "getAddress") {
      * @apiParam {string} dst Destination address
      * @apiParam {string} public_key Sender's public key
      * @apiParam {string} [signature] Transaction signature. It's recommended that the transaction is signed before being sent to the node to avoid sending your private key to the node.
-     * @apiParam {string} [private_key] Sender's private key. Only to be used when the transaction is not signed locally.
      * @apiParam {numeric} [date] Transaction's date in UNIX TIMESTAMP format. Requried when the transaction is pre-signed.
      * @apiParam {string} [message] A message to be included with the transaction. Maximum 128 chars.
-     * @apiParam {numeric} [version] The version of the transaction. 1 to send coins.
+     * @apiParam {numeric} [type] The version of the transaction. 1 to send coins.
      *
      * @apiSuccess {string} data  Transaction id
      */
@@ -453,10 +452,6 @@ if ($q == "getAddress") {
         }
     }
 
-    $private_key = san($data['private_key']);
-    if (!Account::validKey($private_key)) {
-        api_err("Invalid private key");
-    }
     $signature = san($data['signature']);
     if (!Account::validKey($signature)) {
         api_err("Invalid signature");
@@ -488,24 +483,6 @@ if ($q == "getAddress") {
     $val = num($val);
     $fee = num($fee);
 
-
-    if (empty($public_key) && empty($private_key)) {
-        api_err("Either the private key or the public key must be sent");
-    }
-
-
-    if (empty($private_key) && empty($signature)) {
-        api_err("Either the private_key or the signature must be sent");
-    }
-
-    
-
-    if (empty($public_key)) {
-        $pk = coin2pem($private_key, true);
-        $pkey = openssl_pkey_get_private($pk);
-        $pub = openssl_pkey_get_details($pkey);
-        $public_key = pem2coin($pub['key']);
-    }
     $transaction = [
         "val"        => $val,
         "fee"        => $fee,
