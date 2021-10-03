@@ -14,7 +14,6 @@ if(!(isset($_config['faucet']) && $_config['faucet'] && !empty($_config['faucet_
 $faucetAddress = Account::getAddress($_config['faucet_public_key']);
 $faucetBalance = Account::getBalance($faucetAddress);
 
-$tx=new Transaction();
 
 if(isset($_POST['action'])) {
     $address = $_POST['address'];
@@ -45,33 +44,14 @@ if(isset($_POST['action'])) {
 	    exit;
     }
 
-    $val = num(0.01);
-	$fee = num(0);
+    $val = 0.01;
+	$fee = 0;
 	$msg = "faucet";
 	$date = time();
-	$info = $tx->getSignatureBase([
-		'val' => $val,
-		'fee' => $fee,
-		'dst' => $address,//Lhh3Swby5jVw9VxSsUW7eZS1NqHEN3vQRN
-		'message' => $msg,
-		'type' => TX_TYPE_SEND,
-		'public_key' => $_config['faucet_public_key'],
-		'date' => $date
-	]);
 
-	$signature=ec_sign($info, $_config['faucet_private_key']);
-
-	$transaction = [
-		"val"        => $val,
-		"fee"        => $fee,
-		"dst"        => $address,
-		"public_key" => $_config['faucet_public_key'],
-		"date"       => $date,
-		"type"    => TX_TYPE_SEND,
-		"message"    => $msg,
-		"signature"  => $signature,
-	];
-	$hash = Transaction::addToMemPool($transaction, $_config['faucet_public_key'], $error);
+	$transaction = new Transaction($_config['faucet_public_key'],$address,$val,TX_TYPE_SEND,$date,$msg);
+	$transaction->_sign($_config['faucet_private_key']);
+	$hash = $transaction->_addToMemPool($error);
 	if($hash === false) {
 		$_SESSION['msg']=[['icon'=>'error', 'text'=>'Transaction can not be sent: '.$error]];
 		header("location: /apps/faucet/index.php");

@@ -82,7 +82,6 @@ if ($_config['public_api'] == false && !in_array($ip, $_config['allowed_hosts'])
 $acc = new Account();
 $block = new Block();
 
-$trx = new Transaction();
 $q = $_GET['q'];
 if (!empty($_POST['data'])) {
     $data = json_decode($_POST['data'], true);
@@ -260,9 +259,9 @@ if ($q == "getAddress") {
      */
 
     $id = san($data['transaction']);
-    $res = $trx->get_transaction($id);
+    $res = Transaction::get_transaction($id);
     if ($res === false) {
-        $res = $trx->get_mempool_transaction($id);
+        $res = Transaction::get_mempool_transaction($id);
         if ($res === false) {
             api_err("invalid transaction");
         }
@@ -384,7 +383,7 @@ if ($q == "getAddress") {
         !($data['includeMiningRewards'] === '0' || $data['includeMiningRewards'] === 'false')
     );
 
-    $ret = $trx->get_transactions($height, $block, $includeMiningRewards);
+    $ret = Transaction::get_transactions($height, $block, $includeMiningRewards);
 
     if ($ret === false) {
         api_err("Invalid block");
@@ -425,7 +424,6 @@ if ($q == "getAddress") {
     $acc = new Account();
     $block = new Block();
 
-    $trx = new Transaction();
     $type = intval($data['type']);
     $dst = san($data['dst']);
 
@@ -474,27 +472,15 @@ if ($q == "getAddress") {
         api_err("The message must be less than 128 chars");
     }
     $val = $data['val'] + 0;
-    $fee = $val * TX_FEE;
 
     if ($val < 0) {
         api_err("Invalid value");
     }
 
-    $val = num($val);
-    $fee = num($fee);
+	$transaction = new Transaction($public_key,$dst,$val,$type,$date,$message);
+	$transaction->signature = $signature;
+	$hash = $transaction->_addToMemPool($error);
 
-    $transaction = [
-        "val"        => $val,
-        "fee"        => $fee,
-        "dst"        => $dst,
-        "public_key" => $public_key,
-        "date"       => $date,
-        "type"    => $type,
-        "message"    => $message,
-        "signature"  => $signature,
-    ];
-
-	$hash = Transaction::addToMemPool($transaction, $public_key, $error);
 	if($hash === false) {
 		api_err($error);
 	}

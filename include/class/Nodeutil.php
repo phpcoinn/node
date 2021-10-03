@@ -297,7 +297,6 @@ class Nodeutil
 
 		for($i=1;$i<=$height;$i++) {
 			$blc = new Block();
-			$tx = new Transaction();
 			$block = $blc->export("",$i);
 			$res = Block::verifyBlock($block);
 			echo "Verify block $i / $height res=$res".PHP_EOL;

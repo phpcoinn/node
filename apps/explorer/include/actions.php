@@ -20,7 +20,7 @@ if(isset($_GET['search'])) {
 		header("location: /apps/explorer/block.php?id=".$search);
 		exit;
 	}
-	$tx = Transaction::getById($search);
+	$tx = Transaction::get_transaction($search);
 	if($tx) {
 		header("location: /apps/explorer/tx.php?id=".$search);
 		exit;

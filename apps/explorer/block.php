@@ -4,7 +4,6 @@ define("PAGE", true);
 define("APP_NAME", "Explorer");
 
 $blc = new Block();
-$tx=new Transaction();
 
 $blockCount = Block::getHeight();
 $height = $blockCount;
@@ -174,6 +173,7 @@ require_once __DIR__. '/../common/include/top.php';
         <thead class="table-light">
             <tr>
                 <th>ID</th>
+                <th>Src</th>
                 <th>Dst</th>
                 <th class="text-end">Value</th>
 <!--                <th>Fee</th>-->
@@ -181,12 +181,24 @@ require_once __DIR__. '/../common/include/top.php';
                 <th>Date</th>
             </tr>
         </thead>
-        <?php foreach ($transactions as $tx) { ?>
+        <?php foreach ($transactions as $tx) {
+            if($tx->type == TX_TYPE_REWARD) {
+	            $src = null;
+            } else {
+	            $src = Account::getAddress($tx['public_key']);
+            }
+
+            ?>
             <tbody>
                 <tr>
                     <td><a href="/apps/explorer/tx.php?id=<?php echo $tx['id'] ?>"><?php echo $tx['id'] ?><a/></td>
+                    <td>
+                        <?php if($src) { ?>
+                            <a href="/apps/explorer/address.php?address=<?php echo $src ?>"><?php echo $src ?></a>
+                        <?php } ?>
+                    </td>
                     <td><a href="/apps/explorer/address.php?address=<?php echo $tx['dst'] ?>"><?php echo $tx['dst'] ?></a></td>
-                    <td class="text-end <?php echo $tx['sign']=='-' ? 'text-danger' : 'text-success' ?>"><?php echo $tx['sign'] . num($tx['val']) ?></td>
+                    <td class="text-end"><?php echo num($tx['val']) ?></td>
 <!--                    <td>--><?php //echo num($tx['fee']) ?><!--</td>-->
                     <td><?php echo $tx['type_label'] ?></td>
                     <td><?php echo display_date($tx['date']) ?></td>

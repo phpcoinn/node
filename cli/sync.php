@@ -38,6 +38,7 @@ if (php_sapi_name() !== 'cli') {
     die("This should only be run as cli");
 }
 
+
 require_once dirname(__DIR__).'/include/init.inc.php';
 
 _log("Executing sync", 2);
@@ -92,7 +93,6 @@ ini_set('memory_limit', '2G');
 
 $block = new Block();
 $acc = new Account();
-$trx= new Transaction();
 
 $current = $block->current();
 
@@ -190,7 +190,7 @@ if ($arg == "microsync" && !empty($arg2)) {
         // add the new block
         echo "Starting to sync last block from $x[hostname]\n";
         $b = $data;
-		$prev = $block->prev();
+		$prev = $block->current();
         
         $res = $block->add(
             $b['height'],

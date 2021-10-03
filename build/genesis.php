@@ -3,7 +3,6 @@
 if(php_sapi_name() !== 'cli') exit;
 require_once dirname(__DIR__).'/include/init.inc.php';
 $block = new Block();
-$txn = new Transaction();
 $account = Account::generateAcccount();
 
 print_r($account);
@@ -25,7 +24,7 @@ $height = 1;
 $generator = Account::getAddress($public_key);
 $data = [];
 
-$reward_tx = $txn->getRewardTransaction($generator, $block_date, $public_key, $private_key, num(GENESIS_REWARD));
+$reward_tx = Transaction::getRewardTransaction($generator, $block_date, $public_key, $private_key, num(GENESIS_REWARD));
 $data[$reward_tx['id']]=$reward_tx;
 ksort($data);
 

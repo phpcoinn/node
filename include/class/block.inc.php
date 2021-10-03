@@ -8,7 +8,6 @@ class Block
     {
         global $db;
         $acc = new Account();
-        $trx = new Transaction();
 
         $generator = Account::getAddress($public_key);
 
@@ -418,7 +417,6 @@ class Block
             return false;
         }
         $acc = new Account();
-        $trx = new Transaction();
         // no transactions means all are valid
         if (count($data) == 0) {
             return true;
@@ -439,7 +437,8 @@ class Block
         foreach ($data as &$x) {
             if (!$bootstrapping) {
                 //validate the transaction
-                if (!$trx->check($x, $height)) {
+	            $tx = Transaction::getFromArray($x);
+                if (!$tx->_check($height)) {
                     _log("Transaction check failed - $x[id]", 3);
                     return false;
                 }
@@ -489,7 +488,8 @@ class Block
         // if the test argument is false, add the transactions to the blockchain
         if ($test == false) {
             foreach ($data as $d) {
-                $res = $trx->add($block, $height, $d);
+	            $tx = Transaction::getFromArray($d);
+                $res = $tx->_add($block, $height);
                 if ($res == false) {
                     return false;
                 }
@@ -553,7 +553,6 @@ class Block
 	        return false;
         }
         global $db;
-        $trx = new Transaction();
 
         $r = $db->run("SELECT * FROM blocks WHERE height>=:height ORDER by height DESC", [":height" => $height]);
 
@@ -564,7 +563,7 @@ class Block
         $db->lockTables();
 
         foreach ($r as $x) {
-            $res = $trx->reverse($x['id']);
+            $res = Transaction::reverse($x['id']);
             if ($res === false) {
                 _log("A transaction could not be reversed. Delete block failed.", 1);
                 $db->rollback();
@@ -646,7 +645,6 @@ class Block
         }
 
         global $db;
-        $trx = new Transaction();
         if (!empty($height)) {
             $block = $db->row("SELECT * FROM blocks WHERE height=:height", [":height" => $height]);
         } else {

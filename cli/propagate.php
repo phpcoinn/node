@@ -177,9 +177,8 @@ if ($type == "block") {
 // broadcast a transaction to some peers
 if ($type == "transaction") {
 	_log("Propagate transaction");
-    $trx = new Transaction();
     // get the transaction data
-    $data = $trx->export($id);
+    $data = Transaction::_export($id);
 
     if (!$data) {
 	    _log("Invalid transaction id");

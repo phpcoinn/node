@@ -3,7 +3,7 @@ require_once dirname(__DIR__)."/apps.inc.php";
 define("PAGE", true);
 define("APP_NAME", "Explorer");
 $id = $_GET['id'];
-$tx = Transaction::getById($id);
+$tx = Transaction::get_transaction($id);
 
 if(!$tx) {
 	$tx = Transaction::getMempoolById($id);
@@ -12,12 +12,11 @@ if(!$tx) {
         exit;
     }
 }
-$txs = new Transaction();
 if(isset($_GET['action'])) {
     $action = $_GET['action'];
     if($action == "check") {
-        $tx = Transaction::getById($id);
-	    $res = $txs->check($tx);
+        $tx = Transaction::_getById($id);
+	    $res = $tx->_check();
 	    if($res) {
 	        die("Transaction valid");
         } else {
@@ -58,9 +57,20 @@ require_once __DIR__. '/../common/include/top.php';
             <td>Date</td>
             <td><?php echo $tx['date'] ?></td>
         </tr>
+        <?php
+        if($tx->type==TX_TYPE_REWARD) {
+            $src= null;
+        } else {
+            $src = Account::getAddress($tx['public_key']);
+        }
+        ?>
         <tr>
             <td>Source</td>
-            <td><?php echo Account::getAddress($tx['public_key']) ?></td>
+            <td>
+                <?php if($src) { ?>
+                    <?php echo Account::getAddress($tx['public_key']) ?>
+                <?php } ?>
+            </td>
         </tr>
         <tr>
             <td>Destination</td>

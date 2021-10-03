@@ -32,10 +32,9 @@ class Blockchain
 
 	static function getMineInfo() {
 		$block = new Block();
-		$txn = new Transaction();
 		$diff = $block->difficulty();
 		$current = $block->current();
-		$data = $txn->mempool($block->max_transactions());
+		$data = Transaction::mempool($block->max_transactions());
 		$reward = Block::reward($current['height']+1);
 		$res = [
 			"difficulty" => $diff,

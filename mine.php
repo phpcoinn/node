@@ -93,7 +93,6 @@ if ($q == "info") {
 
         $current = $block->current();
         $height = $current['height'] += 1;
-        $txn = new Transaction();
 
         $difficulty = $block->difficulty();
         $acc = new Account();
@@ -196,17 +195,16 @@ if ($q == "info") {
 		api_err("rejected - date");
 	}
 
-	$tx = new Transaction();
 	$lastBlock = $block->current();
 	$block_date = $lastBlock['date'];
 	$new_block_date = $block_date + $elapsed;
 	$rewardInfo = Block::reward($height);
 	$minerReward = num($rewardInfo['miner']);
-	$reward_tx = $tx->getRewardTransaction($address, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $minerReward);
+	$reward_tx = Transaction::getRewardTransaction($address, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $minerReward);
 	$data[$reward_tx['id']] = $reward_tx;
 
 	$generatorReward = num($rewardInfo['generator']);
-	$reward_tx = $tx->getRewardTransaction($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $generatorReward);
+	$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $generatorReward);
 	$data[$reward_tx['id']] = $reward_tx;
 
 	ksort($data);

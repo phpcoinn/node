@@ -31,7 +31,6 @@ class NodeMiner {
 
 	function start() {
 		$block = new Block();
-		$tx = new Transaction();
 		$this->miningStat = [
 			'started'=>time(),
 			'hashes'=>0,
@@ -122,7 +121,7 @@ class NodeMiner {
 			$rewardinfo = Block::reward($height);
 			$reward = $rewardinfo['miner'] + $rewardinfo['generator'];
 			$reward = num($reward);
-			$reward_tx = $tx->getRewardTransaction($generator, $new_block_date, $this->public_key, $this->private_key, $reward);
+			$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $this->public_key, $this->private_key, $reward);
 			$data[$reward_tx['id']]=$reward_tx;
 			ksort($data);
 

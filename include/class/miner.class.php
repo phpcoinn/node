@@ -43,7 +43,6 @@ class Miner {
 	function start() {
 		global $_config;
 		$block = new Block();
-		$tx = new Transaction();
 		$this->miningStat = [
 			'started'=>time(),
 			'hashes'=>0,

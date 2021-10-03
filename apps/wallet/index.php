@@ -44,17 +44,9 @@ if(isset($_POST['action'])) {
 		$verify = Account::checkSignature($info, $signature, $public_key);
 		if($verify) {
 
-			$transaction = [
-				"val"        => $val,
-				"fee"        => $fee,
-				"dst"        => $dst,
-				"public_key" => $public_key,
-				"date"       => $date,
-				"type"    => TX_TYPE_SEND,
-				"message"    => $msg,
-				"signature"  => $signature,
-			];
-            $hash = Transaction::addToMemPool($transaction, $public_key, $error);
+			$transaction = new Transaction($public_key,$dst,$val,TX_TYPE_SEND,$date,$msg);
+			$transaction->signature = $signature;
+			$hash = $transaction->_addToMemPool($error);
             if($hash === false) {
 	            $_SESSION['msg']=[['icon'=>'error', 'text'=>'Transaction can not be sent: '.$error]];
 	            header("location: /apps/wallet/index.php");
