@@ -26,7 +26,6 @@ if(isset($_GET['search'])) {
 		exit;
 	}
 	$pubkey = $search;
-	$acc = new Account();
 	$address = Account::getAddress($pubkey);
 	if(Account::valid($address)) {
 		$pubkeyCheck = Account::publicKey($address);

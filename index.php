@@ -26,8 +26,8 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 require_once __DIR__.'/include/init.inc.php';
-$block = new Block();
-$current = $block->current();
+//$block = new Block();
+$current = Block::_current();
 global $_config;
 ?>
 

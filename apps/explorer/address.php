@@ -4,8 +4,6 @@ require_once ROOT. '/apps/explorer/include/functions.php';
 define("PAGE", true);
 define("APP_NAME", "Explorer");
 
-$acc = new Account();
-
 if(isset($_GET['address'])) {
     $address = $_GET['address'];
 } else if (isset($_GET['pubkey'])) {

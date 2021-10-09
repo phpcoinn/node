@@ -14,6 +14,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
 
     public static $classMap = array (
         'Account' => __DIR__ . '/../..' . '/include/class/account.inc.php',
+        'Api' => __DIR__ . '/../..' . '/include/class/Api.php',
         'Block' => __DIR__ . '/../..' . '/include/class/block.inc.php',
         'Blockchain' => __DIR__ . '/../..' . '/include/class/Blockchain.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',

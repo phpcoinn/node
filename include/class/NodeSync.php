@@ -14,8 +14,6 @@ class NodeSync
 	public function start($largest_height, $most_common)
 	{
 
-		$block = new Block();
-
 		global $db;
 		$db->run("UPDATE config SET val=1 WHERE cfg='sync'");
 
@@ -29,7 +27,7 @@ class NodeSync
 				break;
 			}
 
-			$current = $block->current();
+			$current = Block::_current();
 			$syncing = (($current['height'] < $largest_height && $largest_height > 1)
 				|| ($current['height'] == $largest_height && $current['id']!=$most_common));
 			_log("check syncing syncing=$syncing current_height=".$current['height']." largest_height=$largest_height current_id=".
@@ -73,7 +71,7 @@ class NodeSync
 
 			if($failed_block > 0 && $failed_block > ($peers_count - $failed_peer) / 2 ) {
 				_log("Failed block on blockchain $failed_block - remove", 0);
-				$res=$block->pop();
+				$res=Block::pop();
 				if(!$res) {
 					_log("Can not delete block on height $height");
 					$syncing = false;
@@ -113,7 +111,8 @@ class NodeSync
 						$host = array_keys($next_block_peers[$id])[0];
 						$next_block = $next_block_peers[$id][$host];
 //				_log("Checking block ". print_r($next_block,1));
-						if (!$block->check($next_block)
+						$block = Block::getFromArray($next_block);
+						if (!$block->_check()
 						) {
 							_log("Invalid block mined at height ".$height);
 							$syncing = false;
@@ -124,18 +123,9 @@ class NodeSync
 						} else {
 							$prev_block = Block::getAtHeight($next_block['height']-1);
 							$prev_block_id = $prev_block['id'];
-							$res = $block->add(
-								$next_block['height'],
-								$next_block['public_key'],
-								$next_block['miner'],
-								$next_block['nonce'],
-								$next_block['data'],
-								$next_block['date'],
-								$next_block['signature'],
-								$next_block['difficulty'],
-								$next_block['argon'],
-								$prev_block_id
-							);
+							$block = Block::getFromArray($next_block);
+							$block->prevBlockId = $prev_block_id;
+							$res = $block->_add();
 							if (!$res) {
 								_log("Block add: could not add block at height $height", 3);
 								$syncing = false;
@@ -144,9 +134,8 @@ class NodeSync
 								Peer::blacklist($peer['id'], 'Invalid block');
 								break;
 							} else {
-								$bl = new Block();
-								$vblock = $bl->export("", $height);
-								$res = Block::verifyBlock($vblock);
+								$vblock = Block::export("", $height);
+								$res = Block::getFromArray($vblock)->_verifyBlock();
 								if(!$res) {
 									_log("Block is not verified", 3);
 									$syncing = false;

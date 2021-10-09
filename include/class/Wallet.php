@@ -95,7 +95,6 @@ class Wallet
 			$this->public_key=trim($a[2]);
 			$this->private_key=trim($a[1]);
 
-			$acc = new Account();
 			$this->address=Account::getAddress($this->public_key);
 			echo "Your address is: ".$this->address."\n\n";
 		}
@@ -335,7 +334,7 @@ class Wallet
 		curl_setopt($ch, CURLOPT_POSTFIELDS,$postdata );
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, !DEVELOPMENT);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, DEVELOPMENT ? 0 : 2);
 		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
 		$result = curl_exec($ch);
 		curl_close ($ch);

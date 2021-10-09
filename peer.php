@@ -27,7 +27,7 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 require_once __DIR__.'/include/init.inc.php';
 header('Content-Type: application/json');
 
-$block = new Block();
+//$block = new Block();
 $q = $_GET['q'];
 // the data is sent as json, in $_POST['data']
 if (!empty($_POST['data'])) {
@@ -119,7 +119,7 @@ if ($q == "peer") {
 
 	$tx = Transaction::getFromArray($data);
     // receive a new transaction from a peer
-    $current = $block->current();
+//    $current = $block->current();
 
 
     // no transactions accepted if the sync is running
@@ -184,7 +184,7 @@ if ($q == "peer") {
         api_err("sync");
     }
     $data['id'] = san($data['id']);
-    $current = $block->current();
+    $current = Block::_current();
     // block already in the blockchain
     if ($current['id'] == $data['id']) {
         _log("block-ok",3);
@@ -248,33 +248,37 @@ if ($q == "peer") {
         api_echo(["request" => "microsync", "height" => $current['height'], "block" => $current['id']]);
     }
     // check block data
-    if (!$block->check($data)) {
+	$block = Block::getFromArray($data);
+    if (!$block->_check()) {
         _log('['.$ip."] invalid block - $data[height]",1);
         api_err("invalid-block");
     }
     $b = $data;
     // add the block to the blockchain
-    $res = $block->add(
-        $b['height'],
-        $b['public_key'],
-        $b['miner'],
-        $b['nonce'],
-        $b['data'],
-        $b['date'],
-        $b['signature'],
-        $b['difficulty'],
-        $b['argon'],
-	    $current['id']
-    );
+	$block = Block::getFromArray($b);
+	$block->prevBlockId = $current['id'];
+	$res = $block->_add();
+//    $res = $block->add(
+//        $b['height'],
+//        $b['public_key'],
+//        $b['miner'],
+//        $b['nonce'],
+//        $b['data'],
+//        $b['date'],
+//        $b['signature'],
+//        $b['difficulty'],
+//        $b['argon'],
+//	    $current['id']
+//    );
 
     if (!$res) {
         _log('['.$ip."] invalid block data - $data[height]",1);
         api_err("invalid-block-data");
     }
 
-	$bl = new Block();
-    $last_block = $bl->export("", $data['height']);
-    $res = Block::verifyBlock($last_block);
+    $last_block = Block::export("", $data['height']);
+	$bl = Block::getFromArray($last_block);
+    $res = $bl->_verifyBlock();
 
 	if (!$res) {
 		_log("Can not verify added block",1);
@@ -290,12 +294,12 @@ if ($q == "peer") {
     api_echo("block-ok");
 } // return the current block, used in syncing
 elseif ($q == "currentBlock") {
-    $current = $block->current();
+    $current = Block::_current();
     api_echo(["block"=>$current, "info"=>Peer::getInfo()]);
 } // return a specific block, used in syncing
 elseif ($q == "getBlock") {
     $height = intval($data['height']);
-    $export = $block->export("", $height);
+    $export = Block::export("", $height);
     if (!$export) {
         api_err("invalid-block");
     }
@@ -310,7 +314,7 @@ elseif ($q == "getBlock") {
         [":height" => $height]
     );
     foreach ($r as $x) {
-        $blocks[$x['height']] = $block->export($x['id']);
+        $blocks[$x['height']] = Block::export($x['id']);
     }
     api_echo($blocks);
 } elseif ($q == "getPeerBlocks") {
@@ -335,9 +339,9 @@ elseif ($q == "getBlock") {
     }
 
     foreach ($r as $x) {
-        $blocks[$x['height']] = $block->export($x['id']);
+        $blocks[$x['height']] = Block::export($x['id']);
     }
-	$current = $block->current();
+	$current = Block::_current();
 	api_echo(["block"=>$current,"blocks"=>$blocks, "info"=>Peer::getInfo()]);
 } // returns a full list of unblacklisted peers in a random order
 elseif ($q == "getPeers") {

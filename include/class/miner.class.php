@@ -42,7 +42,6 @@ class Miner {
 
 	function start() {
 		global $_config;
-		$block = new Block();
 		$this->miningStat = [
 			'started'=>time(),
 			'hashes'=>0,
@@ -80,6 +79,8 @@ class Miner {
 
 			$attempt = 0;
 
+			$bl = new Block(null, $this->address, $height, null, null, $data, $difficulty, VERSION_CODE, null, $prev_block_id);
+
 			while (!$blockFound) {
 				$attempt++;
 				usleep(500 * 1000);
@@ -87,10 +88,11 @@ class Miner {
 				$elapsed = $now - $offset - $block_date;
 				$new_block_date = $block_date + $elapsed;
 				_log("Time=now=$now nodeTime=$nodeTime offset=$offset elapsed=$elapsed",4);
-				$argon = null;
-				$nonce = Block::calculateNonce($this->address, $block_date, $elapsed, $argon);
-				$hit = $block->calculateHit($nonce, $this->address, $height, $difficulty);
-				$target = $block->calculateTarget($difficulty, $elapsed);
+				$bl->argon = null;
+				$bl->_calculateNonce($block_date, $elapsed);
+				$bl->date = $block_date;
+				$hit = $bl->_calculateHit();
+				$target = $bl->_calculateTarget($elapsed);
 				$blockFound = ($hit > 0 && $target>=0 &&  $hit > $target);
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
@@ -113,8 +115,8 @@ class Miner {
 
 			$postData = http_build_query(
 				[
-					'argon' => $argon,
-					'nonce' => $nonce,
+					'argon' => $bl->argon,
+					'nonce' => $bl->nonce,
 					'height' => $height,
 					'difficulty' => $difficulty,
 					'address' => $this->address,

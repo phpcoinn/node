@@ -2,7 +2,6 @@
 
 if(php_sapi_name() !== 'cli') exit;
 require_once dirname(__DIR__).'/include/init.inc.php';
-$block = new Block();
 $account = Account::generateAcccount();
 
 print_r($account);
@@ -28,15 +27,17 @@ $reward_tx = Transaction::getRewardTransaction($generator, $block_date, $public_
 $data[$reward_tx['id']]=$reward_tx;
 ksort($data);
 
-$nonce = Block::calculateNonce($generator, $block_date, $elapsed, $argon);
-$signature = $block->sign($generator, $generator, $height, $block_date, $nonce, $data, $private_key, $difficulty, $argon, "");
+$block=new Block($generator, $generator, $height, $block_date, null, $data, $difficulty, VERSION_CODE, null, "");
+$block->_calculateNonce($block_date, $elapsed);
+
+$signature = $block->_sign($private_key);
 
 $genesisData = [
 	'signature' => $signature,
 	'public_key' => $public_key,
-	'argon'=>$argon,
+	'argon'=>$block->argon,
 	'difficulty'=>$difficulty,
-	'nonce'=>$nonce,
+	'nonce'=>$block->nonce,
 	'date'=>$block_date,
 	'reward_tx'=>json_encode($data),
 ];

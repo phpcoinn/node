@@ -7,6 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Account' => $baseDir . '/include/class/account.inc.php',
+    'Api' => $baseDir . '/include/class/Api.php',
     'Block' => $baseDir . '/include/class/block.inc.php',
     'Blockchain' => $baseDir . '/include/class/Blockchain.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',

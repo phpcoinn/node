@@ -4,11 +4,15 @@ define("MINER_RUN", true);
 global $_config;
 if(php_sapi_name() !== 'cli') exit;
 require_once dirname(__DIR__).'/include/init.inc.php';
-$block = new Block();
-$acc = new Account();
 
 define("MINER_LOCK_PATH", ROOT.'/tmp/miner-lock');
 _log("Running miner cli", 0);
+
+$res = intval(shell_exec("ps aux|grep miner.php|grep -v grep|wc -l"));
+if ($res <> 1) {
+	die("Other miner process already running");
+}
+
 // make sure there's only a single miner process running at the same time
 if (file_exists(MINER_LOCK_PATH) && !DEVELOPMENT) {
 	_log("Miner lock in place: " .MINER_LOCK_PATH);

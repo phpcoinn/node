@@ -60,8 +60,7 @@ class Nodeutil
 	}
 
 	static function checkBlocksWithPeer($peer) {
-		$block = new Block();
-		$current = $block->current();
+		$current = Block::_current();
 		$top = $current['height'];
 		$peerTopBlock = peer_post($peer."/peer.php?q=currentBlock");
 		$peerTop = $peerTopBlock["block"]['height'];
@@ -73,7 +72,7 @@ class Nodeutil
 		while(!$blockMatch) {
 			$check = intval(($top + $bottom) /2);
 			_log("checking block $check");
-			$myBlock = $block->get($check);
+			$myBlock = Block::get($check);
 			$b = peer_post($peer . "/peer.php?q=getBlock", ["height" => $check]);
 			if (!$b) {
 				_log("Not good peer to check. No response for block $check");
@@ -103,8 +102,7 @@ class Nodeutil
 		}
 		touch($syncFile);
 		$no = intval($no);
-		$block = new Block();
-		$block->pop($no);
+		Block::pop($no);
 		unlink($syncFile);
 	}
 
@@ -120,8 +118,7 @@ class Nodeutil
 		} else {
 			$res=$db->run("SELECT * FROM accounts ORDER by id ASC");
 		}
-		$block=new Block();
-		$current=$block->current();
+		$current=Block::_current();
 		return [
 			'height'=>$current['height'],
 			'hash'=>md5(json_encode($res))
@@ -296,9 +293,8 @@ class Nodeutil
 		$height = Block::getHeight();
 
 		for($i=1;$i<=$height;$i++) {
-			$blc = new Block();
-			$block = $blc->export("",$i);
-			$res = Block::verifyBlock($block);
+			$block = Block::export("",$i);
+			$res = Block::getFromArray($block)->_verifyBlock();
 			echo "Verify block $i / $height res=$res".PHP_EOL;
 			if(!$res) {
 				return;
@@ -312,8 +308,7 @@ class Nodeutil
 		$file = getcwd() . "/blockchain.json";
 		echo "Exporting blockchain to file: " . $file.PHP_EOL;
 		for($i=1;$i<=$height;$i++) {
-			$blc = new Block();
-			$block = $blc->export("",$i);
+			$block = Block::export("",$i);
 			$list[]=$block;
 			if($i % 100 == 0) {
 				echo "Exporting block $i".PHP_EOL;

@@ -3,8 +3,6 @@ require_once dirname(__DIR__)."/apps.inc.php";
 define("PAGE", true);
 define("APP_NAME", "Explorer");
 
-$blc = new Block();
-
 $blockCount = Block::getHeight();
 $height = $blockCount;
 if(isset($_GET['height'])) {
@@ -37,8 +35,8 @@ if(isset($_GET['action'])) {
 			header("location: /apps/explorer");
 			exit;
 		}
-		$block = $blc->export($id);
-		$res = Block::verifyBlock($block);
+		$block = Block::export($id);
+		$res = Block::getFromArray($block)->_verifyBlock();
 		if (!$res) {
 			die("Block not valid");
 		}

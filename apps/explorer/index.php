@@ -259,8 +259,7 @@ $elapsed = time() - $last['date'];
                         <?php
                         if($block['height']>1) {
 	                        if ($i == count($blocks) - 1) {
-		                        $bl = new Block();
-		                        $pb = $bl->get($block['height'] - 1);
+		                        $pb = Block::get($block['height'] - 1);
 		                        echo $block['date'] - $pb['date'];
 	                        } else {
 		                        echo $block['date'] - $blocks[$i + 1]['date'];

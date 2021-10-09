@@ -25,8 +25,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 OR OTHER DEALINGS IN THE SOFTWARE.
 */
 require_once __DIR__.'/include/init.inc.php';
-$block = new Block();
-$acc = new Account();
+//$block = new Block();
 set_time_limit(360);
 $q = $_GET['q'];
 
@@ -46,7 +45,7 @@ if ($q == "info") {
     $res = Blockchain::getMineInfo();
     api_echo($res);
     exit;
-} elseif ($q == "submitBlock") {
+/*} elseif ($q == "submitBlock") {
 //	_log("POSTDATA=".print_r($_POST, true));
     // in case the blocks are syncing, reject all
     if ($_config['sync'] == 1) {
@@ -131,7 +130,7 @@ if ($q == "info") {
             api_err("rejected - add");
         }
     }
-    api_err("rejected");
+    api_err("rejected");*/
 } elseif ($q == "submitHash") {
 	//TODO: not working ok - must set generator to node who mined !!!
 	if (empty($_config['generator'])) {
@@ -180,7 +179,7 @@ if ($q == "info") {
 	}
 
 	$now = time();
-	$prev_block = $block->get($height - 1);
+	$prev_block = Block::get($height - 1);
 	$date = $prev_block['date'] + $elapsed;
 	if (abs($date - $now) > 1 && false) {
 		api_err("rejected - date not match date=$date now=$now");
@@ -195,7 +194,7 @@ if ($q == "info") {
 		api_err("rejected - date");
 	}
 
-	$lastBlock = $block->current();
+	$lastBlock = Block::_current();
 	$block_date = $lastBlock['date'];
 	$new_block_date = $block_date + $elapsed;
 	$rewardInfo = Block::reward($height);
@@ -209,28 +208,31 @@ if ($q == "info") {
 
 	ksort($data);
 	$prev_block_id = $lastBlock['id'];
-	$signature = $block->sign($generator, $address, $height, $new_block_date, $nonce, $data, $_config['generator_private_key'], $difficulty, $argon, $prev_block_id);
 
-	$result = $block->mine($public_key, $address, $nonce, $argon, $difficulty, $signature, $height, $date);
+	$block = new Block($generator, $address, $height, $date, $nonce, $data, $difficulty, $version, $argon, $prev_block['id']);
+	$block->publicKey = $_config['generator_public_key'];
+
+	$signature = $block->_sign($_config['generator_private_key']);
+	$result = $block->_mine();
 
 	if ($result) {
-
-		$res = $block->add(
-			$height,
-			$_config['generator_public_key'],
-			$address,
-			$nonce,
-			$data,
-			$date,
-			$signature,
-			$difficulty,
-			$argon,
-			$prev_block['id']
-		);
+		$res = $block->_add();
+//		$res = $block->add(
+//			$height,
+//			$_config['generator_public_key'],
+//			$address,
+//			$nonce,
+//			$data,
+//			$date,
+//			$signature,
+//			$difficulty,
+//			$argon,
+//			$prev_block['id']
+//		);
 
 		if ($res) {
-			$current = $block->current();
-			$current['id'] = escapeshellarg(san($current['id']));
+			$current = Block::_current();
+//			$current['id'] = escapeshellarg(san($current['id']));
 			$dir = ROOT . "/cli";
 			$cmd = "php " . XDEBUG_CLI . " $dir/propagate.php block {$current['id']}  > /dev/null 2>&1  &";
 			_log("Call propagate " . $cmd);

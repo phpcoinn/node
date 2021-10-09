@@ -27,7 +27,6 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 set_time_limit(360);
 global $db, $_config;
 require_once dirname(__DIR__).'/include/init.inc.php';
-$block = new Block();
 
 $type = san($argv[1]);
 $id = san($argv[2]);
@@ -47,10 +46,10 @@ _log("Calling propagate.php",4);
 if ((empty($peer) || $peer == 'all') && $type == "block") {
     $whr = "";
     if ($id == "current") {
-        $current = $block->current();
+        $current = Block::_current();
         $id = $current['id'];
     }
-    $data = $block->export($id);
+    $data = Block::export($id);
     $id = san($id);
     if ($data === false || empty($data)) {
     	_log("Could not export block");
@@ -95,8 +94,8 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 if ($type == "block") {
     // current block or read cache
     if ($id == "current") {
-        $current = $block->current();
-        $data = $block->export($current['id']);
+        $current = Block::_current();
+        $data = Block::export($current['id']);
         if (!$data) {
             echo "Invalid Block data";
             exit;
@@ -124,14 +123,14 @@ if ($type == "block") {
         _log("Microsync request");
         $height = intval($response['height']);
         $bl = san($response['block']);
-        $current = $block->current();
+        $current = Block::_current();
         // maximum microsync is 10 blocks, for more, the peer should sync
         if ($current['height'] - $height > 10) {
             echo "Height Differece too high\n";
             _log("Height Differece too high");
             exit;
         }
-        $last_block = $block->get($height);
+        $last_block = Block::get($height);
         // if their last block does not match our blockchain/fork, ignore the request
         if ($last_block['id'] != $bl) {
             echo "Last block does not match\n";
@@ -142,7 +141,7 @@ if ($type == "block") {
 	    _log("Sending the requested blocks");
         //start sending the requested block
         for ($i = $height + 1; $i <= $current['height']; $i++) {
-            $data = $block->export("", $i);
+            $data = Block::export("", $i);
             $response = peer_post($hostname."/peer.php?q=submitBlock", $data, 60, $debug);
             if ($response != "block-ok") {
                 echo "Block $i not accepted. Exiting.\n";

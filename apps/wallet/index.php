@@ -25,7 +25,6 @@ if(isset($_POST['action'])) {
 			header("location: /apps/wallet/index.php");
 			exit;
         }
-		$acc = new Account();
 		$public_key = $_POST['public_key'];
 		$address = Account::getAddress($public_key);
 		$balance = Account::pendingBalance($address);
@@ -80,7 +79,6 @@ $loggedIn = false;
 if(isset($_SESSION['public_key'])) {
 	$loggedIn = true;
 	$public_key = $_SESSION['public_key'];
-	$acc = new Account();
 	$address = Account::getAddress($public_key);
 	$balance = Account::pendingBalance($address);
 	$total = Account::getCountByAddress($public_key, $address);
@@ -91,7 +89,6 @@ if(!$loggedIn) {
     header("location: /apps/wallet/login.php");
     exit;
 }
-$acc=new Account();
 
 $accPublicKey = Account::publicKey($address);
 

@@ -79,8 +79,7 @@ if ($_config['public_api'] == false && !in_array($ip, $_config['allowed_hosts'])
     api_err("private-api");
 }
 
-$acc = new Account();
-$block = new Block();
+//$block = new Block();
 
 $q = $_GET['q'];
 if (!empty($_POST['data'])) {
@@ -323,7 +322,7 @@ if ($q == "getAddress") {
      * @apiSuccess {string} argon Mining argon hash
      */
 
-    $current = $block->current();
+    $current = Block::_current();
     api_echo($current);
 } elseif ($q == "getBlock") {
     /**
@@ -344,7 +343,7 @@ if ($q == "getAddress") {
      * @apiSuccess {string} argon Mining argon hash
      */
     $height = san($data['height']);
-	$ret = $block->export("", $height);
+	$ret = Block::export("", $height);
     if ($ret == false) {
         api_err("Invalid block");
     } else {
@@ -419,10 +418,9 @@ if ($q == "getAddress") {
      *
      * @apiSuccess {string} data  Transaction id
      */
-    $current = $block->current();
+//    $current = Block::_current();
 
-    $acc = new Account();
-    $block = new Block();
+//    $block = new Block();
 
     $type = intval($data['type']);
     $dst = san($data['dst']);
@@ -538,7 +536,7 @@ if ($q == "getAddress") {
     $res=$db->run("SELECT * FROM masternode $whr ORDER by public_key ASC",$bind);
 
     api_echo(["masternodes"=>$res, "hash"=>md5(json_encode($res))]);
-} elseif ($q == "getAlias") {
+//} elseif ($q == "getAlias") {
     /**
      * @api {get} /api.php?q=getAlias  19. getAlias
      * @apiName getAlias
@@ -551,7 +549,7 @@ if ($q == "getAddress") {
      *
      * @apiSuccess {string} data alias
      */
-	api_err("Not supported");
+//	api_err("Not supported");
 /*    $public_key = $data['public_key'];
     $account = $data['account'];
     if (!empty($public_key) && strlen($public_key) < 32) {
@@ -603,18 +601,18 @@ if ($q == "getAddress") {
      */
     $dbVersion = $db->single("SELECT val FROM config WHERE cfg='dbversion'");
     $hostname = $db->single("SELECT val FROM config WHERE cfg='hostname'");
-    $acc = $db->single("SELECT COUNT(1) FROM accounts");
+    $accounts = $db->single("SELECT COUNT(1) FROM accounts");
     $tr = $db->single("SELECT COUNT(1) FROM transactions");
     $masternodes = $db->single("SELECT COUNT(1) FROM masternode");
     $mempool = $db->single("SELECT COUNT(1) FROM mempool");
     $peers = Peer::getCount();
-    $block = new Block();
-    $current = $block->current();
+//    $block = new Block();
+    $current = Block::_current();
     api_echo([
         'hostname'     => $hostname,
         'version'      => VERSION,
         'dbversion'    => $dbVersion,
-        'accounts'     => $acc,
+        'accounts'     => $accounts,
         'transactions' => $tr,
         'mempool'      => $mempool,
         'masternodes'  => $masternodes,
@@ -638,7 +636,6 @@ if ($q == "getAddress") {
 
 	$address = $data['address'];
 	$public_key = $data['public_key'];
-	$acc = new Account();
 	if (!Account::valid($address)) {
 		api_err(false);
 	}

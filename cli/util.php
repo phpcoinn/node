@@ -148,8 +148,7 @@ elseif ($cmd == "peer") {
  */
 
 elseif ($cmd == "current") {
-    $block = new Block();
-    var_dump($block->current());
+    var_dump(Block::_current());
 } /**
  * @api {php util.php} blocks Blocks
  * @apiName blocks
@@ -193,7 +192,6 @@ elseif ($cmd == "blocks") {
  */
 elseif ($cmd == "recheck-blocks") {
     $blocks = [];
-    $block = new Block();
     $r = $db->run("SELECT * FROM blocks ORDER by height ASC");
     foreach ($r as $x) {
         $blocks[$x['height']] = $x;
@@ -203,17 +201,9 @@ elseif ($cmd == "recheck-blocks") {
         $data = $blocks[$i];
 
         $key = $db->single("SELECT public_key FROM accounts WHERE id=:id", [":id" => $data['generator']]);
-
-        if (!$block->mine(
-            $key,
-            $data['miner'],
-            $data['nonce'],
-            $data['argon'],
-            $data['difficulty'],
-            $blocks[$i]['id'],
-            $blocks[$i]['height'],
-            $data['date']
-        )) {
+	    $block = Block::getFromArray($data);
+	    $block->publicKey = $key;
+        if (!$block->_mine()) {
             _log("Invalid block detected. We should delete everything after $data[height] - $data[id]");
             break;
         }
@@ -397,7 +387,6 @@ elseif ($cmd == "block") {
  */
 elseif ($cmd == "check-address") {
     $dst = trim($argv[2]);
-    $acc = new Account();
     if (!Account::valid($dst)) {
         die("Invalid address");
     }
@@ -438,9 +427,8 @@ elseif ($cmd == 'get-address') {
     Peer::cleanBlacklist();
     echo "All the peers have been removed from the blacklist\n";
 } elseif ($cmd=="compare-blocks") {
-    $block=new Block();
 
-    $current=$block->current();
+    $current=Block::_current();
     $peer=trim($argv[2]);
     $limit=intval($argv[3]);
     if ($limit==0) {
@@ -451,7 +439,7 @@ elseif ($cmd == 'get-address') {
         if ($data==false) {
             continue;
         }
-        $our=$block->export(false, $i);
+        $our=Block::export(false, $i);
         if ($data!=$our) {
             echo "Failed block -> $i\n";
             if ($argv[4]=="dump") {
@@ -476,8 +464,7 @@ elseif ($cmd == 'get-address') {
     }
 } elseif ($cmd=='masternode-hash') {
     $res=$db->run("SELECT * FROM masternode ORDER by public_key ASC");
-    $block=new Block();
-    $current=$block->current();
+    $current=Block::_current();
     echo "Height:\t\t$current[height]\n";
     echo "Hash:\t\t".md5(json_encode($res))."\n\n";
 } elseif ($cmd=='accounts-hash') {
@@ -493,8 +480,7 @@ elseif ($cmd == 'get-address') {
     }
     $peer = filter_var($peer, FILTER_SANITIZE_URL);
     $height=intval($argv[2]);
-    $block=new Block();
-    $data = $block->export("", $height);
+    $data = Block::export("", $height);
 
     
     if ($data===false) {
@@ -511,8 +497,10 @@ elseif ($cmd == 'get-address') {
 
 
     $blocks = [];
-    $block = new Block();
     $height=intval($argv[3]);
+    if(empty($height)) {
+	    $height=1;
+    }
 
     $last=peer_post($peer."/peer.php?q=currentBlock");
 
@@ -520,17 +508,8 @@ elseif ($cmd == 'get-address') {
 
     for ($i = $height+1; $i <= $last['block']['height']; $i++) {
         $c=peer_post($peer."/peer.php?q=getBlock", ["height"=>$i]);
-
-        if (!$block->mine(
-            $c['public_key'],
-            $c['miner'],
-            $c['nonce'],
-            $c['argon'],
-            $c['difficulty'],
-            $c['id'],
-            $c['height'],
-            $c['date']
-        )) {
+	    $block = Block::getFromArray($c);
+        if (!$block->_mine()) {
             print("Invalid block detected. $c[height] - $c[id]\n");
             break;
         }
@@ -546,23 +525,13 @@ elseif ($cmd == 'get-address') {
 
 
 	$blocks = [];
-	$block = new Block();
 	$height=intval($argv[3]);
 
 //	$last=peer_post($peer."/peer.php?q=currentBlock");
 
 	$b=peer_post($peer."/peer.php?q=getBlock", ["height"=>$height]);
-
-	if (!$block->mine(
-		$b['public_key'],
-		$b['miner'],
-		$b['nonce'],
-		$b['argon'],
-		$b['difficulty'],
-		$b['id'],
-		$b['height'],
-		$b['date']
-	)) {
+	$block = Block::getFromArray($b);
+	if (!$block->_mine()) {
 		print("Block is invalid\n");
 	} else {
 		print("Block is valid\n");

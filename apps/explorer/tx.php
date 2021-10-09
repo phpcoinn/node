@@ -58,7 +58,7 @@ require_once __DIR__. '/../common/include/top.php';
             <td><?php echo $tx['date'] ?></td>
         </tr>
         <?php
-        if($tx->type==TX_TYPE_REWARD) {
+        if($tx['type']==TX_TYPE_REWARD) {
             $src= null;
         } else {
             $src = Account::getAddress($tx['public_key']);

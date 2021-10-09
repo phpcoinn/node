@@ -30,7 +30,6 @@ class NodeMiner {
 	}
 
 	function start() {
-		$block = new Block();
 		$this->miningStat = [
 			'started'=>time(),
 			'hashes'=>0,
@@ -78,6 +77,9 @@ class NodeMiner {
 
 			$attempt = 0;
 
+			$bl = new Block($generator, $generator, $height, null, null, $data, $difficulty, VERSION_CODE, null, $prev_block_id);
+			$bl->publicKey = $this->public_key;
+
 			while (!$blockFound) {
 				$attempt++;
 				usleep(500 * 1000);
@@ -86,10 +88,11 @@ class NodeMiner {
 				$elapsed = $now - $block_date;
 				$new_block_date = $block_date + $elapsed;
 				_log("Time=now=$now elapsed=$elapsed",4);
-				$argon = null;
-				$nonce = Block::calculateNonce($generator, $block_date, $elapsed, $argon);
-				$hit = $block->calculateHit($nonce, $generator, $height, $difficulty);
-				$target = $block->calculateTarget($difficulty, $elapsed);
+				$bl->argon = null;
+				$bl->_calculateNonce($block_date, $elapsed);
+				$bl->date = $new_block_date;
+				$hit = $bl->_calculateHit();
+				$target = $bl->_calculateTarget($elapsed);
 				$blockFound = ($hit > 0 && $target>=0 &&  $hit > $target);
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
@@ -125,33 +128,24 @@ class NodeMiner {
 			$data[$reward_tx['id']]=$reward_tx;
 			ksort($data);
 
-			$signature = $block->sign($generator, $generator, $height, $new_block_date, $nonce, $data, $this->private_key, $difficulty, $argon, $prev_block_id);
+			$prev_block = Block::get($height-1);
+
+			$bl->data = $data;
+			$bl->prevBlockId = $prev_block['id'];
+
+			$bl->_sign($this->private_key);
 
 			$this->miningStat['submits']++;
 
-			$prev_block = $block->get($height-1);
-			$date = $prev_block['date']+$elapsed;
-			$result = $block->mine($this->public_key, $generator, $nonce, $argon, $difficulty, $signature, $height, $date);
+
+			$result = $bl->_mine();
 
 
-			$miner = Account::getAddress($this->public_key);
 			if ($result) {
-
-				$res = $block->add(
-					$height,
-					$this->public_key,
-					$miner,
-					$nonce,
-					$data,
-					$date,
-					$signature,
-					$difficulty,
-					$argon,
-					$prev_block['id']
-				);
+				$res = $bl->_add();
 
 				if ($res) {
-					$current = $block->current();
+					$current = Block::_current();
 					$current['id']=escapeshellarg(san($current['id']));
 					$dir = ROOT."/cli";
 					$cmd = "php ".XDEBUG_CLI." $dir/propagate.php block {$current['id']}  > /dev/null 2>&1  &";

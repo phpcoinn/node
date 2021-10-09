@@ -34,7 +34,6 @@ class Transaction
     {
         global $db;
         
-        $acc = new Account();
         $r = $db->run("SELECT * FROM transactions WHERE block=:block ORDER by `type` DESC", [":block" => $block]);
         foreach ($r as $x) {
         	$tx = Transaction::getFromDbRecord($x);
@@ -46,10 +45,10 @@ class Transaction
 	        $type = $tx->type;
 	        $res = true;
 	        if($type == TX_TYPE_REWARD) {
-		        $res = $res && $acc->addBalance($tx->dst, $tx->val*(-1));
+		        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
 	        } else if ($type == TX_TYPE_SEND) {
-		        $res = $res && $acc->addBalance($tx->dst, $tx->val*(-1));
-		        $res = $res && $acc->addBalance($tx->src, $tx->val);
+		        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
+		        $res = $res && Account::addBalance($tx->src, $tx->val);
 		        $tx->_add_mempool();
 	        }
 	        if($res === false) {
@@ -68,8 +67,7 @@ class Transaction
     public static function clean_mempool()
     {
         global $db;
-        $block = new Block();
-        $current = $block->current();
+        $current = Block::_current();
         $height = $current['height'];
         $limit = $height - 1000;
         $db->run("DELETE FROM mempool WHERE height<:limit", [":limit" => $limit]);
@@ -114,8 +112,7 @@ class Transaction
     public static function mempool($max)
     {
         global $db;
-        $block = new Block();
-        $current = $block->current();
+        $current = Block::_current();
         $height = $current['height'] + 1;
         // only get the transactions that are not locked with a future height
         $r = $db->run(
@@ -176,9 +173,8 @@ class Transaction
 	public function _add_mempool($peer = "")
 	{
 		global $db;
-		$block = new Block();
 
-		$current = $block->current();
+		$current = Block::_current();
 		$height = $current['height'];
 		$bind = [
 			":peer"      => $peer,
@@ -209,16 +205,15 @@ class Transaction
 	public function _add($block, $height)
 	{
 		global $db;
-		$acc = new Account();
 		$public_key = $this->publicKey;
 		$address = Account::getAddress($public_key);
-		$res = $acc->checkAccount($address, $public_key, $block);
+		$res = Account::checkAccount($address, $public_key, $block);
 		if($res === false) {
 			_log("Error checking account address");
 			return false;
 		}
 		if ($this->type==TX_TYPE_SEND){
-			$res = $acc->checkAccount($this->dst, "", $block);
+			$res = Account::checkAccount($this->dst, "", $block);
 			if($res === false) {
 				_log("Error checking account address for send");
 				return false;
@@ -247,10 +242,10 @@ class Transaction
 		$type = $this->type;
 		$res = true;
 		if($type == TX_TYPE_REWARD) {
-			$res = $res && $acc->addBalance($this->dst, $this->val);
+			$res = $res && Account::addBalance($this->dst, $this->val);
 		} else if ($type == TX_TYPE_SEND) {
-			$res = $res && $acc->addBalance($this->src, ($this->val + $this->fee)*(-1));
-			$res = $res && $acc->addBalance($this->dst, ($this->val));
+			$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
+			$res = $res && Account::addBalance($this->dst, ($this->val));
 		}
 		if($res === false) {
 			_log("Error updating balance for transaction ".$this->id);
@@ -280,8 +275,7 @@ class Transaction
         global $db;
         // if no specific block, use current
         if ($height === 0) {
-            $block = new Block();
-            $current = $block->current();
+            $current = Block::_current();
             $height = $current['height'];
         }
         $base = $this->_getSignatureBase();
@@ -339,8 +333,7 @@ class Transaction
             return false;
         }
         // no transactions before the genesis
-	    $block = new Block();
-        if ($this->date < $block->genesis_date) {
+        if ($this->date < GENESIS_TIME) {
             _log("{$this->id} - Date before genesis", 3);
             return false;
         }
@@ -411,8 +404,7 @@ class Transaction
     public static function get_transaction($id)
     {
         global $db;
-        $block = new Block();
-        $current = $block->current();
+        $current = Block::_current();
 
         $x = $db->row("SELECT * FROM transactions WHERE id=:id", [":id" => $id]);
 
@@ -453,8 +445,7 @@ class Transaction
     public static function get_transactions($height = "", $id = "", $includeMiningRewards = false)
     {
         global $db;
-        $block = new Block();
-        $current = $block->current();
+        $current = Block::_current();
         $height = san($height);
         $id = san($id);
         if (empty($id) && empty($height)) {
@@ -582,7 +573,6 @@ class Transaction
     }
 
     static function getByAddress($address, $limit) {
-	    $acc = new Account();
 	    $transactions = Account::getMempoolTransactions($address);
 	    $transactions = array_merge($transactions, Account::getTransactions($address, $limit));
 	    return $transactions;

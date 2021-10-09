@@ -44,6 +44,12 @@ require_once dirname(__DIR__).'/include/init.inc.php';
 _log("Executing sync", 2);
 define("SYNC_LOCK_PATH", Nodeutil::getSyncFile());
 
+
+$res = intval(shell_exec("ps aux|grep sync.php|grep -v grep|wc -l"));
+if ($res <> 1) {
+	die("Other sync process already running");
+}
+
 // make sure there's only a single sync process running at the same time
 if (file_exists(SYNC_LOCK_PATH)) {
     $ignore_lock = false;
@@ -71,11 +77,6 @@ $lock = fopen(SYNC_LOCK_PATH, "w");
 fclose($lock);
 $arg = trim($argv[1]);
 $arg2 = trim($argv[2]);
-//echo "Sleeping for 3 seconds\n";
-// sleep for 3 seconds to make sure there's a delay between starting the sync and other processes
-if ($arg != "microsync") {
-    sleep(3);
-}
 
 if (DEVELOPMENT) {
     error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT & ~E_NOTICE);
@@ -91,10 +92,7 @@ if ($_config['dbversion'] < 1) {
 
 ini_set('memory_limit', '2G');
 
-$block = new Block();
-$acc = new Account();
-
-$current = $block->current();
+$current = Block::_current();
 
 
 
@@ -137,7 +135,7 @@ if ($current['height']==1 && BOOTSTRAPING) {
 
    
 
-    $current = $block->current();
+    $current = Block::_current();
 }
 //TODO check microsync feature
 // the microsync process is an anti-fork measure that will determine the best blockchain to choose for the last block
@@ -184,26 +182,16 @@ if ($arg == "microsync" && !empty($arg2)) {
 	    }
 
         // delete the last block
-        $block->pop(1);
+        Block::pop(1);
 
 
         // add the new block
         echo "Starting to sync last block from $x[hostname]\n";
         $b = $data;
-		$prev = $block->current();
-        
-        $res = $block->add(
-            $b['height'],
-            $b['public_key'],
-            $b['miner'],
-            $b['nonce'],
-            $b['data'],
-            $b['date'],
-            $b['signature'],
-            $b['difficulty'],
-            $b['argon'],
-	        $prev['id']
-        );
+		$prev = Block::_current();
+        $block = Block::getFromArray($b);
+	    $block->prevBlockId = $prev['id'];
+	    $res = $block->_add();
         if (!$res) {
             _log("Block add: could not add block - $b[id] - $b[height]");
 
@@ -460,7 +448,7 @@ echo "Current block: $current[height]\n";
 if($largest_height-$most_common_height>100&&$largest_size==1&&$current['id']==$largest_height_block){
     _log("Current node is alone on the chain and over 100 blocks ahead. Poping 200 blocks.");
     $db->run("UPDATE config SET val=1 WHERE cfg='sync'");
-    $block->pop(200);
+    Block::pop(200);
     $db->run("UPDATE config SET val=0 WHERE cfg='sync'");
     _log("Exiting sync, next will sync from 200 blocks ago.");
 
@@ -499,233 +487,19 @@ if(is_array($peers)) {
 $block_parse_failed=false;
 
 $failed_syncs=0;
-// if we're not on the largest height
-if ($current['height'] < $largest_height && $largest_height > 1 && false) {
-    // start sync / block all other transactions/blocks
-    $db->run("UPDATE config SET val=1 WHERE cfg='sync'");
-    sleep(10);
-    _log("Longest chain rule triggered - $largest_height - $largest_height_block",2);
-    // choose the peers which have the larget height block
-    $peers = $block_peers[$largest_height_block];
-    shuffle($peers);
-    // sync from them
-    foreach ($peers as $host) {
-        _log("Starting to sync from $host", 3);
-        $url = $host."/peer.php?q=";
-        $data = peer_post($url."getBlock", ["height" => $current['height']], 60);
-        // invalid data
-        if ($data === false) {
-            _log("Could not get block from $host - " . $current['height']);
-            continue;
-        }
-        $data['id'] = san($data['id']);
-        $data['height'] = san($data['height']);
-
-        // if we're not on the same blockchain but the blockchain is most common with over 90% of the peers, delete the last 3 blocks and retry
-        if ($data['id'] != $current['id'] && $data['id'] == $most_common && ($most_common_size / $total_active_peers) > 0.90) {
-            $block->delete($current['height'] - 3);
-            $current = $block->current();
-            $data = peer_post($url."getBlock", ["height" => $current['height']]);
-
-            if ($data === false) {
-                _log("Could not get block from $host - $current[height]");
-                break;
-            }
-        } elseif ($data['id'] != $current['id'] && $data['id'] != $most_common) {
-            //if we're not on the same blockchain and also it's not the most common, verify all the blocks on on this blockchain starting at current-30 until current
-            $invalid = false;
-            $last_good = $current['height'];
-	        $start = $current['height'] - 100;
-            if($start < 1) {
-	            $start = 1;
-            }
-            for ($i = $start; $i < $current['height']; $i++) {
-                $data = peer_post($url."getBlock", ["height" => $i]);
-                if ($data === false) {
-                    $invalid = true;
-                    _log("Could not get block from $host - $i");
-                    break;
-                }
-                _log("Get block $i from peer $url",3);
-                $ext = $block->get($i);
-                if ($i == $current['height'] - 100 && $ext['id'] != $data['id']) {
-                    _log("100 blocks ago was still on a different chain. Ignoring.");
-                    $invalid = true;
-                    break;
-                }
-
-                if ($ext['id'] == $data['id']) {
-                    $last_good = $i;
-                    _log("last good = $last_good", 3);
-                } else {
-	                $invalid = true;
-	                break;
-                }
-            }
-
-            if($invalid && $last_good < $current['height']) {
-	            $try_pop=$block->pop($current['height'] - $last_good);
-	            if($try_pop==false){
-		            $block_parse_failed=true;
-	            }
-	            $current = $block->current();
-            }
-
-            // if last 10 blocks are good, verify all the blocks
-            if ($invalid == false) {
-                $cblock = [];
-                for ($i = $last_good; $i <= $largest_height; $i++) {
-                    $data = peer_post($url."getBlock", ["height" => $i]);
-                    if ($data === false) {
-                        _log("Could not get block from $host - $i");
-                        $invalid = true;
-                        break;
-                    }
-                    $cblock[$i] = $data;
-                }
-                // check if the block mining data is correct
-                for ($i = $last_good + 1; $i <= $largest_height; $i++) {
-                	_log("checking block $i",3);
-                    if (!$block->mine(
-                        $cblock[$i]['public_key'],
-                        $cblock[$i]['miner'],
-                        $cblock[$i]['nonce'],
-                        $cblock[$i]['argon'],
-                        $cblock[$i]['difficulty'],
-                        $cblock[$i]['id'],
-                        $cblock[$i]['height'],
-                        $cblock[$i]['date']
-                    )) {
-                        $invalid = true;
-                        _log("INVALID BLOCK id=".$cblock[$i]['id']." height=".$cblock[$i]['height'],1);
-                        break;
-                    }
-                }
-            }
-            // if the blockchain proves ok, delete until the last block
-            if ($invalid == false) {
-                _log("Changing fork, deleting $last_good", 1);
-                $res=$block->delete($last_good);
-                if($res==false){
-                    $block_parse_failed=true;
-                    break;
-                }
-                $current = $block->current();
-                $data = $current;
-            }
-        }
-        // if current still doesn't match the data, something went wrong
-        if ($data['id'] != $current['id']) {
-            if($largest_size==1){
-                //blacklisting the peer if it's the largest height on a broken blockchain
-	            _log("blacklisting the peer $url because it is the largest height on a broken blockchain");
-                Peer::blacklistBroken($host, "Broken blockchain");
-            }
-//            continue;
-        }
-        // start syncing all blocks
-	    _log("start syncing all blocks", 3);
-        while ($current['height'] < $largest_height) {
-        	_log("getting blocks from height ".$current['height'], 3);
-            $data = peer_post($url."getBlocks", ["height" => $current['height'] + 1]);
-
-            if ($data === false) {
-                _log("Could not get blocks from $host - height: $current[height]");
-                break;
-            }
-            $good_peer = true;
-            foreach ($data as $b) {
-                $b['id'] = san($b['id']);
-                $b['height'] = san($b['height']);
-                _log("Checking block ".json_encode($b), 3);
-
-                if (!$block->check($b)) {
-                    $block_parse_failed=true;
-                    _log("Block check: could not add block - $b[id] - $b[height]", 1);
-                    $good_peer = false;
-                    $failed_syncs++;
-                    break;
-                }
-	            $prev_block = Block::getAtHeight($b['height']-1);
-                $prev_block_id = $prev_block['id'];
-                $res = $block->add(
-                    $b['height'],
-                    $b['public_key'],
-                    $b['miner'],
-                    $b['nonce'],
-                    $b['data'],
-                    $b['date'],
-                    $b['signature'],
-                    $b['difficulty'],
-                    $b['argon'],
-	                $prev_block_id
-                );
-                if (!$res) {
-                    $block_parse_failed=true;
-                    _log("Block add: could not add block - $b[id] - $b[height]", 1);
-                    $good_peer = false;
-                    $failed_syncs++;
-                    break;
-                }
-
-                _log("Synced block from $host - $b[height] $b[difficulty]", 3);
-            }
-            if (!$good_peer) {
-                break;
-            }
-            $current = $block->current();
-        }
-        if ($good_peer) {
-            break;
-        }
-        if ($failed_syncs>5) {
-            break;
-        }
-    }
-
-    if ($block_parse_failed==true||$argv[1]=="resync") {
-        $last_resync=$db->single("SELECT val FROM config WHERE cfg='last_resync'");
-        if ($last_resync<time()-(3600*24)||$argv[1]=="resync") {
-            if ((($current['date']<time()-(3600*72)) && $_config['auto_resync']!==false) || $argv[1]=="resync") {
-                $db->fkCheck(false);
-                $tables = ["accounts", "transactions", "mempool", "masternode","blocks"];
-                foreach ($tables as $table) {
-                    $db->truncate($table);
-                }
-                $db->fkCheck(true);
-                
-                $resyncing=true;
-                $db->run("UPDATE config SET val=0 WHERE cfg='sync'", [":time" => $t]);
-                
-                _log("Exiting sync, will resync from scratch.");
-
-                @unlink(SYNC_LOCK_PATH);
-                exit;
-            } elseif ($current['date']<time()-(3600*24)) {
-                _log("Removing 200 blocks, the blockchain is stale.");
-                $block->pop(200);
-
-                $resyncing=true;
-            }
-        }
-    }
-
-
-    $db->run("UPDATE config SET val=0 WHERE cfg='sync'", [":time" => $t]);
-}
 
 
 
     $resyncing=false;
     if ($block_parse_failed==true&&$current['date']<time()-(3600*24)) {
         _log("Rechecking reward transactions");
-        $current = $block->current();
+        $current = Block::_current();
         $rwpb=$db->single("SELECT COUNT(1) FROM transactions WHERE type=0 AND message=''");
         if ($rwpb!=$current['height']) {
             $failed=$db->single("SELECT blocks.height FROM blocks LEFT JOIN transactions ON transactions.block=blocks.id and transactions.type=0 and transactions.message='' WHERE transactions.height is NULL ORDER by blocks.height ASC LIMIT 1");
             if ($failed>1) {
-                _log("Found failed block - $faield");
-                $block->delete($failed);
+                _log("Found failed block - $failed");
+                Block::delete($failed);
                 $block_parse_failed==false;
             }
         }
@@ -822,21 +596,14 @@ if ($_config['sync_recheck_blocks'] > 0) {
 
         $key = $db->single("SELECT public_key FROM accounts WHERE id=:id", [":id" => $data['generator']]);
 
-        if (!$block->mine(
-            $key,
-            $data['miner'],
-            $data['nonce'],
-            $data['argon'],
-            $data['difficulty'],
-	        $data['id'],
-	        $data['height'],
-            $data['date']
-        )) {
+	    $block = Block::getFromArray($data);
+
+        if (!$block->_mine()) {
             $db->run("UPDATE config SET val=1 WHERE cfg='sync'");
             _log("Invalid block detected. Deleting everything after $data[height] - $data[id]");
             sleep(10);
             $all_blocks_ok = false;
-            $block->delete($i);
+            Block::delete($i);
 
             $db->run("UPDATE config SET val=0 WHERE cfg='sync'");
             break;

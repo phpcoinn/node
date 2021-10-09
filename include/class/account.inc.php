@@ -3,8 +3,7 @@
 class Account
 {
 
-
-    // checks the ecdsa secp256k1 signature for a specific public key
+	// checks the ecdsa secp256k1 signature for a specific public key
 	public static function checkSignature($data, $signature, $public_key) {
 		$res = ec_verify($data, $signature, $public_key);
 //        _log("check_signature: $data | signature=$signature | pub_key=$public_key | res=$res");
@@ -85,8 +84,7 @@ class Account
 	        $offset = 0;
         }
 
-        $block = new Block();
-        $current = $block->current();
+        $current = Block::_current();
         $public_key = Account::publicKey($id);
 
         $res = $db->run(
@@ -243,7 +241,7 @@ class Account
 	 * @param $block
 	 * @return array|bool|int
 	 */
-	public function checkAccount($address, $public_key, $block) {
+	public static function checkAccount($address, $public_key, $block) {
 		global $db;
 		$row = $db->row("select * from accounts where id=:id",[":id" => $address]);
 		if(!$row) {
@@ -263,7 +261,7 @@ class Account
 		return true;
 	}
 
-	public function addBalance($id, $val) {
+	public static function addBalance($id, $val) {
 		global $db;
 		$res=$db->run(
 			"UPDATE accounts SET balance=balance+:val WHERE id=:id",

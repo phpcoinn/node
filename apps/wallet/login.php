@@ -15,7 +15,6 @@ function proccessLogin($public_key, $login_key, $login_code) {
 			exit;
 		}
 	} else {
-		$acc = new Account();
 		$address = Account::getAddress($public_key);
 		if (!Account::valid($address)) {
 			$_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Invalid address or public key']];
@@ -53,7 +52,6 @@ if(isset($_POST['login'])) {
 	    $wallet_signature = $_POST['wallet_signature'];
 	    if (Account::valid($public_key)) {
 		    $address = $public_key;
-		    $acc = new Account();
 		    $public_key = Account::publicKey($address);
 		    if (empty($public_key)) {
 			    $_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Invalid address or public key']];
@@ -61,7 +59,6 @@ if(isset($_POST['login'])) {
 			    exit;
 		    }
 	    } else {
-		    $acc = new Account();
 		    $address = Account::getAddress($public_key);
 		    if (!Account::valid($address)) {
 			    $_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Invalid address or public key']];
