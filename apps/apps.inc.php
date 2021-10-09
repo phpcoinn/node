@@ -118,7 +118,7 @@ if(!$peerAppsHash || $peerAppsHash != $appsHash || $force_repo_check) {
 			} else {
 				if ($appsHash != $hash) {
 					if (!$adminView) {
-						//die("Apps integrity not valid appsHash=$appsHash hash=$hash");
+						die("Apps integrity not valid appsHash=$appsHash hash=$hash");
 					}
 				} else {
 					_log("Apps hash OK",3);
