@@ -1,7 +1,6 @@
 <?php
 
 const VERSION = "1.0.0-alpha";
-const VERSION_CODE = "010000";
 const DEVELOPMENT = true;
 const XDEBUG = "XDEBUG_SESSION_START=PHPSTORM";
 const XDEBUG_CLI = "-dxdebug.mode=debug -dxdebug.client_host=127.0.0.1 -dxdebug.client_port=9000 -dxdebug.start_with_request=yes";

@@ -27,7 +27,7 @@ $reward_tx = Transaction::getRewardTransaction($generator, $block_date, $public_
 $data[$reward_tx['id']]=$reward_tx;
 ksort($data);
 
-$block=new Block($generator, $generator, $height, $block_date, null, $data, $difficulty, VERSION_CODE, null, "");
+$block=new Block($generator, $generator, $height, $block_date, null, $data, $difficulty, Block::versionCode(), null, "");
 $block->_calculateNonce($block_date, $elapsed);
 
 $signature = $block->_sign($private_key);

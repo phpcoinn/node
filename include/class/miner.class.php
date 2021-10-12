@@ -79,7 +79,7 @@ class Miner {
 
 			$attempt = 0;
 
-			$bl = new Block(null, $this->address, $height, null, null, $data, $difficulty, VERSION_CODE, null, $prev_block_id);
+			$bl = new Block(null, $this->address, $height, null, null, $data, $difficulty, Block::versionCode(), null, $prev_block_id);
 
 			while (!$blockFound) {
 				$attempt++;

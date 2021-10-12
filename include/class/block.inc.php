@@ -544,7 +544,7 @@ class Block
 		$generator = Account::getAddress($public_key);
 		_log("genesis");
 
-		$block = new Block($generator, $miner, $height, $date, $nonce, $data, $difficulty, VERSION_CODE, $argon, "");
+		$block = new Block($generator, $miner, $height, $date, $nonce, $data, $difficulty, Block::versionCode(), $argon, "");
 		$block->signature = $signature;
 		$block->publicKey = $public_key;
 		$res = $block->_add();
@@ -909,5 +909,9 @@ public_key=".$transaction['public_key']);
 		}
 
 		return true;
+	}
+
+	static function versionCode() {
+		return "010000";
 	}
 }

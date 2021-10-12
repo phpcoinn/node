@@ -163,7 +163,7 @@ if ($q == "info") {
 	}
 
 	$nonce = san($_POST['nonce']);
-	$version = VERSION_CODE;
+	$version = Block::versionCode();
 	$address = san($_POST['address']);
 	$elapsed = intval($_POST['elapsed']);
 	$difficulty = san($_POST['difficulty']);
