@@ -53,7 +53,7 @@ $elapsed = time() - $last['date'];
                         <i class="fas fa-database me-1 h4"></i>
                         <span class="text-muted mb-3 lh-1 text-truncate h4">Blocks</span>
                         <h2 class="my-2">
-                            <span class="counter-value" data-target="<?php echo $blockCount ?>"><?php echo (($blockCount < 500) ? 0 : ($blockCount -500))  ?></span>
+                            <?php echo $blockCount  ?>
                         </h2>
                     </div>
                 </div>
@@ -156,7 +156,7 @@ $elapsed = time() - $last['date'];
                         <i class="fas fa-exchange-alt me-1 h4"></i>
                         <span class="text-muted mb-3 lh-1 text-truncate h4">Transactions</span>
                         <h2 class="my-2">
-                            <span class="counter-value" data-target="<?php echo $txCount ?>"><?php echo (($txCount < 500) ? 0 : ($txCount -500))  ?></span>
+                            <?php echo $txCount  ?>
                         </h2>
                     </div>
                 </div>
@@ -174,7 +174,7 @@ $elapsed = time() - $last['date'];
                             <a href="/apps/explorer/mempool.php">Mempool</a>
                         </span>
                         <h2 class="my-2">
-                            <span class="counter-value" data-target="<?php echo $mempoolCount ?>">0</span>
+                            <?php echo $mempoolCount ?>
                         </h2>
                     </div>
                 </div>
@@ -192,7 +192,7 @@ $elapsed = time() - $last['date'];
                             <a href="/apps/explorer/accounts.php">Accounts</a>
                         </span>
                         <h2 class="my-2">
-                            <span class="counter-value" data-target="<?php echo $addressAccount ?>"><?php echo (($addressAccount < 100) ? 0 : ($addressAccount -100))  ?></span>
+                            <?php echo $addressAccount  ?>
                         </h2>
                     </div>
                 </div>
@@ -210,7 +210,7 @@ $elapsed = time() - $last['date'];
                             <a href="/apps/explorer/peers.php">Peers</a>
                         </span>
                         <h2 class="my-2">
-                            <span class="counter-value" data-target="<?php echo $peersCount ?>">0</span>
+                            <?php echo $peersCount ?>
                         </h2>
                     </div>
                 </div>
