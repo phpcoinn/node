@@ -133,7 +133,7 @@ if(isset($_GET['action'])) {
                 die("Error downloading apps");
             }
 
-            extractAppsArchive();
+            Nodeutil::extractAppsArchive();
 	        $calHash = calcAppsHash();
 	        _log("Calculating new hash calHash=$calHash");
 	        if($hash != $calHash) {

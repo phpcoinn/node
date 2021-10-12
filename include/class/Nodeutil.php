@@ -202,6 +202,14 @@ class Nodeutil
 	}
 
 	static function downloadApps() {
+
+		if(!defined("APPS_REPO_SERVER")) {
+			define("APPS_REPO_SERVER", "https://repo.testnet.phpcoin.net");
+		}
+		if(!defined("APPS_REPO_SERVER_PUBLIC_KEY")) {
+			define("APPS_REPO_SERVER_PUBLIC_KEY", "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwUKtSuRJEs8RrRrkZbND1WxVNomPtvowAo5hzQr6xe2TUyHYLnzu2ubVMfBAYM4cBZJLckvxWenHB2nULzmU8VHz");
+		}
+
 		$res = peer_post(APPS_REPO_SERVER."/peer.php?q=getApps");
 		_log("Contancting repo server response=".json_encode($res),3);
 		if($res === false) {
@@ -230,7 +238,7 @@ class Nodeutil
 					if(!$size) {
 						_log("Downloaded empty file from repo server",1);
 					} else {
-						extractAppsArchive();
+						self::extractAppsArchive();
 						_log("Extracted archive",3);
 						$calHash = calcAppsHash();
 						_log("Calculated new hash: ".$calHash,3);
@@ -317,5 +325,23 @@ class Nodeutil
 		file_put_contents($file, json_encode($list));
 		echo "Export finished".PHP_EOL;
 	}
+
+	static function extractAppsArchive() {
+		$cmd = "cd ".ROOT." && rm -rf apps";
+		shell_exec($cmd);
+		$cmd = "cd ".ROOT." && tar -xzf tmp/apps.tar.gz -C . --owner=0 --group=0 --mode=744 --mtime='2020-01-01 00:00:00 UTC'";
+		_log("Extracting archive : $cmd");
+		shell_exec($cmd);
+		$cmd = "cd ".ROOT." && find apps -type f -exec touch {} +";
+		shell_exec($cmd);
+		$cmd = "cd ".ROOT." && find apps -type d -exec touch {} +";
+		shell_exec($cmd);
+		if (php_sapi_name() == 'cli') {
+			$cmd = "cd ".ROOT." && chown -R www-data:www-data apps";
+			shell_exec($cmd);
+		}
+		opcache_reset();
+	}
+
 
 }
