@@ -489,7 +489,7 @@ class Transaction
         ];
         $trans['src'] = $x['src'];
 
-        $trans['type'] = "mempool";
+        $trans['type_label'] = "mempool";
         $trans['confirmations'] = -1;
         ksort($trans);
         return $trans;

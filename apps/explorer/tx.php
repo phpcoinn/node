@@ -15,7 +15,12 @@ if(!$tx) {
 if(isset($_GET['action'])) {
     $action = $_GET['action'];
     if($action == "check") {
-        $tx = Transaction::_getById($id);
+	    $tx = Transaction::getMempoolById($id);
+	    if($tx) {
+		    $tx = Transaction::getFromArray($tx);
+        } else {
+		    $tx = Transaction::_getById($id);
+        }
 	    $res = $tx->_check();
 	    if($res) {
 	        die("Transaction valid");

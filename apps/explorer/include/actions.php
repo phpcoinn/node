@@ -25,6 +25,11 @@ if(isset($_GET['search'])) {
 		header("location: /apps/explorer/tx.php?id=".$search);
 		exit;
 	}
+	$tx = Transaction::getMempoolById($search);
+	if($tx) {
+		header("location: /apps/explorer/tx.php?id=".$search);
+		exit;
+	}
 	$pubkey = $search;
 	$address = Account::getAddress($pubkey);
 	if(Account::valid($address)) {
