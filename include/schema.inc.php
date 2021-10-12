@@ -8,27 +8,28 @@ if (empty($dbversion)) {
 
 	$db->run("create table blocks
 	(
-		id varbinary(128) not null
+		id varchar(128) not null
 			primary key,
-		generator varbinary(128) not null,
+		generator varchar(128) not null,
 		height int not null,
 		date int not null,
-		nonce varbinary(128) not null,
-		signature varbinary(256) not null,
+		nonce varchar(128) not null,
+		signature varchar(256) not null,
 		difficulty varchar(64) not null,
 		transactions int not null,
 		version varchar(10) default '010000' null,
-		argon varbinary(128) not null,
+		argon varchar(128) not null,
+		miner varchar(128) null,
 		constraint height
 			unique (height)
 	)");
 
 	$db->run("create table accounts
 	(
-		id varbinary(128) not null
+		id varchar(128) not null
 			primary key,
-		public_key varbinary(1024) not null,
-		block varbinary(128) not null,
+		public_key varchar(1024) not null,
+		block varchar(128) not null,
 		balance decimal(20,8) not null,
 		alias varchar(32) null,
 		constraint accounts
@@ -46,8 +47,8 @@ if (empty($dbversion)) {
 	$db->run("create table logs
 	(
 		id ".DB::autoInc().",
-		`transaction` varbinary(128) null,
-		block varbinary(128) null,
+		`transaction` varchar(128) null,
+		block varchar(128) null,
 		json text null
 	);");
 
@@ -68,17 +69,17 @@ if (empty($dbversion)) {
 
 	$db->run("create table mempool
 	(
-		id varbinary(128) not null
+		id varchar(128) not null
 			primary key,
 		height int not null,
-		src varbinary(128) not null,
-		dst varbinary(128) not null,
+		src varchar(128) not null,
+		dst varchar(128) not null,
 		val decimal(20,8) not null,
 		fee decimal(20,8) not null,
-		signature varbinary(256) not null,
+		signature varchar(256) not null,
 		type tinyint not null,
 		message varchar(256) default '' null,
-		public_key varbinary(1024) not null,
+		public_key varchar(1024) not null,
 		date bigint not null,
 		peer varchar(64) null
 	)");
@@ -93,6 +94,10 @@ if (empty($dbversion)) {
 		ip varchar(45) not null,
 		fails tinyint default 0 not null,
 		stuckfail tinyint default 0 not null,
+		height int,
+		appshash varchar(250),
+		score int,
+		blacklist_reason varchar(100),
 		constraint hostname
 			unique (hostname),
 		constraint ip
@@ -101,18 +106,18 @@ if (empty($dbversion)) {
 
 	$db->run("create table transactions
 	(
-		id varbinary(128) not null
+		id varchar(128) not null
 			primary key,
-		block varbinary(128) not null,
+		block varchar(128) not null,
 		height int not null,
-		dst varbinary(128) not null,
+		dst varchar(128) not null,
 		val decimal(20,8) not null,
 		fee decimal(20,8) not null,
-		signature varbinary(256) not null,
+		signature varchar(256) not null,
 		type tinyint not null,
 		message varchar(256) default '' null,
 		date int not null,
-		public_key varbinary(1024) not null,
+		public_key varchar(1024) not null,
 		constraint block_id
 			foreign key (block) references blocks (id)
 				on delete cascade
@@ -150,30 +155,9 @@ if (empty($dbversion)) {
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('hostname', '');");
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('dbversion', '1');");
 
-	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sanity_last', '0');");
-	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sanity_sync', '0');");
+	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync_last', '0');");
+	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync', '0');");
 	$dbversion = 1;
-}
-
-if ($dbversion == 1) {
-	$db->run("alter table peers add height int");
-	$db->run("alter table peers add appshash varchar(250)");
-	$db->run("alter table peers add score int");
-	$dbversion = 2;
-}
-
-if ($dbversion == 2) {
-	$db->run("alter table peers add blacklist_reason varchar(100)");
-	$dbversion = 3;
-}
-if ($dbversion == 3) {
-	$db->run("alter table blocks add miner varchar(128) null;");
-	$dbversion = 4;
-}
-if ($dbversion == 4) {
-	$db->run("UPDATE config t SET t.cfg = 'sync_last' WHERE t.cfg = 'sanity_last'");
-	$db->run("UPDATE config t SET t.cfg = 'sync' WHERE t.cfg = 'sanity_sync'");
-	$dbversion = 5;
 }
 
 // update the db version to the latest one
