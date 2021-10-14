@@ -2,7 +2,7 @@
 require_once dirname(__DIR__)."/apps.inc.php";
 define("PAGE", true);
 define("APP_NAME", "Explorer");
-require_once ROOT. '/apps/explorer/include/functions.php';
+require_once ROOT. '/web/apps/explorer/include/functions.php';
 $dm = get_data_model(Account::getCount(), "/apps/explorer/accounts.php?");
 $accounts = Account::getAccounts($dm);
 

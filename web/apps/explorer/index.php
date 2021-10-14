@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__DIR__)."/apps.inc.php";
-require_once ROOT. '/apps/explorer/include/functions.php';
+require_once ROOT. '/web/apps/explorer/include/functions.php';
 define("PAGE", true);
 define("APP_NAME", "Explorer");
 

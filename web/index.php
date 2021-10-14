@@ -25,8 +25,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-require_once __DIR__.'/include/init.inc.php';
-//$block = new Block();
+require_once dirname(__DIR__).'/include/init.inc.php';
 $current = Block::_current();
 global $_config;
 ?>
@@ -42,7 +41,7 @@ global $_config;
     <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
     <meta content="Themesbrand" name="author" />
     <!-- App favicon -->
-    <link rel="shortcut icon" href="assets/images/favicon.ico">
+    <link rel="shortcut icon" href="/favicon.ico">
 
     <!-- preloader css -->
     <link rel="stylesheet" href="/apps/common/css/preloader.min.css" type="text/css" />

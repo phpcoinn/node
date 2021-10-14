@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__.'/include/init.inc.php';
+require_once dirname(__DIR__).'/include/init.inc.php';
 header('Content-Type: text/plain');
 global $_config;
 $peers = Peer::getPeers();

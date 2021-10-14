@@ -21,7 +21,7 @@ require_once $config_file;
 require_once __DIR__.'/db.inc.php';
 global $_config;
 
-@include_once ROOT.'/apps/apps.functions.php';
+@include_once ROOT.'/web/apps/apps.functions.php';
 
 if ($_config['db_pass'] == "ENTER-DB-PASS") {
     die("Please update your config file and set your db password");

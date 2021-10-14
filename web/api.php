@@ -70,7 +70,7 @@ header('Content-Type: application/json');
 
 use PHPCoin\Blacklist;
 
-require_once __DIR__.'/include/init.inc.php';
+require_once dirname(__DIR__).'/include/init.inc.php';
 
 Api::checkAccess();
 $q = $_GET['q'];
