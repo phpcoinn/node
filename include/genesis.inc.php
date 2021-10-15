@@ -1,11 +1,11 @@
 <?php
 const GENESIS_DATA = [
-"signature" => 'AN1rKoRyzhXz3DmuoNr9EsjWW2TbnmcJiGpSdq1orsXyZ7MwzSsUNBV1GdTF93ftn5fRv3J26PpE8PempRmHDvroa6sZejohK',
-"public_key" => 'PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCz5snaHkhXEJv5FbWpRze9VQUAGeiKuqJ9vKuu74R87GRntdH4kQNzEwYjrV5fG4WiKuMmVbKDQaVeLYGhRPtzdbc',
-"argon" => '$argon2i$v=19$m=2048,t=2,p=1$TFp6UVBqTmVpZnVCZEtaYw$IOAfP0Ni6yslwC2zZBmybZqR/P1VeK3WzMxxTW5j21E',
+"signature" => 'AN1rKoNhAKPfxmQnsRZVa5qZUEfgYq7LyPhH6WWVdKU7Y4wHW8uedHqDsozqU6YaQSbya5VV1HCADKGcKxCiEnxEyCPD6gwc8',
+"public_key" => 'PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCzHzEJ3gEEuWDWQ6GQVA9ujB14dvd8FhSVHWzjmaPuYMUujufs6uQU6aZuBba7tRQweX4RdXKskB8QPTLQF1BpgSx',
+"argon" => '$argon2i$v=19$m=2048,t=2,p=1$TE1RZFlrQzM3eE1qQVRwZQ$368ZGkc160o/O8AbvHcuNPCfftyyuUTYothvVVL9Cns',
 "difficulty" => '30000',
-"nonce" => '2d9488016c6a6765b678a2acb470cd849837331dae89a7692a8a53b415b40031',
-"date" => '1629061074',
-"reward_tx" => '{"C81XcxBC6u4RtqVxSCQyYiiLBw96mf2Yc5zReb8hoJv1":{"date":1629061074,"dst":"LZzQPjNeifuBdKZcTHCsUHnvyjjzLsQn6H","fee":"0.00000000","id":"C81XcxBC6u4RtqVxSCQyYiiLBw96mf2Yc5zReb8hoJv1","message":"","public_key":"PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCz5snaHkhXEJv5FbWpRze9VQUAGeiKuqJ9vKuu74R87GRntdH4kQNzEwYjrV5fG4WiKuMmVbKDQaVeLYGhRPtzdbc","signature":"381yXYpYrtW3j3gThQCCPmTbcn5zyqTn3bNQJN7bV5pQASNoWmuSaaNExDj1fM4kavVsXdugsZgS4nHVjsiMPt36UfTmMh59","src":"LZzQPjNeifuBdKZcTHCsUHnvyjjzLsQn6H","type":0,"val":"10000.00000000"}}',
+"nonce" => '5edda796b9a24cb407c579e3bdc30ed1a882d081fe6e725eff3193dfa9fdec6f',
+"date" => '1634314344',
+"reward_tx" => '{"52sXHBkNAzstMNt1wCtth3npqZVevdFkV6sfztesVm8G":{"date":1634314344,"dst":"LMQdYkC37xMjATpep9ByifHNuBZYcosBmK","fee":"0.00000000","id":"52sXHBkNAzstMNt1wCtth3npqZVevdFkV6sfztesVm8G","message":"","public_key":"PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCzHzEJ3gEEuWDWQ6GQVA9ujB14dvd8FhSVHWzjmaPuYMUujufs6uQU6aZuBba7tRQweX4RdXKskB8QPTLQF1BpgSx","signature":"381yXZ117qngx9aWtow69yhygumRW3HZneYaTFfgoWMjjLATjo3RRdtXwBjSyBpNN5DaRjkKZ8j88nRDHbSpfenYscKGzzcW","src":"LMQdYkC37xMjATpep9ByifHNuBZYcosBmK","type":0,"val":"10000.00000000"}}',
 ];
-const GENESIS_TIME = 1629061074;
+const GENESIS_TIME = 1634314344;

@@ -1,6 +1,6 @@
 #!/bin/bash
 # setup node on ubuntu server
-# oneliner: curl -s https://phpcoin.net/doc/install/install_node.sh | bash
+# one liner: curl -s https://raw.githubusercontent.com/phpcoinn/node/main/scripts/install_node.sh | bash
 
 echo "define db user and pass"
 export DB_NAME=phpcoin
@@ -21,7 +21,7 @@ mysql -e "grant all privileges on $DB_NAME.* to '$DB_USER'@'localhost';"
 echo "download node"
 mkdir /var/www/phpcoin
 cd /var/www/phpcoin
-git clone https://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@github.com/phpcoinn/testnet.git .
+git clone https://github.com/phpcoinn/node .
 
 echo "Configure apache"
 cat << EOF > /etc/apache2/sites-available/phpcoin.conf
