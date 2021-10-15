@@ -7,7 +7,7 @@ const APPS_WALLET_SERVER_PUBLIC_KEY = "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCxxo8UaTrK
 
 function calcAppsHash() {
 	_log("Executing calcAppsHash");
-	$cmd = "cd ".ROOT." && tar -cf - apps --owner=0 --group=0 --sort=name --mode=744 --mtime='2020-01-01 00:00:00 UTC' | sha256sum";
+	$cmd = "cd ".ROOT."/web && tar -cf - apps --owner=0 --group=0 --sort=name --mode=744 --mtime='2020-01-01 00:00:00 UTC' | sha256sum";
 	$res = shell_exec($cmd);
 	$arr = explode(" ", $res);
 	$appsHash = trim($arr[0]);
@@ -15,6 +15,6 @@ function calcAppsHash() {
 }
 
 function buildAppsArchive() {
-	$cmd = "cd ".ROOT." && tar -czf tmp/apps.tar.gz apps --owner=0 --group=0 --sort=name --mode=744 --mtime='2020-01-01 00:00:00 UTC'";
+	$cmd = "cd ".ROOT." && tar -czf tmp/apps.tar.gz web/apps --owner=0 --group=0 --sort=name --mode=744 --mtime='2020-01-01 00:00:00 UTC'";
 	shell_exec($cmd);
 }
