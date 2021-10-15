@@ -329,7 +329,7 @@ class Nodeutil
 	static function extractAppsArchive() {
 		$cmd = "cd ".ROOT."/web && rm -rf apps";
 		shell_exec($cmd);
-		$cmd = "cd ".ROOT." && tar -xzf tmp/apps.tar.gz -C web --owner=0 --group=0 --mode=744 --mtime='2020-01-01 00:00:00 UTC'";
+		$cmd = "cd ".ROOT." && tar -xzf tmp/apps.tar.gz -C . --owner=0 --group=0 --mode=744 --mtime='2020-01-01 00:00:00 UTC'";
 		_log("Extracting archive : $cmd");
 		shell_exec($cmd);
 		$cmd = "cd ".ROOT."/web && find apps -type f -exec touch {} +";
