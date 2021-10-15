@@ -565,7 +565,6 @@ elseif ($cmd == 'get-address') {
 } else if ($cmd == "rewards-scheme") {
 	Nodeutil::printRewardScheme();
 } else if ($cmd == "download-apps") {
-	@include_once ROOT.'/web/apps/apps.functions.php';
 	Nodeutil::downloadApps();
 } else if ($cmd == "verify-blocks") {
 	Nodeutil::verifyBlocks();

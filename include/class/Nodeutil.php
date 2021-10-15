@@ -240,7 +240,7 @@ class Nodeutil
 					} else {
 						self::extractAppsArchive();
 						_log("Extracted archive",3);
-						$calHash = calcAppsHash();
+						$calHash = self::calcAppsHash();
 						_log("Calculated new hash: ".$calHash,3);
 						if($hash != $calHash) {
 							_log("Error extracting apps transfered",2);
@@ -253,6 +253,15 @@ class Nodeutil
 				}
 			}
 		}
+	}
+
+	static function calcAppsHash() {
+		_log("Executing calcAppsHash");
+		$cmd = "cd ".ROOT."/web && tar -cf - apps --owner=0 --group=0 --sort=name --mode=744 --mtime='2020-01-01 00:00:00 UTC' | sha256sum";
+		$res = shell_exec($cmd);
+		$arr = explode(" ", $res);
+		$appsHash = trim($arr[0]);
+		return $appsHash;
 	}
 
 	static function sync($current, $largest_height, $peers, $most_common) {
