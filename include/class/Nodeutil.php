@@ -185,6 +185,11 @@ class Nodeutil
 		return $appsHashFile;
 	}
 
+	static function getAppsLockFile() {
+		$file = ROOT . "/tmp/apps-lock";
+		return $file;
+	}
+
 	static function validatePublicKey($public_key) {
 		$pem_public_key = coin2pem($public_key);
 		$pkey = openssl_pkey_get_public($pem_public_key);
@@ -238,6 +243,12 @@ class Nodeutil
 					if(!$size) {
 						_log("Downloaded empty file from repo server",1);
 					} else {
+						if(file_exists(self::getAppsLockFile())) {
+							_log("Apps lock file exists - can not update");
+							return;
+						}
+						$lock = fopen(self::getAppsLockFile(), "w");
+						fclose($lock);
 						_log("backup existing apps");
 						$cmd = "cd ".ROOT."/web && rm -rf apps_tmp";
 						shell_exec($cmd);
@@ -262,6 +273,7 @@ class Nodeutil
 							$cmd = "cd ".ROOT."/web && rm -rf apps_tmp";
 							shell_exec($cmd);
 						}
+						@unlink(self::getAppsLockFile());
 					}
 				}
 			}

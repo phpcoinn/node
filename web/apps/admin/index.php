@@ -133,6 +133,11 @@ if(isset($_GET['action'])) {
                 die("Error downloading apps");
             }
 
+	        if(file_exists(Nodeutil::getAppsLockFile())) {
+		        _log("Apps lock file exists - can not update");
+		        return;
+	        }
+
             Nodeutil::extractAppsArchive();
 	        $calHash = calcAppsHash();
 	        _log("Calculating new hash calHash=$calHash");
