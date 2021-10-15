@@ -61,14 +61,6 @@ class NodeSync
 
 			}
 
-			if($peers_count - $failed_peer - $skipped_peer == 0 ) {
-				$node_score = 0;
-			} else {
-				$node_score = ($ok_block / ($peers_count - $failed_peer - $skipped_peer))*100;
-			}
-			_log("NODE SCORE ok_block=$ok_block peers_count=$peers_count failed_peer=$failed_peer skipped_peer=$skipped_peer node_score=$node_score");
-			$db->setConfig('node_score', $node_score);
-
 			if($failed_block > 0 && $failed_block > ($peers_count - $failed_peer) / 2 ) {
 				_log("Failed block on blockchain $failed_block - remove", 0);
 				$res=Block::pop();
@@ -159,35 +151,7 @@ class NodeSync
 								}
 							}
 						}
-//
-//						$block_counts = [];
-//						$total_count = 0;
-//						foreach ($next_block_peers as $id=>$nodes) {
-//							$block_counts[$id] = count($nodes);
-//							$total_count+=count($nodes);
-//						}
-//
-//						uasort($block_counts, function ($a, $b) {
-//							return $b - $a;
-//						});
-//
-//						$top_block = array_keys($block_counts)[0];
-//
-//						$top_block_count = count($next_block_peers[$top_block]);
-//						_log("Top block is $top_block on $top_block_count nodes");
-//
-//						if($top_block_count >= 2/3 * $total_count) {
-//							foreach ($next_block_peers as $id=>$nodes) {
-//								if($id != $top_block) {
-//									foreach ($nodes as $node=>$b) {
-//										_log("Blacklist node $node");
-//										$peer = Peer::findByHostname($node);
-//										Peer::blacklist($peer['id'], 'Invalid block');
-//									}
-//								}
-//							}
-//						}
-						
+
 					}
 				}
 
@@ -195,6 +159,33 @@ class NodeSync
 			}
 
 		}
+
+		//calculate and save node_score
+		$skipped_peer = 0;
+		$failed_block = 0;
+		$ok_block = 0;
+		$peers_count = count($this->peers);
+		$current = Block::_current();
+		foreach ($this->peers as $host) {
+			$peer_block = $this->getPeerBlock($host, $current['height']);
+			if($peer_block) {
+				if ($peer_block['id'] != $current['id']) {
+					$failed_block++;
+				} else {
+					$ok_block++;
+				}
+			} else {
+				$skipped_peer++;
+			}
+		}
+
+		if($peers_count - $failed_block - $skipped_peer == 0 ) {
+			$node_score = 0;
+		} else {
+			$node_score = ($ok_block / ($peers_count - $failed_block - $skipped_peer))*100;
+		}
+		_log("NODE SCORE ok_block=$ok_block peers_count=$peers_count failed_peer=$failed_block skipped_peer=$skipped_peer node_score=$node_score");
+		$db->setConfig('node_score', $node_score);
 
 		$t = time();
 		$db->run("UPDATE config SET val=0 WHERE cfg='sync'", [":time" => $t]);
