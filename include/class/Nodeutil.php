@@ -222,7 +222,7 @@ class Nodeutil
 			if(!$verify) {
 				_log("Not verified signature from repo server",2);
 			} else {
-				$link = APPS_REPO_SERVER."/tmp/apps.tar.gz";
+				$link = APPS_REPO_SERVER."/apps.php";
 				_log("Downloading archive file from link $link",3);
 				$arrContextOptions=array(
 					"ssl"=>array(

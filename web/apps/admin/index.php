@@ -120,7 +120,7 @@ if(isset($_GET['action'])) {
             if(!$verify) {
 	            die("Error verifying apps");
             }
-            $link = APPS_REPO_SERVER."/tmp/apps.tar.gz";
+            $link = APPS_REPO_SERVER."/apps.php";
             _log("Downloading from link $link");
 	        $arrContextOptions=array(
 		        "ssl"=>array(
