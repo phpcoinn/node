@@ -238,16 +238,29 @@ class Nodeutil
 					if(!$size) {
 						_log("Downloaded empty file from repo server",1);
 					} else {
+						_log("backup existing apps");
+						$cmd = "cd ".ROOT."/web && rm -rf apps_tmp";
+						shell_exec($cmd);
+						$cmd = "cd ".ROOT."/web && cp -rf apps apps_tmp";
+						shell_exec($cmd);
 						self::extractAppsArchive();
 						_log("Extracted archive",3);
 						$calHash = self::calcAppsHash();
 						_log("Calculated new hash: ".$calHash,3);
 						if($hash != $calHash) {
 							_log("Error extracting apps transfered",2);
+							_log("restore existing apps");
+							$cmd = "cd ".ROOT."/web && rm -rf apps";
+							shell_exec($cmd);
+							$cmd = "cd ".ROOT."/web && mv apps_tmp apps";
+							shell_exec($cmd);
 						} else {
 							$appsHashFile = Nodeutil::getAppsHashFile();
 							file_put_contents($appsHashFile, $calHash);
 							_log("Stored new hash",3);
+							_log("deleta backup");
+							$cmd = "cd ".ROOT."/web && rm -rf apps_tmp";
+							shell_exec($cmd);
 						}
 					}
 				}
