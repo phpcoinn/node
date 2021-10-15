@@ -1,7 +1,7 @@
 <?php
 
 require_once dirname(dirname(__DIR__)).'/include/init.inc.php';
-define("APPS_VERSION","1.0.23");
+define("APPS_VERSION","1.0.24");
 function relativePath($from, $to, $ps = DIRECTORY_SEPARATOR)
 {
 	$arFrom = explode($ps, rtrim($from, $ps));
@@ -34,9 +34,9 @@ function isRepoServer() {
 _log("Checking apps integrity", 3);
 $appsHashFile = Nodeutil::getAppsHashFile();
 $appsChanged = false;
+$appsHashCalc = calcAppsHash();
 if(!file_exists($appsHashFile)) {
 	_log("Not exists hash file", 3);
-	$appsHashCalc = calcAppsHash();
 	if(!file_put_contents($appsHashFile, $appsHashCalc)) {
 		die("tmp folder not writable to server!");
 	}
@@ -50,7 +50,6 @@ if(!file_exists($appsHashFile)) {
 	$elapsed = $now - $appsHashTime;
 	if($elapsed > 60) {
 		_log("File is older than check period",3);
-		$appsHashCalc = calcAppsHash();
 		if($appsHashCalc != $appsHash) {
 			_log("Writing new hash",3);
 			file_put_contents($appsHashFile, $appsHashCalc);
@@ -133,7 +132,6 @@ if(!$peerAppsHash || $peerAppsHash != $appsHash || $force_repo_check) {
 if(isRepoServer()) {
 	_log("Checking repo server update",3);
 	if($appsHash != $appsHashCalc || $appsChanged) {
-		_log("Apps changed - build archive",2);
 		buildAppsArchive();
 		$dir = ROOT . "/cli";
 		_log("Propagating apps",2);
