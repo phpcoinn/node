@@ -57,12 +57,14 @@ class Miner {
 			$info = $this->getMiningInfo();
 			if($info === false) {
 				_log("Can not get mining info", 0);
-				return false;
+				sleep(3);
+				continue;
 			}
 
 			if (isset($_config['sync']) && $_config['sync'] == 1) {
-				_log("Sync in process - stop miner");
-				return false;
+				_log("Sync in process");
+				sleep(3);
+				continue;
 			}
 
 			$height = $info['data']['height']+1;
