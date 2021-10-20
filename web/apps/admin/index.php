@@ -306,6 +306,8 @@ if(isset($_GET['view'])) {
     if($view == "peers") {
 	    $peers = Peer::getAll();
     }
+} else {
+    $view = "server";
 }
 
 ?>
@@ -313,7 +315,18 @@ if(isset($_GET['view'])) {
 <?php
 require_once __DIR__. '/../common/include/top.php';
 ?>
-<h3>Node Admin</h3>
+
+<?php if ($login) { ?>
+    <div class="row">
+        <div class="col-6 h3">Node Admin</div>
+        <div class="col-6 text-end">
+            <a href="<?php echo APP_URL ?>/?action=logout" class="btn btn-outline-primary">Logout</a>
+        </div>
+    </div>
+    <hr/>
+<?php } ?>
+
+
 
 <?php if($msg) { ?>
 	<?php foreach ($msg as $m) { ?>
@@ -327,202 +340,460 @@ require_once __DIR__. '/../common/include/top.php';
 
 <?php if (!$setAdminPass) { ?>
     <?php if(empty($passwordHash)) { ?>
-        <h3>Please generate and save admin password</h3>
-        <form method="post" action="">
-                <label>Enter password:</label>
-                <input type="password" id="password" name="password" value="" required/>
-                <label>Repeat password:</label>
-                <input type="password" id="password2" name="password2" value="" required/>
-            <input type="hidden" name="action" value="generate">
-            <button type="submit">Generate</button>
-        </form>
+
+        <div class="row">
+            <div class="col-sm-4"></div>
+            <div class="col-sm-4">
+                <div class="card mt-5">
+                    <div class="card-header">
+                        <h4 class="card-title">Login</h4>
+                        <p class="card-title-desc">Please generate and save admin password</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <form method="post" action="">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="password">Enter password:</label>
+                                        <input type="password" class="form-control" id="password" name="password" value="" required/>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="password2">Repeat password:</label>
+                                        <input type="password" class="form-control" id="password2" name="password2" value="" required/>
+                                    </div>
+                                    <div class="mt-4">
+                                        <button type="submit" class="btn btn-primary w-md">Generate</button>
+                                    </div>
+                                    <input type="hidden" name="action" value="generate">
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4"></div>
+        </div>
+
     <?php } ?>
 <?php } else { ?>
-        <?php if (!$login) { ?>
-        <h3>Login</h3>
-        <form method="post" action="">
-            Node Password:
-            <input type="password" id="password" name="password" value="" required/>
-            <input type="hidden" name="action" value="login">
-            <button type="submit">Login</button>
-        </form>
-            <?php } ?>
+    <?php if (!$login) { ?>
+
+        <div class="row">
+            <div class="col-sm-4"></div>
+            <div class="col-sm-4">
+                <div class="card mt-5">
+                    <div class="card-header">
+                        <h4 class="card-title">Login</h4>
+                        <p class="card-title-desc">Login and administer your node server</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <form method="post" action="">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="password">Node password</label>
+                                        <input type="password" class="form-control" id="password" name="password" value="" required/>
+                                    </div>
+                                    <div class="mt-4">
+                                        <button type="submit" class="btn btn-primary w-md">Login</button>
+                                    </div>
+                                    <input type="hidden" name="action" value="login">
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4"></div>
+        </div>
+
+    <?php } ?>
 <?php } ?>
 
 <?php if ($login) { ?>
-    <div>
-        <a href="<?php echo APP_URL ?>/?action=logout">Logout</a>
-        <br/>
-        <a href="<?php echo APP_URL ?>/?view=server">Server info</a>
-        |
-        <a href="<?php echo APP_URL ?>/?view=php">PHP info</a>
-        |
-        <a href="<?php echo APP_URL ?>/?view=db">DB info</a>
-        |
-        <a href="<?php echo APP_URL ?>/?view=utils">Utils</a>
-        |
-        <a href="<?php echo APP_URL ?>/?view=peers">Peers</a>
-        |
-        <a href="<?php echo APP_URL ?>/?view=config">Config</a>
-        |
-        <a href="<?php echo APP_URL ?>/?view=log">Log</a>
-        |
-        <a href="<?php echo APP_URL ?>/?view=update">Update<a/>
-    </div>
-    <hr/>
+
+
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link <?php if ($view == "server") { ?>active<?php } ?>" href="<?php echo APP_URL ?>/?view=server" role="tab" aria-selected="false">
+                <span>Server info</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php if ($view == "php") { ?>active<?php } ?>" href="<?php echo APP_URL ?>/?view=php" role="tab" aria-selected="false">
+                <span>PHP info</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php if ($view == "db") { ?>active<?php } ?>" href="<?php echo APP_URL ?>/?view=db" role="tab" aria-selected="false">
+                <span>DB info</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php if ($view == "utils") { ?>active<?php } ?>" href="<?php echo APP_URL ?>/?view=utils" role="tab" aria-selected="false">
+                <span class="d-none d-sm-block">Utils</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php if ($view == "peers") { ?>active<?php } ?>" href="<?php echo APP_URL ?>/?view=peers" role="tab" aria-selected="false">
+                <span>Peers</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php if ($view == "config") { ?>active<?php } ?>" href="<?php echo APP_URL ?>/?view=config" role="tab" aria-selected="false">
+                <span>Config</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php if ($view == "log") { ?>active<?php } ?>" href="<?php echo APP_URL ?>/?view=log" role="tab" aria-selected="false">
+                <span>Log</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php if ($view == "update") { ?>active<?php } ?>" href="<?php echo APP_URL ?>/?view=update" role="tab" aria-selected="false">
+                <span>Update</span>
+            </a>
+        </li>
+    </ul>
+
     <?php if(!empty($view)) { ?>
         <?php if($view == "server") { ?>
-            Hostname: <?php echo $serverData['hostname'] ?><br/>
-            <dl class="row">
-                <dt class="col-sm-3">CPU Usage:</dt>
-                <dd class="col-sm-3"><?php echo $serverData['stat']['cpuload'] ?> %</dd>
-                <dt class="col-sm-3">RAM Usage:</dt>
-                <dd class="col-sm-3"><?php echo $serverData['stat']['memusage'] ?> %</dd>
-                <dt class="col-sm-3">Hard Disk Usage:</dt>
-                <dd class="col-sm-3"><?php echo $serverData['stat']['diskusage'] ?> %</dd>
-                <dt class="col-sm-3">PHP Load:</dt>
-                <dd class="col-sm-3"><?php echo $serverData['stat']['phpload'] ?> %</dd>
-                <dt class="col-sm-3">Established Connections:</dt>
-                <dd class="col-sm-3"><?php echo $serverData['stat']['connections'] ?></dd>
-                <dt class="col-sm-3">Total Connections:</dt>
-                <dd class="col-sm-3"><?php echo $serverData['stat']['totalconnections'] ?></dd>
-                <dt class="col-sm-3">RAM Total:</dt>
-                <dd class="col-sm-3"><?php echo $serverData['stat']['memtotal'] ?> GB</dd>
-                <dt class="col-sm-3">RAM Used:</dt>
-                <dd class="col-sm-3"><?php echo $serverData['stat']['memused'] ?> GB</dd>
-                <dt class="col-sm-3">RAM Available:</dt>
-                <dd class="col-sm-3"><?php echo $serverData['stat']['memavailable'] ?> GB</dd>
-                <dt class="col-sm-3">Hard Disk Free:</dt>
-                <dd class="col-sm-3"><?php echo $serverData['stat']['diskfree'] ?> GB</dd>
-                <dt class="col-sm-3">Hard Disk Used:</dt>
-                <dd class="col-sm-3"><?php echo $serverData['stat']['diskused'] ?> GB</dd>
-                <dt class="col-sm-3">Hard Disk Total:</dt>
-                <dd class="col-sm-3"><?php echo $serverData['stat']['disktotal'] ?> GB</dd>
+            <div class="h4">Hostname: <?php echo $serverData['hostname'] ?></div>
+            <hr/>
 
-            </dl>
-            <br/>
-            Miner Enabled: <span class="badge bg-<?php echo $_config['miner'] ? 'success' : 'danger' ?>">
-                <?php echo $_config['miner'] ? 'On' : 'Off' ?>
-            </span>
-            <br/>
-            Miner running: <span class="badge bg-<?php echo $miner_running ? 'success' : 'danger' ?>">
-                <?php echo $miner_running ? 'Yes' : 'No' ?></span>
-            <br/>
-            Lock: <?php echo $miner_lock ? 'Yes' : 'No' ?>
-            <br/>
-            <a href="<?php echo APP_URL ?>/?action=miner_enable" onclick="if(!confirm('Enable miner?')) return false">Enable</a>
-            |
-            <a href="<?php echo APP_URL ?>/?action=miner_disable" onclick="if(!confirm('Disable miner?')) return false">Disable</a>
-            |
-            <a href="<?php echo APP_URL ?>/?action=miner_restart" onclick="if(!confirm('Restart miner?')) return false">Restart</a>
-            <br/>
-            Miner address: <?php echo explorer_address_link(Account::getAddress($_config['miner_public_key'])) ?>
-            <br/>
-            <?php if ($minerStat) { ?>
-            Miner stat:<br/>
-                Started: <?php echo display_date($minerStat['started']) ?><br/>
-                <?php echo $minerStat['hashes'] ?> hashes<br/>
-                <?php echo $minerStat['submits'] ?> submits<br/>
-                <?php echo $minerStat['accepted'] ?> accepted<br/>
-                <?php echo $minerStat['rejected'] ?> rejected<br/>
-            <?php } ?>
-            <br/>
-            Sync: <span class="badge bg-<?php echo $sync_running ? 'success' : 'danger' ?>">
-                <?php echo $sync_running ? 'Yes' : 'No' ?></span>
-            <br/>
-            Lock: <?php echo $sync_lock ? 'Yes' : 'No' ?>
+            <div class="row">
+                <div class="col-sm-6">
+                    <dl class="row">
+                        <dt class="col-sm-6">CPU Usage:</dt>
+                        <dd class="col-sm-6 d-flex align-items-center">
+                            <div><?php echo $serverData['stat']['cpuload'] ?> %</div>
+                            <div class="progress flex-grow-1 mx-2">
+                                <div class="progress-bar bg-info" role="progressbar"
+                                     style="width: <?php echo $serverData['stat']['cpuload'] ?>%" aria-valuenow="<?php echo $serverData['stat']['cpuload'] ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </dd>
+                        <dt class="col-sm-6">Hard Disk Usage:</dt>
+                        <dd class="col-sm-6 d-flex align-items-center">
+                            <div><?php echo $serverData['stat']['diskusage'] ?> %</div>
+                            <div class="progress flex-grow-1 mx-2">
+                                <div class="progress-bar bg-info" role="progressbar"
+                                     style="width: <?php echo $serverData['stat']['diskusage'] ?>%" aria-valuenow="<?php echo $serverData['stat']['diskusage'] ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </dd>
+                        <dt class="col-sm-6">Hard Disk Total:</dt>
+                        <dd class="col-sm-6"><?php echo $serverData['stat']['disktotal'] ?> GB</dd>
+                        <dt class="col-sm-6">Hard Disk Used:</dt>
+                        <dd class="col-sm-6"><?php echo $serverData['stat']['diskused'] ?> GB</dd>
+                        <dt class="col-sm-6">Hard Disk Free:</dt>
+                        <dd class="col-sm-6"><?php echo $serverData['stat']['diskfree'] ?> GB</dd>
+                        <dt class="col-sm-6">Established Connections:</dt>
+                        <dd class="col-sm-6"><?php echo $serverData['stat']['connections'] ?></dd>
+                    </dl>
+                </div>
+                <div class="col-sm-6">
+                    <dl class="row">
+                        <dt class="col-sm-6">PHP Load:</dt>
+                        <dd class="col-sm-6 d-flex align-items-center">
+                            <div><?php echo $serverData['stat']['phpload'] ?> %</div>
+                            <div class="progress flex-grow-1 mx-2">
+                                <div class="progress-bar bg-info" role="progressbar"
+                                     style="width: <?php echo $serverData['stat']['phpload'] ?>%" aria-valuenow="<?php echo $serverData['stat']['phpload'] ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </dd>
+                        <dt class="col-sm-6">RAM Usage:</dt>
+                        <dd class="col-sm-6 d-flex align-items-center">
+                            <div><?php echo $serverData['stat']['memusage'] ?> %</div>
+                            <div class="progress flex-grow-1 mx-2">
+                                <div class="progress-bar bg-info" role="progressbar"
+                                     style="width: <?php echo $serverData['stat']['memusage'] ?>%" aria-valuenow="<?php echo $serverData['stat']['memusage'] ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </dd>
+                        <dt class="col-sm-6">RAM Total:</dt>
+                        <dd class="col-sm-6"><?php echo $serverData['stat']['memtotal'] ?> GB</dd>
+                        <dt class="col-sm-6">RAM Used:</dt>
+                        <dd class="col-sm-6"><?php echo $serverData['stat']['memused'] ?> GB</dd>
+                        <dt class="col-sm-6">RAM Available:</dt>
+                        <dd class="col-sm-6"><?php echo $serverData['stat']['memavailable'] ?> GB</dd>
+                        <dt class="col-sm-6">Total Connections:</dt>
+                        <dd class="col-sm-6"><?php echo $serverData['stat']['totalconnections'] ?></dd>
+                    </dl>
+                </div>
+            </div>
+
+            <hr/>
+
+            <div class="row">
+                <div class="col-md-6 col-lg-4">
+                    <div class="card">
+                        <div class="card-header h3">
+                            <h4 class="card-title">Miner</h4>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Address: <?php echo explorer_address_link(Account::getAddress($_config['miner_public_key'])) ?></p>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            Enabled
+                                        </div>
+                                        <div class="col-6 text-end">
+                                            <span class="badge bg-<?php echo $_config['miner'] ? 'success' : 'danger' ?>">
+                                                <?php echo $_config['miner'] ? 'On' : 'Off' ?>
+                                            </span>
+                                        </div>
+                                        <div class="col-6">
+                                            Running
+                                        </div>
+                                        <div class="col-6 text-end">
+                                            <span class="badge bg-<?php echo $miner_running ? 'success' : 'danger' ?>">
+                                                <?php echo $miner_running ? 'Yes' : 'No' ?>
+                                            </span>
+                                        </div>
+                                        <div class="col-6">
+                                            Lock
+                                        </div>
+                                        <div class="col-6 text-end">
+                                            <span class="badge bg-<?php echo $miner_lock ? 'success' : 'danger' ?>">
+                                                <?php echo $miner_lock ? 'Yes' : 'No' ?>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+	                                <?php if ($minerStat) { ?>
+                                        <div><strong>Miner stat:</strong></div>
+                                        <div class="flex-row d-flex justify-content-between flex-wrap">
+                                            <div>Started:</div>
+                                            <div><?php echo display_date($minerStat['started']) ?></div>
+                                        </div>
+                                        <div class="flex-row d-flex justify-content-between flex-wrap">
+                                            <div>Hashes:</div>
+                                            <div><?php echo $minerStat['hashes'] ?></div>
+                                        </div>
+                                        <div class="flex-row d-flex justify-content-between flex-wrap">
+                                            <div>Submits:</div>
+                                            <div><?php echo $minerStat['submits'] ?></div>
+                                        </div>
+                                        <div class="flex-row d-flex justify-content-between flex-wrap">
+                                            <div>Accepted:</div>
+                                            <div><?php echo $minerStat['accepted'] ?></div>
+                                        </div>
+                                        <div class="flex-row d-flex justify-content-between flex-wrap">
+                                            <div>Rejected:</div>
+                                            <div><?php echo $minerStat['rejected'] ?></div>
+                                        </div>
+	                                <?php } ?>
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top text-muted">
+                            <a class="btn btn-success me-2" href="<?php echo APP_URL ?>/?action=miner_enable" onclick="if(!confirm('Enable miner?')) return false">Enable</a>
+                            <a class="btn btn-danger me-2" href="<?php echo APP_URL ?>/?action=miner_disable" onclick="if(!confirm('Disable miner?')) return false">Disable</a>
+                            <a class="btn btn-warning" href="<?php echo APP_URL ?>/?action=miner_restart" onclick="if(!confirm('Restart miner?')) return false">Restart</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card">
+                        <div class="card-header h3">
+                            <h4 class="card-title">Sync</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    Running
+                                </div>
+                                <div class="col-6 text-end">
+                                    <span class="badge bg-<?php echo $sync_running ? 'success' : 'danger' ?>">
+                                        <?php echo $sync_running ? 'Yes' : 'No' ?>
+                                    </span>
+                                </div>
+                                <div class="col-6">
+                                    Lock
+                                </div>
+                                <div class="col-6 text-end">
+                                    <span class="badge bg-<?php echo $sync_lock ? 'success' : 'danger' ?>">
+                                        <?php echo $sync_lock ? 'Yes' : 'No' ?>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         <?php } ?>
 	    <?php if($view == "php") {
 	        phpinfo();
         } ?>
 		<?php if($view == "db") { ?>
-            Connection: <?php echo $dbData['connection'] ?><br/>
-            Server: <?php echo $dbData['server'] ?><br/>
-            DB Name: <?php echo $dbData['db_name'] ?><br/>
-            DB version: <?php echo $_config['dbversion'] ?><br/>
-            <?php foreach ($dbData['tables'] as $table => $rows) { ?>
-                <?php echo $table ?>: <?php echo $rows ?><br/>
-            <?php } ?>
-		<?php } ?>
-	    <?php if($view == "utils") { ?>
-            <a class="btn btn-info" href="<?php echo APP_URL ?>/?view=utils&action=clean" onclick="if(!confirm('Clean?')) return false">Clean</a>
-            <a class="btn btn-info" href="<?php echo APP_URL ?>/?view=utils&action=sync" onclick="if(!confirm('Run sync?')) return false">Run sync</a>
-          <hr/>
-            <h2>Check blocks</h2>
-            <form method="post" action="">
-                Peer:
-                <input type="text" value="" name="peer" required="required">
-                <input type="hidden" name="action" value="check_blocks"/>
-                <button type="submit">Check</button>
-                <?php if($checkBlocksResponse) { ?>
-                    <?php if(empty($invalid_block)) { ?>
-                        <div class="alert alert-success">
-                            No invalid block
-                        </div>
-                    <?php } else { ?>
-                        <div class="alert alert-danger">
-                            Invalid block detected at height <?php echo $invalid_block ?>
+
+            <div class="row">
+                <div class="col-lg-4 col-sm-6">
+                    <div class="flex-row d-flex justify-content-between flex-wrap">
+                        <label>Connection:</label>
+                        <div><?php echo $dbData['connection'] ?></div>
+                    </div>
+                    <div class="flex-row d-flex justify-content-between flex-wrap">
+                        <label>Server:</label>
+                        <div><?php echo $dbData['server'] ?></div>
+                    </div>
+                    <div class="flex-row d-flex justify-content-between flex-wrap">
+                        <label>DB Name:</label>
+                        <div><?php echo $dbData['db_name'] ?></div>
+                    </div>
+                    <div class="flex-row d-flex justify-content-between flex-wrap">
+                        <label>DB version:</label>
+                        <div><?php echo $_config['dbversion'] ?></div>
+                    </div>
+                    <hr/>
+                    <?php foreach ($dbData['tables'] as $table => $rows) { ?>
+                        <div class="flex-row d-flex justify-content-between flex-wrap">
+                            <label><?php echo $table ?>:</label>
+                            <div><?php echo $rows ?></div>
                         </div>
                     <?php } ?>
-                <?php } ?>
-            </form>
-            <hr/>
-            <h2>Clear blocks</h2>
-            <form method="post" action="">
-                From height:
-                <input type="number" required name="height">
-                <input type="hidden" name="action" value="clear_blocks"/>
-                <button type="submit">Clear</button>
-            </form>
-            <hr/>
-            <h2>Accounts hash</h2>
-            <a href="<?php echo APP_URL ?>/?view=utils&action=accounts-hash" class="btn btn-info">Calculate</a>
-            <?php if($accountsHash) { ?>
-                <div class="alert alert-success">
-	                height: <?php echo $accountsHash['height'] ?><br/>
-	                hash: <?php echo $accountsHash['hash'] ?>
                 </div>
-            <?php } ?>
-            <h2>Blocks hash</h2>
-            <form action="" method="post">
-                <input type="number" name="height" value=""/>
-                <input type="hidden" name="action" value="blocks-hash"/>
-                <button type="submit">Calculate</button>
-            </form>
-            <?php if($blocksHash) { ?>
-                <div class="alert alert-success">
-                    height: <?php echo $blocksHash['height'] ?><br/>
-                    hash: <?php echo $blocksHash['hash'] ?>
+            </div>
+
+		<?php } ?>
+	    <?php if($view == "utils") { ?>
+
+            <div class="flex-row d-flex flex-wrap align-items-center mb-2">
+                <a class="btn btn-danger me-2" href="<?php echo APP_URL ?>/?view=utils&action=clean" onclick="if(!confirm('Clean?')) return false">Clean</a>
+                <div class="text-danger">Deletes all block and transactions in database</div>
+            </div>
+            <div class="flex-row d-flex flex-wrap align-items-center mb-2">
+                <a class="btn btn-info me-2" href="<?php echo APP_URL ?>/?view=utils&action=sync" onclick="if(!confirm('Run sync?')) return false">Run sync</a>
+                <div>Synchronize blocks from peers</div>
+            </div>
+
+            <div class="mt-4">
+                <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i> Check blocks</h3>
+
+                <form class="row gx-3 gy-2 align-items-center" method="post" action="">
+
+                    <input type="hidden" name="action" value="check_blocks"/>
+                    <div class="col-sm-2">
+                        <input type="text" class="form-control" id="peer" name="peer" placeholder="Peer" required="required">
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="submit" class="btn btn-primary">Check</button>
+                    </div>
+                    <div class="col-auto">
+	                <?php if($checkBlocksResponse) { ?>
+		                <?php if(empty($invalid_block)) { ?>
+                            <div class="alert alert-success mb-0">
+                                No invalid block
+                            </div>
+		                <?php } else { ?>
+                            <div class="alert alert-danger mb-0">
+                                Invalid block detected at height <?php echo $invalid_block ?>
+                            </div>
+		                <?php } ?>
+	                <?php } ?>
+                    </div>
+                </form>
+            </div>
+
+            <hr/>
+
+            <div class="mt-4">
+                <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i> Clear blocks</h3>
+
+                <form class="row gx-3 gy-2 align-items-center" method="post" action="">
+                    <input type="hidden" name="action" value="clear_blocks"/>
+                    <div class="col-sm-2">
+                        <input type="text" class="form-control" id="height" name="height" placeholder="From height" required="required">
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="submit" class="btn btn-danger">Clear</button>
+                    </div>
+                </form>
+            </div>
+
+            <hr/>
+
+            <div class="mt-4">
+                <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i>Accounts hash</h3>
+                <div class="row">
+                    <div class="col-sm-2">
+                        <a href="<?php echo APP_URL ?>/?view=utils&action=accounts-hash" class="btn btn-info">Calculate</a>
+                    </div>
+                    <div class="col-auto">
+                        <?php if($accountsHash) { ?>
+                            <div class="alert alert-success mb-0">
+                                height: <?php echo $accountsHash['height'] ?><br/>
+                                hash: <?php echo $accountsHash['hash'] ?>
+                            </div>
+                        <?php } ?>
+                    </div>
                 </div>
-            <?php } ?>
+            </div>
+
+            <hr/>
+
+            <div class="mt-4">
+                <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i>Blocks hash</h3>
+                <form class="row gx-3 gy-2 align-items-center" method="post" action="">
+                    <input type="hidden" name="action" value="blocks-hash"/>
+                    <div class="col-sm-2">
+                        <input type="text" class="form-control" id="height" name="height" placeholder="Height" required="required">
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="submit" class="btn btn-info">Calculate</button>
+                    </div>
+                    <div class="col-auto">
+                        <?php if($blocksHash) { ?>
+                            <div class="alert alert-success mb-0">
+                                height: <?php echo $blocksHash['height'] ?><br/>
+                                hash: <?php echo $blocksHash['hash'] ?>
+                            </div>
+                        <?php } ?>
+                    </div>
+                </form>
+            </div>
+
+            <div class="mb-5"></div>
+
         <?php } ?>
 
 	    <?php if($view == "peers") { ?>
 
-            <form method="post" action="">
-                <input type="text" name="peer" required>
-                <input type="hidden" name="action" value="add_peer">
-                <button class="btn btn-success" type="submit">Add Peer</button>
-            </form>
+            <div class="mt-4">
+                <form class="row gx-3 gy-2 align-items-center" method="post" action="">
+                    <input type="hidden" name="action" value="add_peer">
+                    <div class="col-sm-2">
+                        <input type="text" class="form-control" id="peer" name="peer" placeholder="Peer address" required="required">
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="submit" class="btn btn-success">Add Peer</button>
+                    </div>
+                </form>
+            </div>
+
+            <hr/>
+
             <h4>Peers</h4>
             <table class="table table-sm table-striped">
                 <thead>
                 <tr>
-                    <th>id</th>
-                    <th>hostname</th>
-                    <th>blacklisted</th>
-                    <th>ping</th>
-                    <th>reserve</th>
-                    <th>ip</th>
-                    <th>fails</th>
-                    <th>stuckfail</th>
-                    <th>reason</th>
+                    <th>Id</th>
+                    <th>Hostname</th>
+                    <th>Blacklisted</th>
+                    <th>Ping</th>
+                    <th>Reserve</th>
+                    <th>Ip</th>
+                    <th>Fails</th>
+                    <th>Stuckfail</th>
+                    <th>Reason</th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody>
 				<?php foreach ($peers as $peer) { ?>
-                    <tr>
+                    <tr  class="<?php if ($peer['blacklisted'] > time()) { ?>table-danger<?php } ?>">
                         <td><?php echo $peer['id'] ?></td>
                         <td><?php echo $peer['hostname'] ?></td>
                         <td><?php echo display_date($peer['blacklisted']) ?></td>
@@ -545,37 +816,101 @@ require_once __DIR__. '/../common/include/top.php';
 		<?php } ?>
 
 
-	    <?php if($view == "config") { ?>
+	    <?php if($view == "config") {
+
+	        $display_config = $_config;
+			$display_config['db_pass']='****';
+			$display_config['generator_private_key']='****';
+			$display_config['miner_private_key']='****';
+			$display_config['repository_private_key']='****';
+			$display_config['faucet_private_key']='****';
+			$display_config['wallet_private_key']='****';
+
+	        ?>
 
             <h3>Config</h3>
-            <table class="table table-sm">
-                <?php foreach($_config as $key=>$val) { ?>
-                <tr>
-                    <td><?php echo $key ?></td>
-                    <td><?php echo $val ?></td>
-                </tr>
-                <?php } ?>
-            </table>
-            <br/>
-            Logging
-                <a href="<?php echo APP_URL ?>/?action=logging&value=<?php echo $_config['enable_logging'] ? 0 : 1 ?>">
-                    <span class="badge bg-<?php echo $_config['enable_logging'] ? 'success' : 'danger' ?>">
-                        <?php echo $_config['enable_logging'] ? 'On' : 'Off' ?>
-                    </span>
-                </a>
-            <br/>
-            <h3>Hostname</h3>
-            <form method="post" action="">
-                <input type="text" value="<?php echo $_config['hostname'] ?>" name="hostname" required/>
-                <input type="hidden" name="action" value="set_hostname"/>
-                <button type="submit">Set</button>
-            </form>
+
+            <div class="row">
+                <div class="col-sm-7">
+                    <table class="table table-sm">
+		                <?php foreach($display_config as $key=>$val) { ?>
+                            <tr>
+                                <td><?php echo $key ?></td>
+                                <td style="word-break: break-all">
+                                    <?php
+                                        if(is_array($val)) {
+                                            echo implode('<br/>',$val);
+                                        } else {
+                                            echo $val;
+                                        }
+                                    ?>
+                                </td>
+                            </tr>
+		                <?php } ?>
+                    </table>
+                </div>
+                <div class="col-sm-5">
+
+                    <div class="form-check form-switch form-switch-lg mb-3" dir="ltr">
+                        <input type="checkbox" class="form-check-input" id="customSwitchsizelg" <?php echo $_config['enable_logging'] ? 'checked=""' : '' ?>
+                               onchange="document.location.href='<?php echo APP_URL ?>/?action=logging&value=<?php echo $_config['enable_logging'] ? 0 : 1 ?>'">
+                        <label class="form-check-label" for="customSwitchsizelg">Logging</label>
+                    </div>
+
+                    <div class="mt-4">
+                        <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i>Hostname</h3>
+                        <form class="row gx-3 gy-2 align-items-center" method="post" action="">
+                            <input type="hidden" name="action" value="set_hostname"/>
+                            <div class="col-sm-8">
+                                <input type="text" value="<?php echo $_config['hostname'] ?>" class="form-control" id="hostname" name="hostname" placeholder="" required="required">
+                            </div>
+                            <div class="col-sm-auto">
+                                <button type="submit" class="btn btn-info">Set</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+
 		<?php } ?>
 	    <?php if($view == "update") { ?>
-                Apps version: <?php echo APPS_VERSION ?><br/>
-            Apps hash (calculated): <?php echo $updateData['appsHash']['calculated'] ?><br/>
-            Apps hash (stored): <?php echo $updateData['appsHash']['stored'] ?><br/>
-            Apps hash (valid): <?php echo $updateData['appsHash']['valid'] ?>
+
+            <table class="table table-sm">
+                <tr>
+                    <td>
+                        <label>Apps version:</label>
+                    </td>
+                    <td>
+                        <?php echo APPS_VERSION ?>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>Apps hash (calculated):</label>
+                    </td>
+                    <td>
+                        <?php echo $updateData['appsHash']['calculated'] ?>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>Apps hash (stored):</label>
+                    </td>
+                    <td>
+                        <?php echo $updateData['appsHash']['stored'] ?>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>Apps hash (valid):</label>
+                    </td>
+                    <td>
+                        <?php echo $updateData['appsHash']['valid'] ?>
+                    </td>
+                </tr>
+            </table>
+
             <?php if ($updateData['appsHash']['calculated'] != $updateData['appsHash']['valid']) { ?>
                 <a href="<?php echo APP_URL ?>/?action=update" class="btn btn-success">Update apps</a>
             <?php } ?>
@@ -584,7 +919,9 @@ require_once __DIR__. '/../common/include/top.php';
             <?php } ?>
         <?php } ?>
 	    <?php if($view == "log") { ?>
-            <pre><?php echo $logData ?></pre>
+            <h3>Log</h3>
+            <hr/>
+            <pre style="white-space: pre-line"><?php echo $logData ?></pre>
 		<?php } ?>
     <?php } ?>
 <?php } ?>

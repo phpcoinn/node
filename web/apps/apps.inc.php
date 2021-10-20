@@ -1,7 +1,7 @@
 <?php
 
 require_once dirname(dirname(__DIR__)).'/include/init.inc.php';
-define("APPS_VERSION","1.0.24");
+define("APPS_VERSION","1.0.26");
 function relativePath($from, $to, $ps = DIRECTORY_SEPARATOR)
 {
 	$arFrom = explode($ps, rtrim($from, $ps));

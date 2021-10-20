@@ -76,12 +76,14 @@ require_once __DIR__. '/../common/include/top.php';
             </thead>
             <tbody>
 			<?php foreach($mempool as $transaction) {
-				$party="";
-				if($address == $transaction['dst']) {
-					$party = Account::getAddress($transaction['public_key']);
-				} else {
-					$party = $transaction['dst'];
-				}
+                $party = "";
+                if($transaction['type'] != TX_TYPE_REWARD) {
+                    if ($address == $transaction['dst']) {
+                        $party = Account::getAddress($transaction['public_key']);
+                    } else {
+                        $party = $transaction['dst'];
+                    }
+                }
 			    ?>
                 <tr>
                     <td><a href="/apps/explorer/tx.php?id=<?php echo $transaction['id'] ?>"><?php echo $transaction['id'] ?></a></td>
@@ -92,7 +94,7 @@ require_once __DIR__. '/../common/include/top.php';
 							<?php echo $transaction['block'] ?></a></td>
                     <td><a href="/apps/explorer/address.php?address=<?php echo $party ?>">
 			                <?php echo $party ?></a></td>
-                    <td><?php echo $transaction['type'] ?></td>
+                    <td><?php echo $transaction['type_label'] ?></td>
                     <td><?php echo num($transaction['val']) ?></td>
                     <td><?php echo num($transaction['fee']) ?></td>
                 </tr>
@@ -120,11 +122,13 @@ require_once __DIR__. '/../common/include/top.php';
     <tbody>
         <?php foreach($transactions as $transaction) {
 	        $party="";
-	        if($address == $transaction['dst']) {
-		        $party = Account::getAddress($transaction['public_key']);
-	        } else {
-		        $party = $transaction['dst'];
-	        }
+            if($transaction['type'] != TX_TYPE_REWARD) {
+                if ($address == $transaction['dst']) {
+                    $party = Account::getAddress($transaction['public_key']);
+                } else {
+                    $party = $transaction['dst'];
+                }
+            }
             ?>
             <tr>
                 <td><a href="/apps/explorer/tx.php?id=<?php echo $transaction['id'] ?>"><?php echo $transaction['id'] ?></a></td>
@@ -135,7 +139,7 @@ require_once __DIR__. '/../common/include/top.php';
                         <?php echo $transaction['block'] ?></a></td>
                 <td><a href="/apps/explorer/address.php?address=<?php echo $party ?>">
 			            <?php echo $party ?></a></td>
-                <td><?php echo $transaction['type'] ?></td>
+                <td><?php echo $transaction['type_label'] ?></td>
                 <td class="<?php echo $transaction['sign']=='-' ? 'text-danger' : 'text-success' ?>"><?php echo $transaction['sign'] .  num($transaction['val']) ?></td>
 <!--                <td>--><?php //echo num($transaction['fee']) ?><!--</td>-->
             </tr>
