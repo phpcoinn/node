@@ -88,8 +88,11 @@ class Account
         $public_key = Account::publicKey($id);
 
         $res = $db->run(
-            "SELECT * FROM transactions WHERE dst=:dst or public_key=:src ORDER by height DESC LIMIT :offset, :limit",
-            [":src" => $public_key, ":dst" => $id, ":limit" => $limit, ":offset" => $offset]
+            "SELECT * FROM transactions 
+				WHERE dst=:dst or (public_key=:src AND type != :rewardType)
+				ORDER by height DESC LIMIT :offset, :limit",
+            [":src" => $public_key, ":dst" => $id, ":rewardType"=>TX_TYPE_REWARD,
+	            ":limit" => $limit, ":offset" => $offset]
         );
 
         $transactions = [];
@@ -114,18 +117,18 @@ class Account
 		        // version 0 -> reward transaction, version 1 -> normal transaction
 		        $sign="";
 		        if ($x['type'] == TX_TYPE_REWARD) {
-			        $trans['type'] = "mining";
+			        $trans['type_label'] = "mining";
 			        $sign="+";
 		        } elseif ($x['type'] == TX_TYPE_SEND) {
 			        if ($x['dst'] == $id) {
-				        $trans['type'] = "credit";
+				        $trans['type_label'] = "credit";
 				        $sign="+";
 			        } else {
-				        $trans['type'] = "debit";
+				        $trans['type_label'] = "debit";
 				        $sign="-";
 			        }
 		        } else {
-			        $trans['type'] = "other";
+			        $trans['type_label'] = "other";
 		        }
 		        $trans['sign'] = $sign;
 		        ksort($trans);
@@ -139,8 +142,9 @@ class Account
     static function getCountByAddress($public_key, $id) {
 		global $db;
 	    $res = $db->single(
-		    "SELECT count(*) as cnt FROM transactions WHERE dst=:dst or public_key=:src",
-		    [":src" => $public_key, ":dst" => $id]
+		    "SELECT count(*) as cnt FROM transactions 
+				WHERE dst=:dst or (public_key=:src AND type != :rewardType)",
+		    [":src" => $public_key, ":dst" => $id, ":rewardType" => TX_TYPE_REWARD]
 	    );
 		return $res;
     }
