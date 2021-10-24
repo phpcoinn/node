@@ -28,6 +28,15 @@ class Nodeutil
 		return $appsHash;
 	}
 
+	/**
+	 * @api {php util.php} clean Clean
+	 * @apiName clean
+	 * @apiGroup UTIL
+	 * @apiDescription Cleans the entire database
+	 *
+	 * @apiExample {cli} Example usage:
+	 * php util.php clean
+	 */
 	static function clean() {
 		global $db;
 		$lockFile = Nodeutil::getSyncFile();
@@ -136,43 +145,6 @@ class Nodeutil
 			'height'=>$height,
 			'hash'=>md5(json_encode($rows))
 		];
-	}
-
-	static function printRewardScheme() {
-		echo str_pad("block", 10);
-		echo str_pad('total', 10);
-		echo str_pad('miner', 10);
-		echo str_pad('mn', 10);
-		echo str_pad('pos', 10);
-		echo str_pad('days', 10);
-		echo str_pad('time', 24);
-		echo str_pad('supply', 10);
-		echo PHP_EOL;
-
-		$prev_reward = 0;
-		$total_supply = 0;
-		for($i=1;$i<=PHP_INT_MAX;$i++) {
-			$reward = Block::reward($i);
-			$elapsed = $i * BLOCK_TIME;
-			$time = GENESIS_TIME + $elapsed;
-			$total_supply += $reward['total'];
-			$days = $elapsed / 60 / 60 / 24;
-			if($reward['key'] != $prev_reward) {
-				echo str_pad($i, 10);
-				echo str_pad($reward['total'], 10);
-				echo str_pad($reward['miner'], 10);
-				echo str_pad($reward['masternode'], 10);
-				echo str_pad($reward['pos'], 10);
-				echo str_pad(round($days,2), 10);
-				echo str_pad(date("Y-m-d H:i:s",$time), 24);
-				echo str_pad($total_supply, 10);
-				echo PHP_EOL;
-			}
-			if($reward['total']==0) {
-				break;
-			}
-			$prev_reward = $reward['key'];
-		}
 	}
 
 	static function getSyncFile() {
@@ -329,35 +301,6 @@ class Nodeutil
 			return false;
 		}
 
-	}
-
-	static function verifyBlocks() {
-		$height = Block::getHeight();
-
-		for($i=1;$i<=$height;$i++) {
-			$block = Block::export("",$i);
-			$res = Block::getFromArray($block)->_verifyBlock();
-			echo "Verify block $i / $height res=$res".PHP_EOL;
-			if(!$res) {
-				return;
-			}
-		}
-	}
-
-	static function exportChain() {
-		$height = Block::getHeight();
-		$list = [];
-		$file = getcwd() . "/blockchain.json";
-		echo "Exporting blockchain to file: " . $file.PHP_EOL;
-		for($i=1;$i<=$height;$i++) {
-			$block = Block::export("",$i);
-			$list[]=$block;
-			if($i % 100 == 0) {
-				echo "Exporting block $i".PHP_EOL;
-			}
-		}
-		file_put_contents($file, json_encode($list));
-		echo "Export finished".PHP_EOL;
 	}
 
 	static function extractAppsArchive() {

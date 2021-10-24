@@ -202,24 +202,24 @@ class Transaction
 	}
 
 	// add a new transaction to the blockchain
-	public function _add($block, $height)
+	public function _add($block, $height, $bootstrapping = false)
 	{
 		global $db;
+
 		$public_key = $this->publicKey;
 		$address = Account::getAddress($public_key);
 		$res = Account::checkAccount($address, $public_key, $block);
-		if($res === false) {
+		if ($res === false) {
 			_log("Error checking account address");
 			return false;
 		}
-		if ($this->type==TX_TYPE_SEND){
+		if ($this->type == TX_TYPE_SEND) {
 			$res = Account::checkAccount($this->dst, "", $block);
-			if($res === false) {
+			if ($res === false) {
 				_log("Error checking account address for send");
 				return false;
 			}
 		}
-
 
 		$bind = [
 			":id"         => $this->id,

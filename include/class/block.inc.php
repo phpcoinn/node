@@ -50,25 +50,27 @@ class Block
     {
         global $db;
 
-        if(empty($this->generator)) {
-	        $this->generator = Account::getAddress($this->publicKey);
-        }
+	    if (!$bootstrapping) {
 
-        // the transactions are always sorted in the same way, on all nodes, as they are hashed as json
-        ksort($this->data);
+	        if(empty($this->generator)) {
+		        $this->generator = Account::getAddress($this->publicKey);
+	        }
 
-        if(count($this->data)==0 && $this->height>1) {
-        	_log("No transactions");
-        	return false;
-        }
+	        // the transactions are always sorted in the same way, on all nodes, as they are hashed as json
+	        ksort($this->data);
 
-        // create the hash / block id
-        $hash = $this->_hash();
+	        if(count($this->data)==0 && $this->height>1) {
+	            _log("No transactions");
+	            return false;
+	        }
 
-        // create the block data and check it against the signature
-        $info = $this->_getSignatureBase();
+	        // create the hash / block id
+	        $hash = $this->_hash();
+
+	        // create the block data and check it against the signature
+	        $info = $this->_getSignatureBase();
 	    // _log($info,3);
-        if (!$bootstrapping) {
+
             if (!Account::checkSignature($info, $this->signature, $this->publicKey)) {
                 _log("Block signature check failed info=$info signature={$this->signature} public_key={$this->publicKey}");
                 return false;
@@ -88,9 +90,6 @@ class Block
         }
         // lock table to avoid race conditions on blocks
         $db->lockTables();
-
-        $msg = '';
-        // insert the block into the db
         $db->beginTransaction();
         $total = count($this->data);
 
@@ -435,84 +434,79 @@ class Block
     public function _parse_block($test = true, $bootstrapping=false)
     {
         global $db;
-        // data must be array
-        if ($this->data === false) {
-            _log("Block data is false", 3);
-            return false;
-        }
-        // no transactions means all are valid
-        if (count($this->data) == 0) {
-            return true;
-        }
 
-        // check if the number of transactions is not bigger than current block size
-	    if($this->height > 1) {
-	        $max = Block::max_transactions();
-	        if (count($this->data) > $max) {
-	            _log("Too many transactions in block", 3);
-	            return false;
+        if(!$bootstrapping) {
+
+
+	        // data must be array
+	        if ($this->data === false) {
+		        _log("Block data is false", 3);
+		        return false;
 	        }
-	    }
+	        // no transactions means all are valid
+	        if (count($this->data) == 0) {
+		        return true;
+	        }
 
-        $balance = [];
-        $mns = [];
+	        // check if the number of transactions is not bigger than current block size
+	        if ($this->height > 1) {
+		        $max = Block::max_transactions();
+		        if (count($this->data) > $max) {
+			        _log("Too many transactions in block", 3);
+			        return false;
+		        }
+	        }
 
-        foreach ($this->data as $x) {
-            if (!$bootstrapping) {
-                //validate the transaction
-	            $tx = Transaction::getFromArray($x);
-                if (!$tx->_check($this->height)) {
-                    _log("Transaction check failed - {$tx->id}", 3);
-                    return false;
-                }
+	        $balance = [];
+	        $mns = [];
 
-                // prepare total balance
-                $balance[$tx->src] += $tx->val + $tx->fee;
+	        foreach ($this->data as $x) {
+		        //validate the transaction
+		        $tx = Transaction::getFromArray($x);
+		        if (!$tx->_check($this->height)) {
+			        _log("Transaction check failed - {$tx->id}", 3);
+			        return false;
+		        }
 
-                // check if the transaction is already on the blockchain
-                if ($db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $tx->id]) > 0) {
-                    _log("Transaction already on the blockchain - {$tx->id}", 3);
-                    return false;
-                }
+		        // prepare total balance
+		        $balance[$tx->src] += $tx->val + $tx->fee;
 
-	            $type = $tx->type;
+		        // check if the transaction is already on the blockchain
+		        if ($db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $tx->id]) > 0) {
+			        _log("Transaction already on the blockchain - {$tx->id}", 3);
+			        return false;
+		        }
 
-	            if($type == TX_TYPE_SEND) {
-		            if (!$bootstrapping) {
+		        $type = $tx->type;
 
-		            	if($tx->src == $tx->dst) {
-		            		_log("Transaction now allowed to itself");
-				            return false;
-			            }
+		        if ($type == TX_TYPE_SEND) {
 
-			            // check if the account has enough balance to perform the transaction
-			            foreach ($balance as $id => $bal) {
-				            $res = $db->single(
-					            "SELECT COUNT(1) FROM accounts WHERE id=:id AND balance>=:balance",
-					            [":id" => $id, ":balance" => $bal]
-				            );
-				            if ($res == 0) {
-					            _log("Not enough balance for transaction - $id", 3);
-					            return false; // not enough balance for the transactions
-				            }
-			            }
-		            }
-	            }
-            }
+			        if ($tx->src == $tx->dst) {
+				        _log("Transaction now allowed to itself");
+				        return false;
+			        }
+
+			        // check if the account has enough balance to perform the transaction
+			        foreach ($balance as $id => $bal) {
+				        $res = $db->single(
+					        "SELECT COUNT(1) FROM accounts WHERE id=:id AND balance>=:balance",
+					        [":id" => $id, ":balance" => $bal]
+				        );
+				        if ($res == 0) {
+					        _log("Not enough balance for transaction - $id", 3);
+					        return false; // not enough balance for the transactions
+				        }
+			        }
+		        }
+	        }
+
         }
-        //only a single masternode transaction per block for any masternode
-//        if (count($mns) != count(array_unique($mns))) {
-//            _log("Too many masternode transactions", 3);
-//            return false;
-//        }
-
-
 
         // if the test argument is false, add the transactions to the blockchain
         if ($test == false) {
             foreach ($this->data as $d) {
 	            $tx = Transaction::getFromArray($d);
-                $res = $tx->_add($this->id, $this->height);
+                $res = $tx->_add($this->id, $this->height, $bootstrapping);
                 if ($res == false) {
                     return false;
                 }
