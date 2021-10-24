@@ -670,13 +670,12 @@ class Util
 	}
 
 	static function exportchain($argv) {
-		$file_name= $argv[2];
-		if(empty($file_name)) {
-			$file_name = "blockchain.txt";
+		$file = $argv[2];
+		if(empty($file)) {
+			$file = getcwd() . "/blockchain.txt";
 		}
 		$height = Block::getHeight();
 		$list = [];
-		$file = getcwd() . "/" . $file_name;
 		echo "Exporting blockchain to file: " . $file.PHP_EOL;
 		$fp = fopen($file, "w");
 		for($i=1;$i<=$height;$i++) {
