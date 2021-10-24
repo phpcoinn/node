@@ -18,5 +18,6 @@ return array(
     'PHPCoin\\Blacklist' => $baseDir . '/include/class/Blacklist.php',
     'Peer' => $baseDir . '/include/class/Peer.php',
     'Transaction' => $baseDir . '/include/class/transaction.inc.php',
+    'Util' => $baseDir . '/include/class/Util.php',
     'Wallet' => $baseDir . '/include/class/Wallet.php',
 );

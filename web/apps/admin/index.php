@@ -917,6 +917,34 @@ require_once __DIR__. '/../common/include/top.php';
             <?php if ($repoServer) {?>
                 <a href="<?php echo APP_URL ?>/?action=propagate_update" class="btn btn-success">Propagate</a>
             <?php } ?>
+
+
+            <?php
+			$gitRev = trim(shell_exec("cd . ".ROOT." && git rev-parse HEAD"));
+			$remoteRev = trim(shell_exec("cd . ".ROOT.' && git ls-remote https://github.com/phpcoinn/node | head -1 | sed "s/HEAD//"'));
+
+            ?>
+            <table class="table table-sm mt-5">
+                <tr>
+                    <td><label>Node version</label></td>
+                    <td><?php echo $gitRev?></td>
+                </tr>
+                <tr>
+                    <td><label>Latest git version</label></td>
+                    <td><?php echo $remoteRev?></td>
+                </tr>
+            </table>
+
+            <?php if ($gitRev != $remoteRev) {?>
+                Update node:
+                <pre>
+                    git reset --hard HEAD
+                    git pull
+                    php cli/util.php download-apps
+                </pre>
+            <?php } ?>
+
+
         <?php } ?>
 	    <?php if($view == "log") { ?>
             <h3>Log</h3>

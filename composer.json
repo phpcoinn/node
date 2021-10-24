@@ -2,7 +2,10 @@
     "name": "phpcoin/phpcoin",
     "description": "Blockchain written in PHP",
     "license": "MIT",
-    "require": {},
+    "require": {
+      "ext-pcntl": "*",
+        "ext-json": "*"
+    },
     "autoload": {
         "classmap": ["include/class"],
         "files": ["include/coinspec.inc.php","include/functions.inc.php","include/genesis.inc.php"]

@@ -25,6 +25,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         'PHPCoin\\Blacklist' => __DIR__ . '/../..' . '/include/class/Blacklist.php',
         'Peer' => __DIR__ . '/../..' . '/include/class/Peer.php',
         'Transaction' => __DIR__ . '/../..' . '/include/class/transaction.inc.php',
+        'Util' => __DIR__ . '/../..' . '/include/class/Util.php',
         'Wallet' => __DIR__ . '/../..' . '/include/class/Wallet.php',
     );
 
