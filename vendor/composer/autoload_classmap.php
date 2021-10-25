@@ -17,6 +17,7 @@ return array(
     'Nodeutil' => $baseDir . '/include/class/Nodeutil.php',
     'PHPCoin\\Blacklist' => $baseDir . '/include/class/Blacklist.php',
     'Peer' => $baseDir . '/include/class/Peer.php',
+    'PeerRequest' => $baseDir . '/include/class/PeerRequest.php',
     'Transaction' => $baseDir . '/include/class/transaction.inc.php',
     'Util' => $baseDir . '/include/class/Util.php',
     'Wallet' => $baseDir . '/include/class/Wallet.php',

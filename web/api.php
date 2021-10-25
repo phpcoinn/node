@@ -26,50 +26,6 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 */
 header('Content-Type: application/json');
 
-
-/**
- * @api {get} /api.php 01. Basic Information
- * @apiName Info
- * @apiGroup API
- * @apiDescription Each API call will return the result in JSON format.
- * There are 2 objects, "status" and "data".
- *
- * The "status" object returns "ok" when the transaction is successful and "error" on failure.
- *
- * The "data" object returns the requested data, as sub-objects.
- *
- * The parameters must be sent either as POST['data'], json encoded array or independently as GET.
- *
- * @apiSuccess {String} status "ok"
- * @apiSuccess {String} data The data provided by the api will be under this object.
- *
- *
- *
- * @apiSuccessExample {json} Success-Response:
- *{
- *   "status":"ok",
- *   "data":{
- *      "obj1":"val1",
- *      "obj2":"val2",
- *      "obj3":{
- *         "obj4":"val4",
- *         "obj5":"val5"
- *      }
- *   }
- *}
- *
- * @apiError {String} status "error"
- * @apiError {String} result Information regarding the error
- *
- * @apiErrorExample {json} Error-Response:
- *     {
- *       "status": "error",
- *       "data": "The requested action could not be completed."
- *     }
- */
-
-use PHPCoin\Blacklist;
-
 require_once dirname(__DIR__).'/include/init.inc.php';
 
 Api::checkAccess();
