@@ -693,6 +693,11 @@ class Util
 	static function importchain($argv) {
 		global $db;
 		$file = trim($argv[2]);
+		if(isset($argv[3])) {
+			$verify = $argv[3];
+		} else {
+			$verify = true;
+		}
 		if(empty($file)) {
 			die("Missing argument <file>".PHP_EOL."Command: importchain <file>".PHP_EOL);
 		}
@@ -734,7 +739,7 @@ class Util
 					$prev_block_id = $prev_block['id'];
 					$block = Block::getFromArray($bl);
 					$block->prevBlockId = $prev_block_id;
-					$res = $block->_add(false);  //6m b=true
+					$res = $block->_add(!$verify);
 					if(!$res) {
 						@unlink($lockFile);
 						die("Failed importing block at height $prev_block".PHP_EOL);

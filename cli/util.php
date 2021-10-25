@@ -83,7 +83,7 @@ rewards-scheme                              - Prints reward scheme by blocks
 download-apps                               - Download and update apps from repository
 verify-blocks                               - Verify all blocks in blockchain
 exportchain [<file>]                        - Export blockchain to file
-importchain <file>                          - Import blocks from file
+importchain <file> [<verify>]               - Import and verify blocks from file
 ";
 	}
 }
