@@ -23,7 +23,7 @@ class PeerRequest
 		_log("Filtered IP = $ip",4);
 
 		if(($ip === false || strlen($ip)==0)) {
-//			api_err("Invalid peer IP address",1);
+			api_err("Invalid peer IP address");
 		}
 		self::$ip=$ip;
 		self::$data=$data;
@@ -77,12 +77,12 @@ class PeerRequest
 		if ($data['repeer'] == 1) {
 			_log("Repeer to $hostname",3);
 			$res = peer_post($hostname . "/peer.php?q=peer", ["hostname" => $_config['hostname']]);
-			_log("peer response " . print_r($res,1),3);
+			_log("peer response " . print_r($res,1),4);
 			if ($res !== false) {
 				_log("Repeer OK",3);
 				api_echo("re-peer-ok");
 			} else {
-				_log("Repeer FAILED - DELETING",3);
+				_log("Repeer FAILED - DELETING",2);
 				if($ip) {
 					Peer::deleteByIp($ip);
 					api_err("re-peer failed - $res");
@@ -103,8 +103,8 @@ class PeerRequest
 	static function submitTransaction() {
 		$data = self::$data;
 		global $db, $_config;
-		_log("receive a new transaction from a peer");
-		_log("data: ".json_encode($data));
+		_log("receive a new transaction from a peer",2);
+		_log("data: ".json_encode($data),3);
 
 		$tx = Transaction::getFromArray($data);
 		// receive a new transaction from a peer
@@ -352,7 +352,7 @@ class PeerRequest
 	static function getApps() {
 		global $_config;
 		if ($_config['repository']) {
-			_log("Received request getApps");
+			_log("Received request getApps", 3);
 			$appsHashFile = Nodeutil::getAppsHashFile();
 			$buildArchive = false;
 			if (!file_exists($appsHashFile)) {
@@ -360,14 +360,14 @@ class PeerRequest
 				$appsHashCalc = calcAppsHash();
 			} else {
 				$appsHash = file_get_contents($appsHashFile);
-				_log("Read apps hash from file = ".$appsHash);
+				_log("Read apps hash from file = ".$appsHash, 3);
 				$appsHashTime = filemtime($appsHashFile);
 				$now = time();
 				$elapsed = $now - $appsHashTime;
-				_log("Elapsed chaek time $elapsed");
+				_log("Elapsed chaek time $elapsed", 3);
 				if ($elapsed > 60) {
 					$appsHashCalc = calcAppsHash();
-					_log("Calculated apps hash = ".$appsHashCalc);
+					_log("Calculated apps hash = ".$appsHashCalc, 3);
 					if ($appsHashCalc != $appsHash) {
 						$buildArchive = true;
 					}
@@ -376,14 +376,14 @@ class PeerRequest
 				}
 			}
 			if ($buildArchive) {
-				_log("build archive");
+				_log("build archive", 2);
 				file_put_contents($appsHashFile, $appsHashCalc);
 				buildAppsArchive();
 				$dir = ROOT . "/cli";
-				_log("Propagating apps");
+				_log("Propagating apps",3);
 				system("php $dir/propagate.php apps $appsHashCalc > /dev/null 2>&1  &");
 			} else {
-				_log("No need to build archive");
+				_log("No need to build archive",2);
 			}
 			$signature = ec_sign($appsHashCalc, $_config['repository_private_key']);
 			api_echo(["hash" => $appsHashCalc, "signature" => $signature]);

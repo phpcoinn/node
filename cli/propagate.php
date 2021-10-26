@@ -41,7 +41,7 @@ if (trim($argv[5]) == 'linear') {
 }
 $peer = san(trim($argv[3]));
 
-_log("Calling propagate.php",4);
+_log("Calling propagate.php",3);
 // broadcasting a block to all peers
 if ((empty($peer) || $peer == 'all') && $type == "block") {
     $whr = "";
@@ -83,7 +83,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
         } else {
 	        $cmd = "php $dir/propagate.php '$type' '$id' '$host' '$ip'  > /dev/null 2>&1  &";
         }
-        _log("Propagate cmd: $cmd",4);
+        _log("Propagate cmd: $cmd",3);
         system( $cmd);
     }
     exit;
@@ -111,16 +111,16 @@ if ($type == "block") {
     }
     $hostname = base58_decode($peer);
     // send the block as POST to the peer
-    _log("Block sent to $hostname:\n".print_r($data,1), 4);
+    _log("Block sent to $hostname:\n".print_r($data,1), 5);
     $response = peer_post($hostname."/peer.php?q=submitBlock", $data, 60, $debug);
-    _log("Propagating block to $hostname - [result: ".json_encode($response)."] $data[height] - $data[id]",1);
+    _log("Propagating block to $hostname - [result: ".json_encode($response)."] $data[height] - $data[id]",3);
     if ($response == "block-ok") {
         echo "Block $id accepted. Exiting.\n";
         exit;
     } elseif ($response['request'] == "microsync") {
         // the peer requested us to send more blocks, as it's behind
         echo "Microsync request\n";
-        _log("Microsync request");
+        _log("Microsync request",1);
         $height = intval($response['height']);
         $bl = san($response['block']);
         $current = Block::_current();
@@ -138,7 +138,7 @@ if ($type == "block") {
             exit;
         }
         echo "Sending the requested blocks\n";
-	    _log("Sending the requested blocks");
+	    _log("Sending the requested blocks",1);
         //start sending the requested block
         for ($i = $height + 1; $i <= $current['height']; $i++) {
             $data = Block::export("", $i);
@@ -154,14 +154,12 @@ if ($type == "block") {
     } elseif ($response == "reverse-microsync") {
         // the peer informe us that we should run a microsync
         echo "Running microsync\n";
-        _log("Running microsync",3);
-        _log("ip arg = ".$argv[4],3);
+        _log("Running microsync",1);
         $ip = trim($argv[4]);
-        _log("tremmed ip = ".$ip,3);
         $ip = Peer::validateIp($ip);
         _log("Filtered ip=".$ip,3);
         if ($ip === false) {
-            _log("Invalid IP",2);
+            _log("Invalid IP");
             die("Invalid IP");
         }
         // fork a microsync in a new process
@@ -169,13 +167,13 @@ if ($type == "block") {
         _log("caliing propagate: php $dir/sync.php microsync '$ip'  > /dev/null 2>&1  &",3);
         system("php $dir/sync.php microsync '$ip'  > /dev/null 2>&1  &");
     } else {
-    	_log("Block not accepted ".$response,1);
+    	_log("Block not accepted ".$response);
         echo "Block not accepted!\n";
     }
 }
 // broadcast a transaction to some peers
 if ($type == "transaction") {
-	_log("Propagate transaction");
+	_log("Propagate transaction",3);
     // get the transaction data
     $data = Transaction::_export($id);
 
@@ -190,33 +188,33 @@ if ($type == "transaction") {
     } else {
         $r = Peer::getActive(intval($_config['transaction_propagation_peers']));
     }
-    _log("Transaction propagate peers: ".print_r($r, 1));
+    _log("Transaction propagate peers: ".print_r($r, 1),3);
     if(count($r)==0) {
     	_log("Transaction not propagated - no peers");
     }
     foreach ($r as $x) {
     	$url = $x['hostname']."/peer.php?q=submitTransaction";
-    	_log("Propagating to peer: ".$url);
+    	_log("Propagating to peer: ".$url,2);
         $res = peer_post($url, $data);
         if (!$res) {
 	        _log("Transaction not accepted");
             echo "Transaction not accepted\n";
         } else {
-	        _log("Transaction accepted");
+	        _log("Transaction accepted",2);
             echo "Transaction accepted\n";
         }
     }
 }
 
 if($type == "apps") {
-	_log("Propagating apps change");
+	_log("Propagating apps change",3);
 	$peers = Peer::getActive();
 	if(count($peers)==0) {
 		_log("No peers to propagate");
 	} else {
 		foreach ($peers as $peer) {
 			$url = $peer['hostname']."/peer.php?q=updateApps";
-			_log("Propagating to peer: ".$url);
+			_log("Propagating to peer: ".$url,3);
 			$res = peer_post($url, ["hash"=>$argv[2]]);
 		}
 	}

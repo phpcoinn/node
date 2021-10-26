@@ -112,16 +112,16 @@ if(isset($_GET['action'])) {
         if($res === false) {
             die("Error updating apps");
         } else {
-            _log("Updating apps");
+            _log("Updating apps", 3);
             $hash = $res['hash'];
             $signature = $res['signature'];
             $verify = Account::checkSignature($hash, $signature, APPS_REPO_SERVER_PUBLIC_KEY);
-            _log("Chacking repo signature hash=$hash signature=$signature verify=$verify");
+            _log("Chacking repo signature hash=$hash signature=$signature verify=$verify",3);
             if(!$verify) {
 	            die("Error verifying apps");
             }
             $link = APPS_REPO_SERVER."/apps.php";
-            _log("Downloading from link $link");
+            _log("Downloading from link $link",3);
 	        $arrContextOptions=array(
 		        "ssl"=>array(
 			        "verify_peer"=>true,
@@ -140,7 +140,7 @@ if(isset($_GET['action'])) {
 
             Nodeutil::extractAppsArchive();
 	        $calHash = calcAppsHash();
-	        _log("Calculating new hash calHash=$calHash");
+	        _log("Calculating new hash calHash=$calHash",3);
 	        if($hash != $calHash) {
 	            die("Error extracting apps transfered = $hash - calc = $calHash");
             }
@@ -150,7 +150,7 @@ if(isset($_GET['action'])) {
         }
     }
     if($action == "propagate_update") {
-	    _log("build archive");
+	    _log("build archive",3);
 //	    $cmd="find ".ROOT."/apps -type d -exec chmod 755 {} \;";
 //	    shell_exec($cmd);
 //	    $cmd="find ".ROOT."/apps -type f -exec chmod 644 {} \;";
@@ -159,7 +159,7 @@ if(isset($_GET['action'])) {
 	    file_put_contents($appsHashFile, $appsHashCalc);
 	    buildAppsArchive();
 	    $dir = ROOT . "/cli";
-	    _log("Propagating apps");
+	    _log("Propagating apps",4);
 	    system("php $dir/propagate.php apps $appsHashCalc > /dev/null 2>&1  &");
 	    header("location: ".APP_URL."/?view=update");
     }

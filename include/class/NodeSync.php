@@ -31,7 +31,7 @@ class NodeSync
 			$syncing = (($current['height'] < $largest_height && $largest_height > 1)
 				|| ($current['height'] == $largest_height && $current['id']!=$most_common));
 			_log("check syncing syncing=$syncing current_height=".$current['height']." largest_height=$largest_height current_id=".
-				$current['id']." most_common=$most_common");
+				$current['id']." most_common=$most_common", 3);
 
 			if(!$syncing) {
 				break;
@@ -46,14 +46,14 @@ class NodeSync
 
 				$peer_block = $this->getPeerBlock($host, $height);
 				if($peer_block) {
-					_log("peer_block=".$peer_block['id']. " current_id=".$current['id']);
+					_log("peer_block=".$peer_block['id']. " current_id=".$current['id'], 4);
 					if ($peer_block['id'] != $current['id']) {
 						$failed_block++;
 						$failed_peer++;
-						_log("We have wrong block $height failed_block=$failed_block",0);
+						_log("We have wrong block $height failed_block=$failed_block");
 					} else {
 						$ok_block++;
-						_log("We have ok block $height ok_block=$ok_block",0);
+						_log("We have ok block $height ok_block=$ok_block",4);
 					}
 				} else {
 					$skipped_peer++;
@@ -62,7 +62,7 @@ class NodeSync
 			}
 
 			if($failed_block > 0 && $failed_block > ($peers_count - $failed_peer) / 2 ) {
-				_log("Failed block on blockchain $failed_block - remove", 0);
+				_log("Failed block on blockchain $failed_block - remove");
 				$res=Block::pop();
 				if(!$res) {
 					_log("Can not delete block on height $height");
@@ -70,7 +70,7 @@ class NodeSync
 					break;
 				}
 			} else if ($ok_block == ($peers_count - $failed_peer)) {
-				_log("last block $height is ok - get next", 0);
+				_log("last block $height is ok - get next", 4);
 				$failed_next_peer = 0;
 				$next_block_peers = [];
 				$height++;
@@ -94,12 +94,12 @@ class NodeSync
 
 
 				if(count(array_keys($next_block_peers))==0) {
-					_log("No next block on peers");
+					_log("No next block on peers", 3);
 					break;
 				} else {
 					if(count(array_keys($next_block_peers))==1) {
 						$id = array_keys($next_block_peers)[0];
-						_log("All peers return same block - checking block $height", 0);
+						_log("All peers return same block - checking block $height", 4);
 						$host = array_keys($next_block_peers[$id])[0];
 						$next_block = $next_block_peers[$id][$host];
 //				_log("Checking block ". print_r($next_block,1));
@@ -119,7 +119,7 @@ class NodeSync
 							$block->prevBlockId = $prev_block_id;
 							$res = $block->_add();
 							if (!$res) {
-								_log("Block add: could not add block at height $height", 3);
+								_log("Block add: could not add block at height $height");
 								$syncing = false;
 								_log("Blacklist node $host");
 								$peer = Peer::findByHostname($host);
@@ -129,7 +129,7 @@ class NodeSync
 								$vblock = Block::export("", $height);
 								$res = Block::getFromArray($vblock)->_verifyBlock();
 								if(!$res) {
-									_log("Block is not verified", 3);
+									_log("Block is not verified");
 									$syncing = false;
 									_log("Blacklist node $host");
 									$peer = Peer::findByHostname($host);
@@ -139,7 +139,7 @@ class NodeSync
 							}
 						}
 					} else {
-						_log("Different blocks on same height $height on peers - skip ");
+						_log("Different blocks on same height $height on peers - skip ",2);
 
 						$best_block_peers = $next_block_peers[$min_elapsed];
 						foreach ($next_block_peers as $elapsed=>$nodes) {
@@ -184,13 +184,13 @@ class NodeSync
 		} else {
 			$node_score = ($ok_block / ($peers_count - $failed_block - $skipped_peer))*100;
 		}
-		_log("NODE SCORE ok_block=$ok_block peers_count=$peers_count failed_peer=$failed_block skipped_peer=$skipped_peer node_score=$node_score");
+		_log("NODE SCORE ok_block=$ok_block peers_count=$peers_count failed_peer=$failed_block skipped_peer=$skipped_peer node_score=$node_score", 2);
 		$db->setConfig('node_score', $node_score);
 
 		$t = time();
 		$db->run("UPDATE config SET val=0 WHERE cfg='sync'", [":time" => $t]);
 		if($syncing) {
-			_log("Blockchain SYNCED",0);
+			_log("Blockchain SYNCED");
 		}
 
 	}
@@ -201,10 +201,10 @@ class NodeSync
 		} else {
 			$limit = 10;
 			$url = $host."/peer.php?q=";
-			_log("Reading blocks from $height from peer $host", 0);
+			_log("Reading blocks from $height from peer $host", 3);
 			$peer_blocks = peer_post($url."getBlocks", ["height" => $height - $limit], 5);
 			if ($peer_blocks === false) {
-				_log("Could not get block from $host - " . $height,0);
+				_log("Could not get block from $host - " . $height);
 			} else {
 				if(is_array($peer_blocks)) {
 					foreach($peer_blocks as $peer_block) {

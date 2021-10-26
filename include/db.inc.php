@@ -56,9 +56,7 @@ class DB extends PDO
         foreach ($error as $key => $val) {
             $msg .= "\n\n$key:\n$val";
         }
-
-        
-            _log($msg);
+        _log($msg, 5);
         
     }
 
@@ -184,7 +182,7 @@ class DB extends PDO
     }
 
     function truncate($table) {
-        _log("truncate table $table");
+        _log("truncate table $table", 3);
 	    if($this->isSqlite()) {
 			$this->run("delete from $table");
 	    } else {

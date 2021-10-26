@@ -156,7 +156,7 @@ if ($q == "info") {
 	}
 
 	$peers = Peer::getCount();
-	_log("Getting peers count = " . $peers);
+	_log("Getting peers count = " . $peers, 5);
 	if ($peers < 3) {
 		api_err("no-live-peers");
 	}
@@ -234,7 +234,7 @@ if ($q == "info") {
 //			$current['id'] = escapeshellarg(san($current['id']));
 			$dir = ROOT . "/cli";
 			$cmd = "php " . XDEBUG_CLI . " $dir/propagate.php block {$current['id']}  > /dev/null 2>&1  &";
-			_log("Call propagate " . $cmd);
+			_log("Call propagate " . $cmd, 5);
 			shell_exec($cmd);
 			_log("Accepted block from miner $ip block_height=$height block_id=" . $current['id'], 3);
 			api_echo("accepted");

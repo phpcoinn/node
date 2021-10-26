@@ -10,7 +10,7 @@ function calcAppsHash() {
 	$res = shell_exec($cmd);
 	$arr = explode(" ", $res);
 	$appsHash = trim($arr[0]);
-	_log("Executing calcAppsHash appsHash=$appsHash");
+	_log("Executing calcAppsHash appsHash=$appsHash", 5);
 	return $appsHash;
 }
 

@@ -41,7 +41,7 @@ if (php_sapi_name() !== 'cli') {
 
 require_once dirname(__DIR__).'/include/init.inc.php';
 
-_log("Executing sync", 2);
+_log("Executing sync", 3);
 define("SYNC_LOCK_PATH", Nodeutil::getSyncFile());
 
 
@@ -67,7 +67,7 @@ if (file_exists(SYNC_LOCK_PATH)) {
     }
 
     if (!$ignore_lock) {
-	    _log("Sync lock in place", 4);
+	    _log("Sync lock in place");
         die("Sync lock in place".PHP_EOL);
     }
 }
@@ -151,7 +151,7 @@ if ($arg == "microsync" && !empty($arg2)) {
             _log("Invalid node $arg2");
             break;
         }
-        _log("Get block ".$current['height']." from peer ".$x['hostname']);
+        _log("Get block ".$current['height']." from peer ".$x['hostname'],3);
         $url = $x['hostname']."/peer.php?q=";
         $data = peer_post($url."getBlock", ["height" => $current['height']]);
 
@@ -165,7 +165,7 @@ if ($arg == "microsync" && !empty($arg2)) {
         // nothing to be done, same blockchain
         if ($data['id'] == $current['id']) {
             echo "Same block\n";
-            _log("nothing to be done, same blockchain",3);
+            _log("nothing to be done, same blockchain",2);
             break;
         }
 
@@ -173,7 +173,7 @@ if ($arg == "microsync" && !empty($arg2)) {
 	    $difficulty1 = $current['difficulty'];
 	    $difficulty2 = $data['difficulty'];
 
-	    _log("Comparing difficulty my=$difficulty1 peer=$difficulty2");
+	    _log("Comparing difficulty my=$difficulty1 peer=$difficulty2",3);
 
 	    if($difficulty1 < $difficulty2) {
 		    echo "Block difficulty lower than current\n";
@@ -194,11 +194,10 @@ if ($arg == "microsync" && !empty($arg2)) {
 	    $res = $block->_add();
         if (!$res) {
             _log("Block add: could not add block - $b[id] - $b[height]");
-
             break;
         }
 
-        _log("Synced block from ".$x[hostname]." - $b[height] $b[difficulty]");
+        _log("Synced block from ".$x[hostname]." - $b[height] $b[difficulty]", 2);
     } while (0);
 
     @unlink(SYNC_LOCK_PATH);
@@ -209,7 +208,7 @@ if ($arg == "microsync" && !empty($arg2)) {
 $t = time();
 //if($t-$_config['sync_last']<300) {@unlink("tmp/sync-lock");  die("The sync cron was already run recently"); }
 
-_log("Starting sync",4);
+_log("Starting sync",3);
 
 // update the last time sync ran, to set the execution of the next run
 $db->run("UPDATE config SET val=:time WHERE cfg='sync_last'", [":time" => $t]);
@@ -233,7 +232,7 @@ $largest_most_common_height = 0;
 Peer::deleteDeadPeers();
 
 $total_peers = Peer::getCount(false);
-_log("Total peers: ".$total_peers, 4);
+_log("Total peers: ".$total_peers, 3);
 
 $peered = [];
 // if we have no peers, get the seed list from the official site
@@ -243,7 +242,7 @@ if ($total_peers == 0) {
 
 	$peers = Peer::getInitialPeers();
 
-    _log("Checking peers: ".print_r($peers, 1));
+    _log("Checking peers: ".print_r($peers, 1), 3);
     foreach ($peers as $peer) {
         // Peer with all until max_peers
         // This will ask them to send a peering request to our peer.php where we add their peer to the db.
@@ -253,7 +252,7 @@ if ($total_peers == 0) {
 	        continue;
         }
 
-        _log("Process peer ".$peer);
+        _log("Process peer ".$peer, 4);
 
 	    if($peer === $_config['hostname']) {
 		    continue;
@@ -308,7 +307,7 @@ foreach ($r as $x) {
     if ($_config['get_more_peers']==true && $_config['passive_peering']!=true) {
         $data = peer_post($url."getPeers", [], 30, true);
         if ($data === false) {
-            _log("Peer $x[hostname] unresponsive data=".json_encode($data));
+            _log("Peer $x[hostname] unresponsive data=".json_encode($data), 2);
             // if the peer is unresponsive, mark it as failed and blacklist it for a while
 	        _log("blacklist peer $url because is unresponsive");
             Peer::blacklist($x['id'], "Unresponsive");
@@ -342,7 +341,7 @@ foreach ($r as $x) {
                 }
                 $peer['hostname'] = filter_var($peer['hostname'], FILTER_SANITIZE_URL);
                 // peer with each one
-                _log("Trying to peer with recommended peer: $peer[hostname]");
+                _log("Trying to peer with recommended peer: $peer[hostname]", 4);
                 $test = peer_post($peer['hostname']."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1], 5, true);
                 if ($test !== false) {
                     $total_peers++;
@@ -372,7 +371,7 @@ foreach ($r as $x) {
 
     Peer::updateInfo($x['id'], $info);
 
-    _log("Received peer info ".json_encode($info), 0);
+    _log("Received peer info ".json_encode($info), 3);
     $data['id'] = san($data['id']);
     $data['height'] = san($data['height']);
 
@@ -492,7 +491,7 @@ $failed_syncs=0;
 
     $resyncing=false;
     if ($block_parse_failed==true&&$current['date']<time()-(3600*24)) {
-        _log("Rechecking reward transactions");
+        _log("Rechecking reward transactions",1);
         $current = Block::_current();
         $rwpb=$db->single("SELECT COUNT(1) FROM transactions WHERE type=0 AND message=''");
         if ($rwpb!=$current['height']) {
@@ -516,7 +515,7 @@ if ($_config['sync_rebroadcast_locals'] == true && $_config['disable_repropagati
         "SELECT id FROM mempool WHERE height<=:current and peer='local' order by `height` asc LIMIT 20",
         [":current" => $current['height']]
     );
-    _log("Rebroadcasting local transactions - ".count($r), 3);
+    _log("Rebroadcasting local transactions - ".count($r), 1);
     foreach ($r as $x) {
         $x['id'] = escapeshellarg(san($x['id'])); // i know it's redundant due to san(), but some people are too scared of any exec
 	    $dir = __DIR__;
@@ -543,7 +542,7 @@ if ($_config['disable_repropagation'] == false) {
     $r=array_merge($r1, $r2);
 
 
-    _log("Rebroadcasting external transactions - ".count($r),3);
+    _log("Rebroadcasting external transactions - ".count($r),1);
 
     foreach ($r as $x) {
         $x['id'] = escapeshellarg(san($x['id'])); // i know it's redundant due to san(), but some people are too scared of any exec
@@ -569,7 +568,7 @@ foreach ($r as $x) {
         Peer::blacklist($x['id'],"Not answer");
         _log("Random reserve peer test $x[hostname] -> FAILED");
     } else {
-        _log("Random reserve peer test $x[hostname] -> OK");
+        _log("Random reserve peer test $x[hostname] -> OK",3);
 	    Peer::clearFails($x['id']);
     }
 }
@@ -645,6 +644,6 @@ Nodeutil::cleanTmpFiles();
 
 
 
-_log("Finishing sync",2);
+_log("Finishing sync",3);
 
 @unlink(SYNC_LOCK_PATH);

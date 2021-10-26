@@ -74,13 +74,13 @@ class Nodeutil
 		$peerTopBlock = peer_post($peer."/peer.php?q=currentBlock");
 		$peerTop = $peerTopBlock["block"]['height'];
 		$top = min($top, $peerTop);
-		_log("max blocks $top");
+		_log("max blocks $top",3);
 		$bottom = 1;
 		$blockMatch = false;
 		$invalid_block = null;
 		while(!$blockMatch) {
 			$check = intval(($top + $bottom) /2);
-			_log("checking block $check");
+			_log("checking block $check",3);
 			$myBlock = Block::get($check);
 			$b = peer_post($peer . "/peer.php?q=getBlock", ["height" => $check]);
 			if (!$b) {
@@ -89,15 +89,15 @@ class Nodeutil
 			}
 			$myBlockId = $myBlock['id'];
 			$peerBlockId = $b['id'];
-			_log("Checking block $check: myBlockId=$myBlockId peerBlockId=$peerBlockId");
+			_log("Checking block $check: myBlockId=$myBlockId peerBlockId=$peerBlockId",3);
 			$blockMatch = (abs($top - $bottom)==1);
 			if ($myBlockId == $peerBlockId) {
 				$bottom = $check;
-				_log("Block matches - continue upwards - check $check top=$top bottom=$bottom");
+				_log("Block matches - continue upwards - check $check top=$top bottom=$bottom",3);
 			} else {
 				$top = $check;
 				$invalid_block = $check;
-				_log("Block not matches - back downwards - check $check top=$top bottom=$bottom");
+				_log("Block not matches - back downwards - check $check top=$top bottom=$bottom",3);
 			}
 		}
 		return $invalid_block;
@@ -209,11 +209,11 @@ class Nodeutil
 				);
 				$res = file_put_contents(ROOT . "/tmp/apps.tar.gz", fopen($link, "r", false,  stream_context_create($arrContextOptions)));
 				if($res === false) {
-					_log("Error downloading apps from repo server",2);
+					_log("Error downloading apps from repo server");
 				} else {
 					$size = filesize(ROOT . "/tmp/apps.tar.gz");
 					if(!$size) {
-						_log("Downloaded empty file from repo server",1);
+						_log("Downloaded empty file from repo server");
 					} else {
 						if(file_exists(self::getAppsLockFile())) {
 							_log("Apps lock file exists - can not update");
@@ -221,18 +221,18 @@ class Nodeutil
 						}
 						$lock = fopen(self::getAppsLockFile(), "w");
 						fclose($lock);
-						_log("backup existing apps");
+						_log("backup existing apps", 4);
 						$cmd = "cd ".ROOT."/web && rm -rf apps_tmp";
 						shell_exec($cmd);
 						$cmd = "cd ".ROOT."/web && cp -rf apps apps_tmp";
 						shell_exec($cmd);
 						self::extractAppsArchive();
-						_log("Extracted archive",3);
+						_log("Extracted archive",4);
 						$calHash = self::calcAppsHash();
-						_log("Calculated new hash: ".$calHash,3);
+						_log("Calculated new hash: ".$calHash,4);
 						if($hash != $calHash) {
-							_log("Error extracting apps transfered",2);
-							_log("restore existing apps");
+							_log("Error extracting apps transfered",4);
+							_log("restore existing apps", 4);
 							$cmd = "cd ".ROOT."/web && rm -rf apps";
 							shell_exec($cmd);
 							$cmd = "cd ".ROOT."/web && mv apps_tmp apps";
@@ -240,8 +240,8 @@ class Nodeutil
 						} else {
 							$appsHashFile = Nodeutil::getAppsHashFile();
 							file_put_contents($appsHashFile, $calHash);
-							_log("Stored new hash",3);
-							_log("deleta backup");
+							_log("Stored new hash",4);
+							_log("delete backup", 4);
 							$cmd = "cd ".ROOT."/web && rm -rf apps_tmp";
 							shell_exec($cmd);
 						}
@@ -253,7 +253,7 @@ class Nodeutil
 	}
 
 	static function calcAppsHash() {
-		_log("Executing calcAppsHash");
+		_log("Executing calcAppsHash", 3);
 		$cmd = "cd ".ROOT."/web && tar -cf - apps --owner=0 --group=0 --sort=name --mode=744 --mtime='2020-01-01 00:00:00 UTC' | sha256sum";
 		$res = shell_exec($cmd);
 		$arr = explode(" ", $res);
@@ -307,7 +307,7 @@ class Nodeutil
 		$cmd = "cd ".ROOT."/web && rm -rf apps";
 		shell_exec($cmd);
 		$cmd = "cd ".ROOT." && tar -xzf tmp/apps.tar.gz -C . --owner=0 --group=0 --mode=744 --mtime='2020-01-01 00:00:00 UTC'";
-		_log("Extracting archive : $cmd");
+		_log("Extracting archive : $cmd", 3);
 		shell_exec($cmd);
 		$cmd = "cd ".ROOT."/web && find apps -type f -exec touch {} +";
 		shell_exec($cmd);

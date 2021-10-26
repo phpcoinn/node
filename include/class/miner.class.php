@@ -103,7 +103,7 @@ class Miner {
 					if($info!==false) {
 						_log("Checking new block from server ".$info['data']['block']. " with our block $prev_block_id", 4);
 						if($info['data']['block']!= $prev_block_id) {
-							_log("New block received", 3);
+							_log("New block received", 2);
 							$this->miningStat['dropped']++;
 							break;
 						}
@@ -147,13 +147,13 @@ class Miner {
 				break;
 			}
 
-			_log("Mining stats: ".json_encode($this->miningStat), 1);
+			_log("Mining stats: ".json_encode($this->miningStat), 2);
 			$minerStatFile = Miner::getStatFile();
 			file_put_contents($minerStatFile, json_encode($this->miningStat));
 
 		}
 
-		_log("Miner stopped", 0);
+		_log("Miner stopped");
 	}
 
 	static function getStatFile() {

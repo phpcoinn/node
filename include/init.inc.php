@@ -108,9 +108,9 @@ if (empty($_config['hostname']) || $_config['hostname'] == "http://" || $_config
 // run sync
 $t = time();
 if ($t - $_config['sync_last'] > $_config['sync_interval'] && php_sapi_name() !== 'cli') {
-	_log("Running sync ".($t - $_config['sync_last'])." / ".$_config['sync_interval'], 4);
+	_log("Running sync ".($t - $_config['sync_last'])." / ".$_config['sync_interval'], 5);
 	$dir = ROOT."/cli";
-    _log("php $dir/sync.php  > /dev/null 2>&1  &", 4);
+    _log("php $dir/sync.php  > /dev/null 2>&1  &", 5);
     system("php $dir/sync.php  > /dev/null 2>&1  &");
 } else {
 	_log("No time for sync ".($t - $_config['sync_last'])." / ".$_config['sync_interval'], 4);
@@ -123,24 +123,24 @@ if(!defined("MINER_RUN")) {
 	define("MINER_LOCK_PATH", ROOT . '/tmp/miner-lock');
 	if ($_config['miner'] == true && isset($_config['miner_public_key']) && isset($_config['miner_private_key'])) {
 		_log("Miner enabled", 4);
-		_log("minerFile=".MINER_LOCK_PATH." exists=" . file_exists(MINER_LOCK_PATH), 4);
+		_log("minerFile=".MINER_LOCK_PATH." exists=" . file_exists(MINER_LOCK_PATH), 5);
 		if (!file_exists(MINER_LOCK_PATH)) {
-			_log("File not exists - Staring miner", 0);
+			_log("File not exists - Staring miner", 1);
 
 			$res = shell_exec("ps uax | grep miner.php | grep -v grep");
-			_log("Res len=".strlen($res)." var=".json_encode($res)." empty=".empty($res));
+			_log("Res len=".strlen($res)." var=".json_encode($res)." empty=".empty($res), 4);
 			if(empty($res)) {
 				$dir = ROOT."/cli";
 				system("php $dir/miner.php > /dev/null 2>&1  &");
 				$peers = Peer::getCount(true);
 				if(!empty($peers)) {
-					_log( "php $dir/miner.php > /dev/null 2>&1  &", 0);
+					_log( "php $dir/miner.php > /dev/null 2>&1  &", 4);
 				}
 			} else {
-				_log("Miner process already running",0);
+				_log("Miner process already running",3);
 			}
 		} else {
-			_log("Miner already started. File exists", 4);
+			_log("Miner already started. File exists", 3);
 		}
 	}
 }

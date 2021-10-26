@@ -82,7 +82,7 @@ class Block
             }
 
             $currentHeight = Block::getHeight();
-            _log("Checking block height currentHeight=$currentHeight height={$this->height}");
+            _log("Checking block height currentHeight=$currentHeight height={$this->height}", 3);
             if($this->height - $currentHeight != 1) {
 	            _log("Block height failed");
 	            return false;
@@ -122,12 +122,12 @@ class Block
 
         // if any fails, rollback
         if ($res == false) {
-            _log("Rollback block", 3);
+            _log("Rollback block");
             $db->rollback();
 	        $db->unlockTables();
 	        return false;
         } else {
-//            _log("Commiting block", 3);
+            _log("Committing block", 4);
             $db->commit();
 	        $db->unlockTables();
 	        return true;
@@ -344,13 +344,13 @@ class Block
 		_log("Block check ".json_encode($this->toArray()),4);
 
 		if ($this->date>time()+30) {
-			_log("Future block - {$this->date} {$this->publicKey}", 2);
+			_log("Future block - {$this->date} {$this->publicKey}");
 			return false;
 		}
 
 		// generator's public key must be valid
 		if (!Account::validKey($this->publicKey)) {
-			_log("Invalid public key - {$this->publicKey}",1);
+			_log("Invalid public key - {$this->publicKey}");
 			return false;
 		}
 
@@ -361,13 +361,13 @@ class Block
 			$calcDifficulty = Block::_difficulty($this->height-1);
 		}
 		if ($this->difficulty != $calcDifficulty) {
-			_log("Invalid difficulty - {$this->difficulty} - ".$calcDifficulty,1);
+			_log("Invalid difficulty - {$this->difficulty} - ".$calcDifficulty);
 			return false;
 		}
 
 		//check the argon hash and the nonce to produce a valid block
 		if (!$this->_mine()) {
-			_log("Mine check failed",1);
+			_log("Mine check failed");
 			return false;
 		}
 
@@ -400,7 +400,7 @@ class Block
 
 	    //verify argon
 	    if(!$this->_verifyArgon($prev_date, $elapsed)) {
-		    _log("Invalid argon={$this->argon}", 1);
+		    _log("Invalid argon={$this->argon}");
 		    return false;
 	    }
 
@@ -408,12 +408,12 @@ class Block
 
 //        $block_date = $time;
 	    if($calcNonce != $this->nonce) {
-		    _log("Invalid nonce {$this->nonce} - {$prev_date}-{$elapsed} calcNonce=$calcNonce", 1);
+		    _log("Invalid nonce {$this->nonce} - {$prev_date}-{$elapsed} calcNonce=$calcNonce");
 		    return false;
 	    }
 
 	    if(strlen($this->nonce) != 64) {
-		    _log("Invalid nonce {$this->nonce}", 1);
+		    _log("Invalid nonce {$this->nonce}");
 		    return false;
 	    }
 
@@ -421,7 +421,7 @@ class Block
 	    $hit = $this->_calculateHit();
 	    $target = $this->_calculateTarget($elapsed);
 	    _log("Check hit= " . $hit. " target=" . $target . " current_height=".$this->height.
-		    " difficulty=".$this->difficulty." elapsed=".$elapsed, 4);
+		    " difficulty=".$this->difficulty." elapsed=".$elapsed, 5);
 	    $res =  (($hit > 0 && $hit > $target) || $this->height==0);
 	    if(!$res) {
 	    	_log("invalid hit or target");
@@ -440,7 +440,7 @@ class Block
 
 	        // data must be array
 	        if ($this->data === false) {
-		        _log("Block data is false", 3);
+		        _log("Block data is false");
 		        return false;
 	        }
 	        // no transactions means all are valid
@@ -452,7 +452,7 @@ class Block
 	        if ($this->height > 1) {
 		        $max = Block::max_transactions();
 		        if (count($this->data) > $max) {
-			        _log("Too many transactions in block", 3);
+			        _log("Too many transactions in block");
 			        return false;
 		        }
 	        }
@@ -464,7 +464,7 @@ class Block
 		        //validate the transaction
 		        $tx = Transaction::getFromArray($x);
 		        if (!$tx->_check($this->height)) {
-			        _log("Transaction check failed - {$tx->id}", 3);
+			        _log("Transaction check failed - {$tx->id}");
 			        return false;
 		        }
 
@@ -473,7 +473,7 @@ class Block
 
 		        // check if the transaction is already on the blockchain
 		        if ($db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $tx->id]) > 0) {
-			        _log("Transaction already on the blockchain - {$tx->id}", 3);
+			        _log("Transaction already on the blockchain - {$tx->id}", 2);
 			        return false;
 		        }
 
@@ -493,7 +493,7 @@ class Block
 					        [":id" => $id, ":balance" => $bal]
 				        );
 				        if ($res == 0) {
-					        _log("Not enough balance for transaction - $id", 3);
+					        _log("Not enough balance for transaction - $id");
 					        return false; // not enough balance for the transactions
 				        }
 			        }
@@ -577,13 +577,13 @@ class Block
         foreach ($r as $x) {
             $res = Transaction::reverse($x['id']);
             if ($res === false) {
-                _log("A transaction could not be reversed. Delete block failed.", 1);
+                _log("A transaction could not be reversed. Delete block failed.");
                 $db->rollback();
                 // the blockchain has some flaw, we should resync from scratch
            
                 $current = Block::_current();
                 if (($current['date']<time()-(3600*48)) && $_config['auto_resync']!==false) {
-                    _log("Blockchain corrupted. Resyncing from scratch.", 1);
+                    _log("Blockchain corrupted. Resyncing from scratch.");
                     $db->fkCheck(false);
                     $tables = ["accounts", "transactions", "mempool", "masternode","blocks"];
                     foreach ($tables as $table) {
@@ -604,7 +604,7 @@ class Block
             }
             $res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $x['id']]);
             if ($res != 1) {
-                _log("Delete block failed.",1);
+                _log("Delete block failed.");
                 $db->rollback();
                 $db->unlockTables();
                 return false;
@@ -628,7 +628,7 @@ class Block
 
         $signature = ec_sign($info, $key);
         $this->signature = $signature;
-        _log("sign: $info | key={$key} | signature=$signature", 4);
+        _log("sign: $info | key={$key} | signature=$signature", 5);
         return $signature;
     }
 
@@ -719,7 +719,7 @@ class Block
 		$hashPart = substr($hash, 0, 8);
 		$value = gmp_hexdec($hashPart);
 		$hit = gmp_div(gmp_mul(gmp_hexdec("ffffffff"), BLOCK_TARGET_MUL) , $value);
-		_log("calculateHit base=$base hit=$hit", 4);
+		_log("calculateHit base=$base hit=$hit", 5);
 		return $hit;
 	}
 
@@ -747,7 +747,6 @@ class Block
     	$parts[] = $this->argon;
     	$parts[] = $this->prevBlockId;
 		$info = implode("-", $parts);
-//		$info = "{$generator}-{$miner}-{$height}-{$date}-{$nonce}-{$json}-{$difficulty}-{$version}-{$argon}-{$prev_block_id}";
 		_log("getSignatureBase=$info",5);
 		return $info;
 	}
@@ -759,7 +758,7 @@ class Block
     	$nonceBase = "{$this->miner}-{$prev_block_date}-{$elapsed}-{$this->argon}";
 	    $calcNonce = hash("sha256", $nonceBase);
 	    $this->nonce = $calcNonce;
-	    _log("calculateNonce nonceBase=$nonceBase argon={$this->argon} calcNonce=$calcNonce", 3);
+	    _log("calculateNonce nonceBase=$nonceBase argon={$this->argon} calcNonce=$calcNonce", 5);
 	    return $calcNonce;
     }
 
@@ -772,7 +771,7 @@ class Block
 			HASHING_ALGO,
 			$options
 		);
-		_log("calculateArgonHash date=$prev_block_date elapsed=$elapsed miner={$this->miner} argon=$argon",4);
+		_log("calculateArgonHash date=$prev_block_date elapsed=$elapsed miner={$this->miner} argon=$argon",5);
 		$this->argon = $argon;
 		return $argon;
 	}
@@ -780,7 +779,7 @@ class Block
     function _verifyArgon($date, $elapsed) {
 	    $base = "{$date}-{$elapsed}";
     	$res =  password_verify($base, $this->argon);
-	    _log("Verify argon base=$base argon={$this->argon} verify=$res", 4);
+	    _log("Verify argon base=$base argon={$this->argon} verify=$res", 5);
 	    return $res;
     }
 
@@ -877,7 +876,7 @@ class Block
 				_log("Transaction signature failed");
 				_log("tx_base=$tx_base 
 signature=".$transaction['signature']." 
-public_key=".$transaction['public_key']);
+public_key=".$transaction['public_key'],5);
 //				if($height != 9) {
 //					return false;
 //				}

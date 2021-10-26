@@ -37,7 +37,7 @@ class Transaction
         $r = $db->run("SELECT * FROM transactions WHERE block=:block ORDER by `type` DESC", [":block" => $block]);
         foreach ($r as $x) {
         	$tx = Transaction::getFromDbRecord($x);
-            _log("Reversing transaction {$tx->id}", 4);
+            _log("Reversing transaction {$tx->id}", 3);
             if (empty($tx->src)) {
 	            $tx->src = Account::getAddress($tx->publicKey);
             }
@@ -52,12 +52,12 @@ class Transaction
 		        $tx->_add_mempool();
 	        }
 	        if($res === false) {
-		        _log("Update balance for reverse transaction failed", 3);
+		        _log("Update balance for reverse transaction failed");
 		        return false;
 	        }
             $res = $db->run("DELETE FROM transactions WHERE id=:id", [":id" => $tx->id]);
             if ($res != 1) {
-                _log("Delete transaction failed", 3);
+                _log("Delete transaction failed");
                 return false;
             }
         }
@@ -308,7 +308,7 @@ class Transaction
 
         // added fee does not match
         if ($fee != $this->fee) {
-            _log("{$this->id} - Fee not 0.25%", 3);
+            _log("{$this->id} - Invalid fee");
             _log(json_encode($this), 3);
             return false;
         }
@@ -316,12 +316,12 @@ class Transaction
         if ($this->type==TX_TYPE_SEND) {
             // invalid destination address
             if (!Account::valid($this->dst)) {
-                _log("{$this->id} - Invalid destination address", 3);
+                _log("{$this->id} - Invalid destination address");
                 return false;
             }
             $src = Account::getAddress($this->publicKey);
             if($src==$this->dst) {
-	            _log("{$this->id} - Invalid destination address", 3);
+	            _log("{$this->id} - Invalid destination address");
 	            return false;
             }
         }
@@ -329,17 +329,17 @@ class Transaction
 
         // public key must be at least 15 chars / probably should be replaced with the validator function
         if (strlen($this->publicKey) < 15) {
-            _log("{$this->id} - Invalid public key size", 3);
+            _log("{$this->id} - Invalid public key size");
             return false;
         }
         // no transactions before the genesis
         if ($this->date < GENESIS_TIME) {
-            _log("{$this->id} - Date before genesis", 3);
+            _log("{$this->id} - Date before genesis");
             return false;
         }
         // no future transactions
         if ($this->date > time() + 86400) {
-            _log("{$this->id} - Date in the future", 3);
+            _log("{$this->id} - Date in the future");
             return false;
         }
         $thisId = $this->id;

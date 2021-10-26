@@ -6,7 +6,7 @@ if(php_sapi_name() !== 'cli') exit;
 require_once dirname(__DIR__).'/include/init.inc.php';
 
 define("MINER_LOCK_PATH", ROOT.'/tmp/miner-lock');
-_log("Running miner cli", 0);
+_log("Running miner cli", 3);
 
 $res = intval(shell_exec("ps aux|grep miner.php|grep -v grep|wc -l"));
 if ($res <> 1) {
@@ -26,7 +26,7 @@ if(empty($peers) && false) {
 }
 
 
-_log("Starting miner");
+_log("Starting miner", 3);
 
 
 if(!$_config['miner'] && !DEVELOPMENT) {
@@ -43,7 +43,7 @@ if(!$_config['miner_private_key']) {
 	exit;
 }
 
-_log("Writing lock file", 0);
+_log("Writing lock file",3);
 $lock = fopen(MINER_LOCK_PATH, "w");
 fclose($lock);
 
@@ -51,10 +51,10 @@ $miner = new NodeMiner();
 
 $res = $miner->start();
 if($res === false) {
-	_log("Miner failed to start",0);
+	_log("Miner failed to start");
 	@unlink(MINER_LOCK_PATH);
 	exit;
 }
 
 @unlink(MINER_LOCK_PATH);
-_log("Miner stopped", 0);
+_log("Miner stopped", 3);

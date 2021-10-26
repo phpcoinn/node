@@ -368,7 +368,7 @@ class Api
 	 */
 	static function send($data) {
 		global $_config;
-		_log("API send");
+		_log("API send", 1);
 
 		$type = intval($data['type']);
 		$dst = san($data['dst']);

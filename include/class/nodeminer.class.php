@@ -20,7 +20,7 @@ class NodeMiner {
 	function getMiningInfo() {
 
 		$peers = Peer::getCount(true);
-		_log("Getting peers count = ".$peers);
+		_log("Getting peers count = ".$peers, 3);
 		if($peers === 0 && false) {
 			_log("No connected peers");
 			return false;
@@ -44,7 +44,7 @@ class NodeMiner {
 
 			$info = $this->getMiningInfo();
 			if($info === false) {
-				_log("Can not get mining info", 0);
+				_log("Can not get mining info");
 				return false;
 			}
 
@@ -149,7 +149,7 @@ class NodeMiner {
 					$current['id']=escapeshellarg(san($current['id']));
 					$dir = ROOT."/cli";
 					$cmd = "php ".XDEBUG_CLI." $dir/propagate.php block {$current['id']}  > /dev/null 2>&1  &";
-					_log("Call propagate " . $cmd);
+					_log("Call propagate " . $cmd, 4);
 					shell_exec($cmd);
 					_log("Block confirmed", 1);
 					$this->miningStat['accepted']++;
@@ -161,13 +161,13 @@ class NodeMiner {
 
 			sleep(3);
 
-			_log("Mining stats: ".json_encode($this->miningStat), 1);
+			_log("Mining stats: ".json_encode($this->miningStat), 3);
 			$minerStatFile = self::getStatFile();
 			file_put_contents($minerStatFile, json_encode($this->miningStat));
 
 		}
 
-		_log("Miner stopped", 0);
+		_log("Miner stopped");
 	}
 
 	function checkRunning() {

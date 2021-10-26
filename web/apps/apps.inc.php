@@ -31,25 +31,25 @@ function isRepoServer() {
 
 
 
-_log("Checking apps integrity", 3);
+_log("Checking apps integrity", 4);
 $appsHashFile = Nodeutil::getAppsHashFile();
 $appsChanged = false;
 $appsHashCalc = calcAppsHash();
 if(!file_exists($appsHashFile)) {
-	_log("Not exists hash file", 3);
+	_log("Not exists hash file", 4);
 	if(!file_put_contents($appsHashFile, $appsHashCalc)) {
 		die("tmp folder not writable to server!");
 	}
 	$appsChanged = true;
-	_log("Created hash file",3);
+	_log("Created hash file",4);
 } else {
-	_log("Exists hash file",3);
+	_log("Exists hash file",4);
 	$appsHash = file_get_contents($appsHashFile);
 	$appsHashTime = filemtime($appsHashFile);
 	$now = time();
 	$elapsed = $now - $appsHashTime;
 	if($elapsed > 60) {
-		_log("File is older than check period",3);
+		_log("File is older than check period",4);
 		if($appsHashCalc != $appsHash) {
 			_log("Writing new hash",3);
 			file_put_contents($appsHashFile, $appsHashCalc);
@@ -134,7 +134,7 @@ if(isRepoServer()) {
 	if($appsHash != $appsHashCalc || $appsChanged) {
 		buildAppsArchive();
 		$dir = ROOT . "/cli";
-		_log("Propagating apps",2);
+		_log("Propagating apps",3);
 		system("php $dir/propagate.php apps $appsHashCalc > /dev/null 2>&1  &");
 	} else {
 		_log("Apps not changed",3);

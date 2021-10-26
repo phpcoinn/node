@@ -338,7 +338,7 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
 
     // the function will return false if something goes wrong
     if ($res['status'] != "ok" || $res['coin'] != COIN) {
-    	_log("Peer response not ok res=".json_encode($res));
+    	_log("Peer response to $url not ok res=".json_encode($res));
         return false;
     } else {
     	Peer::storePing($url);
