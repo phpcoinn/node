@@ -156,6 +156,9 @@ class NodeSync
 				}
 
 
+			} else {
+				_log("Not enough valid blocks for sync ok_block=$ok_block peers_count=$peers_count failed_peer=$failed_peer");
+				break;
 			}
 
 		}
@@ -167,16 +170,20 @@ class NodeSync
 		$peers_count = count($this->peers);
 		$current = Block::_current();
 		foreach ($this->peers as $host) {
-			$peer_block = $this->getPeerBlock($host, $current['height']);
-			if($peer_block) {
-				if ($peer_block['id'] != $current['id']) {
-					$failed_block++;
-				} else {
-					$ok_block++;
-				}
-			} else {
+			$url = $host . "/peer.php?q=";
+
+			$res = peer_post($url."currentBlock", [], 5);
+			if ($res === false) {
 				$skipped_peer++;
+				} else {
+				$data = $res['block'];
+				if($data['id'] == $current['id']) {
+					$ok_block++;
+			} else {
+						$failed_block++;
 			}
+		}
+			_log("Checking peer $host block id=".$data['id']." current=".$current['id']);
 		}
 
 		if($peers_count - $failed_block - $skipped_peer == 0 ) {

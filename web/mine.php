@@ -25,7 +25,6 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 OR OTHER DEALINGS IN THE SOFTWARE.
 */
 require_once dirname(__DIR__).'/include/init.inc.php';
-//$block = new Block();
 set_time_limit(360);
 $q = $_GET['q'];
 
@@ -45,92 +44,6 @@ if ($q == "info") {
     $res = Blockchain::getMineInfo();
     api_echo($res);
     exit;
-/*} elseif ($q == "submitBlock") {
-//	_log("POSTDATA=".print_r($_POST, true));
-    // in case the blocks are syncing, reject all
-    if ($_config['sync'] == 1) {
-        api_err("sync");
-    }
-
-    $peers = Peer::getCount(true);
-    _log("Getting peers count = ".$peers);
-    if($peers === 0 && !DEVELOPMENT) {
-	    api_err("no-live-peers");
-    }
-
-    $nonce = san($_POST['nonce']);
-	$version = VERSION_CODE;
-    $public_key = san($_POST['public_key']);
-	$elapsed = intval($_POST['elapsed']);
-	$difficulty = san($_POST['difficulty']);
-	$height = san($_POST['height']);
-	$id = san($_POST['signature']);
-	$argon = $_POST['argon'];
-	$miner = $_POST['miner'];
-
-	_log("Submitted new block from miner $ip height=$height",4);
-
-	$blockchainHeight = Block::getHeight();
-	if($blockchainHeight != $height - 1) {
-		api_err("rejected - not top block height=$height blockchainHeight=$blockchainHeight");
-	}
-
-	$now = time();
-	$prev_block = $block->get($height-1);
-	$date = $prev_block['date']+$elapsed;
-	if(abs($date - $now) > 1) {
-		api_err("rejected - date not match date=$date now=$now");
-	}
-
-	if ($date <= $prev_block['date']) {
-		api_err("rejected - date");
-	}
-
-    $result = $block->mine($public_key, $miner, $nonce, $argon, $difficulty, $id, $height, $date);
-
-    if ($result) {
-
-        $current = $block->current();
-        $height = $current['height'] += 1;
-
-        $difficulty = $block->difficulty();
-        $acc = new Account();
-        $generator = Account::getAddress($public_key);
-
-        $data=json_decode($_POST['data'], true);
-           
-        // sign the block
-        $signature = san($_POST['signature']);
-
-        // add the block to the blockchain
-        $res = $block->add(
-            $height,
-            $public_key,
-            $miner,
-            $nonce,
-            $data,
-            $date,
-            $signature,
-            $difficulty,
-            $argon,
-	        $prev_block['id']
-        );
-
-
-        if ($res) {
-            $current = $block->current();
-            $current['id']=escapeshellarg(san($current['id']));
-	        $dir = ROOT."/cli";
-            $cmd = "php ".XDEBUG_CLI." $dir/propagate.php block {$current['id']}  > /dev/null 2>&1  &";
-            _log("Call propagate " . $cmd);
-            shell_exec($cmd);
-            _log("Accepted block from miner $ip block_height=$height block_id=".$current['id'],3);
-            api_echo("accepted");
-        } else {
-            api_err("rejected - add");
-        }
-    }
-    api_err("rejected");*/
 } elseif ($q == "submitHash") {
 	if (empty($_config['generator'])) {
 		api_err("generator-disabled");
@@ -146,10 +59,6 @@ if ($q == "info") {
 	}
 
 	$generator = Account::getAddress($_config['generator_public_key']);
-//	$generator_public_key = Account::publicKey($generator);
-//	if (empty($generator_public_key)) {
-//		api_err("rejected - no public key for generator");
-//	}
 
 	if ($_config['sync'] == 1) {
 		api_err("sync");
@@ -216,22 +125,9 @@ if ($q == "info") {
 
 	if ($result) {
 		$res = $block->_add();
-//		$res = $block->add(
-//			$height,
-//			$_config['generator_public_key'],
-//			$address,
-//			$nonce,
-//			$data,
-//			$date,
-//			$signature,
-//			$difficulty,
-//			$argon,
-//			$prev_block['id']
-//		);
 
 		if ($res) {
 			$current = Block::_current();
-//			$current['id'] = escapeshellarg(san($current['id']));
 			$dir = ROOT . "/cli";
 			$cmd = "php " . XDEBUG_CLI . " $dir/propagate.php block {$current['id']}  > /dev/null 2>&1  &";
 			_log("Call propagate " . $cmd, 5);
@@ -245,12 +141,6 @@ if ($q == "info") {
 	} else {
 		api_err("rejected - mine");
 	}
-//} else if ($q=="checkAddress") {
-//	if (!isset($_POST['address'])) {
-//		api_err("address-not-specified");
-//	}
-//	$address = $_POST['address'];
-//	Account::publicKey($address);
 } else {
     api_err("invalid command");
 }

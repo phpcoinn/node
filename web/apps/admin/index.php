@@ -431,7 +431,7 @@ require_once __DIR__. '/../common/include/top.php';
         </li>
         <li class="nav-item">
             <a class="nav-link <?php if ($view == "utils") { ?>active<?php } ?>" href="<?php echo APP_URL ?>/?view=utils" role="tab" aria-selected="false">
-                <span class="d-none d-sm-block">Utils</span>
+                <span>Utils</span>
             </a>
         </li>
         <li class="nav-item">
@@ -776,40 +776,42 @@ require_once __DIR__. '/../common/include/top.php';
             <hr/>
 
             <h4>Peers</h4>
-            <table class="table table-sm table-striped">
-                <thead>
-                <tr>
-                    <th>Id</th>
-                    <th>Hostname</th>
-                    <th>Blacklisted</th>
-                    <th>Ping</th>
-                    <th>Reserve</th>
-                    <th>Ip</th>
-                    <th>Fails</th>
-                    <th>Stuckfail</th>
-                    <th>Reason</th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-				<?php foreach ($peers as $peer) { ?>
-                    <tr  class="<?php if ($peer['blacklisted'] > time()) { ?>table-danger<?php } ?>">
-                        <td><?php echo $peer['id'] ?></td>
-                        <td><?php echo $peer['hostname'] ?></td>
-                        <td><?php echo display_date($peer['blacklisted']) ?></td>
-                        <td><?php echo display_date($peer['ping']) ?></td>
-                        <td><?php echo $peer['reserve'] ?></td>
-                        <td><?php echo $peer['ip'] ?></td>
-                        <td><?php echo $peer['fails'] ?></td>
-                        <td><?php echo $peer['stuckfail'] ?></td>
-                        <td><?php echo $peer['blacklist_reason'] ?></td>
-                        <td>
-                            <a class="btn btn-danger btn-xs" href="<?php echo APP_URL ?>/?action=delete_peer&id=<?php echo $peer['id']  ?>" onclick="if(!confirm('Delete peer?')) return false;">Delete</a>
-                        </td>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                    <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Hostname</th>
+                        <th>Blacklisted</th>
+                        <th>Ping</th>
+                        <th>Reserve</th>
+                        <th>Ip</th>
+                        <th>Fails</th>
+                        <th>Stuckfail</th>
+                        <th>Reason</th>
+                        <th></th>
                     </tr>
-				<?php } ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($peers as $peer) { ?>
+                        <tr  class="<?php if ($peer['blacklisted'] > time()) { ?>table-danger<?php } ?>">
+                            <td><?php echo $peer['id'] ?></td>
+                            <td><?php echo $peer['hostname'] ?></td>
+                            <td><?php echo display_date($peer['blacklisted']) ?></td>
+                            <td><?php echo display_date($peer['ping']) ?></td>
+                            <td><?php echo $peer['reserve'] ?></td>
+                            <td><?php echo $peer['ip'] ?></td>
+                            <td><?php echo $peer['fails'] ?></td>
+                            <td><?php echo $peer['stuckfail'] ?></td>
+                            <td><?php echo $peer['blacklist_reason'] ?></td>
+                            <td>
+                                <a class="btn btn-danger btn-xs" href="<?php echo APP_URL ?>/?action=delete_peer&id=<?php echo $peer['id']  ?>" onclick="if(!confirm('Delete peer?')) return false;">Delete</a>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                    </tbody>
+                </table>
+            </div>
             <a class="btn btn-danger" href="<?php echo APP_URL ?>/?action=delete_peers" onclick="if(!confirm('Delete all?')) return false">Delete all</a>
 
 
