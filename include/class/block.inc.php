@@ -506,7 +506,7 @@ class Block
         if ($test == false) {
             foreach ($this->data as $d) {
 	            $tx = Transaction::getFromArray($d);
-                $res = $tx->_add($this->id, $this->height, $bootstrapping);
+                $res = $tx->add($this->id, $this->height, $bootstrapping);
                 if ($res == false) {
                     return false;
                 }
