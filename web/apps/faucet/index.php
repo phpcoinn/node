@@ -50,8 +50,8 @@ if(isset($_POST['action'])) {
 	$date = time();
 
 	$transaction = new Transaction($_config['faucet_public_key'],$address,$val,TX_TYPE_SEND,$date,$msg);
-	$transaction->_sign($_config['faucet_private_key']);
-	$hash = $transaction->_addToMemPool($error);
+	$transaction->sign($_config['faucet_private_key']);
+	$hash = $transaction->addToMemPool($error);
 	if($hash === false) {
 		$_SESSION['msg']=[['icon'=>'error', 'text'=>'Transaction can not be sent: '.$error]];
 		header("location: /apps/faucet/index.php");

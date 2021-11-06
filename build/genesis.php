@@ -28,9 +28,9 @@ $data[$reward_tx['id']]=$reward_tx;
 ksort($data);
 
 $block=new Block($generator, $generator, $height, $block_date, null, $data, $difficulty, Block::versionCode(), null, "");
-$block->_calculateNonce($block_date, $elapsed);
+$block->calculateNonce($block_date, $elapsed);
 
-$signature = $block->_sign($private_key);
+$signature = $block->sign($private_key);
 
 $genesisData = [
 	'signature' => $signature,

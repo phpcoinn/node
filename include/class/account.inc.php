@@ -84,7 +84,7 @@ class Account
 	        $offset = 0;
         }
 
-        $current = Block::_current();
+        $current = Block::current();
         $public_key = Account::publicKey($id);
 
         $res = $db->run(

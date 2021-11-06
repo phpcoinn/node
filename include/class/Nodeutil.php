@@ -69,7 +69,7 @@ class Nodeutil
 	}
 
 	static function checkBlocksWithPeer($peer) {
-		$current = Block::_current();
+		$current = Block::current();
 		$top = $current['height'];
 		$peerTopBlock = peer_post($peer."/peer.php?q=currentBlock");
 		$peerTop = $peerTopBlock["block"]['height'];
@@ -127,7 +127,7 @@ class Nodeutil
 		} else {
 			$res=$db->run("SELECT * FROM accounts ORDER by id ASC");
 		}
-		$current=Block::_current();
+		$current=Block::current();
 		return [
 			'height'=>$current['height'],
 			'hash'=>md5(json_encode($res))

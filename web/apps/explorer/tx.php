@@ -19,9 +19,9 @@ if(isset($_GET['action'])) {
 	    if($tx) {
 		    $tx = Transaction::getFromArray($tx);
         } else {
-		    $tx = Transaction::_getById($id);
+		    $tx = Transaction::getById($id);
         }
-	    $res = $tx->_check();
+	    $res = $tx->check();
 	    if($res) {
 	        die("Transaction valid");
         } else {

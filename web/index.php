@@ -26,7 +26,7 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 require_once dirname(__DIR__).'/include/init.inc.php';
-$current = Block::_current();
+$current = Block::current();
 global $_config;
 ?>
 

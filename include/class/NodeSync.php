@@ -27,7 +27,7 @@ class NodeSync
 				break;
 			}
 
-			$current = Block::_current();
+			$current = Block::current();
 			$syncing = (($current['height'] < $largest_height && $largest_height > 1)
 				|| ($current['height'] == $largest_height && $current['id']!=$most_common));
 			_log("check syncing syncing=$syncing current_height=".$current['height']." largest_height=$largest_height current_id=".
@@ -104,7 +104,7 @@ class NodeSync
 						$next_block = $next_block_peers[$id][$host];
 //				_log("Checking block ". print_r($next_block,1));
 						$block = Block::getFromArray($next_block);
-						if (!$block->_check()
+						if (!$block->check()
 						) {
 							_log("Invalid block mined at height ".$height);
 							$syncing = false;
@@ -117,7 +117,7 @@ class NodeSync
 							$prev_block_id = $prev_block['id'];
 							$block = Block::getFromArray($next_block);
 							$block->prevBlockId = $prev_block_id;
-							$res = $block->_add();
+							$res = $block->add();
 							if (!$res) {
 								_log("Block add: could not add block at height $height");
 								$syncing = false;
@@ -127,7 +127,7 @@ class NodeSync
 								break;
 							} else {
 								$vblock = Block::export("", $height);
-								$res = Block::getFromArray($vblock)->_verifyBlock();
+								$res = Block::getFromArray($vblock)->verifyBlock();
 								if(!$res) {
 									_log("Block is not verified");
 									$syncing = false;
@@ -168,7 +168,7 @@ class NodeSync
 		$failed_block = 0;
 		$ok_block = 0;
 		$peers_count = count($this->peers);
-		$current = Block::_current();
+		$current = Block::current();
 		foreach ($this->peers as $host) {
 			$url = $host . "/peer.php?q=";
 

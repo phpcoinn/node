@@ -46,7 +46,7 @@ _log("Calling propagate.php",3);
 if ((empty($peer) || $peer == 'all') && $type == "block") {
     $whr = "";
     if ($id == "current") {
-        $current = Block::_current();
+        $current = Block::current();
         $id = $current['id'];
     }
     $data = Block::export($id);
@@ -94,7 +94,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 if ($type == "block") {
     // current block or read cache
     if ($id == "current") {
-        $current = Block::_current();
+        $current = Block::current();
         $data = Block::export($current['id']);
         if (!$data) {
             echo "Invalid Block data";
@@ -123,7 +123,7 @@ if ($type == "block") {
         _log("Microsync request",1);
         $height = intval($response['height']);
         $bl = san($response['block']);
-        $current = Block::_current();
+        $current = Block::current();
         // maximum microsync is 10 blocks, for more, the peer should sync
         if ($current['height'] - $height > 10) {
             echo "Height Differece too high\n";
@@ -175,7 +175,7 @@ if ($type == "block") {
 if ($type == "transaction") {
 	_log("Propagate transaction",3);
     // get the transaction data
-    $data = Transaction::_export($id);
+    $data = Transaction::export($id);
 
     if (!$data) {
 	    _log("Invalid transaction id");

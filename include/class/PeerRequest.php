@@ -117,7 +117,7 @@ class PeerRequest
 		}
 
 		// validate transaction data
-		if (!$tx->_check()) {
+		if (!$tx->check()) {
 			api_err("Invalid transaction");
 		}
 		$hash = $tx->id;
@@ -178,7 +178,7 @@ class PeerRequest
 			api_err("sync");
 		}
 		$data['id'] = san($data['id']);
-		$current = Block::_current();
+		$current = Block::current();
 		// block already in the blockchain
 		if ($current['id'] == $data['id']) {
 			_log("block-ok",3);
@@ -243,7 +243,7 @@ class PeerRequest
 		}
 		// check block data
 		$block = Block::getFromArray($data);
-		if (!$block->_check()) {
+		if (!$block->check()) {
 			_log('['.$ip."] invalid block - $data[height]",1);
 			api_err("invalid-block");
 		}
@@ -251,7 +251,7 @@ class PeerRequest
 		// add the block to the blockchain
 		$block = Block::getFromArray($b);
 		$block->prevBlockId = $current['id'];
-		$res = $block->_add();
+		$res = $block->add();
 
 		if (!$res) {
 			_log('['.$ip."] invalid block data - $data[height]",1);
@@ -260,7 +260,7 @@ class PeerRequest
 
 		$last_block = Block::export("", $data['height']);
 		$bl = Block::getFromArray($last_block);
-		$res = $bl->_verifyBlock();
+		$res = $bl->verifyBlock();
 
 		if (!$res) {
 			_log("Can not verify added block",1);
@@ -277,7 +277,7 @@ class PeerRequest
 	}
 
 	static function currentBlock() {
-		$current = Block::_current();
+		$current = Block::current();
 		api_echo(["block"=>$current, "info"=>Peer::getInfo()]);
 	}
 
@@ -332,7 +332,7 @@ class PeerRequest
 		foreach ($r as $x) {
 			$blocks[$x['height']] = Block::export($x['id']);
 		}
-		$current = Block::_current();
+		$current = Block::current();
 		api_echo(["block"=>$current,"blocks"=>$blocks, "info"=>Peer::getInfo()]);
 	}
 

@@ -45,7 +45,7 @@ if(isset($_POST['action'])) {
 
 			$transaction = new Transaction($public_key,$dst,$val,TX_TYPE_SEND,$date,$msg);
 			$transaction->signature = $signature;
-			$hash = $transaction->_addToMemPool($error);
+			$hash = $transaction->addToMemPool($error);
             if($hash === false) {
 	            $_SESSION['msg']=[['icon'=>'error', 'text'=>'Transaction can not be sent: '.$error]];
 	            header("location: /apps/wallet/index.php");

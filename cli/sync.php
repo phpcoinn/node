@@ -92,7 +92,7 @@ if ($_config['dbversion'] < 1) {
 
 ini_set('memory_limit', '2G');
 
-$current = Block::_current();
+$current = Block::current();
 
 
 
@@ -135,7 +135,7 @@ if ($current['height']==1 && BOOTSTRAPING) {
 
    
 
-    $current = Block::_current();
+    $current = Block::current();
 }
 //TODO check microsync feature
 // the microsync process is an anti-fork measure that will determine the best blockchain to choose for the last block
@@ -188,10 +188,10 @@ if ($arg == "microsync" && !empty($arg2)) {
         // add the new block
         echo "Starting to sync last block from $x[hostname]\n";
         $b = $data;
-		$prev = Block::_current();
+		$prev = Block::current();
         $block = Block::getFromArray($b);
 	    $block->prevBlockId = $prev['id'];
-	    $res = $block->_add();
+	    $res = $block->add();
         if (!$res) {
             _log("Block add: could not add block - $b[id] - $b[height]");
             break;
@@ -492,7 +492,7 @@ $failed_syncs=0;
     $resyncing=false;
     if ($block_parse_failed==true&&$current['date']<time()-(3600*24)) {
         _log("Rechecking reward transactions",1);
-        $current = Block::_current();
+        $current = Block::current();
         $rwpb=$db->single("SELECT COUNT(1) FROM transactions WHERE type=0 AND message=''");
         if ($rwpb!=$current['height']) {
             $failed=$db->single("SELECT blocks.height FROM blocks LEFT JOIN transactions ON transactions.block=blocks.id and transactions.type=0 and transactions.message='' WHERE transactions.height is NULL ORDER by blocks.height ASC LIMIT 1");
@@ -597,7 +597,7 @@ if ($_config['sync_recheck_blocks'] > 0) {
 
 	    $block = Block::getFromArray($data);
 
-        if (!$block->_mine()) {
+        if (!$block->mine()) {
             $db->run("UPDATE config SET val=1 WHERE cfg='sync'");
             _log("Invalid block detected. Deleting everything after $data[height] - $data[id]");
             sleep(10);

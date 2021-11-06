@@ -91,10 +91,10 @@ class Miner {
 				$new_block_date = $block_date + $elapsed;
 				_log("Time=now=$now nodeTime=$nodeTime offset=$offset elapsed=$elapsed",4);
 				$bl->argon = null;
-				$bl->_calculateNonce($block_date, $elapsed);
+				$bl->calculateNonce($block_date, $elapsed);
 				$bl->date = $block_date;
-				$hit = $bl->_calculateHit();
-				$target = $bl->_calculateTarget($elapsed);
+				$hit = $bl->calculateHit();
+				$target = $bl->calculateTarget($elapsed);
 				$blockFound = ($hit > 0 && $target>=0 &&  $hit > $target);
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;

@@ -264,7 +264,7 @@ class Api
 	 * @apiSuccess {string} argon Mining argon hash
 	 */
 	static function currentBlock($data) {
-		$current = Block::_current();
+		$current = Block::current();
 		api_echo($current);
 	}
 
@@ -425,7 +425,7 @@ class Api
 
 		$transaction = new Transaction($public_key,$dst,$val,$type,$date,$message);
 		$transaction->signature = $signature;
-		$hash = $transaction->_addToMemPool($error);
+		$hash = $transaction->addToMemPool($error);
 
 		if($hash === false) {
 			api_err($error);
@@ -511,7 +511,7 @@ class Api
 		$masternodes = $db->single("SELECT COUNT(1) FROM masternode");
 		$mempool = $db->single("SELECT COUNT(1) FROM mempool");
 		$peers = Peer::getCount();
-		$current = Block::_current();
+		$current = Block::current();
 		api_echo([
 			'hostname'     => $hostname,
 			'version'      => VERSION,

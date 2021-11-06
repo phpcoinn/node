@@ -129,7 +129,7 @@ class Util
 	 *
 	 */
 	static function current() {
-		var_dump(Block::_current());
+		var_dump(Block::current());
 	}
 
 	/**
@@ -193,7 +193,7 @@ class Util
 			$key = $db->single("SELECT public_key FROM accounts WHERE id=:id", [":id" => $data['generator']]);
 			$block = Block::getFromArray($data);
 			$block->publicKey = $key;
-			if (!$block->_mine()) {
+			if (!$block->mine()) {
 				_log("Invalid block detected. We should delete everything after $data[height] - $data[id]");
 				break;
 			}
@@ -446,7 +446,7 @@ class Util
 	}
 
 	static function compareBlocks($argv) {
-		$current=Block::_current();
+		$current=Block::current();
 		$peer=trim($argv[2]);
 		if(empty($peer)) {
 			die("Missing arguments: compare-blocks <peer> [<limit>]".PHP_EOL);
@@ -494,7 +494,7 @@ class Util
 	static function masternodeHash() {
 		global $db;
 		$res=$db->run("SELECT * FROM masternode ORDER by public_key");
-		$current=Block::_current();
+		$current=Block::current();
 		echo "Height:\t\t$current[height]\n";
 		echo "Hash:\t\t".md5(json_encode($res))."\n\n";
 	}
@@ -554,7 +554,7 @@ class Util
 		for ($i = $height+1; $i <= $last['block']['height']; $i++) {
 			$c=peer_post($peer."/peer.php?q=getBlock", ["height"=>$i]);
 			$block = Block::getFromArray($c);
-			if (!$block->_mine()) {
+			if (!$block->mine()) {
 				print("Invalid block detected. $c[height] - $c[id]\n");
 				break;
 			}
@@ -578,7 +578,7 @@ class Util
 		$peer = filter_var($peer, FILTER_SANITIZE_URL);
 		$b=peer_post($peer."/peer.php?q=getBlock", ["height"=>$height]);
 		$block = Block::getFromArray($b);
-		if (!$block->_mine()) {
+		if (!$block->mine()) {
 			print("Block is invalid\n");
 		} else {
 			print("Block is valid\n");
@@ -661,7 +661,7 @@ class Util
 
 		for($i=1;$i<=$height;$i++) {
 			$block = Block::export("",$i);
-			$res = Block::getFromArray($block)->_verifyBlock();
+			$res = Block::getFromArray($block)->verifyBlock();
 			echo "Verify block $i / $height res=$res".PHP_EOL;
 			if(!$res) {
 				return;
@@ -719,7 +719,7 @@ class Util
 			$i = 0;
 			$imported = 0;
 			@touch($lockFile);
-			$prev_block = Block::_current();
+			$prev_block = Block::current();
 			$start_height = $prev_block['height'];
 			while (!feof($handle)) {
 				$line = fgets($handle);
@@ -739,12 +739,12 @@ class Util
 					$prev_block_id = $prev_block['id'];
 					$block = Block::getFromArray($bl);
 					$block->prevBlockId = $prev_block_id;
-					$res = $block->_add(!$verify);
+					$res = $block->add(!$verify);
 					if(!$res) {
 						@unlink($lockFile);
 						die("Failed importing block at height $prev_block".PHP_EOL);
 					}
-					$prev_block = Block::_current();
+					$prev_block = Block::current();
 					$imported++;
 				}
 			}

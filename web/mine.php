@@ -102,7 +102,7 @@ if ($q == "info") {
 		api_err("rejected - date");
 	}
 
-	$lastBlock = Block::_current();
+	$lastBlock = Block::current();
 	$block_date = $lastBlock['date'];
 	$new_block_date = $block_date + $elapsed;
 	$rewardInfo = Block::reward($height);
@@ -120,14 +120,14 @@ if ($q == "info") {
 	$block = new Block($generator, $address, $height, $date, $nonce, $data, $difficulty, $version, $argon, $prev_block['id']);
 	$block->publicKey = $_config['generator_public_key'];
 
-	$signature = $block->_sign($_config['generator_private_key']);
-	$result = $block->_mine();
+	$signature = $block->sign($_config['generator_private_key']);
+	$result = $block->mine();
 
 	if ($result) {
-		$res = $block->_add();
+		$res = $block->add();
 
 		if ($res) {
-			$current = Block::_current();
+			$current = Block::current();
 			$dir = ROOT . "/cli";
 			$cmd = "php " . XDEBUG_CLI . " $dir/propagate.php block {$current['id']}  > /dev/null 2>&1  &";
 			_log("Call propagate " . $cmd, 5);

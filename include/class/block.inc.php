@@ -46,7 +46,7 @@ class Block
 		$this->prevBlockId = $prevBlockId;
 	}
 
-	public function _add($bootstrapping=false)
+	public function add($bootstrapping=false)
     {
         global $db;
 
@@ -65,10 +65,10 @@ class Block
 	        }
 
 	        // create the hash / block id
-	        $hash = $this->_hash();
+	        $hash = $this->hash();
 
 	        // create the block data and check it against the signature
-	        $info = $this->_getSignatureBase();
+	        $info = $this->getSignatureBase();
 	    // _log($info,3);
 
             if (!Account::checkSignature($info, $this->signature, $this->publicKey)) {
@@ -76,7 +76,7 @@ class Block
                 return false;
             }
 
-            if (!$this->_parse_block(true)) {
+            if (!$this->parse_block(true)) {
                 _log("Parse block failed");
                 return false;
             }
@@ -118,7 +118,7 @@ class Block
         }
 
         // parse the block's transactions and insert them to db
-        $res = $this->_parse_block(false, $bootstrapping);
+        $res = $this->parse_block(false, $bootstrapping);
 
         // if any fails, rollback
         if ($res == false) {
@@ -148,13 +148,13 @@ class Block
 		return (array) $this;
 	}
 
-    public static function _current($object = false)
+    public static function current($object = false)
     {
         global $db;
         $current = $db->row("SELECT * FROM blocks ORDER by height DESC LIMIT 1");
         if (!$current) {
-            Block::_genesis();
-            return self::_current();
+            Block::genesis();
+            return self::current();
         }
         if($object) {
             return self::getFromArray($current);
@@ -163,13 +163,13 @@ class Block
         }
     }
 
-	public static function _difficulty($height = 0)
+	public static function difficulty($height = 0)
 	{
 		global $db;
 
 		// if no block height is specified, use the current block.
 		if ($height == 0) {
-			$current = Block::_current();
+			$current = Block::current();
 		} else {
 			$current = Block::getAtHeight($height);
 		}
@@ -219,7 +219,7 @@ class Block
     public static function max_transactions()
     {
         global $db;
-        $current = Block::_current();
+        $current = Block::current();
         $limit = $current['height'] - 100;
         $avg = $db->single("SELECT AVG(transactions) FROM blocks WHERE height>:limit", [":limit" => $limit]);
         if ($avg < 100) {
@@ -338,7 +338,7 @@ class Block
 	    return $out;
     }
 
-	public function _check($new=true)
+	public function check($new=true)
 	{
 
 		_log("Block check ".json_encode($this->toArray()),4);
@@ -356,9 +356,9 @@ class Block
 
 		//difficulty should be the same as our calculation
 		if($new) {
-			$calcDifficulty = Block::_difficulty();
+			$calcDifficulty = Block::difficulty();
 		} else {
-			$calcDifficulty = Block::_difficulty($this->height-1);
+			$calcDifficulty = Block::difficulty($this->height-1);
 		}
 		if ($this->difficulty != $calcDifficulty) {
 			_log("Invalid difficulty - {$this->difficulty} - ".$calcDifficulty);
@@ -366,7 +366,7 @@ class Block
 		}
 
 		//check the argon hash and the nonce to produce a valid block
-		if (!$this->_mine()) {
+		if (!$this->mine()) {
 			_log("Mine check failed");
 			return false;
 		}
@@ -374,7 +374,7 @@ class Block
 		return true;
 	}
 
-    public function _mine()
+    public function mine()
     {
         global $_config;
 
@@ -395,16 +395,16 @@ class Block
 	    _log("Current date = {$this->date} prev date = $prev_date elapsed = $elapsed", 4);
         // get the current difficulty if empty
         if (empty($this->difficulty)) {
-            $this->difficulty = Block::_difficulty();
+            $this->difficulty = Block::difficulty();
         }
 
 	    //verify argon
-	    if(!$this->_verifyArgon($prev_date, $elapsed)) {
+	    if(!$this->verifyArgon($prev_date, $elapsed)) {
 		    _log("Invalid argon={$this->argon}");
 		    return false;
 	    }
 
-	    $calcNonce = $this->_calculateNonce($prev_date, $elapsed);
+	    $calcNonce = $this->calculateNonce($prev_date, $elapsed);
 
 //        $block_date = $time;
 	    if($calcNonce != $this->nonce) {
@@ -418,8 +418,8 @@ class Block
 	    }
 
 
-	    $hit = $this->_calculateHit();
-	    $target = $this->_calculateTarget($elapsed);
+	    $hit = $this->calculateHit();
+	    $target = $this->calculateTarget($elapsed);
 	    _log("Check hit= " . $hit. " target=" . $target . " current_height=".$this->height.
 		    " difficulty=".$this->difficulty." elapsed=".$elapsed, 5);
 	    $res =  (($hit > 0 && $hit > $target) || $this->height==0);
@@ -431,7 +431,7 @@ class Block
     }
 
     // parse the block transactions
-    public function _parse_block($test = true, $bootstrapping=false)
+    public function parse_block($test = true, $bootstrapping=false)
     {
         global $db;
 
@@ -463,7 +463,7 @@ class Block
 	        foreach ($this->data as $x) {
 		        //validate the transaction
 		        $tx = Transaction::getFromArray($x);
-		        if (!$tx->_check($this->height)) {
+		        if (!$tx->check($this->height)) {
 			        _log("Transaction check failed - {$tx->id}");
 			        return false;
 		        }
@@ -520,7 +520,7 @@ class Block
     // initialize the blockchain, add the genesis block
 	public $genesis_date = GENESIS_TIME;
 
-	private static function _genesis() {
+	private static function genesis() {
 
 		global $db;
 		$height = 1;
@@ -541,7 +541,7 @@ class Block
 		$block = new Block($generator, $miner, $height, $date, $nonce, $data, $difficulty, Block::versionCode(), $argon, "");
 		$block->signature = $signature;
 		$block->publicKey = $public_key;
-		$res = $block->_add();
+		$res = $block->add();
 		if (!$res) {
 			api_err("Could not add the genesis block.");
 		}
@@ -552,7 +552,7 @@ class Block
     // delete last X blocks
     public static function pop($no = 1)
     {
-        $current = Block::_current();
+        $current = Block::current();
         return Block::delete($current['height'] - $no + 1);
     }
 
@@ -581,7 +581,7 @@ class Block
                 $db->rollback();
                 // the blockchain has some flaw, we should resync from scratch
            
-                $current = Block::_current();
+                $current = Block::current();
                 if (($current['date']<time()-(3600*48)) && $_config['auto_resync']!==false) {
                     _log("Blockchain corrupted. Resyncing from scratch.");
                     $db->fkCheck(false);
@@ -621,10 +621,10 @@ class Block
         return true;
     }
 
-    public function _sign($key)
+    public function sign($key)
     {
         $json = json_encode($this->data);
-        $info = $this->_getSignatureBase();
+        $info = $this->getSignatureBase();
 
         $signature = ec_sign($info, $key);
         $this->signature = $signature;
@@ -632,17 +632,17 @@ class Block
         return $signature;
     }
 
-	public function _hash()
+	public function hash()
 	{
-		$hash_base = $this->_getHashBase();
+		$hash_base = $this->getHashBase();
 		$hash = hash("sha256", $hash_base);
 		$hash = hex2coin($hash);
 		$this->id = $hash;
 		return $hash;
 	}
 
-	function _getHashBase() {
-		$base = $this->_getSignatureBase();
+	function getHashBase() {
+		$base = $this->getSignatureBase();
 		$hash_base = "{$base}-{$this->signature}";
 		return $hash_base;
 	}
@@ -711,7 +711,7 @@ class Block
     }
 
 
-	function _calculateHit() {
+	function calculateHit() {
 		$base = $this->miner . "-" . $this->nonce . "-" . $this->height . "-" . $this->difficulty;
 //	    _log("base=$base");
 		$hash = hash("sha256", $base);
@@ -723,7 +723,7 @@ class Block
 		return $hit;
 	}
 
-	function _calculateTarget($elapsed) {
+	function calculateTarget($elapsed) {
 		if($elapsed == 0) {
 			return 0;
 		}
@@ -731,7 +731,7 @@ class Block
 		return $target;
 	}
 
-	function _getSignatureBase() {
+	function getSignatureBase() {
     	$parts = [];
     	$parts[] = $this->generator;
     	$parts[] = $this->miner;
@@ -751,9 +751,9 @@ class Block
 		return $info;
 	}
 
-    function _calculateNonce($prev_block_date, $elapsed) {
+    function calculateNonce($prev_block_date, $elapsed) {
     	if(empty($this->argon)) {
-		    $this->_calculateArgonHash($prev_block_date, $elapsed);
+		    $this->calculateArgonHash($prev_block_date, $elapsed);
 	    }
     	$nonceBase = "{$this->miner}-{$prev_block_date}-{$elapsed}-{$this->argon}";
 	    $calcNonce = hash("sha256", $nonceBase);
@@ -762,7 +762,7 @@ class Block
 	    return $calcNonce;
     }
 
-	function _calculateArgonHash($prev_block_date, $elapsed) {
+	function calculateArgonHash($prev_block_date, $elapsed) {
 		$base = "{$prev_block_date}-{$elapsed}";
 		$options = HASHING_OPTIONS;
 		$options['salt']=substr($this->miner, 0, 16);
@@ -776,7 +776,7 @@ class Block
 		return $argon;
 	}
 
-    function _verifyArgon($date, $elapsed) {
+    function verifyArgon($date, $elapsed) {
 	    $base = "{$date}-{$elapsed}";
     	$res =  password_verify($base, $this->argon);
 	    _log("Verify argon base=$base argon={$this->argon} verify=$res", 5);
@@ -818,7 +818,7 @@ class Block
 	    return $res;
     }
 
-	public function _verifyBlock() {
+	public function verifyBlock() {
 
 		$data = $this->data;
 		$height = $this->height;
@@ -847,20 +847,20 @@ class Block
 			$prev_block_id = "";
 		}
 
-		$res = $this->_verifyArgon($prev_block_date, $elapsed);
+		$res = $this->verifyArgon($prev_block_date, $elapsed);
 		if(!$res) {
 			_log("Check argon failed");
 			return false;
 		}
 
 		$nonce = $this->nonce;
-		$calcNonce = $this->_calculateNonce($prev_block_date, $elapsed);
+		$calcNonce = $this->calculateNonce($prev_block_date, $elapsed);
 		if($calcNonce != $nonce) {
 			_log("Check nonce failed");
 			return false;
 		}
-		$hit = $this->_calculateHit();
-		$target = $this->_calculateTarget($elapsed);
+		$hit = $this->calculateHit();
+		$target = $this->calculateTarget($elapsed);
 		$res = (($hit > 0 && $hit > $target));
 		if(!$res) {
 			_log("Mine check filed");
@@ -885,14 +885,14 @@ public_key=".$transaction['public_key'],5);
 
 		$data = json_encode($data);
 		$this->prevBlockId = $prev_block_id;
-		$signature_base = $this->_getSignatureBase();
+		$signature_base = $this->getSignatureBase();
 		$res = ec_verify($signature_base, $this->signature, $public_key);
 		if(!$res) {
 			_log("Block signature check failed signature_base=$signature_base signature={$this->signature} public_key=$public_key");
 			return false;
 		}
 
-		$hash_base = $this->_getHashBase();
+		$hash_base = $this->getHashBase();
 		$hash = hash("sha256", $hash_base);
 		$calcBlockId = hex2coin($hash);
 		$id = $this->id;

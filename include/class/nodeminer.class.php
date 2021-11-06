@@ -89,10 +89,10 @@ class NodeMiner {
 				$new_block_date = $block_date + $elapsed;
 				_log("Time=now=$now elapsed=$elapsed",4);
 				$bl->argon = null;
-				$bl->_calculateNonce($block_date, $elapsed);
+				$bl->calculateNonce($block_date, $elapsed);
 				$bl->date = $new_block_date;
-				$hit = $bl->_calculateHit();
-				$target = $bl->_calculateTarget($elapsed);
+				$hit = $bl->calculateHit();
+				$target = $bl->calculateTarget($elapsed);
 				$blockFound = ($hit > 0 && $target>=0 &&  $hit > $target);
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
@@ -133,19 +133,19 @@ class NodeMiner {
 			$bl->data = $data;
 			$bl->prevBlockId = $prev_block['id'];
 
-			$bl->_sign($this->private_key);
+			$bl->sign($this->private_key);
 
 			$this->miningStat['submits']++;
 
 
-			$result = $bl->_mine();
+			$result = $bl->mine();
 
 
 			if ($result) {
-				$res = $bl->_add();
+				$res = $bl->add();
 
 				if ($res) {
-					$current = Block::_current();
+					$current = Block::current();
 					$current['id']=escapeshellarg(san($current['id']));
 					$dir = ROOT."/cli";
 					$cmd = "php ".XDEBUG_CLI." $dir/propagate.php block {$current['id']}  > /dev/null 2>&1  &";

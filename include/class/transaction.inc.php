@@ -49,7 +49,7 @@ class Transaction
 	        } else if ($type == TX_TYPE_SEND) {
 		        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
 		        $res = $res && Account::addBalance($tx->src, $tx->val);
-		        $tx->_add_mempool();
+		        $tx->add_mempool();
 	        }
 	        if($res === false) {
 		        _log("Update balance for reverse transaction failed");
@@ -67,7 +67,7 @@ class Transaction
     public static function clean_mempool()
     {
         global $db;
-        $current = Block::_current();
+        $current = Block::current();
         $height = $current['height'];
         $limit = $height - 1000;
         $db->run("DELETE FROM mempool WHERE height<:limit", [":limit" => $limit]);
@@ -112,7 +112,7 @@ class Transaction
     public static function mempool($max)
     {
         global $db;
-        $current = Block::_current();
+        $current = Block::current();
         $height = $current['height'] + 1;
         // only get the transactions that are not locked with a future height
         $r = $db->run(
@@ -139,7 +139,7 @@ class Transaction
                     _log("$x[id] - Transaction has empty src");
                     continue;
                 }
-                if (!$trans->_check($current['height'])) {
+                if (!$trans->check($current['height'])) {
                     _log("$x[id] - Transaction Check Failed");
                     continue;
                 }
@@ -170,11 +170,11 @@ class Transaction
     }
 
 	// add a new transaction to mempool and lock it with the current height
-	public function _add_mempool($peer = "")
+	public function add_mempool($peer = "")
 	{
 		global $db;
 
-		$current = Block::_current();
+		$current = Block::current();
 		$height = $current['height'];
 		$bind = [
 			":peer"      => $peer,
@@ -202,7 +202,7 @@ class Transaction
 	}
 
 	// add a new transaction to the blockchain
-	public function _add($block, $height, $bootstrapping = false)
+	public function add($block, $height, $bootstrapping = false)
 	{
 		global $db;
 
@@ -256,10 +256,10 @@ class Transaction
 	}
 
     // hash the transaction's most important fields and create the transaction ID
-	public function _hash()
+	public function hash()
 	{
 
-		$base = $this->_getSignatureBase();
+		$base = $this->getSignatureBase();
 		$base = $base ."-" . $this->signature;
 
 		$hash = hash("sha256", $base);
@@ -270,15 +270,15 @@ class Transaction
 	}
 
     // check the transaction for validity
-    public function _check($height = 0)
+    public function check($height = 0)
     {
         global $db;
         // if no specific block, use current
         if ($height === 0) {
-            $current = Block::_current();
+            $current = Block::current();
             $height = $current['height'];
         }
-        $base = $this->_getSignatureBase();
+        $base = $this->getSignatureBase();
 
 
         // the value must be >=0
@@ -343,7 +343,7 @@ class Transaction
             return false;
         }
         $thisId = $this->id;
-        $id = $this->_hash();
+        $id = $this->hash();
         // the hash does not match our regenerated hash
         if ($thisId != $id) {
                 _log("{$this->id} - $id - Invalid hash");
@@ -359,15 +359,15 @@ class Transaction
         return true;
     }
 
-	public function _sign($private_key)
+	public function sign($private_key)
 	{
-		$base = $this->_getSignatureBase();
+		$base = $this->getSignatureBase();
 		$signature = ec_sign($base, $private_key);
 		$this->signature = $signature;
 		return $signature;
 	}
 
-    public function _getSignatureBase() {
+    public function getSignatureBase() {
     	$val = $this->val;
     	$fee = $this->fee;
     	$date = $this->date;
@@ -392,7 +392,7 @@ class Transaction
 	    return $base;
     }
 
-	public static function _export($id)
+	public static function export($id)
 	{
 		global $db;
 		$r = $db->row("SELECT * FROM mempool WHERE id=:id", [":id" => $id]);
@@ -404,7 +404,7 @@ class Transaction
     public static function get_transaction($id)
     {
         global $db;
-        $current = Block::_current();
+        $current = Block::current();
 
         $x = $db->row("SELECT * FROM transactions WHERE id=:id", [":id" => $id]);
 
@@ -445,7 +445,7 @@ class Transaction
     public static function get_transactions($height = "", $id = "", $includeMiningRewards = false)
     {
         global $db;
-        $current = Block::_current();
+        $current = Block::current();
         $height = san($height);
         $id = san($id);
         if (empty($id) && empty($height)) {
@@ -498,8 +498,8 @@ class Transaction
     static function getRewardTransaction($dst,$date,$public_key,$private_key,$reward) {
 	    $msg = '';
 	    $transaction = new Transaction($public_key,$dst,$reward,TX_TYPE_REWARD,$date,$msg);
-	    $signature = $transaction->_sign($private_key);
-	    $transaction->_hash();
+	    $signature = $transaction->sign($private_key);
+	    $transaction->hash();
 	    return $transaction->toArray();
     }
 
@@ -507,7 +507,7 @@ class Transaction
 		return Transaction::get_transactions($height, "", true);
     }
 
-	static function _getById($id) {
+	static function getById($id) {
 		global $db;
 		$x = $db->row("SELECT * FROM transactions WHERE id=:id", [":id" => $id]);
 		return Transaction::getFromDbRecord($x);
@@ -519,11 +519,11 @@ class Transaction
 	}
 
 
-    function _addToMemPool(&$error) {
+    function addToMemPool(&$error) {
     	global $db;
-	    $hash = $this->_hash();
+	    $hash = $this->hash();
 
-	    if (!$this->_check()) {
+	    if (!$this->check()) {
 		    $error = "Transaction signature failed";
 		    return false;
 	    }
@@ -551,7 +551,7 @@ class Transaction
 		    return false;
 	    }
 
-	    $this->_add_mempool("local");
+	    $this->add_mempool("local");
 	    $hashp=escapeshellarg(san($hash));
 	    $dir = dirname(dirname(__DIR__)) . "/cli";
 	    system("php $dir/propagate.php transaction $hashp > /dev/null 2>&1  &");
