@@ -169,15 +169,11 @@ class Nodeutil
 	}
 
 	static function getRemoteAddr() {
-		global $_config;
 		$ip = san_ip($_SERVER['REMOTE_ADDR']);
 		$ip = Peer::validateIp($ip);
 		if(!$ip) {
 			$ip = san_ip($_SERVER['HTTP_X_FORWARDED_FOR']);
 			$ip = Peer::validateIp($ip);
-		}
-		if($_config['testnet']) {
-			$ip = $ip . ":81";
 		}
 		return $ip;
 	}

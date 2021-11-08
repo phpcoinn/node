@@ -25,6 +25,11 @@ class PeerRequest
 		if(($ip === false || strlen($ip)==0)) {
 			api_err("Invalid peer IP address");
 		}
+
+		if($_config['testnet']) {
+			$ip = $ip . ":81";
+		}
+
 		self::$ip=$ip;
 		self::$data=$data;
 		self::$requestId=$requestId;
