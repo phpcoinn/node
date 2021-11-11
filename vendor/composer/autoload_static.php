@@ -7,7 +7,9 @@ namespace Composer\Autoload;
 class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
 {
     public static $files = array (
+        'dfbc31af31c3b5cf20b2a5c72ff37b12' => __DIR__ . '/../..' . '/include/coinspec.inc.php',
         '660d3b94e3a06dc1db22e1a9b9639665' => __DIR__ . '/../..' . '/include/functions.inc.php',
+        '9cd6408de7a4a9c0b99dfb3f989642c0' => __DIR__ . '/../..' . '/include/genesis.inc.php',
     );
 
     public static $classMap = array (

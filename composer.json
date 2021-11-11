@@ -8,7 +8,7 @@
     },
     "autoload": {
         "classmap": ["include/class"],
-        "files": ["include/functions.inc.php"]
+        "files": ["include/coinspec.inc.php","include/functions.inc.php","include/genesis.inc.php"]
     },
     "scripts": {
         "build-wallet": "php --define phar.readonly=0 build/make_wallet.php",

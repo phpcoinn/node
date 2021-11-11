@@ -18,17 +18,8 @@ define("ROOT", dirname(__DIR__));
 $config_file = ROOT.'/config/config.inc.php';
 
 require_once $config_file;
-global $_config;
-
-if($_config['testnet']) {
-	require_once ROOT . "/include/testnet.coinspec.inc.php";
-	@include_once ROOT . "/include/genesis.testnet.inc.php";
-} else {
-	require_once ROOT . "/include/coinspec.inc.php";
-	@include_once ROOT . "/include/genesis.inc.php";
-}
-
 require_once __DIR__.'/db.inc.php';
+global $_config;
 
 @include_once ROOT.'/web/apps/apps.functions.php';
 
