@@ -179,12 +179,20 @@ class Nodeutil
 	}
 
 	static function downloadApps() {
-
+		global $_config;
 		if(!defined("APPS_REPO_SERVER")) {
-			define("APPS_REPO_SERVER", "https://repo.testnet.phpcoin.net");
+			if($_config['testnet'] ) {
+				define("APPS_REPO_SERVER", "https://repo.testnet.phpcoin.net");
+			} else {
+				define("APPS_REPO_SERVER", "https://repo.phpcoin.net");
+			}
 		}
 		if(!defined("APPS_REPO_SERVER_PUBLIC_KEY")) {
-			define("APPS_REPO_SERVER_PUBLIC_KEY", "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwUKtSuRJEs8RrRrkZbND1WxVNomPtvowAo5hzQr6xe2TUyHYLnzu2ubVMfBAYM4cBZJLckvxWenHB2nULzmU8VHz");
+			if($_config['testnet'] ) {
+				define("APPS_REPO_SERVER_PUBLIC_KEY", "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwUKtSuRJEs8RrRrkZbND1WxVNomPtvowAo5hzQr6xe2TUyHYLnzu2ubVMfBAYM4cBZJLckvxWenHB2nULzmU8VHz");
+			} else {
+				define("APPS_REPO_SERVER_PUBLIC_KEY", "");
+			}
 		}
 
 		$res = peer_post(APPS_REPO_SERVER."/peer.php?q=getApps");

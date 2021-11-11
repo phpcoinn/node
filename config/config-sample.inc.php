@@ -5,7 +5,7 @@
 | Database Configuration
 |--------------------------------------------------------------------------
 */
-$_config['testnet'] = true;
+$_config['testnet'] = false;
 // The database DSN
 $_config['db_connect'] = 'mysql:host=localhost;dbname=ENTER-DB-NAME';
 // Alternative sqlite db
@@ -52,9 +52,9 @@ $_config['max_test_peers'] = 5;
 
 // The initial peers to sync from
 $_config['initial_peer_list'] = [
-    'https://node1.testnet.phpcoin.net',
-    'https://node2.testnet.phpcoin.net',
-    'https://node3.testnet.phpcoin.net'
+    'https://node1.phpcoin.net',
+    'https://node2.phpcoin.net',
+    'https://node3.phpcoin.net'
 ];
 
 // does not peer with any of the peers. Uses the seed peers and syncs only from those peers. Requires a cronjob on sync.php

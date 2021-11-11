@@ -323,8 +323,8 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
 	if($curl_error) {
 		$error_msg = curl_error($ch);
 		_log("CURL error=".$curl_error." ".$error_msg);
-		//6 - Could not resolve host: miner1.testnet.phpcoin.net
-		//7 - Failed to connect to miner1.testnet.phpcoin.net port 80: Connection refused
+		//6 - Could not resolve host: miner1.phpcoin.net
+		//7 - Failed to connect to miner1.phpcoin.net port 80: Connection refused
 		//28 - Connection timed out after 5001 milliseconds
 		return false;
 	}

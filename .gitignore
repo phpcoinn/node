@@ -1,16 +1,10 @@
-/include/config.inc.php
 /composer.lock
 /tmp/
 
-/build/doc/
 /build/node_modules/
 /build/package-lock.json
-/dapps/
-/db/
 /dev/
 /dist/
-/node_modules/
-/tmp/
 /.idea/
 /config/config.inc.php
 /utils/miner.conf
@@ -18,3 +12,4 @@
 /utils/phpcoin.dat
 /web/apps/
 /web/dapps/
+/apps.git/

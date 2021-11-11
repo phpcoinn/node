@@ -1,57 +1,52 @@
 <?php
-// testnet specification
-
-const VERSION = "1.0.1-beta";
-const DEVELOPMENT = false;
-//const XDEBUG = "XDEBUG_SESSION_START=PHPSTORM";
-//const XDEBUG_CLI = "-dxdebug.mode=debug -dxdebug.client_host=127.0.0.1 -dxdebug.client_port=9000 -dxdebug.start_with_request=yes";
+// mainnet specification
+const VERSION = "1.0.0";
+const DEVELOPMENT = true;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
 
 const COIN = "phpcoin";
 const COIN_NAME="PHPCoin";
 const COIN_SYMBOL="PHP";
-const NETWORK_PREFIX = "30";
+const NETWORK_PREFIX = "38";
 const COIN_DECIMALS = 8;
-const BASE_REWARD = 10;
-const GENESIS_REWARD = 10000;
+const BASE_REWARD = 100;
+const GENESIS_REWARD = 4900010;
 const BLOCKCHAIN_CHECKPOINT = 1;
 
-const BLOCK_TIME = 30;
+const BLOCK_TIME = 60;
 const BLOCK_TARGET_MUL = 1000;
-const BLOCK_START_DIFFICULTY = "30000";
+const BLOCK_START_DIFFICULTY = "60000";
 
 const TX_FEE = 0;
 const TX_TYPE_REWARD = 0;
 const TX_TYPE_SEND = 1;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
-const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
-const REMOTE_PEERS_LIST_URL = "https://node1.testnet.phpcoin.net/peers.php";
+const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 1, "threads" => 1];
+const REMOTE_PEERS_LIST_URL = "https://node1.phpcoin.net/peers.php";
 
 const REWARD_SCHEME = [
 	'genesis' => [
 		'reward'=> GENESIS_REWARD
 	],
 	'launch'=>[
-		'blocks' => 1000,
+		'blocks' => 10000,
 		'reward'=> 10,
 	],
 	'mining'=>[
 		'segments'=>10,
-		'block_per_segment'=>1000
+		'block_per_segment'=>20000
 	],
 	'combined'=>[
 		'segments'=>10,
-		'block_per_segment'=>1000
+		'block_per_segment'=>50000
 	],
 	'deflation'=>[
 		'segments'=>10,
-		'block_per_segment'=>1000
+		'block_per_segment'=>100000
 	]
 ];
 
-//calculate max supply with
-const TOTAL_SUPPLY = 714990;
+const TOTAL_SUPPLY = 210000000;
 const GIT_URL = "https://github.com/phpcoinn/node";
-
