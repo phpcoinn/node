@@ -84,6 +84,7 @@ download-apps                               - Download and update apps from repo
 verify-blocks                               - Verify all blocks in blockchain
 exportchain [<file>]                        - Export blockchain to file
 importchain <file> [<verify>]               - Import and verify blocks from file
+clear-peers                                 - Clear peers database
 ";
 	}
 }

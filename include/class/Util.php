@@ -754,4 +754,9 @@ class Util
 		}
 	}
 
+	static function clearPeers() {
+		Peer::deleteAll();
+		echo "Deleted peers database".PHP_EOL;
+	}
+
 }
