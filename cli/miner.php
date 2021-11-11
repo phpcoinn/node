@@ -8,7 +8,7 @@ require_once dirname(__DIR__).'/include/init.inc.php';
 define("MINER_LOCK_PATH", ROOT.'/tmp/miner-lock');
 _log("Running miner cli", 3);
 
-$res = intval(shell_exec("ps aux|grep miner.php|grep -v grep|wc -l"));
+$res = intval(shell_exec("ps aux|grep '".ROOT."/miner.php'|grep -v grep|wc -l"));
 if ($res <> 1) {
 	die("Other miner process already running");
 }

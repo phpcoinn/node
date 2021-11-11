@@ -45,7 +45,7 @@ _log("Executing sync", 3);
 define("SYNC_LOCK_PATH", Nodeutil::getSyncFile());
 
 
-$res = intval(shell_exec("ps aux|grep sync.php|grep -v grep|wc -l"));
+$res = intval(shell_exec("ps aux|grep '".ROOT."/sync.php'|grep -v grep|wc -l"));
 if ($res <> 1) {
 	die("Other sync process already running");
 }
