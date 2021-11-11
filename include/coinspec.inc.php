@@ -1,4 +1,9 @@
 <?php
+if(file_exists(dirname(__DIR__)."/testnet")) {
+	require_once __DIR__ . "/testnet.coinspec.inc.php";
+	return;
+}
+
 // mainnet specification
 const VERSION = "1.0.0";
 const DEVELOPMENT = false;

@@ -1,4 +1,10 @@
 <?php
+if(file_exists(dirname(__DIR__)."/testnet")) {
+	require_once __DIR__ . "/genesis.testnet.inc.php";
+	return;
+}
+
+
 const GENESIS_DATA = [
 "signature" => 'AN1rKvtK3T1BTx9ptY3i7XfKhRXNi4mBXdrqX6gzr4984xnnxNoPnFnaXzsMEesA25H2ULPnXMru5R98okTpB7Ux83tsuTTUj',
 "public_key" => 'PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCzn7YbwQ4KfEfp3QLZJvQuxgfxEbopcGyVhiZr666X352TaGXEGAX1PcmtXCb7rWvmBxRMVC3yicp1GcgBFzF7tF2',
