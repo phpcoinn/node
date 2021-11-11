@@ -7,5 +7,4 @@ $baseDir = dirname($vendorDir);
 
 return array(
     '660d3b94e3a06dc1db22e1a9b9639665' => $baseDir . '/include/functions.inc.php',
-    '9cd6408de7a4a9c0b99dfb3f989642c0' => $baseDir . '/include/genesis.inc.php',
 );

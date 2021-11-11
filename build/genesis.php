@@ -23,7 +23,13 @@ $height = 1;
 $generator = Account::getAddress($public_key);
 $data = [];
 
-$reward_tx = Transaction::getRewardTransaction($generator, $block_date, $public_key, $private_key, num(GENESIS_REWARD));
+$msg = 'This is genesis';
+$transaction = new Transaction($public_key,$generator,num(GENESIS_REWARD),TX_TYPE_REWARD,$block_date,$msg);
+$signature = $transaction->sign($private_key);
+$transaction->hash();
+$reward_tx = $transaction->toArray();
+
+
 $data[$reward_tx['id']]=$reward_tx;
 ksort($data);
 

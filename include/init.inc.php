@@ -22,8 +22,10 @@ global $_config;
 
 if($_config['testnet']) {
 	require_once ROOT . "/include/testnet.coinspec.inc.php";
+	@include_once ROOT . "/include/genesis.testnet.inc.php";
 } else {
 	require_once ROOT . "/include/coinspec.inc.php";
+	@include_once ROOT . "/include/genesis.inc.php";
 }
 
 require_once __DIR__.'/db.inc.php';
