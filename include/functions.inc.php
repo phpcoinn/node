@@ -29,7 +29,7 @@ function api_err($data)
     if (!headers_sent()) {
         header('Content-Type: application/json');
     }
-    echo json_encode(["status" => "error", "data" => $data, "coin" => COIN]);
+    echo json_encode(["status" => "error", "data" => $data, "coin" => COIN, "version"=>VERSION]);
     exit;
 }
 
@@ -42,7 +42,7 @@ function api_echo($data)
         header('Content-Type: application/json');
     }
     _log($data, 4);
-    echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN]);
+    echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION]);
     exit;
 }
 
