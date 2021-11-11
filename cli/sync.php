@@ -45,8 +45,8 @@ _log("Executing sync", 3);
 define("SYNC_LOCK_PATH", Nodeutil::getSyncFile());
 
 
-$res = intval(shell_exec("ps aux|grep '".ROOT."/sync.php'|grep -v grep|wc -l"));
-if ($res <> 1) {
+$res = intval(shell_exec("ps aux|grep '".ROOT."/cli/sync.php'|grep -v grep|wc -l"));
+if ($res > 1) {
 	die("Other sync process already running");
 }
 
@@ -54,7 +54,7 @@ if ($res <> 1) {
 if (file_exists(SYNC_LOCK_PATH)) {
     $ignore_lock = false;
     if ($argv[1] == "force") {
-        $res = intval(shell_exec("ps aux|grep sync.php|grep -v grep|wc -l"));
+        $res = intval(shell_exec("ps aux|grep '".ROOT."/sync.php'|grep -v grep|wc -l"));
         if ($res == 1) {
             $ignore_lock = true;
         }

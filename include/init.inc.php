@@ -127,7 +127,7 @@ if(!defined("MINER_RUN")) {
 		if (!file_exists(MINER_LOCK_PATH)) {
 			_log("File not exists - Staring miner", 1);
 
-			$res = shell_exec("ps uax | grep miner.php | grep -v grep");
+			$res = shell_exec("ps uax | grep '".ROOT."/cli/miner.php' | grep -v grep");
 			_log("Res len=".strlen($res)." var=".json_encode($res)." empty=".empty($res), 4);
 			if(empty($res)) {
 				$dir = ROOT."/cli";
