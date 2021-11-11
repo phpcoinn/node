@@ -163,7 +163,7 @@ class PeerRequest
 		}
 
 		// add to mempool
-		$tx->_add_mempool($ip);
+		$tx->add_mempool($ip);
 
 		// rebroadcast the transaction to some peers unless the transaction is smaller than the average size of transactions in mempool - protect against garbage data flooding
 		$res = $db->row("SELECT COUNT(1) as c, sum(val) as v FROM  mempool ", [":src" => $tx->src]);
