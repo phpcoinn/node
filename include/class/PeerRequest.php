@@ -15,6 +15,9 @@ class PeerRequest
 		if ($_POST['coin'] != COIN) {
 			api_err("Invalid coin ".print_r($_REQUEST, 1));
 		}
+		if ($_POST['version'] != VERSION) {
+			api_err("Invalid version ".print_r($_REQUEST, 1));
+		}
 		$ip = Nodeutil::getRemoteAddr();
 		$requestId = $_POST['requestId'];
 		_log("Peer request from IP = $ip requestId=$requestId",4);

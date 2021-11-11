@@ -285,6 +285,7 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
         [
             'data' => json_encode($data),
             "coin" => COIN,
+	        "version"=>VERSION,
 	        "requestId" => uniqid()
         ]
     );
@@ -337,7 +338,7 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
     $res = json_decode($result, true);
 
     // the function will return false if something goes wrong
-    if ($res['status'] != "ok" || $res['coin'] != COIN) {
+    if ($res['status'] != "ok" || $res['coin'] != COIN || $res['version'] != VERSION) {
     	_log("Peer response to $url not ok res=".json_encode($res));
         return false;
     } else {
