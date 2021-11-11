@@ -1,7 +1,7 @@
 <?php
 // mainnet specification
 const VERSION = "1.0.0";
-const DEVELOPMENT = true;
+const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
 
