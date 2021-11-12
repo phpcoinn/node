@@ -5,7 +5,7 @@
 | Database Configuration
 |--------------------------------------------------------------------------
 */
-$_config['testnet'] = false;
+$_config['testnet'] = file_exists(dirname(__DIR__)."/testnet");
 // The database DSN
 $_config['db_connect'] = 'mysql:host=localhost;dbname=ENTER-DB-NAME';
 // Alternative sqlite db
