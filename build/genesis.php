@@ -23,7 +23,7 @@ $height = 1;
 $generator = Account::getAddress($public_key);
 $data = [];
 
-$msg = 'This is genesis';
+$msg = 'Marty McFly: If you put your mind to it, you can accomplish anything.';
 $transaction = new Transaction($public_key,$generator,num(GENESIS_REWARD),TX_TYPE_REWARD,$block_date,$msg);
 $signature = $transaction->sign($private_key);
 $transaction->hash();
