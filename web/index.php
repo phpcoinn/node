@@ -38,8 +38,7 @@ global $_config;
     <meta charset="utf-8" />
     <title><?php echo COIN_NAME ?> Node</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
-    <meta content="Themesbrand" name="author" />
+    <meta content="PHPCOin - Pure PHP blockchain built for Web" name="description" />
     <!-- App favicon -->
     <link rel="shortcut icon" href="/favicon.ico">
 
