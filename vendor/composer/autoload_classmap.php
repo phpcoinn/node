@@ -6,19 +6,19 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Account' => $baseDir . '/include/class/account.inc.php',
+    'Account' => $baseDir . '/include/class/Account.php',
     'Api' => $baseDir . '/include/class/Api.php',
-    'Block' => $baseDir . '/include/class/block.inc.php',
+    'Block' => $baseDir . '/include/class/Block.php',
     'Blockchain' => $baseDir . '/include/class/Blockchain.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
-    'Miner' => $baseDir . '/include/class/miner.class.php',
-    'NodeMiner' => $baseDir . '/include/class/nodeminer.class.php',
+    'Miner' => $baseDir . '/include/class/Miner.php',
+    'NodeMiner' => $baseDir . '/include/class/NodeMiner.php',
     'NodeSync' => $baseDir . '/include/class/NodeSync.php',
     'Nodeutil' => $baseDir . '/include/class/Nodeutil.php',
     'PHPCoin\\Blacklist' => $baseDir . '/include/class/Blacklist.php',
     'Peer' => $baseDir . '/include/class/Peer.php',
     'PeerRequest' => $baseDir . '/include/class/PeerRequest.php',
-    'Transaction' => $baseDir . '/include/class/transaction.inc.php',
+    'Transaction' => $baseDir . '/include/class/Transaction.php',
     'Util' => $baseDir . '/include/class/Util.php',
     'Wallet' => $baseDir . '/include/class/Wallet.php',
 );

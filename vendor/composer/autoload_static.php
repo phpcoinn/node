@@ -13,19 +13,19 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
     );
 
     public static $classMap = array (
-        'Account' => __DIR__ . '/../..' . '/include/class/account.inc.php',
+        'Account' => __DIR__ . '/../..' . '/include/class/Account.php',
         'Api' => __DIR__ . '/../..' . '/include/class/Api.php',
-        'Block' => __DIR__ . '/../..' . '/include/class/block.inc.php',
+        'Block' => __DIR__ . '/../..' . '/include/class/Block.php',
         'Blockchain' => __DIR__ . '/../..' . '/include/class/Blockchain.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
-        'Miner' => __DIR__ . '/../..' . '/include/class/miner.class.php',
-        'NodeMiner' => __DIR__ . '/../..' . '/include/class/nodeminer.class.php',
+        'Miner' => __DIR__ . '/../..' . '/include/class/Miner.php',
+        'NodeMiner' => __DIR__ . '/../..' . '/include/class/NodeMiner.php',
         'NodeSync' => __DIR__ . '/../..' . '/include/class/NodeSync.php',
         'Nodeutil' => __DIR__ . '/../..' . '/include/class/Nodeutil.php',
         'PHPCoin\\Blacklist' => __DIR__ . '/../..' . '/include/class/Blacklist.php',
         'Peer' => __DIR__ . '/../..' . '/include/class/Peer.php',
         'PeerRequest' => __DIR__ . '/../..' . '/include/class/PeerRequest.php',
-        'Transaction' => __DIR__ . '/../..' . '/include/class/transaction.inc.php',
+        'Transaction' => __DIR__ . '/../..' . '/include/class/Transaction.php',
         'Util' => __DIR__ . '/../..' . '/include/class/Util.php',
         'Wallet' => __DIR__ . '/../..' . '/include/class/Wallet.php',
     );

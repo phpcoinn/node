@@ -31,8 +31,8 @@
     "url": "/doc/"
   },
   "scripts": {
-    "build_doc": "rm -rf doc && node_modules/.bin/apidoc -o doc/ -i ../ -f api.php -f util.php",
-    "build_web_miner": "node_modules/.bin/browserify js/web-miner.js -o ../apps/miner/js/web-miner.js"
+    "build_doc": "rm -rf doc && node_modules/.bin/apidoc -o doc/ -i ../ -f Api.php -f Util.php -f PeerRequest.php",
+    "build_web_miner": "node_modules/.bin/browserify js/web-miner.js -o ../web/apps/miner/js/web-miner.js"
   },
   "dependencies": {
     "stream-browserify": "^3.0.0"
