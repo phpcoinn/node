@@ -45,28 +45,41 @@ if ($q == "info") {
     api_echo($res);
     exit;
 } elseif ($q == "submitHash") {
+
+	$l="submitHash ip=$ip";
+
 	if (empty($_config['generator'])) {
+		$l.=" generator-disabled ";
+		_log($l);
 		api_err("generator-disabled");
 	}
 
 	$nodeScore = $_config['node_score'];
 	if($nodeScore != 100) {
+		$l.=" node-not-ok nodeScore=$nodeScore ";
+		_log($l);
 		api_err("node-not-ok");
 	}
 
 	if (empty($_config['generator_public_key']) && empty($_config['generator_private_key'])) {
+		$l.=" generator-not-configured ";
+		_log($l);
 		api_err("generator-not-configured");
 	}
 
 	$generator = Account::getAddress($_config['generator_public_key']);
 
 	if ($_config['sync'] == 1) {
+		$l.=" sync ";
+		_log($l);
 		api_err("sync");
 	}
 
 	$peers = Peer::getCount();
 	_log("Getting peers count = " . $peers, 5);
 	if ($peers < 3) {
+		$l.=" no-live-peers ";
+		_log($l);
 		api_err("no-live-peers");
 	}
 
@@ -79,10 +92,14 @@ if ($q == "info") {
 	$argon = $_POST['argon'];
 	$data=json_decode($_POST['data'], true);
 
+	$l.=" height=$height address=$address elapsed=$elapsed";
+
 	_log("Submitted new hash from miner $ip height=$height", 4);
 
 	$blockchainHeight = Block::getHeight();
 	if ($blockchainHeight != $height - 1) {
+		$l.=" blockchainHeight=$blockchainHeight rejected - not top block";
+		_log($l);
 		api_err("rejected - not top block height=$height blockchainHeight=$blockchainHeight");
 	}
 
@@ -95,10 +112,14 @@ if ($q == "info") {
 
 	$public_key = Account::publicKey($address);
 	if (empty($public_key)) {
+		$l.=" rejected - no public key";
+		_log($l);
 		api_err("rejected - no public key");
 	}
 
 	if ($date <= $prev_block['date']) {
+		$l.=" rejected - date date=$date prev_block_date=".$prev_block['date'];
+		_log($l);
 		api_err("rejected - date");
 	}
 
@@ -123,22 +144,30 @@ if ($q == "info") {
 	$signature = $block->sign($_config['generator_private_key']);
 	$result = $block->mine();
 
+	$l.=" mine=$result";
+
 	if ($result) {
 		$res = $block->add();
-
+		$l.=" add=$res";
 		if ($res) {
 			$current = Block::current();
 			$dir = ROOT . "/cli";
 			$cmd = "php " . XDEBUG_CLI . " $dir/propagate.php block {$current['id']}  > /dev/null 2>&1  &";
 			_log("Call propagate " . $cmd, 5);
 			shell_exec($cmd);
-			_log("Accepted block from miner $ip block_height=$height block_id=" . $current['id'], 3);
+			_log("Accepted block from miner $ip address=$address block_height=$height elapsed=$elapsed block_id=" . $current['id'], 3);
+			$l.=" ACCEPTED";
+			_log($l);
 			api_echo("accepted");
 		} else {
+			$l.=" REJECTED";
+			_log($l);
 			api_err("rejected - add");
 		}
 
 	} else {
+		$l.=" REJECTED";
+		_log($l);
 		api_err("rejected - mine");
 	}
 } else {

@@ -488,12 +488,9 @@ class Block
 
 			        // check if the account has enough balance to perform the transaction
 			        foreach ($balance as $id => $bal) {
-				        $res = $db->single(
-					        "SELECT COUNT(1) FROM accounts WHERE id=:id AND balance>=:balance",
-					        [":id" => $id, ":balance" => $bal]
-				        );
-				        if ($res == 0) {
-					        _log("Not enough balance for transaction - $id");
+			        	$acc_balance = Account::getBalance($id);
+			        	if(round(floatval($acc_balance),8) < round($bal,8)) {
+					        _log("Not enough balance for transaction - $id balance=$acc_balance bal=$bal");
 					        return false; // not enough balance for the transactions
 				        }
 			        }
