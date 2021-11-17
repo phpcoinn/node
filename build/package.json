@@ -19,12 +19,8 @@
     "nock": "^13.1.0",
     "aws-sdk": "^2.937.0",
     "stream-browserify": "^2.0.2",
-    "readable-stream": {
-      "version": "2.3.6",
-      "dependencies": {
-        "core-util-is": "github:mjmasn/core-util-is"
-      }
-    }
+    "readable-stream": "2.3.6",
+    "axios": "^0.24.0"
   },
   "apidoc": {
     "title": "Custom apiDoc browser title",

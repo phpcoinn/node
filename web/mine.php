@@ -40,17 +40,51 @@ if (!in_array($ip, $_config['allowed_hosts']) && !empty($ip) && !in_array(
     api_err("unauthorized");
 }
 
+function readGeneratorStat() {
+	global $_config;
+	$generator_stat_file = ROOT . '/tmp/generator-stat.json';
+	if(file_exists($generator_stat_file)) {
+		$generator_stat = json_decode(file_get_contents($generator_stat_file), true);
+	} else {
+		$generator_stat = [
+			'address'=>Account::getAddress($_config['generator_public_key']),
+			'started'=>time(),
+			'submits' => 0,
+			'accepted' => 0,
+			'rejected' => 0,
+			'reject-reasons'=>[]
+		];
+	}
+	return $generator_stat;
+}
+
+function saveGeneratorStat($generator_stat) {
+	$generator_stat_file = ROOT . '/tmp/generator-stat.json';
+	file_put_contents($generator_stat_file, json_encode($generator_stat));
+}
+
 if ($q == "info") {
     $res = Blockchain::getMineInfo();
     api_echo($res);
     exit;
+} elseif ($q == "stat") {
+	$generator_stat = readGeneratorStat();
+	api_echo($generator_stat);
+	exit;
 } elseif ($q == "submitHash") {
 
+	$generator_stat = readGeneratorStat();
+
 	$l="submitHash ip=$ip";
+
+	$generator_stat['submits']++;
 
 	if (empty($_config['generator'])) {
 		$l.=" generator-disabled ";
 		_log($l);
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['generator-disabled']++;
+		saveGeneratorStat($generator_stat);
 		api_err("generator-disabled");
 	}
 
@@ -58,12 +92,18 @@ if ($q == "info") {
 	if($nodeScore != 100) {
 		$l.=" node-not-ok nodeScore=$nodeScore ";
 		_log($l);
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['node-not-ok']++;
+		saveGeneratorStat($generator_stat);
 		api_err("node-not-ok");
 	}
 
 	if (empty($_config['generator_public_key']) && empty($_config['generator_private_key'])) {
 		$l.=" generator-not-configured ";
 		_log($l);
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['generator-not-configured']++;
+		saveGeneratorStat($generator_stat);
 		api_err("generator-not-configured");
 	}
 
@@ -72,6 +112,9 @@ if ($q == "info") {
 	if ($_config['sync'] == 1) {
 		$l.=" sync ";
 		_log($l);
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['sync']++;
+		saveGeneratorStat($generator_stat);
 		api_err("sync");
 	}
 
@@ -80,6 +123,9 @@ if ($q == "info") {
 	if ($peers < 3) {
 		$l.=" no-live-peers ";
 		_log($l);
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['no-live-peers']++;
+		saveGeneratorStat($generator_stat);
 		api_err("no-live-peers");
 	}
 
@@ -94,12 +140,19 @@ if ($q == "info") {
 
 	$l.=" height=$height address=$address elapsed=$elapsed";
 
+	if($elapsed == 0 ) {
+		$l.=" REQUEST=".json_encode($_REQUEST);
+	}
+
 	_log("Submitted new hash from miner $ip height=$height", 4);
 
 	$blockchainHeight = Block::getHeight();
 	if ($blockchainHeight != $height - 1) {
 		$l.=" blockchainHeight=$blockchainHeight rejected - not top block";
 		_log($l);
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['rejected - not top block']++;
+		saveGeneratorStat($generator_stat);
 		api_err("rejected - not top block height=$height blockchainHeight=$blockchainHeight");
 	}
 
@@ -114,12 +167,18 @@ if ($q == "info") {
 	if (empty($public_key)) {
 		$l.=" rejected - no public key";
 		_log($l);
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['rejected - no public key']++;
+		saveGeneratorStat($generator_stat);
 		api_err("rejected - no public key");
 	}
 
 	if ($date <= $prev_block['date']) {
 		$l.=" rejected - date date=$date prev_block_date=".$prev_block['date'];
 		_log($l);
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['rejected - date']++;
+		saveGeneratorStat($generator_stat);
 		api_err("rejected - date");
 	}
 
@@ -158,16 +217,24 @@ if ($q == "info") {
 			_log("Accepted block from miner $ip address=$address block_height=$height elapsed=$elapsed block_id=" . $current['id'], 3);
 			$l.=" ACCEPTED";
 			_log($l);
+			$generator_stat['accepted']++;
+			saveGeneratorStat($generator_stat);
 			api_echo("accepted");
 		} else {
 			$l.=" REJECTED";
 			_log($l);
+			$generator_stat['rejected']++;
+			@$generator_stat['reject-reasons']['rejected - add']++;
+			saveGeneratorStat($generator_stat);
 			api_err("rejected - add");
 		}
 
 	} else {
 		$l.=" REJECTED";
 		_log($l);
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['rejected - mine']++;
+		saveGeneratorStat($generator_stat);
 		api_err("rejected - mine");
 	}
 } else {

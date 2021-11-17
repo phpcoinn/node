@@ -111,7 +111,7 @@ class Miner {
 				}
 			}
 
-			if(!$blockFound) {
+			if(!$blockFound || $elapsed <=0) {
 				continue;
 			}
 
@@ -124,7 +124,11 @@ class Miner {
 					'address' => $this->address,
 					'date'=> $new_block_date,
 					'data' => json_encode($data),
-					'elapsed' => $elapsed
+					'elapsed' => $elapsed,
+					'minerInfo'=>[
+						'miner'=>'phpcoin-miner cli',
+						'version'=>VERSION
+					]
 				]
 			);
 

@@ -138,7 +138,7 @@ class WebMiner {
             let data = info.data.data
             let block = info.data.block
             let offset = nodeTime - now
-            let elapsed
+            let elapsed = 0
             let new_block_date
             let argonBase
             let height = parseInt(info.data.height) + 1
@@ -283,7 +283,7 @@ class WebMiner {
 
             }
 
-            if(!blockFound) {
+            if(!blockFound || elapsed<0) {
                 continue
             }
 
@@ -298,7 +298,10 @@ class WebMiner {
                 address,
                 date: new_block_date,
                 data: JSON.stringify(data),
-                elapsed
+                elapsed,
+                minerInfo: {
+                    miner: 'web'
+                }
             }
             response = await axios({
                 method: 'post',
