@@ -398,7 +398,7 @@ class Block
             $this->difficulty = Block::difficulty();
         }
 
-        if($elapsed <=0 ) {
+        if($elapsed <=0 && $this->height > UPDATE_1_BLOCK_ZERO_TIME) {
 	        _log("Block time zero");
 	        return false;
         }
