@@ -398,6 +398,11 @@ class Block
             $this->difficulty = Block::difficulty();
         }
 
+        if($elapsed <=0 ) {
+	        _log("Block time zero");
+	        return false;
+        }
+
 	    //verify argon
 	    if(!$this->verifyArgon($prev_date, $elapsed)) {
 		    _log("Invalid argon={$this->argon}");
