@@ -48,7 +48,7 @@ final class Blacklist
     }
 
     static function checkIp($ip) {
-    	if(in_array($ip, self::IPS)) {
+    	if(count(self::IPS)==0 || !in_array($ip, self::IPS)) {
     		return true;
 	    }
     	return false;
