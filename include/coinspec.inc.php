@@ -37,7 +37,7 @@ const REWARD_SCHEME = [
 		'reward'=> GENESIS_REWARD
 	],
 	'launch'=>[
-		'blocks' => 10000,
+		'blocks' => 50000,
 		'reward'=> 10,
 	],
 	'mining'=>[
@@ -56,4 +56,4 @@ const REWARD_SCHEME = [
 
 const TOTAL_SUPPLY = 210000000;
 const GIT_URL = "https://github.com/phpcoinn/node";
-const UPDATE_1_BLOCK_ZERO_TIME = 8000;
+const UPDATE_1_BLOCK_ZERO_TIME = 9000;
