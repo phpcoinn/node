@@ -93,7 +93,7 @@ if ($q == "info") {
 	}
 
 	$nodeScore = $_config['node_score'];
-	if($nodeScore != 100) {
+	if($nodeScore < MIN_NODE_SCORE) {
 		$l.=" node-not-ok nodeScore=$nodeScore ";
 		_log($l);
 		$generator_stat['rejected']++;

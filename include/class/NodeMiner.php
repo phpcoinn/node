@@ -62,7 +62,7 @@ class NodeMiner {
 			}
 
 			$nodeScore = $_config['node_score'];
-			if($nodeScore != 100) {
+			if($nodeScore < MIN_NODE_SCORE) {
 				_log("Node score not ok");
 				return false;
 			}
@@ -114,7 +114,7 @@ class NodeMiner {
 			}
 
 			$nodeScore = $_config['node_score'];
-			if($nodeScore != 100) {
+			if($nodeScore < MIN_NODE_SCORE) {
 				_log("Node score not ok - mining dropped");
 				$this->miningStat['dropped']++;
 				break;

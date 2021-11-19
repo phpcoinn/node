@@ -54,6 +54,8 @@ const REWARD_SCHEME = [
 	]
 ];
 
+const MIN_NODE_SCORE = 80;
+
 const TOTAL_SUPPLY = 210000000;
 const GIT_URL = "https://github.com/phpcoinn/node";
 const UPDATE_1_BLOCK_ZERO_TIME = 9000;
