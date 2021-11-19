@@ -529,6 +529,15 @@ class Transaction
     	global $db;
 	    $hash = $this->hash();
 
+	    $max_txs = Block::max_transactions();
+	    $mempool_size = Transaction::getMempoolCount();
+
+	    if($mempool_size + 1 > $max_txs) {
+		    $error = "Mempool full";
+		    _log("Not added transaction to mempool because is full: max_txs=$max_txs mempool_size=$mempool_size");
+		    return false;
+	    }
+
 	    if (!$this->check()) {
 		    $error = "Transaction signature failed";
 		    return false;

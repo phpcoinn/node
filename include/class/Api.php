@@ -391,7 +391,7 @@ class Api
 			api_err("Invalid public key");
 		}
 		if ($_config['use_official_blacklist']!==false) {
-			if (\PHPCoin\Blacklist::checkPublicKey($public_key)) {
+			if (Blacklist::checkPublicKey($public_key)) {
 				api_err("Blacklisted account");
 			}
 		}
