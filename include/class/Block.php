@@ -931,7 +931,7 @@ public_key=".$transaction['public_key'],5);
 			$height = self::getHeight();
 		}
 		if($height < UPDATE_1_BLOCK_ZERO_TIME) {
-		return "010000";
+			return "010000";
 		} else {
 			return "010001";
 		}
