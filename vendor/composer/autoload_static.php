@@ -15,6 +15,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
     public static $classMap = array (
         'Account' => __DIR__ . '/../..' . '/include/class/Account.php',
         'Api' => __DIR__ . '/../..' . '/include/class/Api.php',
+        'Blacklist' => __DIR__ . '/../..' . '/include/class/Blacklist.php',
         'Block' => __DIR__ . '/../..' . '/include/class/Block.php',
         'Blockchain' => __DIR__ . '/../..' . '/include/class/Blockchain.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
@@ -22,7 +23,6 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         'NodeMiner' => __DIR__ . '/../..' . '/include/class/NodeMiner.php',
         'NodeSync' => __DIR__ . '/../..' . '/include/class/NodeSync.php',
         'Nodeutil' => __DIR__ . '/../..' . '/include/class/Nodeutil.php',
-        'PHPCoin\\Blacklist' => __DIR__ . '/../..' . '/include/class/Blacklist.php',
         'Peer' => __DIR__ . '/../..' . '/include/class/Peer.php',
         'PeerRequest' => __DIR__ . '/../..' . '/include/class/PeerRequest.php',
         'Transaction' => __DIR__ . '/../..' . '/include/class/Transaction.php',

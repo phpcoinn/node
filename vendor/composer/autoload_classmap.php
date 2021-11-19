@@ -8,6 +8,7 @@ $baseDir = dirname($vendorDir);
 return array(
     'Account' => $baseDir . '/include/class/Account.php',
     'Api' => $baseDir . '/include/class/Api.php',
+    'Blacklist' => $baseDir . '/include/class/Blacklist.php',
     'Block' => $baseDir . '/include/class/Block.php',
     'Blockchain' => $baseDir . '/include/class/Blockchain.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
@@ -15,7 +16,6 @@ return array(
     'NodeMiner' => $baseDir . '/include/class/NodeMiner.php',
     'NodeSync' => $baseDir . '/include/class/NodeSync.php',
     'Nodeutil' => $baseDir . '/include/class/Nodeutil.php',
-    'PHPCoin\\Blacklist' => $baseDir . '/include/class/Blacklist.php',
     'Peer' => $baseDir . '/include/class/Peer.php',
     'PeerRequest' => $baseDir . '/include/class/PeerRequest.php',
     'Transaction' => $baseDir . '/include/class/Transaction.php',
