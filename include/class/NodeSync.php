@@ -100,7 +100,8 @@ class NodeSync
 					if(count(array_keys($next_block_peers))==1) {
 						$id = array_keys($next_block_peers)[0];
 						_log("All peers return same block - checking block $height", 4);
-						$host = array_keys($next_block_peers[$id])[0];
+						$hosts = array_keys($next_block_peers[$id]);
+						$host = $hosts[0];
 						$next_block = $next_block_peers[$id][$host];
 //				_log("Checking block ". print_r($next_block,1));
 						$block = Block::getFromArray($next_block);
@@ -109,6 +110,7 @@ class NodeSync
 							_log("Invalid block mined at height ".$height);
 							$syncing = false;
 							_log("Blacklist node $host");
+							//TODO: blacklist all peers with invalid block and write height of invalid block
 							$peer = Peer::findByHostname($host);
 							Peer::blacklist($peer['id'], 'Invalid block');
 							break;

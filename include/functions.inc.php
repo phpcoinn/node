@@ -277,6 +277,13 @@ function isValidURL($url)
 function peer_post($url, $data = [], $timeout = 60, $debug = false)
 {
     global $_config;
+
+    if(isset($_config) && $_config['offline']==true) {
+	    _log("Peer is set to offline");
+	    return false;
+    }
+
+
     if (!isValidURL($url)) {
     	_log("Not valid peer post url $url");
         return false;

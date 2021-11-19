@@ -8,6 +8,10 @@ class PeerRequest
 	public static $requestId;
 
 	static function processRequest() {
+		global $_config;
+		if(isset($_config) && $_config['offline']==true) {
+			api_err("Peer is set to offline");
+		}
 		if (!empty($_POST['data'])) {
 			$data = json_decode(trim($_POST['data']), true);
 		}

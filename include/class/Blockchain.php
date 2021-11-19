@@ -43,7 +43,7 @@ class Blockchain
 			"data"=>$data,
 			"time"=>time(),
 			"reward"=>num($reward['miner']),
-			"version"=>Block::versionCode()
+			"version"=>Block::versionCode($current['height']+1)
 		];
 		return $res;
 	}

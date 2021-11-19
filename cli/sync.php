@@ -145,6 +145,7 @@ if ($arg == "microsync" && !empty($arg2)) {
 	    _log("Find peer by ip = $arg2", 3);
         // the microsync runs only against 1 specific peer
         $x = Peer::findByIp($arg2);
+	    $current = Block::current();
 
         if (!$x) {
             echo "Invalid node - $arg2\n";
@@ -169,17 +170,16 @@ if ($arg == "microsync" && !empty($arg2)) {
             break;
         }
 
-
-	    $difficulty1 = $current['difficulty'];
-	    $difficulty2 = $data['difficulty'];
-
-	    _log("Comparing difficulty my=$difficulty1 peer=$difficulty2",3);
-
-	    if($difficulty1 < $difficulty2) {
-		    echo "Block difficulty lower than current\n";
-		    _log("Block difficulty lower than current");
-		    break;
-	    }
+//	    $difficulty1 = $current['difficulty'];
+//	    $difficulty2 = $data['difficulty'];
+//
+//	    _log("Comparing difficulty my=$difficulty1 peer=$difficulty2",3);
+//
+//	    if($difficulty1 < $difficulty2) {
+//		    echo "Block difficulty lower than current\n";
+//		    _log("Block difficulty lower than current");
+//		    break;
+//	    }
 
         // delete the last block
         Block::pop(1);
@@ -191,9 +191,14 @@ if ($arg == "microsync" && !empty($arg2)) {
 		$prev = Block::current();
         $block = Block::getFromArray($b);
 	    $block->prevBlockId = $prev['id'];
+	    $res = $block->check();
+	    if (!$res) {
+		    _log("Microsync: block check failed - $b[id] - $b[height]");
+		    break;
+	    }
 	    $res = $block->add();
         if (!$res) {
-            _log("Block add: could not add block - $b[id] - $b[height]");
+            _log("Microsync: could not add block - $b[id] - $b[height]");
             break;
         }
 

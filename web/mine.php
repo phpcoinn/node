@@ -28,6 +28,10 @@ require_once dirname(__DIR__).'/include/init.inc.php';
 set_time_limit(360);
 $q = $_GET['q'];
 
+if(!Nodeutil::miningEnabled()) {
+	api_err("mining-not-enabled");
+}
+
 $ip = Nodeutil::getRemoteAddr();
 $ip = filter_var($ip, FILTER_VALIDATE_IP);
 
@@ -130,11 +134,11 @@ if ($q == "info") {
 	}
 
 	$nonce = san($_POST['nonce']);
-	$version = Block::versionCode();
+	$height = san($_POST['height']);
+	$version = Block::versionCode($height);
 	$address = san($_POST['address']);
 	$elapsed = intval($_POST['elapsed']);
 	$difficulty = san($_POST['difficulty']);
-	$height = san($_POST['height']);
 	$argon = $_POST['argon'];
 	$data=json_decode($_POST['data'], true);
 

@@ -77,7 +77,7 @@ class NodeMiner {
 
 			$attempt = 0;
 
-			$bl = new Block($generator, $generator, $height, null, null, $data, $difficulty, Block::versionCode(), null, $prev_block_id);
+			$bl = new Block($generator, $generator, $height, null, null, $data, $difficulty, Block::versionCode($height), null, $prev_block_id);
 			$bl->publicKey = $this->public_key;
 
 			while (!$blockFound) {

@@ -64,6 +64,11 @@ class Block
 	            return false;
 	        }
 
+	        if($this->version != BLock::versionCode($this->height)) {
+		        _log("Wrong version code");
+		        return false;
+	        }
+
 	        // create the hash / block id
 	        $hash = $this->hash();
 
@@ -104,6 +109,7 @@ class Block
             ":nonce"        => $this->nonce,
             ":difficulty"   => $this->difficulty,
             ":argon"        => $this->argon,
+            ":version"        => $this->version,
             ":transactions" => $total,
         ];
         $res = Block::insert($bind);
@@ -813,8 +819,8 @@ class Block
     	global $db;
 	    $res = $db->run(
 		    "INSERT into blocks 
-				(id, generator, miner, height, `date`, nonce, signature, difficulty, argon, transactions)	
-				values (:id, :generator, :miner, :height, :date, :nonce, :signature, :difficulty, :argon, :transactions)",
+				(id, generator, miner, height, `date`, nonce, signature, difficulty, argon, transactions, version)	
+				values (:id, :generator, :miner, :height, :date, :nonce, :signature, :difficulty, :argon, :transactions, :version)",
 		    $bind
 	    );
 	    return $res;
@@ -906,7 +912,14 @@ public_key=".$transaction['public_key'],5);
 		return true;
 	}
 
-	static function versionCode() {
+	static function versionCode($height=null) {
+		if($height == null) {
+			$height = self::getHeight();
+		}
+		if($height < UPDATE_1_BLOCK_ZERO_TIME) {
 		return "010000";
+		} else {
+			return "010001";
+		}
 	}
 }

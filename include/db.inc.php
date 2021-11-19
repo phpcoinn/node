@@ -57,7 +57,8 @@ class DB extends PDO
             $msg .= "\n\n$key:\n$val";
         }
         _log($msg, 5);
-        
+        _log("SQL ERROR:" . json_encode($this->sql));
+        _log("SQL ERROR:" . json_encode($this->error));
     }
 
     private function cleanup($bind, $sql = "")
