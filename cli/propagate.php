@@ -208,7 +208,7 @@ if ($type == "transaction") {
 
 if($type == "apps") {
 	_log("Propagating apps change",3);
-	$peers = Peer::getActive();
+	$peers = Peer::getAll();
 	if(count($peers)==0) {
 		_log("No peers to propagate");
 	} else {
