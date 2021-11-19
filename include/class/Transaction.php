@@ -73,6 +73,12 @@ class Transaction
         $db->run("DELETE FROM mempool WHERE height<:limit", [":limit" => $limit]);
     }
 
+    public static function empty_mempool()
+    {
+        global $db;
+        $db->run("DELETE FROM mempool");
+    }
+
     public static function getFromDbRecord($x) {
 	    $trans = new Transaction($x['public_key'],$x['dst'],$x['val'],intval($x['type']),intval($x['date']),$x['message']);
 	    $trans->id = $x['id'];

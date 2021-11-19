@@ -1,7 +1,5 @@
 <?php
 
-namespace PHPCoin;
-
 /**
  * Class Blacklist
  */
@@ -23,6 +21,10 @@ final class Blacklist
         // phpcs:enable
     ];
 
+	public const IPS = [
+
+	];
+
     /**
      * Check if a public key is blacklisted
      *
@@ -43,5 +45,12 @@ final class Blacklist
     public static function checkAddress(string $address): bool
     {
         return key_exists($address, static::ADDRESSES);
+    }
+
+    static function checkIp($ip) {
+    	if(in_array($ip, self::IPS)) {
+    		return true;
+	    }
+    	return false;
     }
 }

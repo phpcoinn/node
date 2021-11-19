@@ -371,6 +371,13 @@ class Block
 			return false;
 		}
 
+		$version = $this->version;
+		$expected_version = Block::versionCode($this->height);
+		if($expected_version != $version) {
+			_log("Block check height ".$this->height.": invalid version - expected $expected_version got $version");
+			return false;
+		}
+
 		//check the argon hash and the nonce to produce a valid block
 		if (!$this->mine()) {
 			_log("Mine check failed");
@@ -839,6 +846,13 @@ class Block
 
 		if(count($data)==0 && $height>1) {
 			_log("No transactions");
+			return false;
+		}
+
+		$version = $this->version;
+		$expected_version = Block::versionCode($this->height);
+		if($expected_version != $version) {
+			_log("Block check: invalid version - expected ");
 			return false;
 		}
 

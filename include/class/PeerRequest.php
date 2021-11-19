@@ -37,6 +37,10 @@ class PeerRequest
 			$ip = $ip . ":81";
 		}
 
+		if(!Blacklist::checkIp($ip)) {
+			api_err("blocked-ip");
+		}
+
 		self::$ip=$ip;
 		self::$data=$data;
 		self::$requestId=$requestId;
@@ -115,7 +119,8 @@ class PeerRequest
 	static function submitTransaction() {
 		$data = self::$data;
 		global $db, $_config;
-		_log("receive a new transaction from a peer",2);
+
+		_log("receive a new transaction from a peer from ".self::$ip,2);
 		_log("data: ".json_encode($data),3);
 
 		$tx = Transaction::getFromArray($data);

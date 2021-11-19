@@ -188,16 +188,19 @@ class Util
 			$max_height = $x['height'];
 		}
 		for ($i = 2; $i <= $max_height; $i++) {
+			self::log("Checking block $i / $max_height") ;
 			$data = $blocks[$i];
 
-			$key = $db->single("SELECT public_key FROM accounts WHERE id=:id", [":id" => $data['generator']]);
-			$block = Block::getFromArray($data);
-			$block->publicKey = $key;
-			if (!$block->mine()) {
-				_log("Invalid block detected. We should delete everything after $data[height] - $data[id]");
+			$block = Block::export($data['id']);
+			if (!Block::getFromArray($block)->verifyBlock()) {
+				self::log("Invalid block detected. We should delete everything after $data[height] - $data[id]");
 				break;
 			}
 		}
+	}
+
+	static function log($s) {
+		echo $s . PHP_EOL;
 	}
 
 	/**
@@ -770,6 +773,10 @@ class Util
 	static function clearPeers() {
 		Peer::deleteAll();
 		echo "Deleted peers database".PHP_EOL;
+	}
+
+	static function emptyMempool() {
+		Transaction::empty_mempool();
 	}
 
 }

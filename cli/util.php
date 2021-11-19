@@ -30,12 +30,13 @@ if (php_sapi_name() !== 'cli') {
     die("This should only be run as cli");
 }
 
-//define("CLI_UTIL", true);
-
 require_once dirname(__DIR__).'/include/init.inc.php';
 $cmd = trim($argv[1]);
 
-
+$log = getenv("LOG");
+if(!$log) {
+	define("CLI_UTIL", true);
+}
 
 
 if(method_exists(Util::class, $cmd)) {
@@ -85,6 +86,8 @@ verify-blocks                               - Verify all blocks in blockchain
 exportchain [<file>]                        - Export blockchain to file
 importchain <file> [<verify>]               - Import and verify blocks from file
 clear-peers                                 - Clear peers database
+empty-mempool                               - Empty mempool
+
 ";
 	}
 }
