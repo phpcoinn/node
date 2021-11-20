@@ -179,7 +179,7 @@ class NodeSync
 		$skipped_peer = 0;
 		$failed_block = 0;
 		$ok_block = 0;
-		$peers = Peer::getPeers();
+		$peers = Peer::getAll();
 		$peers_count = count($peers);
 		$current = Block::current();
 		if ($peers_count) {
