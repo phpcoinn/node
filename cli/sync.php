@@ -380,12 +380,6 @@ foreach ($r as $x) {
     $data['id'] = san($data['id']);
     $data['height'] = san($data['height']);
 
-    $peer_score = floatval($info['score']);
-    if($peer_score < MIN_NODE_SCORE) {
-	    Peer::blacklistStuck($x['id'],"Score below min: score=$peer_score min=".MIN_NODE_SCORE);
-	    continue;
-    }
-
     if ($current['height'] > 1 && $data['height'] < $current['height'] - 500) {
 	    _log("blacklist peer $url because is 500 blocks behind, our height=".$current['height']." peer_height=".$data['height']);
         Peer::blacklistStuck($x['id'],"500 blocks behind");
