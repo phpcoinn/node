@@ -289,7 +289,7 @@ if ($total_peers == 0) {
         }
     }
     // count the total peers we have
-    $total_peers = Peer::getCount(true);
+    $total_peers = Peer::getCountAll();
     if ($total_peers == 0) {
         // something went wrong, could not add any peers -> exit
         @unlink(SYNC_LOCK_PATH);

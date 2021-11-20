@@ -17,6 +17,13 @@ class Peer
 		return $row['cnt'];
 	}
 
+	static function getCountAll() {
+		global $db;
+		$sql="select count(*) as cnt from peers";
+		$row = $db->row($sql);
+		return $row['cnt'];
+	}
+
 	static function getAll() {
 		global $db;
 		$sql="select * from peers";
