@@ -5,7 +5,8 @@
     "require": {
       "ext-pcntl": "*",
         "ext-json": "*",
-      "ext-openssl": "*"
+      "ext-openssl": "*",
+      "ext-gd": "*"
     },
     "autoload": {
         "classmap": ["include/class"],
