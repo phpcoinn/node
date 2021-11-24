@@ -179,7 +179,7 @@ class NodeSync
 		$skipped_peer = 0;
 		$failed_block = 0;
 		$ok_block = 0;
-		$peers = Peer::getAll();
+		$peers = Peer::getActive();
 		$peers_count = count($peers);
 		$current = Block::current();
 		if ($peers_count) {
@@ -202,7 +202,7 @@ class NodeSync
 		}
 
 		if($peers_count - $skipped_peer == 0 ) {
-			$node_score = 0;
+			$node_score = 100;
 		} else {
 			$node_score = ($ok_block / ($peers_count  - $skipped_peer))*100;
 		}
