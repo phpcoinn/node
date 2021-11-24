@@ -11,6 +11,7 @@ class Minepool
 	public static function checkIp($address, $ip, $height, $iphash, $miner)
 	{
 		global $db, $_config;
+		_log("Minepool: checkIp address=$address ip=$ip iphash=$iphash");
 		$sql = "select * from minepool where iphash=:iphash";
 		$row=$db->row($sql, [":iphash" => $iphash]);
 		if($row) {
@@ -56,6 +57,15 @@ class Minepool
 			}
 		}
 		return true;
+	}
+
+	public static function deleteOldEntries() {
+		global $db;
+		$current = Block::getHeight();
+		$height = $current - 60;
+		$sql="delete from minepool where height < :$height";
+		$res = $db->run($sql,[$height]);
+		_log("Minepool: deleted old entries " . $res);
 	}
 
 }
