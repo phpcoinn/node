@@ -160,6 +160,20 @@ if (empty($dbversion)) {
 	$dbversion = 1;
 }
 
+if($dbversion == 1) {
+	$db->run('create table minepool 
+	(
+		miner varchar(255) null,
+		address varchar(128) not null,
+		height int not null,
+		iphash varchar(128) not null
+	);');
+
+	$db->run("create index val on minepool (iphash);");
+
+	$dbversion = 2;
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);

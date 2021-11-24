@@ -67,6 +67,25 @@ class Miner {
 				continue;
 			}
 
+			if(!isset($info['data']['generator'])) {
+				_log("Miner node does not send generator address");
+				sleep(3);
+				continue;
+			}
+
+			if(!isset($info['data']['ip'])) {
+				_log("Miner node does not send ip address");
+				sleep(3);
+				continue;
+			}
+
+			$ip = $info['data']['ip'];
+			if(!Peer::validateIp($ip)) {
+				_log("Miner does not have valid ip address: $ip");
+				sleep(3);
+				continue;
+			}
+
 			$height = $info['data']['height']+1;
 			$block_date = $info['data']['date'];
 			$difficulty = $info['data']['difficulty'];
@@ -98,7 +117,7 @@ class Miner {
 				$blockFound = ($hit > 0 && $target>=0 &&  $hit > $target);
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
-				if($attempt % 10 == 0) {
+				if($attempt % 10 == 0 && false) {
 					$info = $this->getMiningInfo();
 					if($info!==false) {
 						_log("Checking new block from server ".$info['data']['block']. " with our block $prev_block_id", 4);
@@ -115,6 +134,15 @@ class Miner {
 				continue;
 			}
 
+			$options = HASHING_OPTIONS;
+			$generator_address = $info['data']['generator'];
+			$options['salt']=substr($generator_address, 0, 16);
+			$argon = @password_hash(
+				$ip,
+				HASHING_ALGO,
+				$options
+			);
+
 			$postData = http_build_query(
 				[
 					'argon' => $bl->argon,
@@ -128,7 +156,8 @@ class Miner {
 					'minerInfo'=>[
 						'miner'=>'phpcoin-miner cli',
 						'version'=>VERSION
-					]
+					],
+					'iphash'=>$argon
 				]
 			);
 

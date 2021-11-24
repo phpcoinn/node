@@ -31,6 +31,7 @@ class Blockchain
 	}
 
 	static function getMineInfo() {
+		global $_config;
 		$diff = Block::difficulty();
 		$current = Block::current();
 		$data = Transaction::mempool(Block::max_transactions());
@@ -43,8 +44,11 @@ class Blockchain
 			"data"=>$data,
 			"time"=>time(),
 			"reward"=>num($reward['miner']),
-			"version"=>Block::versionCode($current['height']+1)
+			"version"=>Block::versionCode($current['height']+1),
+			"generator"=>Account::getAddress($_config['generator_public_key']),
+			"ip"=>$_SERVER['REMOTE_ADDR']
 		];
+//		_log("getMineInfo: ".json_encode($res), 5);
 		return $res;
 	}
 

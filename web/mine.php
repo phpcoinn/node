@@ -133,8 +133,33 @@ if ($q == "info") {
 		api_err("no-live-peers");
 	}
 
-	$nonce = san($_POST['nonce']);
+	if(!isset($_POST['iphash'])) {
+		//TODO: not stop
+		$l.=" rejected - no iphash";
+		_log($l);
+		//$generator_stat['rejected']++;
+		//@$generator_stat['reject-reasons']['iphash-not-submit']++;
+		//api_err("iphash-not-submit");
+	}
+
+	$address = san($_POST['address']);
+	$iphash = $_POST['iphash'];
 	$height = san($_POST['height']);
+	$minerInfo = "";
+	if(isset($_POST['minerInfo'])) {
+		$minerInfo=$_POST['minerInfo']['miner']." ".$_POST['minerInfo']['version'];
+	}
+	$res = Minepool::checkIp($address, $ip, $height, $iphash, $minerInfo);
+	if(!$res) {
+		//TODO: not stop
+		$l.=" rejected - IP hash check not pass";
+		_log($l);
+		//$generator_stat['rejected']++;
+		//@$generator_stat['reject-reasons']['iphash-check-failed']++;
+		//api_err("iphash-check-failed");
+	}
+
+	$nonce = san($_POST['nonce']);
 	$version = Block::versionCode($height);
 	$address = san($_POST['address']);
 	$elapsed = intval($_POST['elapsed']);
@@ -184,6 +209,16 @@ if ($q == "info") {
 		@$generator_stat['reject-reasons']['rejected - date']++;
 		saveGeneratorStat($generator_stat);
 		api_err("rejected - date");
+	}
+
+	$res=Minepool::insert($address, $height, $minerInfo, $iphash);
+	if(!$res) {
+		//TODO: not stop
+		$l.=" rejected - Can not insert in minepool";
+		_log($l);
+		//$generator_stat['rejected']++;
+		//@$generator_stat['reject-reasons']['minepool-error']++;
+		//api_err("minepool-error");
 	}
 
 	$lastBlock = Block::current();

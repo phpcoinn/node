@@ -313,7 +313,7 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
 
 //    $context = stream_context_create($opts);
 
-    _log("Posting to $url data ".$postdata, 4);
+    _log("Posting to $url data ".$postdata." timeout=$timeout", 4);
 
 	$ch = curl_init();
 
@@ -324,7 +324,8 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 	curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, !DEVELOPMENT);
 	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
-	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+	curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 	$result = curl_exec($ch);
 
 	$curl_error = curl_errno($ch);
@@ -341,7 +342,7 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
 
 
 //    $result = file_get_contents($url, false, $context);
-//    _log("Peer response: ".$result, 4);
+    _log("Peer response: ".$result, 5);
     $res = json_decode($result, true);
 
     // the function will return false if something goes wrong

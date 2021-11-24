@@ -12,6 +12,7 @@ return array(
     'Block' => $baseDir . '/include/class/Block.php',
     'Blockchain' => $baseDir . '/include/class/Blockchain.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
+    'Minepool' => $baseDir . '/include/class/Minepool.php',
     'Miner' => $baseDir . '/include/class/Miner.php',
     'NodeMiner' => $baseDir . '/include/class/NodeMiner.php',
     'NodeSync' => $baseDir . '/include/class/NodeSync.php',
