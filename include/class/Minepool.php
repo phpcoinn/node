@@ -18,7 +18,7 @@ class Minepool
 		$row=$db->row($sql, [":iphash" => $iphash]);
 		if($row) {
 			if($row['address']!=$address) {
-				_log("Check ip failed: Address not valid, submitted: $address, in DB: ".$row['address']);
+				_log("Check ip failed: Address not valid, submitted: $address, in DB: ".$row['address']." row=".json_encode($row));
 				return false;
 			}
 		}
@@ -27,10 +27,10 @@ class Minepool
 
 	public static function insert($address, $height, $miner, $ip) {
 		global $db;
-		$sql = "select * from minepool where address=:address";
-		$row=$db->row($sql, [":address" => $address]);
+		$iphash = self::calculateIpHash($ip);
+		$sql = "select * from minepool where iphash=:iphash";
+		$row=$db->row($sql, [":iphash" => $iphash]);
 		if(!$row) {
-			$iphash = self::calculateIpHash($ip);
 			$sql="insert into minepool (address, height, miner, iphash) values (:address, :height, :miner, :iphash)";
 			$bind = [":address"=>$address, ":height"=>$height, ":miner" => $miner, ":iphash" => $iphash];
 			$res = $db->run($sql, $bind);
@@ -46,8 +46,8 @@ class Minepool
 		global $db;
 		$current = Block::getHeight();
 		$height = $current - 60;
-		$sql="delete from minepool where height < :$height";
-		$res = $db->run($sql,[$height]);
+		$sql="delete from minepool where height < :height";
+		$res = $db->run($sql,[":height"=>$height]);
 		_log("Minepool: deleted old entries " . $res);
 	}
 

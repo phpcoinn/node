@@ -170,8 +170,14 @@ if($dbversion == 1) {
 	);');
 
 	$db->run("create index val on minepool (iphash);");
+	$db->run("create unique index minepool_iphash_uindex on minepool (iphash);");
 
 	$dbversion = 2;
+}
+
+if($dbversion == 2) {
+	$db->run('alter table peers add version varchar(20) null;');
+	$dbversion = 3;
 }
 
 // update the db version to the latest one

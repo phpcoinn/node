@@ -132,7 +132,8 @@ class Peer
 		return [
 			"height" => Block::getHeight(),
 			"appshash" => $appsHash,
-			"score"=>$_config['node_score']
+			"score"=>$_config['node_score'],
+			"version"=> VERSION . "." . BUILD_VERSION
 		];
 	}
 
@@ -239,8 +240,9 @@ class Peer
 
 	static function updateInfo($id, $info) {
 		global $db;
-		$db->run("UPDATE peers SET height=:height, appshash=:appshash, score=:score WHERE id=:id",
-			[":id" => $id, ':height'=>$info['height'], ':appshash'=>$info['appshash'], ':score'=>$info['score']]);
+		$db->run("UPDATE peers SET height=:height, appshash=:appshash, score=:score, version=:version WHERE id=:id",
+			[":id" => $id, ':height'=>$info['height'], ':appshash'=>$info['appshash'],
+				':score'=>$info['score'], ':version' => $info['version']]);
 	}
 
 	static function storePing($url) {
