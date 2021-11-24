@@ -134,15 +134,6 @@ class Miner {
 				continue;
 			}
 
-			$options = HASHING_OPTIONS;
-			$generator_address = $info['data']['generator'];
-			$options['salt']=substr($generator_address, 0, 16);
-			$argon = @password_hash(
-				$ip,
-				HASHING_ALGO,
-				$options
-			);
-
 			$postData = http_build_query(
 				[
 					'argon' => $bl->argon,
@@ -156,8 +147,7 @@ class Miner {
 					'minerInfo'=>[
 						'miner'=>'phpcoin-miner cli',
 						'version'=>VERSION
-					],
-					'iphash'=>$argon
+					]
 				]
 			);
 
