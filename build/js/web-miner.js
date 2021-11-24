@@ -299,9 +299,7 @@ class WebMiner {
                 date: new_block_date,
                 data: JSON.stringify(data),
                 elapsed,
-                minerInfo: {
-                    miner: 'web'
-                }
+                minerInfo: 'web'
             }
             response = await axios({
                 method: 'post',

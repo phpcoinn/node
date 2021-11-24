@@ -144,7 +144,7 @@ if ($q == "info") {
 	$height = san($_POST['height']);
 	$minerInfo = "";
 	if (isset($_POST['minerInfo'])) {
-		$minerInfo = $_POST['minerInfo']['miner'] . " " . $_POST['minerInfo']['version'];
+		$minerInfo = $_POST['minerInfo'];
 	}
 	$res = Minepool::checkIp($address, $ip);
 	if (!$res) {

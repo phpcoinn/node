@@ -40,6 +40,19 @@ class Miner {
 		return $info;
 	}
 
+	function checkAddress() {
+		$url = $this->node."/mine.php?q=checkAddress";
+		$postdata = http_build_query([
+			"address"=>$this->address
+		]);
+		$res = url_post($url, $postdata);
+		$data = json_decode($res, true);
+		if ($data['status'] == "ok" && $data['data']==$this->address) {
+			return true;
+		}
+		return false;
+	}
+
 	function start() {
 		global $_config;
 		$this->miningStat = [
@@ -85,6 +98,13 @@ class Miner {
 				sleep(3);
 				continue;
 			}
+
+			//TODO: miner-ip-check
+//			if(!$this->checkAddress()) {
+//				_log("Miner is not allowed to mine to address from this ip");
+//				sleep(3);
+//				continue;
+//			}
 
 			$height = $info['data']['height']+1;
 			$block_date = $info['data']['date'];
@@ -144,10 +164,7 @@ class Miner {
 					'date'=> $new_block_date,
 					'data' => json_encode($data),
 					'elapsed' => $elapsed,
-					'minerInfo'=>[
-						'miner'=>'phpcoin-miner cli',
-						'version'=>VERSION
-					]
+					'minerInfo'=>'phpcoin-miner cli ' . VERSION
 				]
 			);
 
