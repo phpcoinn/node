@@ -79,12 +79,12 @@ if ($q == "info") {
 
 	$generator_stat = readGeneratorStat();
 
-	$l="submitHash ip=$ip";
+	$l = "submitHash ip=$ip";
 
 	$generator_stat['submits']++;
 
 	if (empty($_config['generator'])) {
-		$l.=" generator-disabled ";
+		$l .= " generator-disabled ";
 		_log($l);
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['generator-disabled']++;
@@ -93,8 +93,8 @@ if ($q == "info") {
 	}
 
 	$nodeScore = $_config['node_score'];
-	if($nodeScore < MIN_NODE_SCORE) {
-		$l.=" node-not-ok nodeScore=$nodeScore ";
+	if ($nodeScore < MIN_NODE_SCORE) {
+		$l .= " node-not-ok nodeScore=$nodeScore ";
 		_log($l);
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['node-not-ok']++;
@@ -103,7 +103,7 @@ if ($q == "info") {
 	}
 
 	if (empty($_config['generator_public_key']) && empty($_config['generator_private_key'])) {
-		$l.=" generator-not-configured ";
+		$l .= " generator-not-configured ";
 		_log($l);
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['generator-not-configured']++;
@@ -114,7 +114,7 @@ if ($q == "info") {
 	$generator = Account::getAddress($_config['generator_public_key']);
 
 	if ($_config['sync'] == 1) {
-		$l.=" sync ";
+		$l .= " sync ";
 		_log($l);
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['sync']++;
@@ -125,7 +125,7 @@ if ($q == "info") {
 	$peers = Peer::getCount();
 	_log("Getting peers count = " . $peers, 5);
 	if ($peers < 3) {
-		$l.=" no-live-peers ";
+		$l .= " no-live-peers ";
 		_log($l);
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['no-live-peers']++;
@@ -133,26 +133,23 @@ if ($q == "info") {
 		api_err("no-live-peers");
 	}
 
-	if(!isset($_POST['iphash'])) {
-		//TODO: not stop
-		$l.=" rejected - no iphash";
-		_log($l);
-		//$generator_stat['rejected']++;
-		//@$generator_stat['reject-reasons']['iphash-not-submit']++;
-		//api_err("iphash-not-submit");
-	}
+//	if (!isset($_POST['iphash'])) {
+//		$iphash = Minepool::calculateIpHash($ip);
+//		_log("Minepool: calculated hash $iphash");
+//	} else {
+//		$iphash = $_POST['iphash'];
+//	}
 
 	$address = san($_POST['address']);
-	$iphash = $_POST['iphash'];
 	$height = san($_POST['height']);
 	$minerInfo = "";
-	if(isset($_POST['minerInfo'])) {
-		$minerInfo=$_POST['minerInfo']['miner']." ".$_POST['minerInfo']['version'];
+	if (isset($_POST['minerInfo'])) {
+		$minerInfo = $_POST['minerInfo']['miner'] . " " . $_POST['minerInfo']['version'];
 	}
-	$res = Minepool::checkIp($address, $ip, $height, $iphash, $minerInfo);
-	if(!$res) {
+	$res = Minepool::checkIp($address, $ip);
+	if (!$res) {
 		//TODO: not stop
-		$l.=" rejected - IP hash check not pass";
+		$l .= " rejected - IP hash check not pass";
 		_log($l);
 		//$generator_stat['rejected']++;
 		//@$generator_stat['reject-reasons']['iphash-check-failed']++;
@@ -165,19 +162,19 @@ if ($q == "info") {
 	$elapsed = intval($_POST['elapsed']);
 	$difficulty = san($_POST['difficulty']);
 	$argon = $_POST['argon'];
-	$data=json_decode($_POST['data'], true);
+	$data = json_decode($_POST['data'], true);
 
-	$l.=" height=$height address=$address elapsed=$elapsed";
+	$l .= " height=$height address=$address elapsed=$elapsed";
 
-	if($elapsed == 0 ) {
-		$l.=" REQUEST=".json_encode($_REQUEST);
+	if ($elapsed == 0) {
+		$l .= " REQUEST=" . json_encode($_REQUEST);
 	}
 
 	_log("Submitted new hash from miner $ip height=$height", 4);
 
 	$blockchainHeight = Block::getHeight();
 	if ($blockchainHeight != $height - 1) {
-		$l.=" blockchainHeight=$blockchainHeight rejected - not top block";
+		$l .= " blockchainHeight=$blockchainHeight rejected - not top block";
 		_log($l);
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['rejected - not top block']++;
@@ -194,7 +191,7 @@ if ($q == "info") {
 
 	$public_key = Account::publicKey($address);
 	if (empty($public_key)) {
-		$l.=" rejected - no public key";
+		$l .= " rejected - no public key";
 		_log($l);
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['rejected - no public key']++;
@@ -203,7 +200,7 @@ if ($q == "info") {
 	}
 
 	if ($date <= $prev_block['date']) {
-		$l.=" rejected - date date=$date prev_block_date=".$prev_block['date'];
+		$l .= " rejected - date date=$date prev_block_date=" . $prev_block['date'];
 		_log($l);
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['rejected - date']++;
@@ -211,10 +208,10 @@ if ($q == "info") {
 		api_err("rejected - date");
 	}
 
-	$res=Minepool::insert($address, $height, $minerInfo, $iphash);
-	if(!$res) {
+	$res = Minepool::insert($address, $height, $minerInfo, $ip);
+	if (!$res) {
 		//TODO: not stop
-		$l.=" rejected - Can not insert in minepool";
+		$l .= " rejected - Can not insert in minepool";
 		_log($l);
 		//$generator_stat['rejected']++;
 		//@$generator_stat['reject-reasons']['minepool-error']++;
@@ -242,11 +239,11 @@ if ($q == "info") {
 	$signature = $block->sign($_config['generator_private_key']);
 	$result = $block->mine();
 
-	$l.=" mine=$result";
+	$l .= " mine=$result";
 
 	if ($result) {
 		$res = $block->add();
-		$l.=" add=$res";
+		$l .= " add=$res";
 		if ($res) {
 			$current = Block::current();
 			$dir = ROOT . "/cli";
@@ -254,13 +251,13 @@ if ($q == "info") {
 			_log("Call propagate " . $cmd, 5);
 			shell_exec($cmd);
 			_log("Accepted block from miner $ip address=$address block_height=$height elapsed=$elapsed block_id=" . $current['id'], 3);
-			$l.=" ACCEPTED";
+			$l .= " ACCEPTED";
 			_log($l);
 			$generator_stat['accepted']++;
 			saveGeneratorStat($generator_stat);
 			api_echo("accepted");
 		} else {
-			$l.=" REJECTED";
+			$l .= " REJECTED";
 			_log($l);
 			$generator_stat['rejected']++;
 			@$generator_stat['reject-reasons']['rejected - add']++;
@@ -269,12 +266,24 @@ if ($q == "info") {
 		}
 
 	} else {
-		$l.=" REJECTED";
+		$l .= " REJECTED";
 		_log($l);
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['rejected - mine']++;
 		saveGeneratorStat($generator_stat);
 		api_err("rejected - mine");
+	}
+} else if ($q == "checkAddress") {
+	$address = $_POST['address'];
+	if(empty($address)) {
+		api_err("address-not-specified");
+	}
+	_log("Check mine access to ip: $ip address=$address");
+	$res = Minepool::checkIp($address, $ip);
+	if($res) {
+		api_echo($address);
+	} else {
+		api_err("ipcheck-failed");
 	}
 } else {
     api_err("invalid command");

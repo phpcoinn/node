@@ -8,46 +8,29 @@ class Minepool
 	public $miner;
 	public $iphash;
 
-	public static function checkIp($address, $ip, $height, $iphash, $miner)
+	public static function checkIp($address, $ip)
 	{
 		global $db, $_config;
+
+		$iphash = self::calculateIpHash($ip);
 		_log("Minepool: checkIp address=$address ip=$ip iphash=$iphash");
 		$sql = "select * from minepool where iphash=:iphash";
 		$row=$db->row($sql, [":iphash" => $iphash]);
 		if($row) {
-			//validate iphash
-			$ip_verified = password_verify($ip, $iphash);
-			if(!$ip_verified) {
-				_log("Check ip failed: Argon not verified - ip=$ip argon=$iphash address=$address");
-				return false;
-			} else {
-				if($row['address']!=$address) {
-					_log("Check ip failed: Address not valid, submitted: $address, in DB: ".$row['address']);
-					return false;
-				}
-			}
-		} else {
-			$options = HASHING_OPTIONS;
-			$generator_address = Account::getAddress($_config['generator_public_key']);
-			$options['salt']=substr($generator_address, 0, 16);
-			$argon = @password_hash(
-				$ip,
-				HASHING_ALGO,
-				$options
-			);
-			if($argon != $iphash) {
-				_log("Check ip failed: Iphash not valid, submited: $iphash, calculated: $argon");
+			if($row['address']!=$address) {
+				_log("Check ip failed: Address not valid, submitted: $address, in DB: ".$row['address']);
 				return false;
 			}
 		}
 		return true;
 	}
 
-	public static function insert($address, $height, $miner, $iphash) {
+	public static function insert($address, $height, $miner, $ip) {
 		global $db;
 		$sql = "select * from minepool where address=:address";
 		$row=$db->row($sql, [":address" => $address]);
 		if(!$row) {
+			$iphash = self::calculateIpHash($ip);
 			$sql="insert into minepool (address, height, miner, iphash) values (:address, :height, :miner, :iphash)";
 			$bind = [":address"=>$address, ":height"=>$height, ":miner" => $miner, ":iphash" => $iphash];
 			$res = $db->run($sql, $bind);
@@ -67,5 +50,19 @@ class Minepool
 		$res = $db->run($sql,[$height]);
 		_log("Minepool: deleted old entries " . $res);
 	}
+
+	public static function calculateIpHash($ip) {
+		global $_config;
+		$options = HASHING_OPTIONS;
+		$generator_address = Account::getAddress($_config['generator_public_key']);
+		$options['salt'] = substr($generator_address, 0, 16);
+		$iphash = @password_hash(
+			$ip,
+			HASHING_ALGO,
+			$options
+		);
+		return $iphash;
+	}
+
 
 }
