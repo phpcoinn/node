@@ -117,7 +117,7 @@ class Miner {
 				$blockFound = ($hit > 0 && $target>=0 &&  $hit > $target);
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
-				if($attempt % 10 == 0 && false) {
+				if($attempt % 10 == 0) {
 					$info = $this->getMiningInfo();
 					if($info!==false) {
 						_log("Checking new block from server ".$info['data']['block']. " with our block $prev_block_id", 4);
