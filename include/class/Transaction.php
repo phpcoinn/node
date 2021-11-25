@@ -255,6 +255,7 @@ class Transaction
 		}
 		if($res === false) {
 			_log("Error updating balance for transaction ".$this->id);
+			return false;
 		}
 
 		$db->run("DELETE FROM mempool WHERE id=:id", [":id" => $this->id]);
