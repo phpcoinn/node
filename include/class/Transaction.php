@@ -320,6 +320,16 @@ class Transaction
             return false;
         }
 
+        if($this->type==TX_TYPE_REWARD) {
+        	//TODO: set check height
+            $res = $this->checkRewards($height);
+            if(!$res) {
+                //_log("Transaction rewards check failed");
+                //return false;
+	        }
+        }
+
+
         if ($this->type==TX_TYPE_SEND) {
             // invalid destination address
             if (!Account::valid($this->dst)) {
@@ -364,6 +374,37 @@ class Transaction
         }
 
         return true;
+    }
+
+    function checkRewards($height) {
+		$reward = Block::reward($height);
+		$msg = $this->msg;
+		if(empty($msg)) {
+			_log("Reward transaction message missing");
+			return false;
+		}
+		if(!in_array($msg, ["nodeminer", "miner", "generator"])) {
+			_log("Reward transaction invalid message");
+			return false;
+		}
+		$miner = $reward['miner'];
+		$generator = $reward['generator'];
+		if($msg == "nodeminer") {
+			$val_check = num($miner + $generator);
+		} else if ($msg == "miner") {
+			$val_check = num($miner);
+		} else if ($msg == "generator") {
+			$val_check = num($generator);
+		}
+		if(empty($val_check)) {
+			_log("Reward transaction no value");
+			return false;
+		}
+		if(!number_format($this->val,8) != $val_check) {
+			_log("Reward transaction not valid");
+			return false;
+		}
+		return false;
     }
 
 	public function sign($private_key)
@@ -502,8 +543,7 @@ class Transaction
         return $trans;
     }
 
-    static function getRewardTransaction($dst,$date,$public_key,$private_key,$reward) {
-	    $msg = '';
+    static function getRewardTransaction($dst,$date,$public_key,$private_key,$reward, $msg) {
 	    $transaction = new Transaction($public_key,$dst,$reward,TX_TYPE_REWARD,$date,$msg);
 	    $signature = $transaction->sign($private_key);
 	    $transaction->hash();

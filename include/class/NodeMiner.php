@@ -124,7 +124,7 @@ class NodeMiner {
 			$rewardinfo = Block::reward($height);
 			$reward = $rewardinfo['miner'] + $rewardinfo['generator'];
 			$reward = num($reward);
-			$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $this->public_key, $this->private_key, $reward);
+			$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $this->public_key, $this->private_key, $reward, "nodeminer");
 			$data[$reward_tx['id']]=$reward_tx;
 			ksort($data);
 

@@ -68,7 +68,32 @@ function saveGeneratorStat($generator_stat) {
 }
 
 if ($q == "info") {
-    $res = Blockchain::getMineInfo();
+//	$t1 = microtime(true);
+//	$cache_file = ROOT. "/tmp/mine-info.json";
+//	if(file_exists($cache_file)) {
+//		_log("MineInfo: Cache file exists");
+//		$content = file_get_contents($cache_file);
+//		$res = json_decode($content, true);
+//		$mtime = filemtime($cache_file);
+//		if(time() - $mtime > 5) {
+//			_log("MineInfo: Time expired - delete file");
+//			unlink($cache_file);
+//		}
+//		_log("MineInfo: Return response 1");
+//		api_echo($res);
+//	} else {
+//		_log("MineInfo: Read mine info ");
+//		$res = Blockchain::getMineInfo();
+//		file_put_contents($cache_file, json_encode($res));
+//		_log("MineInfo: Return response 2");
+//		api_echo($res);
+//	}
+	//TODO: prevent concurrent access from same ip - better mempool get
+//    $res = Blockchain::getMineInfo();
+//	$t2 = microtime(true);
+//	$diff = $t2 - $t1;
+//	_log("mine info time=".$diff, 5);
+	$res = Blockchain::getMineInfo();
     api_echo($res);
     exit;
 } elseif ($q == "stat") {
@@ -146,6 +171,7 @@ if ($q == "info") {
 	if (isset($_POST['minerInfo'])) {
 		$minerInfo = $_POST['minerInfo'];
 	}
+
 	$res = Minepool::checkIp($address, $ip);
 	if (!$res) {
 		//TODO: not stop
@@ -223,11 +249,11 @@ if ($q == "info") {
 	$new_block_date = $block_date + $elapsed;
 	$rewardInfo = Block::reward($height);
 	$minerReward = num($rewardInfo['miner']);
-	$reward_tx = Transaction::getRewardTransaction($address, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $minerReward);
+	$reward_tx = Transaction::getRewardTransaction($address, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $minerReward, "miner");
 	$data[$reward_tx['id']] = $reward_tx;
 
 	$generatorReward = num($rewardInfo['generator']);
-	$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $generatorReward);
+	$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $generatorReward, "generator");
 	$data[$reward_tx['id']] = $reward_tx;
 
 	ksort($data);
@@ -240,6 +266,8 @@ if ($q == "info") {
 	$result = $block->mine();
 
 	$l .= " mine=$result";
+
+	@$generator_stat['ips'][$ip][$address]=$address;
 
 	if ($result) {
 		$res = $block->add();

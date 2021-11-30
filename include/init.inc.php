@@ -105,15 +105,24 @@ if (empty($_config['hostname']) || $_config['hostname'] == "http://" || $_config
     api_err("Invalid hostname");
 }
 
-// run sync
-$t = time();
-if ($t - $_config['sync_last'] > $_config['sync_interval'] && php_sapi_name() !== 'cli') {
-	_log("Running sync ".($t - $_config['sync_last'])." / ".$_config['sync_interval'], 5);
-	$dir = ROOT."/cli";
-    _log("php $dir/sync.php  > /dev/null 2>&1  &", 5);
-    system("php $dir/sync.php  > /dev/null 2>&1  &");
+if(!isset($_config['sync_cron']) || $_config['sync_cron']===false) {
+	// run sync
+	$t = time();
+	if ($t - $_config['sync_last'] > $_config['sync_interval'] && php_sapi_name() !== 'cli') {
+		$sync_file = Nodeutil::getSyncFile();
+		if(file_exists($sync_file)) {
+			_log("Sync file exists - skip run");
+		} else {
+			_log("Running sync ".($t - $_config['sync_last'])." / ".$_config['sync_interval'], 5);
+			$dir = ROOT."/cli";
+		    _log("php $dir/sync.php  > /dev/null 2>&1  &", 5);
+		    system("php $dir/sync.php  > /dev/null 2>&1  &");
+		}
+	} else {
+		_log("No time for sync ".($t - $_config['sync_last'])." / ".$_config['sync_interval'], 4);
+	}
 } else {
-	_log("No time for sync ".($t - $_config['sync_last'])." / ".$_config['sync_interval'], 4);
+	_log("Sync not called", 4);
 }
 
 

@@ -21,9 +21,15 @@ class NodeSync
 
 		$syncing = true;
 		$loop_cnt = 0;
+		$max_removed = 0;
 		while ($syncing) {
 			$loop_cnt++;
 			if ($loop_cnt > $largest_height) {
+				break;
+			}
+
+			if($max_removed > 10) {
+				_log("Max removed. break", 4);
 				break;
 			}
 
@@ -64,6 +70,7 @@ class NodeSync
 			if ($failed_block > 0 && $failed_block > ($peers_count - $failed_peer) / 2) {
 				_log("Failed block on blockchain $failed_block - remove");
 				$res = Block::pop();
+				$max_removed++;
 				if (!$res) {
 					_log("Can not delete block on height $height");
 					$syncing = false;

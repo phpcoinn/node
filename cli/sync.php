@@ -38,17 +38,15 @@ if (php_sapi_name() !== 'cli') {
     die("This should only be run as cli");
 }
 
+$lock_file = dirname(__DIR__)."/tmp/sync-lock";
+if(file_exists($lock_file)) {
+	echo "Lock file in place".PHP_EOL;
+	exit;
+}
 
 require_once dirname(__DIR__).'/include/init.inc.php';
 
-_log("Executing sync", 3);
 define("SYNC_LOCK_PATH", Nodeutil::getSyncFile());
-
-
-$res = intval(shell_exec("ps aux|grep '".ROOT."/cli/sync.php'|grep -v grep|wc -l"));
-if ($res > 1) {
-	die("Other sync process already running");
-}
 
 // make sure there's only a single sync process running at the same time
 if (file_exists(SYNC_LOCK_PATH)) {

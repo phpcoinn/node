@@ -50,6 +50,8 @@ class Block
     {
         global $db;
 
+        _log("Block insert height=".$this->height, 3);
+
 	    if (!$bootstrapping) {
 
 	        if(empty($this->generator)) {
@@ -768,7 +770,8 @@ class Block
 
     function calculateNonce($prev_block_date, $elapsed) {
     	if(empty($this->argon)) {
-		    $this->calculateArgonHash($prev_block_date, $elapsed);
+		    $argon = $this->calculateArgonHash($prev_block_date, $elapsed);
+		    $this->argon = $argon;
 	    }
     	$nonceBase = "{$this->miner}-{$prev_block_date}-{$elapsed}-{$this->argon}";
 	    $calcNonce = hash("sha256", $nonceBase);
@@ -787,15 +790,23 @@ class Block
 			$options
 		);
 		_log("calculateArgonHash date=$prev_block_date elapsed=$elapsed miner={$this->miner} argon=$argon",5);
-		$this->argon = $argon;
 		return $argon;
 	}
 
     function verifyArgon($date, $elapsed) {
 	    $base = "{$date}-{$elapsed}";
     	$res =  password_verify($base, $this->argon);
-	    _log("Verify argon base=$base argon={$this->argon} verify=$res", 5);
-	    return $res;
+    	if(!$res) {
+		    _log("Verify argon base=$base argon={$this->argon} verify=$res", 5);
+		    return false;
+	    }
+    	$argon = $this->argon;
+    	$calcArgon = $this->calculateArgonHash($date, $elapsed);
+    	if($argon != $calcArgon) {
+    		_log("Argon not match argon=$argon calcArgon=$calcArgon");
+//    		return false;
+	    }
+    	return true;
     }
 
     static function getAll($page, $limit) {
