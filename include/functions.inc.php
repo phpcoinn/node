@@ -72,7 +72,9 @@ function _log($data, $verbosity = 0)
 	            echo $res;
 		    }
 	    } else {
-	        error_log($res);
+	    	if(isset($_config['server_log']) && $_config['server_log']) {
+	            error_log($res);
+		    }
 	    }
 	    $log_file = $_config['log_file'];
 	    if(substr($log_file, 0, 1)!= "/") {

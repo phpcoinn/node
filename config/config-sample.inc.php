@@ -114,6 +114,9 @@ $_config['auto_resync'] = true;
 // Enable log output to the specified file
 $_config['enable_logging'] = true;
 
+// Log to server log, e.g. error_log to apache
+$_config['server_log'] = false;
+
 // The specified file to write to (this should not be publicly visible)
 $_config['log_file'] = 'tmp/phpcoin.log';
 
