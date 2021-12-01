@@ -174,9 +174,12 @@ if ($q == "info") {
 
 	$res = Minepool::checkIp($address, $ip);
 	if (!$res) {
-		//TODO: not stop
 		$l .= " rejected - IP hash check not pass";
 		_log($l);
+		$block_height = Block::getHeight();
+		if($block_height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
+			api_err("iphash-check-failed");
+		}
 		//$generator_stat['rejected']++;
 		//@$generator_stat['reject-reasons']['iphash-check-failed']++;
 		//api_err("iphash-check-failed");

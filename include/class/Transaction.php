@@ -321,11 +321,12 @@ class Transaction
         }
 
         if($this->type==TX_TYPE_REWARD) {
-        	//TODO: set check height
             $res = $this->checkRewards($height);
             if(!$res) {
-                //_log("Transaction rewards check failed");
-                //return false;
+	            if($height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
+		            _log("Transaction rewards check failed");
+		            return false;
+	            }
 	        }
         }
 

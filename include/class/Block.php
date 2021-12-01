@@ -804,7 +804,10 @@ class Block
     	$calcArgon = $this->calculateArgonHash($date, $elapsed);
     	if($argon != $calcArgon) {
     		_log("Argon not match argon=$argon calcArgon=$calcArgon");
-//    		return false;
+		    $block_height = Block::getHeight();
+		    if($block_height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
+			    return false;
+		    }
 	    }
     	return true;
     }
@@ -943,8 +946,8 @@ public_key=".$transaction['public_key'],5);
 		}
 		if($height < UPDATE_1_BLOCK_ZERO_TIME) {
 			return "010000";
-		} else {
-			return "010001";
+		} else if ($height < UPDATE_2_BLOCK_CHECK_IMPROVED) {
+			return "010002";
 		}
 	}
 }
