@@ -946,8 +946,10 @@ public_key=".$transaction['public_key'],5);
 		}
 		if($height < UPDATE_1_BLOCK_ZERO_TIME) {
 			return "010000";
-		} else if ($height < UPDATE_2_BLOCK_CHECK_IMPROVED) {
-			return "010002";
+		} else if ($height >= UPDATE_1_BLOCK_ZERO_TIME && $height < UPDATE_2_BLOCK_CHECK_IMPROVED) {
+			return "010001";
+		} else {
+			return "010002";	
 		}
 	}
 }
