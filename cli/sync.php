@@ -373,14 +373,6 @@ foreach ($r as $x) {
 	$data = $res['block'];
     $info = $res['info'];
 
-    //check block version - reject not updated nodes
-	if($data['version']!=Block::versionCode()) {
-		_log("blacklist peer $url because has wrong block version ".$data['version']);
-		Peer::blacklist($x['id'], "Wrong block version ".$data['version']);
-		continue;
-	}
-
-
     // peer was responsive, mark it as good
     if ($x['fails'] > 0) {
         Peer::clearFails($x['id']);
