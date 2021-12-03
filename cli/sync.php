@@ -316,6 +316,11 @@ foreach ($r as $x) {
             Peer::blacklist($x['id'], "Unresponsive");
             continue;
         }
+        if(is_array($data) && count($data)==0) {
+	        _log("blacklist peer $url because it has no peers");
+	        Peer::blacklist($x['id'], "No peers");
+	        continue;
+        }
         foreach ($data as $peer) {
             // store the hostname as md5 hash, for easier checking
             $peer['hostname'] = san_host($peer['hostname']);
