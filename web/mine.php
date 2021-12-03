@@ -178,11 +178,10 @@ if ($q == "info") {
 		_log($l);
 		$block_height = Block::getHeight();
 		if($block_height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
+			$generator_stat['rejected']++;
+			@$generator_stat['reject-reasons']['iphash-check-failed']++;
 			api_err("iphash-check-failed");
 		}
-		//$generator_stat['rejected']++;
-		//@$generator_stat['reject-reasons']['iphash-check-failed']++;
-		//api_err("iphash-check-failed");
 	}
 
 	$nonce = san($_POST['nonce']);
@@ -239,12 +238,11 @@ if ($q == "info") {
 
 	$res = Minepool::insert($address, $height, $minerInfo, $ip);
 	if (!$res) {
-		//TODO: not stop
 		$l .= " rejected - Can not insert in minepool";
 		_log($l);
-		//$generator_stat['rejected']++;
-		//@$generator_stat['reject-reasons']['minepool-error']++;
-		//api_err("minepool-error");
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['minepool-error']++;
+		api_err("minepool-error");
 	}
 
 	$lastBlock = Block::current();

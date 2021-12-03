@@ -401,11 +401,11 @@ class Transaction
 			_log("Reward transaction no value");
 			return false;
 		}
-		if(!number_format($this->val,8) != $val_check) {
-			_log("Reward transaction not valid");
+		if(num($this->val) != $val_check) {
+			_log("Reward transaction not valid: val=".$this->val." val_check=$val_check");
 			return false;
 		}
-		return false;
+		return true;
     }
 
 	public function sign($private_key)
