@@ -803,9 +803,9 @@ class Block
     	$argon = $this->argon;
     	$calcArgon = $this->calculateArgonHash($date, $elapsed);
     	if($argon != $calcArgon) {
-    		_log("Argon not match argon=$argon calcArgon=$calcArgon");
 		    $block_height = Block::getHeight();
 		    if($block_height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
+    		    _log("Argon not match argon=$argon calcArgon=$calcArgon", 3);
 			    return false;
 		    }
 	    }

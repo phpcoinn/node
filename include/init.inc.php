@@ -111,7 +111,7 @@ if(!isset($_config['sync_cron']) || $_config['sync_cron']===false) {
 	if ($t - $_config['sync_last'] > $_config['sync_interval'] && php_sapi_name() !== 'cli') {
 		$sync_file = Nodeutil::getSyncFile();
 		if(file_exists($sync_file)) {
-			_log("Sync file exists - skip run");
+			_log("Sync file exists - skip run", 4);
 		} else {
 			_log("Running sync ".($t - $_config['sync_last'])." / ".$_config['sync_interval'], 5);
 			$dir = ROOT."/cli";

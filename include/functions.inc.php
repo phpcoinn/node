@@ -333,7 +333,7 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
 	$curl_error = curl_errno($ch);
 	if($curl_error) {
 		$error_msg = curl_error($ch);
-		_log("CURL error=".$curl_error." ".$error_msg);
+		_log("CURL error=".$curl_error." ".$error_msg, 5);
 		//6 - Could not resolve host: miner1.phpcoin.net
 		//7 - Failed to connect to miner1.phpcoin.net port 80: Connection refused
 		//28 - Connection timed out after 5001 milliseconds
@@ -372,7 +372,7 @@ function url_get($url) {
 	$result = curl_exec($ch);
 	if($result === false) {
 		$err = curl_error($ch);
-		_log("Curl error: url=$url error=$err");
+		_log("Curl error: url=$url error=$err", 5);
 	}
 	curl_close ($ch);
 	return $result;
@@ -396,7 +396,7 @@ function url_post($url, $postdata) {
 	$result = curl_exec($ch);
 	if($result === false) {
 		$err = curl_error($ch);
-		_log("Curl error: url=$url error=$err");
+		_log("Curl error: url=$url error=$err", 5);
 	}
 	curl_close ($ch);
 	return $result;

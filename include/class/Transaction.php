@@ -381,11 +381,11 @@ class Transaction
 		$reward = Block::reward($height);
 		$msg = $this->msg;
 		if(empty($msg)) {
-			_log("Reward transaction message missing");
+			_log("Reward transaction message missing", 5);
 			return false;
 		}
 		if(!in_array($msg, ["nodeminer", "miner", "generator"])) {
-			_log("Reward transaction invalid message");
+			_log("Reward transaction invalid message",5);
 			return false;
 		}
 		$miner = $reward['miner'];
@@ -398,11 +398,11 @@ class Transaction
 			$val_check = num($generator);
 		}
 		if(empty($val_check)) {
-			_log("Reward transaction no value");
+			_log("Reward transaction no value",5);
 			return false;
 		}
 		if(num($this->val) != $val_check) {
-			_log("Reward transaction not valid: val=".$this->val." val_check=$val_check");
+			_log("Reward transaction not valid: val=".$this->val." val_check=$val_check", 5);
 			return false;
 		}
 		return true;
