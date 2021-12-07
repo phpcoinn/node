@@ -264,7 +264,7 @@ class WebMiner {
                 hitValue = this.hexToDec(hashPart)
                 hit = Math.round(max / hitValue)
                 target = Math.round(difficulty * this.block_time / elapsed)
-                blockFound = (hit > 0 && target >= 0 && hit > target);
+                blockFound = (hit > 0 && target > 0 && hit > target);
                 this.miner.hashPart = hashPart
                 this.miner.hitValue = hitValue
                 this.miner.hit = hit
