@@ -134,7 +134,7 @@ class Miner {
 				$bl->date = $block_date;
 				$hit = $bl->calculateHit();
 				$target = $bl->calculateTarget($elapsed);
-				$blockFound = ($hit > 0 && $target>=0 &&  $hit > $target);
+				$blockFound = ($hit > 0 && $target > 0 && $hit > $target);
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
 				if($attempt % 10 == 0) {

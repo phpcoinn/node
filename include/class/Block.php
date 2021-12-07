@@ -442,7 +442,7 @@ class Block
 	    $target = $this->calculateTarget($elapsed);
 	    _log("Check hit= " . $hit. " target=" . $target . " current_height=".$this->height.
 		    " difficulty=".$this->difficulty." elapsed=".$elapsed, 5);
-	    $res =  (($hit > 0 && $hit > $target) || $this->height==0);
+	    $res =  (($hit > 0 && $target > 0 && $hit > $target) || $this->height==0);
 	    if(!$res) {
 	    	_log("invalid hit or target");
 	    }
@@ -897,7 +897,7 @@ class Block
 		}
 		$hit = $this->calculateHit();
 		$target = $this->calculateTarget($elapsed);
-		$res = (($hit > 0 && $hit > $target));
+		$res = (($hit > 0 && $target > 0 && $hit > $target));
 		if(!$res) {
 			_log("Mine check filed");
 			return false;
