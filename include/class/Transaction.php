@@ -384,8 +384,9 @@ class Transaction
 			_log("Reward transaction message missing", 5);
 			return false;
 		}
-		if(!in_array($msg, ["nodeminer", "miner", "generator"])) {
-			_log("Reward transaction invalid message",5);
+		if(!in_array($msg, ["nodeminer", "miner", "generator"]) &&
+			substr($msg, 0, strlen("pool|")) != "pool|") {
+			_log("Reward transaction invalid message: $msg",5);
 			return false;
 		}
 		$miner = $reward['miner'];
@@ -396,6 +397,8 @@ class Transaction
 			$val_check = num($miner);
 		} else if ($msg == "generator") {
 			$val_check = num($generator);
+		} else if (substr($msg, 0, strlen("pool|")) == "pool|") {
+			$val_check = num($miner);
 		}
 		if(empty($val_check)) {
 			_log("Reward transaction no value",5);
@@ -405,6 +408,21 @@ class Transaction
 			_log("Reward transaction not valid: val=".$this->val." val_check=$val_check", 5);
 			return false;
 		}
+	    if (substr($msg, 0, strlen("pool|")) == "pool|") {
+	    	$arr = explode("|", $msg);
+	    	$poolMinerAddress=$arr[1];
+	    	$poolMinerAddressSignature=$arr[2];
+		    $poolMinerPublicKey = Account::publicKey($poolMinerAddress);
+		    if(empty($poolMinerPublicKey)) {
+			    _log("Reward transaction not valid: not found public key for address $poolMinerAddress", 5);
+			    return false;
+		    }
+		    $res = Account::checkSignature($poolMinerAddress, $poolMinerAddressSignature, $poolMinerPublicKey);
+		    if(!$res) {
+			    _log("Reward transaction not valid: address signature failed poolMinerAddress=$poolMinerAddress poolMinerAddressSignature=$poolMinerAddressSignature", 5);
+			    return false;
+		    }
+	    }
 		return true;
     }
 

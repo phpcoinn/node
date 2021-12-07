@@ -167,6 +167,16 @@ if ($q == "info") {
 
 	$address = san($_POST['address']);
 	$height = san($_POST['height']);
+
+	if(empty($height) || empty($address)) {
+		$l .= " missing-parameters height=$height address=$address";
+		_log($l);
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['missing-parameters']++;
+		saveGeneratorStat($generator_stat);
+		api_err("missing-parameters");
+	}
+
 	$minerInfo = "";
 	if (isset($_POST['minerInfo'])) {
 		$minerInfo = $_POST['minerInfo'];
@@ -180,6 +190,7 @@ if ($q == "info") {
 		if($block_height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 			$generator_stat['rejected']++;
 			@$generator_stat['reject-reasons']['iphash-check-failed']++;
+			saveGeneratorStat($generator_stat);
 			api_err("iphash-check-failed");
 		}
 	}
@@ -213,9 +224,6 @@ if ($q == "info") {
 	$now = time();
 	$prev_block = Block::get($height - 1);
 	$date = $prev_block['date'] + $elapsed;
-	if (abs($date - $now) > 1 && false) {
-		api_err("rejected - date not match date=$date now=$now");
-	}
 
 	$public_key = Account::publicKey($address);
 	if (empty($public_key)) {
@@ -245,12 +253,31 @@ if ($q == "info") {
 		api_err("minepool-error");
 	}
 
+	$msg = "miner";
+	if(isset($_POST['poolMiner']) && isset($_POST['poolSignature']) && isset($_POST['addressSignature'])) {
+		$poolMiner = $_POST['poolMiner'];
+		$poolSignature = $_POST['poolSignature'];
+		_log("Pool miner poolMiner=$poolMiner poolSignature=$poolSignature");
+		$verify = ec_verify($poolMiner, $poolSignature, $_config['generator_public_key']);
+		if(!$verify) {
+			$l .= " rejected - Mine pool signature not valid poolSignature=$poolSignature poolMiner=$poolMiner";
+			_log($l);
+			$generator_stat['rejected']++;
+			@$generator_stat['reject-reasons']['mining-pool-signature-not-valid']++;
+			api_err("mining-pool-signature-not-valid");
+		}
+		$msg = "pool|".$poolMiner."|".$_POST['addressSignature'];
+	}
+
 	$lastBlock = Block::current();
 	$block_date = $lastBlock['date'];
 	$new_block_date = $block_date + $elapsed;
 	$rewardInfo = Block::reward($height);
 	$minerReward = num($rewardInfo['miner']);
-	$reward_tx = Transaction::getRewardTransaction($address, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $minerReward, "miner");
+	$reward_tx = Transaction::getRewardTransaction($address, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $minerReward, $msg);
+
+	$l .= " reward_tx=".json_encode($reward_tx);
+
 	$data[$reward_tx['id']] = $reward_tx;
 
 	$generatorReward = num($rewardInfo['generator']);
