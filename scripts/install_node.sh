@@ -68,7 +68,8 @@ echo "PHPCoin: synchronize apps"
 echo "==================================================================================================="
 php cli/util.php download-apps
 
-echo "Setup node automatic update"
+echo "PHPCoin: Setup node automatic update"
+echo "==================================================================================================="
 cd /var/www/phpcoin/scripts
 chmod +x install_update.sh
 ./install_update.sh
