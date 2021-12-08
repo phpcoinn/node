@@ -7,7 +7,6 @@ CRON_EXISTS=$(crontab -l | grep "$CRON_LINE" | wc -l)
 
 if [ $CRON_EXISTS -eq 0 ]
 then
-	chmod +x /var/www/phpcoin/scripts/update.sh
 	crontab -l | { cat; echo "*/5 * * * * $CRON_LINE"; } | crontab -
 	echo "Added new cron line"
 else
