@@ -677,7 +677,7 @@ class Util
 		if(empty($range)) {
 			$start=1;
 			$stop= Block::getHeight();
-		} else {
+		} else if (strpos($range, "-")!== false) {
 			$arr=explode("-", $range);
 			$start = $arr[0];
 			if(empty($start)) {
@@ -687,6 +687,9 @@ class Util
 			if(empty($stop)) {
 				$stop= Block::getHeight();
 			}
+		} else {
+			$start = intval($range);
+			$stop = $start;
 		}
 
 		for($i=$start;$i<=$stop;$i++) {
