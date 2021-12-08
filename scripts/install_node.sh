@@ -68,6 +68,10 @@ echo "PHPCoin: synchronize apps"
 echo "==================================================================================================="
 php cli/util.php download-apps
 
+echo "Setup node automatic update"
+cd /var/www/phpcoin/scripts
+chmod +x ./install_update.sh
+
 echo "==================================================================================================="
 echo "PHPCoin: Install finished"
 echo "PHPCoin: Open your node at http://$IP"
