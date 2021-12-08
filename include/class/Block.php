@@ -462,10 +462,10 @@ class Block
     }
 
     private function miningPoolAddress() {
-		_log("miningPoolAddress data=".json_encode($this->data));
+		_log("miningPoolAddress data=".json_encode($this->data), 5);
 	    foreach ($this->data as $transaction) {
 		    $msg = $transaction['message'];
-		    _log("msg=".$msg. " substr=".substr($msg, 0, strlen("pool|")));
+		    _log("msg=".$msg. " substr=".substr($msg, 0, strlen("pool|")), 5);
 		    if(substr($msg, 0, strlen("pool|")) == "pool|") {
 		    	$arr = explode("|", $msg);
 			    return $arr[1];
