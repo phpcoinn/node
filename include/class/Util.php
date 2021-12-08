@@ -672,13 +672,27 @@ class Util
 		Nodeutil::downloadApps();
 	}
 
-	static function verifyBlocks() {
-		$height = Block::getHeight();
+	static function verifyBlocks($argv) {
+		$range = $argv[2];
+		if(empty($range)) {
+			$start=1;
+			$stop= Block::getHeight();
+		} else {
+			$arr=explode("-", $range);
+			$start = $arr[0];
+			if(empty($start)) {
+				$start = 1;
+			}
+			$stop = $arr[1];
+			if(empty($stop)) {
+				$stop= Block::getHeight();
+			}
+		}
 
-		for($i=1;$i<=$height;$i++) {
+		for($i=$start;$i<=$stop;$i++) {
 			$block = Block::export("",$i);
 			$res = Block::getFromArray($block)->verifyBlock();
-			echo "Verify block $i / $height res=$res".PHP_EOL;
+			echo "Verify block $i / $stop res=$res".PHP_EOL;
 			if(!$res) {
 				return;
 			}

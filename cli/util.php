@@ -82,7 +82,7 @@ find-forked-block <peer>                    - Find forked block at peer
 validate-public-key <public-key>            - Validates public key
 rewards-scheme                              - Prints reward scheme by blocks
 download-apps                               - Download and update apps from repository
-verify-blocks                               - Verify all blocks in blockchain
+verify-blocks [start-stop]                  - Verify blocks in blockchain
 exportchain [<file>]                        - Export blockchain to file
 importchain <file> [<verify>]               - Import and verify blocks from file
 clear-peers                                 - Clear peers database
