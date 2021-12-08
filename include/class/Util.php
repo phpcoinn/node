@@ -779,4 +779,26 @@ class Util
 		Transaction::empty_mempool();
 	}
 
+	static function update() {
+		$currentVersion = BUILD_VERSION;
+		echo "Checking node update current version = ".BUILD_VERSION.PHP_EOL;
+		$cmd= "curl -s https://raw.githubusercontent.com/phpcoinn/node/main/include/coinspec.inc.php | grep BUILD_VERSION";
+		$res = shell_exec($cmd);
+		$arr= explode(" ", $res);
+		$version = $arr[3];
+		$version = str_replace(";", "", $version);
+		$version = intval($version);
+		if($version > $currentVersion) {
+			echo "There is new version: $version - updating node".PHP_EOL;
+			$cmd="cd ".ROOT." && git pull origin main";
+			$res = shell_exec($cmd);
+			$cmd="cd ".ROOT." && php/cli/util.php download-apps";
+			$res = shell_exec($cmd);
+			echo "Node updated".PHP_EOL;
+		} else {
+			echo "There is no new version".PHP_EOL;
+		}
+		echo "Finished".PHP_EOL;
+	}
+
 }

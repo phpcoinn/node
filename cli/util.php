@@ -87,7 +87,7 @@ exportchain [<file>]                        - Export blockchain to file
 importchain <file> [<verify>]               - Import and verify blocks from file
 clear-peers                                 - Clear peers database
 empty-mempool                               - Empty mempool
-
+update                                      - Check node for newest version and update
 ";
 	}
 }
