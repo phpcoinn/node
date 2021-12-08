@@ -906,6 +906,7 @@ class Block
 			$prev_block_id = "";
 		}
 
+		$miner = $this->miner;
 		$miningPoolAddress = $this->miningPoolAddress();
 		if($miningPoolAddress !== false) {
 			$this->miner = $miningPoolAddress;
@@ -930,6 +931,8 @@ class Block
 			_log("Mine check failed hit=$hit target=$target");
 			return false;
 		}
+
+		$this->miner =$miner;
 
 		ksort($data);
 		foreach ($data as $transaction) {
