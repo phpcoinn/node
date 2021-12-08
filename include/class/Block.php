@@ -450,7 +450,7 @@ class Block
 	    $target = $this->calculateTarget($elapsed);
 	    _log("Check hit= " . $hit. " target=" . $target . " current_height=".$this->height.
 		    " difficulty=".$this->difficulty." elapsed=".$elapsed, 5);
-	    $res =  (($hit > 0 && $target > 0 && $hit > $target) || $this->height==0);
+	    $res = $this->checkHit($hit, $target, $this->height);
 	    if(!$res) {
 	    	_log("invalid hit or target");
 	    }
@@ -926,9 +926,9 @@ class Block
 		}
 		$hit = $this->calculateHit();
 		$target = $this->calculateTarget($elapsed);
-		$res = (($hit > 0 && $target > 0 && $hit > $target));
+		$res =  $this->checkHit($hit, $target, $height);
 		if(!$res) {
-			_log("Mine check filed");
+			_log("Mine check failed hit=$hit target=$target");
 			return false;
 		}
 
@@ -967,6 +967,13 @@ public_key=".$transaction['public_key'],5);
 		}
 
 		return true;
+	}
+
+	function checkHit($hit, $target, $height) {
+		$res =  (($hit > 0
+				&& ($target > 0 || ($target == 0 && $height < UPDATE_1_BLOCK_ZERO_TIME))
+				&& $hit > $target) || $height==1);
+		return $res;
 	}
 
 	static function versionCode($height=null) {
