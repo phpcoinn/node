@@ -6,7 +6,7 @@ if(file_exists(dirname(__DIR__)."/testnet")) {
 
 // mainnet specification
 const VERSION = "1.0.1";
-const BUILD_VERSION = 21;
+const BUILD_VERSION = 22;
 const MIN_VERSION = "1.0.1";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -38,7 +38,7 @@ const REWARD_SCHEME = [
 		'reward'=> GENESIS_REWARD
 	],
 	'launch'=>[
-		'blocks' => 50000,
+		'blocks' => 100000,
 		'reward'=> 10,
 	],
 	'mining'=>[
