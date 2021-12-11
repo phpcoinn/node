@@ -349,7 +349,7 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
     $res = json_decode($result, true);
 
     // the function will return false if something goes wrong
-    if ($res['status'] != "ok" || $res['coin'] != COIN || $res['network'] != NETWORK) {
+    if ($res['status'] != "ok" || $res['coin'] != COIN || (isset($res['network']) && $res['network'] != NETWORK)) {
     	_log("Peer response to $url not ok res=".json_encode($res));
         return false;
     } else {
