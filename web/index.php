@@ -166,8 +166,9 @@ global $_config;
         <div class="text-center text-white-50 font-size-14 pb-2">
             <a href="https://phpcoin.net" target="_blank" class="text-white">phpcoin.net</a>
             <br/>
+            <?php echo NETWORK ?> ◦
             Block <?php echo $current['height'] ?> ◦
-            Version <?php echo VERSION ?>
+            Version <?php echo VERSION ?>.<?php echo BUILD_VERSION ?>
         </div>
         <!--                </div>-->
         <!--            </div>-->

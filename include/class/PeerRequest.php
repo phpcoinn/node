@@ -19,6 +19,11 @@ class PeerRequest
 		if ($_POST['coin'] != COIN) {
 			api_err("Invalid coin ".print_r($_REQUEST, 1));
 		}
+		if(isset($_POST['network'])) {
+			if($_POST['network'] != NETWORK) {
+				api_err("Invalid network ".$_POST['network']);
+			}
+		}
 		if(version_compare($_POST['version'], MIN_VERSION) < 0) {
 			api_err("Invalid version ".print_r($_REQUEST, 1));
 		}

@@ -515,6 +515,7 @@ class Api
 		api_echo([
 			'hostname'     => $hostname,
 			'version'      => VERSION,
+			'network'      => NETWORK,
 			'dbversion'    => $dbVersion,
 			'accounts'     => $accounts,
 			'transactions' => $tr,

@@ -325,7 +325,8 @@ class Wallet
 			[
 				'data' => json_encode($data),
 				"coin" => COIN,
-				"version"=> VERSION
+				"version"=> VERSION,
+				"network"=> NETWORK,
 			]
 		);
 

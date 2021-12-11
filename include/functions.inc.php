@@ -29,7 +29,7 @@ function api_err($data)
     if (!headers_sent()) {
         header('Content-Type: application/json');
     }
-    echo json_encode(["status" => "error", "data" => $data, "coin" => COIN, "version"=>VERSION]);
+    echo json_encode(["status" => "error", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK]);
     exit;
 }
 
@@ -42,7 +42,7 @@ function api_echo($data)
         header('Content-Type: application/json');
     }
     _log($data, 4);
-    echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION]);
+    echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK]);
     exit;
 }
 
@@ -295,6 +295,7 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
             'data' => json_encode($data),
             "coin" => COIN,
 	        "version"=>VERSION,
+	        "network"=>NETWORK,
 	        "requestId" => uniqid()
         ]
     );
@@ -348,7 +349,7 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
     $res = json_decode($result, true);
 
     // the function will return false if something goes wrong
-    if ($res['status'] != "ok" || $res['coin'] != COIN || $res['version'] != VERSION) {
+    if ($res['status'] != "ok" || $res['coin'] != COIN || $res['network'] != NETWORK) {
     	_log("Peer response to $url not ok res=".json_encode($res));
         return false;
     } else {
