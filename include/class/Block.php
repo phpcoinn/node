@@ -806,30 +806,40 @@ class Block
 
 	function calculateArgonHash($prev_block_date, $elapsed) {
 		$base = "{$prev_block_date}-{$elapsed}";
-		$options = HASHING_OPTIONS;
-		$options['salt']=substr($this->miner, 0, 16);
+		$options = self::hashingOptions($this->height);
+		if($this->height < UPDATE_3_ARGON_HARD) {
+			$options['salt']=substr($this->miner, 0, 16);
+		}
 		$argon = @password_hash(
 			$base,
 			HASHING_ALGO,
 			$options
 		);
-		_log("calculateArgonHash date=$prev_block_date elapsed=$elapsed miner={$this->miner} argon=$argon",5);
 		return $argon;
 	}
 
     function verifyArgon($date, $elapsed) {
+	    if($this->height >= UPDATE_3_ARGON_HARD) {
+	    	$argonPrefix = Block::argonPrefix($this->height);
+	    	if(substr($this->argon, 0, strlen($argonPrefix)) != $argonPrefix) {
+			    _log("Verify argon: Argon prefix not OK argon={$this->argon}", 5);
+			    return false;
+		    }
+	    }
 	    $base = "{$date}-{$elapsed}";
     	$res =  password_verify($base, $this->argon);
     	if(!$res) {
 		    _log("Verify argon base=$base argon={$this->argon} verify=$res", 5);
 		    return false;
 	    }
-    	$argon = $this->argon;
-    	$calcArgon = $this->calculateArgonHash($date, $elapsed);
-    	if($argon != $calcArgon) {
-		    if($this->height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
-    		    _log("Argon not match argon=$argon calcArgon=$calcArgon", 3);
-			    return false;
+    	if($this->height < UPDATE_3_ARGON_HARD) {
+	        $argon = $this->argon;
+	        $calcArgon = $this->calculateArgonHash($date, $elapsed);
+	        if($argon != $calcArgon) {
+			    if($this->height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
+	                _log("Argon not match argon=$argon calcArgon=$calcArgon", 3);
+				    return false;
+			    }
 		    }
 	    }
     	return true;
@@ -986,8 +996,32 @@ public_key=".$transaction['public_key'],5);
 			return "010000";
 		} else if ($height >= UPDATE_1_BLOCK_ZERO_TIME && $height < UPDATE_2_BLOCK_CHECK_IMPROVED) {
 			return "010001";
-		} else {
+		} else if ($height >= UPDATE_2_BLOCK_CHECK_IMPROVED && $height < UPDATE_3_ARGON_HARD) {
 			return "010002";	
+		} else {
+			return "010003";
+		}
+	}
+
+	static function hashingOptions($height=null) {
+		if($height == null) {
+			$height = self::getHeight();
+		}
+		if($height < UPDATE_3_ARGON_HARD) {
+			return ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
+		} else {
+			return ['memory_cost' => 32768, "time_cost" => 2, "threads" => 1];
+		}
+	}
+
+	static function argonPrefix($height=null) {
+		if($height == null) {
+			$height = self::getHeight();
+		}
+		if($height < UPDATE_3_ARGON_HARD) {
+			return '$argon2i$v=19$m=2048,t=2,p=1';
+		} else {
+			return '$argon2i$v=19$m=32768,t=2,p=1';
 		}
 	}
 }

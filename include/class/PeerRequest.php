@@ -278,16 +278,7 @@ class PeerRequest
 			_log('['.$ip."] invalid block - $data[height]",1);
 			api_err("invalid-block");
 		}
-		$b = $data;
-		// add the block to the blockchain
-		$block = Block::getFromArray($b);
 		$block->prevBlockId = $current['id'];
-		$res = $block->check();
-
-		if (!$res) {
-			_log('['.$ip."] block check failed - $data[height]",1);
-			api_err("block-check-failed");
-		}
 
 		$res = $block->add();
 

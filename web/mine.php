@@ -149,7 +149,7 @@ if ($q == "info") {
 
 	$peers = Peer::getCount();
 	_log("Getting peers count = " . $peers, 5);
-	if ($peers < 3) {
+	if ($peers < 3 && !DEVELOPMENT) {
 		$l .= " no-live-peers ";
 		_log($l);
 		$generator_stat['rejected']++;

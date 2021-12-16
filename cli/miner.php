@@ -20,7 +20,7 @@ if (file_exists(MINER_LOCK_PATH) && !DEVELOPMENT) {
 }
 
 $peers = Peer::getCount(true);
-if(empty($peers) && false) {
+if(empty($peers) && false ) {
 	_log("No peers for miner");
 	exit;
 }

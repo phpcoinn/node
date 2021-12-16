@@ -46,7 +46,8 @@ class Blockchain
 			"reward"=>num($reward['miner']),
 			"version"=>Block::versionCode($current['height']+1),
 			"generator"=>Account::getAddress($_config['generator_public_key']),
-			"ip"=>$_SERVER['REMOTE_ADDR']
+			"ip"=>$_SERVER['REMOTE_ADDR'],
+			"hashingOptions"=>Block::hashingOptions($current['height']+1),
 		];
 //		_log("getMineInfo: ".json_encode($res), 5);
 		return $res;

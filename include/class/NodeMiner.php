@@ -56,7 +56,7 @@ class NodeMiner {
 			}
 
 			$peersCount = Peer::getCount();
-			if($peersCount < 3) {
+			if($peersCount < 3 && !DEVELOPMENT) {
 				_log("Not enough node peers");
 				return false;
 			}

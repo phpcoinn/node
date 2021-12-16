@@ -6,7 +6,6 @@ const PrivateKey = ellipticcurve.PrivateKey
 const Base58 = require("base-58")
 const jsonKeySort = require("json-keys-sort")
 
-
 function str_split (string, splitLength) { // eslint-disable-line camelcase
     //  discuss at: https://locutus.io/php/str_split/
     // original by: Martijn Wieringa
@@ -187,7 +186,7 @@ class WebMiner {
             }
             this.callbacks.onMinerUpdate(this.miner, this.miningStat)
 
-
+            let salt
 
 
             while(!blockFound) {
@@ -231,15 +230,30 @@ class WebMiner {
 
                 times.start = Date.now()
 
+                salt = address.substr(0, 16)
+                if(info.data.hashingOptions) {
+                    let hashingOptions = info.data.hashingOptions
+                    this.hashingConfig.mem = hashingOptions.memory_cost
+                    this.hashingConfig.parallelism = hashingOptions.threads
+                    this.hashingConfig.time = hashingOptions.time_cost
+                    salt = crypto.randomBytes(16).toString('hex')
+                    salt = Buffer.from(address.substr(0, 16))
+                }
+
+                let t1 = Date.now()
                 let hash = await argon2.hash({
                     pass: argonBase,
-                    salt: address.substr(0, 16),
+                    salt,
                     mem: this.hashingConfig.mem,
                         time: this.hashingConfig.time,
                         parallelism: this.hashingConfig.parallelism,
                         type: argon2.ArgonType.Argon2i,
                         hashLen: 32
                     })
+                let t2 = Date.now()
+                let diff = t2 - t1
+                //console.log(`Argon hashing time = ${diff}`)
+                this.miner.hashingTime = diff
 
                 times.t1 = Date.now()
 
