@@ -809,7 +809,7 @@ class Util
 			echo "There is new version: $version - updating node".PHP_EOL;
 			$cmd="cd ".ROOT." && git pull origin main";
 			$res = shell_exec($cmd);
-			$cmd="cd ".ROOT." && php/cli/util.php download-apps";
+			$cmd="cd ".ROOT." && php cli/util.php download-apps";
 			$res = shell_exec($cmd);
 			echo "Node updated".PHP_EOL;
 		} else {
