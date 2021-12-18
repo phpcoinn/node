@@ -217,7 +217,7 @@ class Peer
 
 	static function clearFails($id) {
 		global $db;
-		$db->run("UPDATE peers SET fails=0 WHERE id=:id", [":id" => $id]);
+		$db->run("UPDATE peers SET fails=0, blacklist_reason = null WHERE id=:id", [":id" => $id]);
 	}
 
 	static function getSingle($hostname, $ip) {

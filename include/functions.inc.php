@@ -285,7 +285,6 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
 	    return false;
     }
 
-
     if (!isValidURL($url)) {
     	_log("Not valid peer post url $url");
         return false;

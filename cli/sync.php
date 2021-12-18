@@ -39,36 +39,32 @@ if (php_sapi_name() !== 'cli') {
 }
 
 $lock_file = dirname(__DIR__)."/tmp/sync-lock";
-if(file_exists($lock_file)) {
-	echo "Lock file in place".PHP_EOL;
-	exit;
+
+// make sure there's only a single sync process running at the same time
+if (file_exists($lock_file)) {
+    $ignore_lock = false;
+    if ($argv[1] == "force") {
+        $res = intval(shell_exec("ps aux|grep '".dirname(__DIR__)."/cli/sync.php'|grep -v grep|wc -l"));
+        if ($res == 1) {
+            $ignore_lock = true;
+        }
+    }
+    $pid_time = filemtime($lock_file);
+
+    // If the process died, restart after 1 hour
+    if (time() - $pid_time > 60 * 60) {
+        @unlink($lock_file);
+    }
+
+    if (!$ignore_lock) {
+	    echo "Lock file in place".PHP_EOL;
+	    exit;
+    }
 }
 
 require_once dirname(__DIR__).'/include/init.inc.php';
 
 define("SYNC_LOCK_PATH", Nodeutil::getSyncFile());
-
-// make sure there's only a single sync process running at the same time
-if (file_exists(SYNC_LOCK_PATH)) {
-    $ignore_lock = false;
-    if ($argv[1] == "force") {
-        $res = intval(shell_exec("ps aux|grep '".ROOT."/sync.php'|grep -v grep|wc -l"));
-        if ($res == 1) {
-            $ignore_lock = true;
-        }
-    }
-    $pid_time = filemtime(SYNC_LOCK_PATH);
-
-    // If the process died, restart after 60 times the sync interval
-    if (time() - $pid_time > ($_config['sync_interval'] * 10 ?? 900 * 10)) {
-        @unlink(SYNC_LOCK_PATH);
-    }
-
-    if (!$ignore_lock) {
-	    _log("Sync lock in place");
-        die("Sync lock in place".PHP_EOL);
-    }
-}
 
 // set the new sync lock
 $lock = fopen(SYNC_LOCK_PATH, "w");
@@ -384,9 +380,9 @@ foreach ($r as $x) {
     $data['id'] = san($data['id']);
     $data['height'] = san($data['height']);
 
-    if ($current['height'] > 1 && $data['height'] < $current['height'] - 500) {
-	    _log("blacklist peer $url because is 500 blocks behind, our height=".$current['height']." peer_height=".$data['height']);
-        Peer::blacklistStuck($x['id'],"500 blocks behind");
+    if ($current['height'] > 1 && $data['height'] < $current['height'] - 100) {
+	    _log("blacklist peer $url because is 100 blocks behind, our height=".$current['height']." peer_height=".$data['height']);
+        Peer::blacklistStuck($x['id'],"100 blocks behind");
         continue;
     } else {
         if ($x['stuckfail'] > 0) {

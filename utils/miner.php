@@ -10,11 +10,17 @@ $node = @$argv[1];
 $address = @$argv[2];
 $block_cnt = @$argv[3];
 
-if(file_exists(getcwd()."/miner.conf")) {
+if(file_exists(getcwd()."/miner1.conf")) {
 	$minerConf = parse_ini_file(getcwd()."/miner.conf");
 	$node = $minerConf['node'];
 	$address = $minerConf['address'];
 	$block_cnt = $minerConf['block_cnt'];
+}
+
+echo "PHPCoin Miner Version ".VERSION.".(".BUILD_VERSION.")".PHP_EOL;
+
+if(empty($node) && empty($address)) {
+	die("Usage: miner <node> <address>");
 }
 
 if(empty($node)) {

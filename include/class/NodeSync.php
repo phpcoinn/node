@@ -118,7 +118,7 @@ class NodeSync
 							_log("Blacklist node $host");
 							//TODO: blacklist all peers with invalid block and write height of invalid block
 							$peer = Peer::findByHostname($host);
-							Peer::blacklist($peer['id'], 'Invalid block');
+							Peer::blacklist($peer['id'], 'Invalid block '.$height);
 							break;
 						} else {
 							$prev_block = Block::getAtHeight($next_block['height'] - 1);
@@ -131,7 +131,7 @@ class NodeSync
 								$syncing = false;
 								_log("Blacklist node $host");
 								$peer = Peer::findByHostname($host);
-								Peer::blacklist($peer['id'], 'Invalid block');
+								Peer::blacklist($peer['id'], 'Invalid block '.$height);
 								break;
 							} else {
 								$vblock = Block::export("", $height);
@@ -141,7 +141,7 @@ class NodeSync
 									$syncing = false;
 									_log("Blacklist node $host");
 									$peer = Peer::findByHostname($host);
-									Peer::blacklist($peer['id'], 'Invalid block');
+									Peer::blacklist($peer['id'], 'Invalid block '.$height);
 									break;
 								}
 							}
@@ -155,7 +155,7 @@ class NodeSync
 								foreach ($nodes as $node => $b) {
 									_log("Blacklist node $node");
 									$peer = Peer::findByHostname($node);
-									Peer::blacklist($peer['id'], 'Invalid block');
+									Peer::blacklist($peer['id'], 'Invalid block '.$height);
 								}
 							}
 						}
