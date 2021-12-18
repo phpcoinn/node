@@ -28,7 +28,7 @@ class NodeSync
 				break;
 			}
 
-			if($max_removed > 10) {
+			if($max_removed > 100) {
 				_log("Max removed. break", 4);
 				break;
 			}
