@@ -4,8 +4,9 @@ global $_config, $db;
 $dbversion = intval($_config['dbversion']);
 
 $db->beginTransaction();
+$was_empty = false;
 if (empty($dbversion)) {
-
+	$was_empty = true;
 	$db->run("create table blocks
 	(
 		id varchar(128) not null
@@ -14,7 +15,7 @@ if (empty($dbversion)) {
 		height int not null,
 		date int not null,
 		nonce varchar(128) not null,
-		signature varchar(256) not null,
+		signature varchar(255) not null,
 		difficulty varchar(64) not null,
 		transactions int not null,
 		version varchar(10) default '010000' null,
@@ -28,7 +29,7 @@ if (empty($dbversion)) {
 	(
 		id varchar(128) not null
 			primary key,
-		public_key varchar(1024) not null,
+		public_key varchar(255) not null,
 		block varchar(128) not null,
 		balance decimal(20,8) not null,
 		alias varchar(32) null,
@@ -54,7 +55,7 @@ if (empty($dbversion)) {
 
 	$db->run("create table masternode
 	(
-		public_key varchar(128) not null
+		public_key varchar(255) not null
 			primary key,
 		height int not null,
 		ip varchar(16) not null,
@@ -76,10 +77,10 @@ if (empty($dbversion)) {
 		dst varchar(128) not null,
 		val decimal(20,8) not null,
 		fee decimal(20,8) not null,
-		signature varchar(256) not null,
+		signature varchar(255) not null,
 		type tinyint not null,
-		message varchar(256) default '' null,
-		public_key varchar(1024) not null,
+		message varchar(255) default '' null,
+		public_key varchar(255) not null,
 		date bigint not null,
 		peer varchar(64) null
 	)");
@@ -113,11 +114,11 @@ if (empty($dbversion)) {
 		dst varchar(128) not null,
 		val decimal(20,8) not null,
 		fee decimal(20,8) not null,
-		signature varchar(256) not null,
+		signature varchar(255) not null,
 		type tinyint not null,
-		message varchar(256) default '' null,
+		message varchar(255) default '' null,
 		date int not null,
-		public_key varchar(1024) not null,
+		public_key varchar(255) not null,
 		constraint block_id
 			foreign key (block) references blocks (id)
 				on delete cascade
@@ -178,6 +179,21 @@ if($dbversion == 1) {
 if($dbversion == 2) {
 	$db->run('alter table peers add version varchar(20) null;');
 	$dbversion = 3;
+}
+
+if($dbversion == 3) {
+	if(!$was_empty) {
+		$db->run("alter table accounts modify public_key varchar(255) not null;");
+		$db->run("alter table blocks modify signature varchar(255) not null;");
+		$db->run("alter table masternode modify public_key varchar(255) not null;");
+		$db->run("alter table mempool modify signature varchar(255) not null;");
+		$db->run("alter table mempool modify message varchar(255) default '' null;");
+		$db->run("alter table mempool modify public_key varchar(255) not null;");
+		$db->run("alter table transactions modify signature varchar(255) not null;");
+		$db->run("alter table transactions modify message varchar(255) default '' null;");
+		$db->run("alter table transactions modify public_key varchar(255) not null;");
+	}
+	$dbversion = 4;
 }
 
 // update the db version to the latest one
