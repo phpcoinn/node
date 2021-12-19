@@ -723,6 +723,39 @@ class Util
 		echo "Export finished. File: $file".PHP_EOL;
 	}
 
+	static function exportdb($argv) {
+		$file = $argv[2];
+		if(empty($file)) {
+			$file = getcwd() . "/blockchain.sql";
+		}
+		global $db;
+		$db_name = $db->single('select database()');
+		echo "Exporting database...".PHP_EOL;
+		$cmd = "mysqldump --single-transaction --compatible=ansi --no-tablespaces $db_name accounts blocks transactions > $file";
+		shell_exec($cmd);
+		echo "Database exported".PHP_EOL;
+	}
+
+	static function importdb($argv) {
+		$file = trim($argv[2]);
+		if(empty($file)) {
+			die("Missing argument <file>".PHP_EOL."Command: importdb <file>".PHP_EOL);
+		}
+		if(!file_exists($file)) {
+			die("Can not found file: $file".PHP_EOL);
+		}
+		$lockFile = Nodeutil::getSyncFile();
+		if (file_exists($lockFile)) {
+			die("Sync running. Wait for it to finish");
+		}
+		echo "Importing database...".PHP_EOL;
+		global $db;
+		$db_name = $db->single('select database()');
+		$cmd = "mysql $db_name < $file";
+		shell_exec($cmd);
+		echo "Database imported".PHP_EOL;
+	}
+
 	static function importchain($argv) {
 		global $db;
 		$file = trim($argv[2]);
