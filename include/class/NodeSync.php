@@ -24,7 +24,8 @@ class NodeSync
 		$max_removed = 0;
 		while ($syncing) {
 			$loop_cnt++;
-			if ($loop_cnt > $largest_height) {
+			if ($loop_cnt > 1000) {
+				_log("Exit after added 1000 blocks", 4);
 				break;
 			}
 

@@ -62,6 +62,11 @@ if (file_exists($lock_file)) {
     }
 }
 
+register_shutdown_function(function () {
+	$lock_file = dirname(__DIR__)."/tmp/sync-lock";
+	@unlink($lock_file);
+});
+
 require_once dirname(__DIR__).'/include/init.inc.php';
 
 define("SYNC_LOCK_PATH", Nodeutil::getSyncFile());
