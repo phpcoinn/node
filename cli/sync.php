@@ -41,7 +41,7 @@ if (php_sapi_name() !== 'cli') {
 $lock_file = dirname(__DIR__)."/tmp/sync-lock";
 
 // make sure there's only a single sync process running at the same time
-if (file_exists($lock_file)) {
+if (!mkdir($lock_file, 0700)) {
     $ignore_lock = false;
     if ($argv[1] == "force") {
         $res = intval(shell_exec("ps aux|grep '".dirname(__DIR__)."/cli/sync.php'|grep -v grep|wc -l"));
@@ -53,7 +53,7 @@ if (file_exists($lock_file)) {
 
     // If the process died, restart after 1 hour
     if (time() - $pid_time > 60 * 60) {
-        @unlink($lock_file);
+        @rmdir($lock_file);
     }
 
     if (!$ignore_lock) {
@@ -64,16 +64,13 @@ if (file_exists($lock_file)) {
 
 register_shutdown_function(function () {
 	$lock_file = dirname(__DIR__)."/tmp/sync-lock";
-	@unlink($lock_file);
+	@rmdir($lock_file);
 });
 
 require_once dirname(__DIR__).'/include/init.inc.php';
 
 define("SYNC_LOCK_PATH", Nodeutil::getSyncFile());
 
-// set the new sync lock
-$lock = fopen(SYNC_LOCK_PATH, "w");
-fclose($lock);
 $arg = trim($argv[1]);
 $arg2 = trim($argv[2]);
 
@@ -85,7 +82,7 @@ if (DEVELOPMENT) {
 // the sync can't run without the schema being installed
 if ($_config['dbversion'] < 1) {
     die("DB schema not created");
-    @unlink(SYNC_LOCK_PATH);
+    @rmdir(SYNC_LOCK_PATH);
     exit;
 }
 
@@ -204,7 +201,7 @@ if ($arg == "microsync" && !empty($arg2)) {
         _log("Synced block from ".$x[hostname]." - $b[height] $b[difficulty]", 2);
     } while (0);
 
-    @unlink(SYNC_LOCK_PATH);
+    @rmdir(SYNC_LOCK_PATH);
     exit;
 }
 
@@ -291,7 +288,7 @@ if ($total_peers == 0) {
     $total_peers = Peer::getCountAll();
     if ($total_peers == 0) {
         // something went wrong, could not add any peers -> exit
-        @unlink(SYNC_LOCK_PATH);
+        @rmdir(SYNC_LOCK_PATH);
         _log("There are no active peers");
 	    $db->setConfig('node_score', 0);
         die("There are no active peers!\n");
@@ -440,17 +437,17 @@ foreach ($r as $x) {
     }
 }
 $largest_size=$blocks_count[$largest_height_block];
-echo "Most common: $most_common\n";
-echo "Most common block size: $most_common_size\n";
-echo "Most common height: $most_common_height\n\n";
-echo "Longest chain height: $largest_height\n";
-echo "Longest chain size: $largest_size\n\n";
-echo "Larger Most common: $largest_most_common\n";
-echo "Larger Most common block size: $largest_most_common_size\n";
-echo "Larger Most common height: $largest_most_common_height\n\n";
-echo "Total size: $total_active_peers\n\n";
+_log("Most common: $most_common\n");
+_log( "Most common block size: $most_common_size\n");
+_log( "Most common height: $most_common_height\n\n");
+_log( "Longest chain height: $largest_height\n");
+_log( "Longest chain size: $largest_size\n\n");
+_log( "Larger Most common: $largest_most_common\n");
+_log( "Larger Most common block size: $largest_most_common_size\n");
+_log( "Larger Most common height: $largest_most_common_height\n\n");
+_log( "Total size: $total_active_peers\n\n");
 
-echo "Current block: $current[height]\n";
+_log( "Current block: $current[height]\n");
 
 // if this is the node that's ahead, and other nodes are not catching up, pop 200
 
@@ -461,7 +458,7 @@ if($largest_height-$most_common_height>100&&$largest_size==1&&$current['id']==$l
     $db->run("UPDATE config SET val=0 WHERE cfg='sync'");
     _log("Exiting sync, next will sync from 200 blocks ago.");
 
-    @unlink(SYNC_LOCK_PATH);
+    @rmdir(SYNC_LOCK_PATH);
     exit;
 }
 
@@ -656,4 +653,4 @@ Minepool::deleteOldEntries();
 
 _log("Finishing sync",3);
 
-@unlink(SYNC_LOCK_PATH);
+@rmdir(SYNC_LOCK_PATH);

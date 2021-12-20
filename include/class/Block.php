@@ -66,7 +66,7 @@ class Block
 	            return false;
 	        }
 
-	        if($this->version != BLock::versionCode($this->height)) {
+	        if($this->version != Block::versionCode($this->height)) {
 		        _log("Wrong version code");
 		        return false;
 	        }
@@ -135,7 +135,7 @@ class Block
 	        $db->unlockTables();
 	        return false;
         } else {
-            _log("Committing block", 4);
+            _log("Committing block height=".$this->height, 4);
             $db->commit();
 	        $db->unlockTables();
 	        return true;
@@ -637,7 +637,7 @@ class Block
                             
               
                     $db->run("UPDATE config SET val=0 WHERE cfg='sync'");
-                    @unlink(SYNC_LOCK_PATH);
+                    @rmdir(SYNC_LOCK_PATH);
 	                $dir = ROOT."/cli";
                     system("php $dir/sync.php  > /dev/null 2>&1  &");
                     exit;
