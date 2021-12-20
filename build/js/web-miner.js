@@ -236,8 +236,8 @@ class WebMiner {
                     this.hashingConfig.mem = hashingOptions.memory_cost
                     this.hashingConfig.parallelism = hashingOptions.threads
                     this.hashingConfig.time = hashingOptions.time_cost
-                    salt = crypto.randomBytes(16).toString('hex')
-                    salt = Buffer.from(address.substr(0, 16))
+                    salt = crypto.randomBytes(8).toString('hex')
+                    salt = Buffer.from(salt)
                 }
 
                 let t1 = Date.now()
