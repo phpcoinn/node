@@ -63,6 +63,9 @@ $_config['passive_peering'] = false;
 // set node to offline, do not send or receive peer requests
 $_config['offline']=false;
 
+// set ip restriction on miner
+$_config['minepool']=false;
+
 /*
 |--------------------------------------------------------------------------
 | Mempool Configuration

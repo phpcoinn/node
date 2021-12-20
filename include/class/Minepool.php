@@ -8,9 +8,18 @@ class Minepool
 	public $miner;
 	public $iphash;
 
+	public static function enabled() {
+		global $_config;
+		return isset($_config['minepool']) && $_config['minepool'];
+	}
+
 	public static function checkIp($address, $ip)
 	{
 		global $db, $_config;
+
+		if(!self::enabled()) {
+			return true;
+		}
 
 		$iphash = self::calculateIpHash($ip);
 		_log("Minepool: checkIp address=$address ip=$ip iphash=$iphash");
@@ -27,6 +36,11 @@ class Minepool
 
 	public static function insert($address, $height, $miner, $ip) {
 		global $db;
+
+		if(!self::enabled()) {
+			return true;
+		}
+
 		$iphash = self::calculateIpHash($ip);
 		$sql = "select * from minepool where iphash=:iphash";
 		$row=$db->row($sql, [":iphash" => $iphash]);
@@ -44,6 +58,11 @@ class Minepool
 
 	public static function deleteOldEntries() {
 		global $db;
+
+		if(!self::enabled()) {
+			return;
+		}
+
 		$current = Block::getHeight();
 		$height = $current - 60;
 		$sql="delete from minepool where height < :height";
