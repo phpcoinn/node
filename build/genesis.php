@@ -34,7 +34,8 @@ $data[$reward_tx['id']]=$reward_tx;
 ksort($data);
 
 $block=new Block($generator, $generator, $height, $block_date, null, $data, $difficulty, Block::versionCode(), null, "");
-$block->calculateNonce($block_date, $elapsed);
+$block->argon = $block->calculateArgonHash($block_date, $elapsed);
+$block->nonce = $block->calculateNonce($block_date, $elapsed);
 
 $signature = $block->sign($private_key);
 

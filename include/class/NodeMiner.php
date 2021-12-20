@@ -88,8 +88,8 @@ class NodeMiner {
 				$elapsed = $now - $block_date;
 				$new_block_date = $block_date + $elapsed;
 				_log("Time=now=$now elapsed=$elapsed",4);
-				$bl->argon = null;
-				$bl->calculateNonce($block_date, $elapsed);
+				$bl->argon = $bl->calculateArgonHash($block_date, $elapsed);
+				$bl->nonce=$bl->calculateNonce($block_date, $elapsed);
 				$bl->date = $new_block_date;
 				$hit = $bl->calculateHit();
 				$target = $bl->calculateTarget($elapsed);

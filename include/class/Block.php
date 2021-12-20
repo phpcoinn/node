@@ -795,13 +795,8 @@ class Block
 	}
 
     function calculateNonce($prev_block_date, $elapsed) {
-    	if(empty($this->argon)) {
-		    $argon = $this->calculateArgonHash($prev_block_date, $elapsed);
-		    $this->argon = $argon;
-	    }
     	$nonceBase = "{$this->miner}-{$prev_block_date}-{$elapsed}-{$this->argon}";
 	    $calcNonce = hash("sha256", $nonceBase);
-	    $this->nonce = $calcNonce;
 	    _log("calculateNonce nonceBase=$nonceBase argon={$this->argon} calcNonce=$calcNonce", 5);
 	    return $calcNonce;
     }

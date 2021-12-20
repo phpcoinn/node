@@ -129,8 +129,8 @@ class Miner {
 				$elapsed = $now - $offset - $block_date;
 				$new_block_date = $block_date + $elapsed;
 				_log("Time=now=$now nodeTime=$nodeTime offset=$offset elapsed=$elapsed",4);
-				$bl->argon = null;
-				$bl->calculateNonce($block_date, $elapsed);
+				$bl->argon = $bl->calculateArgonHash($block_date, $elapsed);
+				$bl->nonce=$bl->calculateNonce($block_date, $elapsed);
 				$bl->date = $block_date;
 				$hit = $bl->calculateHit();
 				$target = $bl->calculateTarget($elapsed);
