@@ -453,12 +453,11 @@ _log( "Current block: $current[height]\n");
 
 if($largest_height-$most_common_height>100&&$largest_size==1&&$current['id']==$largest_height_block){
     _log("Current node is alone on the chain and over 100 blocks ahead. Poping 200 blocks.");
-    $db->run("UPDATE config SET val=1 WHERE cfg='sync'");
     Block::pop(200);
-    $db->run("UPDATE config SET val=0 WHERE cfg='sync'");
     _log("Exiting sync, next will sync from 200 blocks ago.");
 
     @rmdir(SYNC_LOCK_PATH);
+	Config::setSync(0);
     exit;
 }
 
@@ -605,13 +604,12 @@ if ($_config['sync_recheck_blocks'] > 0) {
 	    $block = Block::getFromArray($data);
 
         if (!$block->mine()) {
-            $db->run("UPDATE config SET val=1 WHERE cfg='sync'");
+	        Config::setSync(1);
             _log("Invalid block detected. Deleting everything after $data[height] - $data[id]");
             sleep(10);
             $all_blocks_ok = false;
             Block::delete($i);
-
-            $db->run("UPDATE config SET val=0 WHERE cfg='sync'");
+	        Config::setSync(0);
             break;
         }
     }

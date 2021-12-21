@@ -636,7 +636,7 @@ class Block
                     $db->unlockTables();
                             
               
-                    $db->run("UPDATE config SET val=0 WHERE cfg='sync'");
+					Config::setSync(0);
                     @rmdir(SYNC_LOCK_PATH);
 	                $dir = ROOT."/cli";
                     system("php $dir/sync.php  > /dev/null 2>&1  &");

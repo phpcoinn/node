@@ -138,7 +138,7 @@ if ($q == "info") {
 
 	$generator = Account::getAddress($_config['generator_public_key']);
 
-	if ($_config['sync'] == 1) {
+	if (Config::isSync()) {
 		$l .= " sync ";
 		_log($l);
 		$generator_stat['rejected']++;

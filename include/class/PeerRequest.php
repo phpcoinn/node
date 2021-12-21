@@ -134,7 +134,7 @@ class PeerRequest
 
 
 		// no transactions accepted if the sync is running
-		if ($_config['sync'] == 1) {
+		if (Config::isSync()) {
 			api_err("sync");
 		}
 
@@ -204,7 +204,7 @@ class PeerRequest
 		// receive a  new block from a peer
 		_log("Receive new block from a peer $ip : id=".$data['id']." height=".$data['height'],1);
 		// if sync, refuse all
-		if ($_config['sync'] == 1) {
+		if (Config::isSync()) {
 			_log('['.$ip."] Block rejected due to sync");
 			api_err("sync");
 		}
@@ -280,6 +280,10 @@ class PeerRequest
 		}
 		$block->prevBlockId = $current['id'];
 
+		if (Config::isSync()) {
+			_log('['.$ip."] Block rejected due to sync");
+			api_err("sync");
+		}
 		$res = $block->add();
 
 		if (!$res) {

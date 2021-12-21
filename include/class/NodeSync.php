@@ -15,7 +15,7 @@ class NodeSync
 	{
 
 		global $db;
-		$db->run("UPDATE config SET val=1 WHERE cfg='sync'");
+		Config::setSync(1);
 
 		$peers_count = @count($this->peers);
 
@@ -174,8 +174,7 @@ class NodeSync
 
 		$this->calculateNodeScore();
 
-		$t = time();
-		$db->run("UPDATE config SET val=0 WHERE cfg='sync'", [":time" => $t]);
+		Config::setSync(0);
 		if($syncing) {
 			_log("Blockchain SYNCED");
 		}

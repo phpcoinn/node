@@ -74,7 +74,7 @@ class Miner {
 				continue;
 			}
 
-			if (isset($_config['sync']) && $_config['sync'] == 1) {
+			if (Config::isSync()) {
 				_log("Sync in process");
 				sleep(3);
 				continue;
