@@ -385,7 +385,7 @@ class Transaction
 			return false;
 		}
 		if(!in_array($msg, ["nodeminer", "miner", "generator"]) &&
-			substr($msg, 0, strlen("pool|")) != "pool|") {
+			!(substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING)) {
 			_log("Reward transaction invalid message: $msg",5);
 			return false;
 		}
@@ -397,7 +397,7 @@ class Transaction
 			$val_check = num($miner);
 		} else if ($msg == "generator") {
 			$val_check = num($generator);
-		} else if (substr($msg, 0, strlen("pool|")) == "pool|") {
+		} else if (substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING) {
 			$val_check = num($miner);
 		}
 		if(empty($val_check)) {
@@ -408,7 +408,7 @@ class Transaction
 			_log("Reward transaction not valid: val=".$this->val." val_check=$val_check", 5);
 			return false;
 		}
-	    if (substr($msg, 0, strlen("pool|")) == "pool|") {
+	    if (substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING) {
 	    	$arr = explode("|", $msg);
 	    	$poolMinerAddress=$arr[1];
 	    	$poolMinerAddressSignature=$arr[2];

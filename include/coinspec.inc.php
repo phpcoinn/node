@@ -63,3 +63,4 @@ const GIT_URL = "https://github.com/phpcoinn/node";
 const UPDATE_1_BLOCK_ZERO_TIME = 9000;
 const UPDATE_2_BLOCK_CHECK_IMPROVED = 25000;
 const UPDATE_3_ARGON_HARD = 45000;
+const UPDATE_4_NO_POOL_MINING = 45400;

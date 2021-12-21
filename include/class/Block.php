@@ -418,14 +418,6 @@ class Block
 	        return false;
         }
 
-
-        $miningPoolAddress = $this->miningPoolAddress();
-        $miner = $this->miner;
-        if($miningPoolAddress !== false) {
-        	_log("POOL: miner address ".$miningPoolAddress);
-        	$this->miner = $miningPoolAddress;
-        }
-
 	    //verify argon
 	    if(!$this->verifyArgon($prev_date, $elapsed)) {
 		    _log("Invalid argon={$this->argon}");
@@ -455,25 +447,8 @@ class Block
 	    	_log("invalid hit or target");
 	    }
 
-	    $this->miner =$miner;
-
 	    return $res;
 
-    }
-
-    private function miningPoolAddress() {
-		_log("miningPoolAddress data=".json_encode($this->data), 5);
-		if(is_array($this->data)) {
-		    foreach ($this->data as $transaction) {
-			    $msg = $transaction['message'];
-			    _log("msg=".$msg. " substr=".substr($msg, 0, strlen("pool|")), 5);
-			    if(substr($msg, 0, strlen("pool|")) == "pool|") {
-			        $arr = explode("|", $msg);
-				    return $arr[1];
-			    }
-		    }
-		}
-	    return false;
     }
 
     // parse the block transactions
@@ -913,12 +888,6 @@ class Block
 			$prev_block_id = "";
 		}
 
-		$miner = $this->miner;
-		$miningPoolAddress = $this->miningPoolAddress();
-		if($miningPoolAddress !== false) {
-			$this->miner = $miningPoolAddress;
-		}
-
 		$res = $this->verifyArgon($prev_block_date, $elapsed);
 		if(!$res) {
 			_log("Check argon failed");
@@ -938,8 +907,6 @@ class Block
 			_log("Mine check failed hit=$hit target=$target");
 			return false;
 		}
-
-		$this->miner =$miner;
 
 		ksort($data);
 		foreach ($data as $transaction) {

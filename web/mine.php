@@ -254,20 +254,6 @@ if ($q == "info") {
 	}
 
 	$msg = "miner";
-	if(isset($_POST['poolMiner']) && isset($_POST['poolSignature']) && isset($_POST['addressSignature'])) {
-		$poolMiner = $_POST['poolMiner'];
-		$poolSignature = $_POST['poolSignature'];
-		_log("Pool miner poolMiner=$poolMiner poolSignature=$poolSignature");
-		$verify = ec_verify($poolMiner, $poolSignature, $_config['generator_public_key']);
-		if(!$verify) {
-			$l .= " rejected - Mine pool signature not valid poolSignature=$poolSignature poolMiner=$poolMiner";
-			_log($l);
-			$generator_stat['rejected']++;
-			@$generator_stat['reject-reasons']['mining-pool-signature-not-valid']++;
-			api_err("mining-pool-signature-not-valid");
-		}
-		$msg = "pool|".$poolMiner."|".$_POST['addressSignature'];
-	}
 
 	$lastBlock = Block::current();
 	$block_date = $lastBlock['date'];
