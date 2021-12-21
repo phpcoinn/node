@@ -74,12 +74,6 @@ class Miner {
 				continue;
 			}
 
-			if (Config::isSync()) {
-				_log("Sync in process");
-				sleep(3);
-				continue;
-			}
-
 			if(!isset($info['data']['generator'])) {
 				_log("Miner node does not send generator address");
 				sleep(3);
