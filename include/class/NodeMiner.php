@@ -103,7 +103,8 @@ class NodeMiner {
 
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
-				if($attempt % 10 == 0) {
+				$mod = 10+$cpu;
+				if($attempt % $mod == 0) {
 					$info = $this->getMiningInfo();
 					if($info!==false) {
 						_log("Checking new block from server ".$info['block']. " with our block $prev_block_id", 4);

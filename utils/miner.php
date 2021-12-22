@@ -11,7 +11,7 @@ $address = @$argv[2];
 $cpu = @$argv[3];
 $block_cnt = @$argv[4];
 
-if(file_exists(getcwd()."/miner1.conf")) {
+if(file_exists(getcwd()."/miner.conf")) {
 	$minerConf = parse_ini_file(getcwd()."/miner.conf");
 	$node = $minerConf['node'];
 	$address = $minerConf['address'];
