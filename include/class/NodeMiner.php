@@ -80,21 +80,28 @@ class NodeMiner {
 			$bl = new Block($generator, $generator, $height, null, null, $data, $difficulty, Block::versionCode($height), null, $prev_block_id);
 			$bl->publicKey = $this->public_key;
 
+			$t1 = microtime(true);
+			$cpu = isset($_config['miner_cpu']) ? $_config['miner_cpu'] : 0;
 			while (!$blockFound) {
 				$attempt++;
-				usleep(500 * 1000);
+				usleep((100-$cpu) * 5 * 1000);
 				$this->checkRunning();
 				$now = time();
 				$elapsed = $now - $block_date;
 				$new_block_date = $block_date + $elapsed;
-				_log("Time=now=$now elapsed=$elapsed",4);
+
 				$bl->argon = $bl->calculateArgonHash($block_date, $elapsed);
 				$bl->nonce=$bl->calculateNonce($block_date, $elapsed);
 				$bl->date = $new_block_date;
 				$hit = $bl->calculateHit();
 				$target = $bl->calculateTarget($elapsed);
 				$blockFound = ($hit > 0 && $target > 0 &&  $hit > $target);
-				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target blockFound=$blockFound", 3);
+
+				$t2 = microtime(true);
+				$diff = $t2 - $t1;
+				$speed = round($attempt / $diff,2);
+
+				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
 				if($attempt % 10 == 0) {
 					$info = $this->getMiningInfo();
@@ -108,6 +115,7 @@ class NodeMiner {
 					}
 				}
 			}
+
 
 			if(!$blockFound) {
 				continue;

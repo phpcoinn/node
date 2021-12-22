@@ -9,6 +9,7 @@ class Miner {
 	public $miningStat;
 	public $cnt = 0;
 	public $block_cnt = 0;
+	public $cpu = 0;
 
 	private $running = true;
 
@@ -116,9 +117,10 @@ class Miner {
 
 			$bl = new Block(null, $this->address, $height, null, null, $data, $difficulty, Block::versionCode($height), null, $prev_block_id);
 
+			$t1 = microtime(true);
 			while (!$blockFound) {
 				$attempt++;
-				usleep(500 * 1000);
+				usleep((100-$this->cpu) * 5 * 1000);
 				$now = time();
 				$elapsed = $now - $offset - $block_date;
 				$new_block_date = $block_date + $elapsed;
@@ -129,7 +131,12 @@ class Miner {
 				$hit = $bl->calculateHit();
 				$target = $bl->calculateTarget($elapsed);
 				$blockFound = ($hit > 0 && $target > 0 && $hit > $target);
-				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target blockFound=$blockFound", 3);
+
+				$t2 = microtime(true);
+				$diff = $t2 - $t1;
+				$speed = round($attempt / $diff,2);
+
+				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
 				if($attempt % 10 == 0) {
 					$info = $this->getMiningInfo();

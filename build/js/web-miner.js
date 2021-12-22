@@ -73,15 +73,44 @@ class WebMiner {
         this.hashingConfig = hashingConfig
         this.block_time = block_time
         this.callbacks = callbacks
+        this.cpu = 0
+        this.updateUITimer = null
+        this.mineInfoTimer = null
+        this.break = false
+        this.miner = null
+
     }
 
     async start() {
         this.running = true
+        this.updateUITimer = setInterval(()=>{
+            this.callbacks.onMinerUpdate(this.miner, this.miningStat)
+        }, 1000)
+        this.mineInfoTimer = setInterval(()=>{
+            axios({
+                method: 'get',
+                url: this.node + '/mine.php?q=info',
+            }).then(response => {
+                let info = response.data
+                if (info.status === 'ok') {
+                    let height = parseInt(info.data.height)
+                    // console.log(`Node height ${height} we mine ${this.miner.height}`)
+                    if(info.data.block !==  this.miner.block) {
+                        // console.log(`New block detected - starting over`)
+                        this.miningStat.dropped ++
+                        this.break = true
+                    }
+                }
+            })
+
+        }, 10000)
         await this.loop()
     }
 
     stop() {
         this.running = false
+        clearInterval(this.updateUITimer)
+        clearInterval(this.mineInfoTimer)
     }
 
     sha256(pwd) {
@@ -106,6 +135,10 @@ class WebMiner {
         this.miningStat.accepted = 0
         this.miningStat.rejected = 0
         this.miningStat.dropped = 0
+    }
+
+    updateCpu(cpu) {
+        this.cpu = cpu
     }
 
     saveStat() {
@@ -147,9 +180,9 @@ class WebMiner {
             let submitResponse
             let calOffset = 0
             let blockFound = false
-            let times = {}
             let version = info.data.version
             let attempt = 0
+            let speed = 0
 
             if(Array.isArray(data) && data.length === 0) {
                 data = {}
@@ -181,43 +214,38 @@ class WebMiner {
                 json,
                 version,
                 submitResponse,
-                times,
-                attempt
+                attempt,
+                speed,
+                block
             }
             this.callbacks.onMinerUpdate(this.miner, this.miningStat)
 
             let salt
 
-
+            let t1 = Date.now()
             while(!blockFound) {
+
+
+                if (this.break) {
+                    this.break = false
+                    break
+                }
+
                 attempt++
 
                 this.miningStat.hashes++
-
-                if(attempt % 10  === 0) {
-                    // console.log(`Checking for new block`)
-                    let response = await axios({
-                        method: 'get',
-                        url: this.node + '/mine.php?q=info',
-                    })
-                    let info = response.data
-                    if (info.status === 'ok') {
-                        // console.log(`Node height ${height} we mine ${this.miner.height}`)
-                        if(info.data.block !==  block) {
-                            // console.log(`New block detected - starting over`)
-                            this.miningStat.dropped ++
-                            break
-                        }
-                    }
-                }
 
                 if(!this.running) {
                     this.miningStat.dropped ++
                     break
                 }
 
+                let t2 = Date.now()
+                let diff = t2 - t1
+                this.miner.speed = ( attempt / (diff / 1000)).toFixed(2)
 
-                await new Promise(resolve => setTimeout(resolve, 500));
+                let ms = (100 - this.cpu) * 5
+                await new Promise(resolve => setTimeout(resolve, ms));
 
                 now = Math.round(Date.now() / 1000)
                 elapsed = now + offset - block_date
@@ -227,8 +255,6 @@ class WebMiner {
                 this.miner.elapsed = elapsed
                 this.miner.attempt = attempt
                 this.miner.new_block_date = new_block_date
-
-                times.start = Date.now()
 
                 salt = address.substr(0, 16)
                 if(info.data.hashingOptions) {
@@ -240,7 +266,6 @@ class WebMiner {
                     salt = Buffer.from(salt)
                 }
 
-                let t1 = Date.now()
                 let hash = await argon2.hash({
                     pass: argonBase,
                     salt,
@@ -250,12 +275,6 @@ class WebMiner {
                         type: argon2.ArgonType.Argon2i,
                         hashLen: 32
                     })
-                let t2 = Date.now()
-                let diff = t2 - t1
-                //console.log(`Argon hashing time = ${diff}`)
-                this.miner.hashingTime = diff
-
-                times.t1 = Date.now()
 
                 argon = hash.encoded
                 nonceBase = `${address}-${block_date}-${elapsed}-${argon}`
@@ -264,15 +283,11 @@ class WebMiner {
 
                 calcNonce = await this.sha256(nonceBase)
 
-                times.t2 = Date.now()
-
                 hitBase = `${address}-${calcNonce}-${height}-${difficulty}`
                 this.miner.calcNonce = calcNonce
                 this.miner.hitBase = hitBase
                 let hash1 = await this.sha256(hitBase)
                 let hash2 = await this.sha256(hash1)
-
-                times.t3 = Date.now()
 
                 hashPart = hash2.substr(0, 8)
                 hitValue = this.hexToDec(hashPart)
@@ -284,16 +299,6 @@ class WebMiner {
                 this.miner.hit = hit
                 this.miner.target = target
                 this.miner.blockFound = blockFound
-
-                times.end = Date.now()
-                times.argon = times.t1 - times.start
-                times.nonce = times.t2 - times.t1
-                times.hash = times.t3 - times.t2
-                times.remain = times.end - times.t3
-                times.total = times.end-times.start
-                this.miner.times=times
-                // console.log(times)
-                this.callbacks.onMinerUpdate(this.miner, this.miningStat)
 
             }
 

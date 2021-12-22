@@ -276,7 +276,7 @@ class Nodeutil
 	}
 
 	static function getConfig() {
-		global $db;
+		global $db, $_config;
 		$config_file = ROOT.'/config/config.inc.php';
 		require_once $config_file;
 		$query = $db->run("SELECT cfg, val FROM config");

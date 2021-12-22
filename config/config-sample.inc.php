@@ -133,6 +133,7 @@ $_config['log_verbosity'] = 0;
 $_config['miner']=false;
 $_config['miner_public_key']="";
 $_config['miner_private_key']="";
+$_config['miner_cpu']=0;
 
 /**
  * Generator config

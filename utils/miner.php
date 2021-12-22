@@ -8,19 +8,21 @@ if(Phar::running()) {
 
 $node = @$argv[1];
 $address = @$argv[2];
-$block_cnt = @$argv[3];
+$cpu = @$argv[3];
+$block_cnt = @$argv[4];
 
-if(file_exists(getcwd()."/miner.conf")) {
+if(file_exists(getcwd()."/miner1.conf")) {
 	$minerConf = parse_ini_file(getcwd()."/miner.conf");
 	$node = $minerConf['node'];
 	$address = $minerConf['address'];
-	$block_cnt = $minerConf['block_cnt'];
+	$block_cnt = @$minerConf['block_cnt'];
+	$cpu = @$minerConf['cpu'];
 }
 
 echo "PHPCoin Miner Version ".VERSION.".(".BUILD_VERSION.")".PHP_EOL;
 
 if(empty($node) && empty($address)) {
-	die("Usage: miner <node> <address>");
+	die("Usage: miner <node> <address> <cpu>");
 }
 
 if(empty($node)) {
@@ -50,4 +52,5 @@ define("ROOT", __DIR__);
 
 $miner = new Miner($address, $node);
 $miner->block_cnt = empty($block_cnt) ? 0 : $block_cnt;
+$miner->cpu = empty($cpu) ? 0 : $cpu;
 $miner->start();
