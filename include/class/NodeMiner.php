@@ -86,6 +86,9 @@ class NodeMiner {
 				$attempt++;
 				usleep((100-$cpu) * 5 * 1000);
 				$this->checkRunning();
+				if(!$this->running) {
+					break;
+				}
 				$now = time();
 				$elapsed = $now - $block_date;
 				$new_block_date = $block_date + $elapsed;
