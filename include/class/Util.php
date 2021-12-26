@@ -241,8 +241,7 @@ class Util
 	 * Mempool size: 12
 	 */
 	static function mempool() {
-		global $db;
-		$res = $db->single("SELECT COUNT(1) from mempool");
+		$res = Mempool::getSize();
 		echo "Mempool size: $res\n";
 	}
 

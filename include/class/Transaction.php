@@ -70,13 +70,12 @@ class Transaction
         $current = Block::current();
         $height = $current['height'];
         $limit = $height - 1000;
-        $db->run("DELETE FROM mempool WHERE height<:limit", [":limit" => $limit]);
+		Mempool::deleteToeight($limit);
     }
 
     public static function empty_mempool()
     {
-        global $db;
-        $db->run("DELETE FROM mempool");
+        Mempool::empty_mempool();
     }
 
     public static function getFromDbRecord($x) {
@@ -120,11 +119,7 @@ class Transaction
         global $db;
         $current = Block::current();
         $height = $current['height'] + 1;
-        // only get the transactions that are not locked with a future height
-        $r = $db->run(
-            "SELECT * FROM mempool WHERE height<=:height ORDER by val/fee DESC LIMIT :max",
-            [":height" => $height, ":max" => $max + 50]
-        );
+	    $r = Mempool::getTxs($height, $max);
         $transactions = [];
         if (count($r) > 0) {
             $i = 0;
@@ -258,7 +253,7 @@ class Transaction
 			return false;
 		}
 
-		$db->run("DELETE FROM mempool WHERE id=:id", [":id" => $this->id]);
+		Mempool::delete($this->id);
 		return true;
 	}
 
@@ -462,7 +457,7 @@ class Transaction
 	public static function export($id)
 	{
 		global $db;
-		$r = $db->row("SELECT * FROM mempool WHERE id=:id", [":id" => $id]);
+		$r = Mempool::getById($id);
 		$r['date']=intval($r['date']);
 		return $r;
 	}
@@ -537,7 +532,7 @@ class Transaction
     public static function get_mempool_transaction($id)
     {
         global $db;
-        $x = $db->row("SELECT * FROM mempool WHERE id=:id", [":id" => $id]);
+		$x = Mempool::getById($id);
         if (!$x) {
             return false;
         }
@@ -602,7 +597,7 @@ class Transaction
 		    $error = "Transaction signature failed";
 		    return false;
 	    }
-	    $res = $db->single("SELECT COUNT(1) FROM mempool WHERE id=:id", [":id" => $hash]);
+		$res = Mempool::existsTx($hash);
 	    if ($res != 0) {
 		    $error="The transaction is already in mempool";
 		    return false;
@@ -620,7 +615,7 @@ class Transaction
 		    return false;
 	    }
 
-	    $memspent = $db->single("SELECT SUM(val+fee) FROM mempool WHERE src=:src", [":src" => $this->src]);
+		$memspent = Mempool::getSourceMempoolBalance($this->src);
 	    if ($balance - $memspent < $this->val + $this->fee) {
 		    $error = "Not enough funds (mempool)";
 		    return false;
@@ -641,10 +636,7 @@ class Transaction
     }
 
     static function getMempoolCount() {
-    	global $db;
-    	$sql="select count(*) as cnt from mempool";
-		$row = $db->row($sql);
-		return $row['cnt'];
+		return Mempool::getSize();
     }
 
     static function getByAddress($address, $limit) {

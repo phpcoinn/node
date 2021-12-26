@@ -144,16 +144,16 @@ class PeerRequest
 		}
 		$hash = $tx->id;
 		// make sure it's not already in mempool
-		$res = $db->single("SELECT COUNT(1) FROM mempool WHERE id=:id", [":id" => $hash]);
+		$res = Mempool::existsTx($hash);
 		if ($res != 0) {
 			api_err("The transaction is already in mempool");
 		}
 		// make sure the peer is not flooding us with transactions
-		$res = $db->single("SELECT COUNT(1) FROM mempool WHERE src=:src", [":src" => $tx->src]);
+		$res = Mempool::getSourceTxCount($tx->src);
 		if ($res > 25) {
 			api_err("Too many transactions from this address in mempool. Please rebroadcast later.");
 		}
-		$res = $db->single("SELECT COUNT(1) FROM mempool WHERE peer=:peer", [":peer" => $ip]);
+		$res = Mempool::getPeerTxCount(self::$ip);
 		if ($res > $_config['peer_max_mempool']) {
 			api_err("Too many transactions broadcasted from this peer");
 		}
@@ -171,7 +171,7 @@ class PeerRequest
 		}
 
 		// make sure the sender has enough pending balance
-		$memspent = $db->single("SELECT SUM(val+fee) FROM mempool WHERE src=:src", [":src" => $tx->src]);
+		$memspent = Mempool::getSourceMempoolBalance($tx->src);
 		if ($balance - $memspent < $tx->val + $tx->fee) {
 			api_err("Not enough funds (mempool)");
 		}
@@ -186,14 +186,14 @@ class PeerRequest
 		}
 
 		// add to mempool
-		$tx->add_mempool($ip);
+		$tx->add_mempool(self::$ip);
 
 		// rebroadcast the transaction to some peers unless the transaction is smaller than the average size of transactions in mempool - protect against garbage data flooding
-		$res = $db->row("SELECT COUNT(1) as c, sum(val) as v FROM  mempool ", [":src" => $tx->src]);
-		if ($res['c'] < $_config['max_mempool_rebroadcast'] && $res['v'] / $res['c'] < $tx->val) {
-			$dir = ROOT."/cli";
-			system( "php $dir/propagate.php transaction '{$tx->id}'  > /dev/null 2>&1  &");
-		}
+//		$res = $db->row("SELECT COUNT(1) as c, sum(val) as v FROM  mempool ", [":src" => $tx->src]);
+//		if ($res['c'] < $_config['max_mempool_rebroadcast'] && $res['v'] / $res['c'] < $tx->val) {
+		$dir = ROOT."/cli";
+		system( "php $dir/propagate.php transaction '{$tx->id}'  > /dev/null 2>&1  &");
+//		}
 		api_echo("transaction-ok");
 	}
 

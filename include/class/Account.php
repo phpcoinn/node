@@ -55,18 +55,10 @@ class Account
         if ($res == 0) {
             return num($res);
         }
-        $mem = $db->single("SELECT SUM(val+fee) FROM mempool WHERE src=:id", [":id" => $id]);
+	    $mem = Mempool::getSourceMempoolBalance($id);
         $rez = $res - $mem;
         return num($rez);
     }
-
-	public static function mempoolBalance($id)
-	{
-		global $db;
-		$mem = $db->single("SELECT SUM(if(src=:id1, -(val+fee), (val+fee))) FROM mempool WHERE src=:id2 or dst=:id3", [":id1" => $id,":id2" => $id,":id3" => $id]);
-		return num($mem);
-	}
-
 
     static function getTransactions($id, $dm)
     {

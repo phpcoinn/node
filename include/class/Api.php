@@ -124,7 +124,7 @@ class Api
 		if (!Account::valid($address)) {
 			api_err("Invalid address");
 		}
-		api_echo(Account::mempoolBalance($address));
+		api_echo(Mempool::mempoolBalance($address));
 	}
 
 	/**
@@ -442,8 +442,7 @@ class Api
 	 * @apiSuccess {numeric} data  Number of mempool transactions
 	 */
 	static function mempoolSize($data) {
-		global $db;
-		$res = $db->single("SELECT COUNT(1) FROM mempool");
+		$res = Mempool::getSize();
 		api_echo($res);
 	}
 
@@ -509,7 +508,7 @@ class Api
 		$accounts = $db->single("SELECT COUNT(1) FROM accounts");
 		$tr = $db->single("SELECT COUNT(1) FROM transactions");
 		$masternodes = $db->single("SELECT COUNT(1) FROM masternode");
-		$mempool = $db->single("SELECT COUNT(1) FROM mempool");
+		$mempool = Mempool::getSize();
 		$peers = Peer::getCount();
 		$current = Block::current();
 		api_echo([

@@ -182,6 +182,8 @@ if ($q == "info") {
 		$minerInfo = $_POST['minerInfo'];
 	}
 
+	$l.=" minerInfo=$minerInfo ";
+
 	$res = Minepool::checkIp($address, $ip);
 	if (!$res) {
 		$l .= " rejected - IP hash check not pass";
@@ -203,7 +205,7 @@ if ($q == "info") {
 	$argon = $_POST['argon'];
 	$data = json_decode($_POST['data'], true);
 
-	$l .= " height=$height address=$address elapsed=$elapsed";
+	$l .= " height=$height address=$address elapsed=$elapsed argon=$argon";
 
 	if ($elapsed == 0) {
 		$l .= " REQUEST=" . json_encode($_REQUEST);

@@ -511,42 +511,24 @@ $failed_syncs=0;
     }
    
 
-// deleting mempool transactions older than 14 days
-$db->run("DELETE FROM `mempool` WHERE `date` < ".DB::unixTimeStamp()."-(3600*24*14)");
-
+Mempool::deleteOldMempool();
 
 //rebroadcasting local transactions
 if ($_config['sync_rebroadcast_locals'] == true && $_config['disable_repropagation'] == false) {
-    $r = $db->run(
-        "SELECT id FROM mempool WHERE height<=:current and peer='local' order by `height` asc LIMIT 20",
-        [":current" => $current['height']]
-    );
+	$r = Mempool::getForRebroadcast($current['height']);
     _log("Rebroadcasting local transactions - ".count($r), 1);
     foreach ($r as $x) {
         $x['id'] = escapeshellarg(san($x['id'])); // i know it's redundant due to san(), but some people are too scared of any exec
 	    $dir = __DIR__;
 	    system("php $dir/propagate.php transaction $x[id]  > /dev/null 2>&1  &");
-        $db->run(
-            "UPDATE mempool SET height=:current WHERE id=:id",
-            [":id" => $x['id'], ":current" => $current['height']]
-        );
+		Mempool::updateMempool($x['id'], $current['height']);
     }
 }
 
 //rebroadcasting transactions
 if ($_config['disable_repropagation'] == false) {
     $forgotten = $current['height'] - $_config['sync_rebroadcast_height'];
-    $r1 = $db->run(
-        "SELECT id FROM mempool WHERE height<:forgotten ORDER by val DESC LIMIT 10",
-        [":forgotten" => $forgotten]
-    );
-    // getting some random transactions as well
-    $r2 = $db->run(
-        "SELECT id FROM mempool WHERE height<:forgotten ORDER by ".DB::random()." LIMIT 10",
-        [":forgotten" => $forgotten]
-    );
-    $r=array_merge($r1, $r2);
-
+	$r=Mempool::getForgotten($forgotten);
 
     _log("Rebroadcasting external transactions - ".count($r),1);
 
@@ -554,7 +536,7 @@ if ($_config['disable_repropagation'] == false) {
         $x['id'] = escapeshellarg(san($x['id'])); // i know it's redundant due to san(), but some people are too scared of any exec
 	    $dir = __DIR__;
 	    system("php $dir/propagate.php transaction $x[id]  > /dev/null 2>&1  &");
-        $db->run("UPDATE mempool SET height=:current WHERE id=:id", [":id" => $x['id'], ":current" => $current['height']]);
+		Mempool::updateMempool($x['id'], $current['height']);
     }
 }
 
