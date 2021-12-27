@@ -328,8 +328,14 @@ class WebMiner {
             })
             if(response.data.status === 'ok') {
                 this.miningStat.accepted ++
+                if(this.callbacks.onAccepted) {
+                    this.callbacks.onAccepted(response)
+                }
             } else {
                 this.miningStat.rejected ++
+                if(this.callbacks.onRejected) {
+                    this.callbacks.onRejected(response)
+                }
             }
             submitResponse = response.data
             this.miner.submitResponse = submitResponse

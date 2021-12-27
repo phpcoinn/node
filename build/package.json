@@ -6,21 +6,21 @@
   "author": "",
   "devDependencies": {
     "apidoc": "^0.28.1",
+    "argon2": "^0.28.2",
     "argon2-browser": "^1.16.0",
     "atob": "^2.1.2",
+    "aws-sdk": "^2.937.0",
+    "axios": "^0.24.0",
     "base-58": "^0.0.1",
     "browserify": "^17.0.0",
     "js-crypto-ec": "^1.0.2",
     "js-crypto-key-utils": "^1.0.2",
     "json-keys-sort": "^2.0.0",
-    "starkbank-ecdsa": "^1.1.2",
-    "argon2": "^0.28.2",
     "mock-aws-s3": "^4.0.2",
     "nock": "^13.1.0",
-    "aws-sdk": "^2.937.0",
-    "stream-browserify": "^2.0.2",
     "readable-stream": "2.3.6",
-    "axios": "^0.24.0"
+    "starkbank-ecdsa": "^1.1.2",
+    "stream-browserify": "^2.0.2"
   },
   "apidoc": {
     "title": "Custom apiDoc browser title",
@@ -31,6 +31,7 @@
     "build_web_miner": "node_modules/.bin/browserify js/web-miner.js -o ../web/apps/miner/js/web-miner.js"
   },
   "dependencies": {
-    "stream-browserify": "^3.0.0"
+    "stream-browserify": "^3.0.0",
+    "watchify": "^4.0.0"
   }
 }
