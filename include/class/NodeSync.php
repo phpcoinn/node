@@ -238,6 +238,44 @@ class NodeSync
 		}
 	}
 
+	static function recheckLastBlocks() {
+		global $_config, $db;
+		$current = Block::current();
+		if ($_config['sync_recheck_blocks'] > 0) {
+			_log("Rechecking blocks",3);
+			$blocks = [];
+			$all_blocks_ok = true;
+			$start = $current['height'] - $_config['sync_recheck_blocks'];
+			if ($start < 2) {
+				$start = 2;
+			}
+			$r = $db->run("SELECT * FROM blocks WHERE height>=:height ORDER by height ASC", [":height" => $start]);
+			foreach ($r as $x) {
+				$blocks[$x['height']] = $x;
+				$max_height = $x['height'];
+			}
+
+			for ($i = $start + 1; $i <= $max_height; $i++) {
+				$data = $blocks[$i];
+
+				$block = Block::getFromArray($data);
+
+				if (!$block->mine()) {
+					Config::setSync(1);
+					_log("Invalid block detected. Deleting everything after $data[height] - $data[id]");
+					sleep(10);
+					$all_blocks_ok = false;
+					Block::delete($i);
+					Config::setSync(0);
+					break;
+				}
+			}
+			if ($all_blocks_ok) {
+				echo "All checked blocks are ok\n";
+			}
+		}
+	}
+
 }
 
 

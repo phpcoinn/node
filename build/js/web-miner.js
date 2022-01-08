@@ -67,24 +67,33 @@ function sign (message, private_key) {
 
 class WebMiner {
 
-    constructor(node, address, hashingConfig, block_time, callbacks) {
+    constructor(node, address, options, callbacks) {
         this.node = node
         this.address = address
-        this.hashingConfig = hashingConfig
-        this.block_time = block_time
+        this.hashingConfig = options.hashingConfig || {
+            mem: 32768,
+            parallelism: 1,
+            time: 2
+        }
+        this.block_time = options.block_time || 60
         this.callbacks = callbacks
-        this.cpu = 0
+        this.cpu = options.cpu || 0
         this.updateUITimer = null
         this.mineInfoTimer = null
         this.break = false
         this.miner = null
+        if(options.miningStat) {
+            this.miningStat = options.miningStat
+        } else {
+            this.resetStat()
+        }
 
     }
 
     async start() {
         this.running = true
         this.updateUITimer = setInterval(()=>{
-            this.callbacks.onMinerUpdate(this.miner, this.miningStat)
+            this.callbacks.onMinerUpdate({miner: this.miner, miningStat: this.miningStat})
         }, 1000)
         this.mineInfoTimer = setInterval(()=>{
             axios({
@@ -117,17 +126,7 @@ class WebMiner {
         return crypto.createHash('sha256').update(pwd).digest('hex');
     }
 
-    loadStat() {
-        let miningStat = localStorage.getItem('miningStat')
-        if(miningStat) {
-            this.miningStat = JSON.parse(miningStat)
-        } else {
-            this.resetStat()
-        }
-    }
-
     resetStat() {
-        localStorage.removeItem('miningStat')
         this.miningStat = {}
         this.miningStat.cnt = 0
         this.miningStat.hashes = 0
@@ -141,12 +140,7 @@ class WebMiner {
         this.cpu = cpu
     }
 
-    saveStat() {
-        localStorage.setItem('miningStat', JSON.stringify(this.miningStat))
-    }
-
     async loop() {
-        this.loadStat()
 
         let max = this.hexToDec('FFFFFFFF') * 1000
 
@@ -218,7 +212,7 @@ class WebMiner {
                 speed,
                 block
             }
-            this.callbacks.onMinerUpdate(this.miner, this.miningStat)
+            this.callbacks.onMinerUpdate({miner:this.miner, miningStat: this.miningStat})
 
             let salt
 
@@ -299,7 +293,6 @@ class WebMiner {
                 this.miner.hit = hit
                 this.miner.target = target
                 this.miner.blockFound = blockFound
-
             }
 
             if(!blockFound || elapsed<0) {
@@ -340,9 +333,7 @@ class WebMiner {
             submitResponse = response.data
             this.miner.submitResponse = submitResponse
 
-            this.callbacks.onMinerUpdate(this.miner, this.miningStat)
-
-            this.saveStat()
+            this.callbacks.onMinerUpdate({miner: this.miner, miningStat: this.miningStat})
 
             await new Promise(resolve => setTimeout(resolve, 3000));
         }
@@ -426,8 +417,9 @@ class WebMiner {
 
 }
 
-if(window) {
+if(typeof window !== 'undefined')  {
     window.WebMiner = WebMiner
     window.sign = sign
 }
 
+global.WebMiner = WebMiner

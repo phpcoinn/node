@@ -118,6 +118,7 @@ class Miner {
 			$bl = new Block(null, $this->address, $height, null, null, $data, $difficulty, Block::versionCode($height), null, $prev_block_id);
 
 			$t1 = microtime(true);
+			$prev_elapsed = null;
 			while (!$blockFound) {
 				$attempt++;
 				usleep((100-$this->cpu) * 5 * 1000);
@@ -138,8 +139,8 @@ class Miner {
 
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
-				$mod = 10+$this->cpu;
-				if($attempt % $mod == 0) {
+				if($prev_elapsed != $elapsed && $elapsed % 10 == 0) {
+					$prev_elapsed = $elapsed;
 					$info = $this->getMiningInfo();
 					if($info!==false) {
 						_log("Checking new block from server ".$info['data']['block']. " with our block $prev_block_id", 4);

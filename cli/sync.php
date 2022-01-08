@@ -354,6 +354,8 @@ foreach ($r as $x) {
                     echo "Peered with: $peer[hostname]\n";
                     // a single new peer per sync
                     $_config['get_more_peers']=false;
+                } else {
+					_log("Can not peer with ".$peer["hostname"]);
                 }
             }
         }
@@ -563,42 +565,7 @@ foreach ($r as $x) {
 
 
 
-//recheck the last blocks
-if ($_config['sync_recheck_blocks'] > 0) {
-    _log("Rechecking blocks",3);
-    $blocks = [];
-    $all_blocks_ok = true;
-    $start = $current['height'] - $_config['sync_recheck_blocks'];
-    if ($start < 2) {
-        $start = 2;
-    }
-    $r = $db->run("SELECT * FROM blocks WHERE height>=:height ORDER by height ASC", [":height" => $start]);
-    foreach ($r as $x) {
-        $blocks[$x['height']] = $x;
-        $max_height = $x['height'];
-    }
-
-    for ($i = $start + 1; $i <= $max_height; $i++) {
-        $data = $blocks[$i];
-
-        $key = $db->single("SELECT public_key FROM accounts WHERE id=:id", [":id" => $data['generator']]);
-
-	    $block = Block::getFromArray($data);
-
-        if (!$block->mine()) {
-	        Config::setSync(1);
-            _log("Invalid block detected. Deleting everything after $data[height] - $data[id]");
-            sleep(10);
-            $all_blocks_ok = false;
-            Block::delete($i);
-	        Config::setSync(0);
-            break;
-        }
-    }
-    if ($all_blocks_ok) {
-        echo "All checked blocks are ok\n";
-    }
-}
+NodeSync::recheckLastBlocks();
 
 if ($_config['masternode']==true&&!empty($_config['masternode_public_key'])&&!empty($_config['masternode_voting_public_key'])&&!empty($_config['masternode_voting_private_key'])) {
     echo "Masternode votes\n";
