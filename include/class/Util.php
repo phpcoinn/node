@@ -618,9 +618,11 @@ class Util
 	}
 
 	static function rewardsScheme($real=true) {
+		echo str_pad("phase", 10);
 		echo str_pad("block", 10);
 		echo str_pad('total', 10);
 		echo str_pad('miner', 10);
+		echo str_pad('gen', 10);
 		echo str_pad('mn', 10);
 		echo str_pad('pos', 10);
 		echo str_pad('elapsed', 24);
@@ -637,7 +639,7 @@ class Util
 
 		if($real) {
 			$block = Block::current(true);
-			$start_block = $block->height;
+			$start_block = $block->height + 1;
 			$start_time = $block->date;
 			$total_supply = Account::getCirculation();
 		}
@@ -649,9 +651,11 @@ class Util
 			$total_supply += $reward['total'];
 			$days = $elapsed / 60 / 60 / 24;
 			if($reward['key'] != $prev_reward) {
+				echo str_pad($reward['phase'], 10);
 				echo str_pad($i, 10);
 				echo str_pad($reward['total'], 10);
 				echo str_pad($reward['miner'], 10);
+				echo str_pad($reward['generator'], 10);
 				echo str_pad($reward['masternode'], 10);
 				echo str_pad($reward['pos'], 10);
 				echo str_pad($elapsed, 24);

@@ -7,7 +7,7 @@ if(file_exists(dirname(__DIR__)."/testnet")) {
 // mainnet specification
 const NETWORK = "mainnet-alpha";
 const VERSION = "1.0.3";
-const BUILD_VERSION = 32;
+const BUILD_VERSION = 33;
 const MIN_VERSION = "1.0.2";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -44,7 +44,7 @@ const REWARD_SCHEME = [
 	],
 	'mining'=>[
 		'segments'=>10,
-		'block_per_segment'=>20000
+		'block_per_segment'=>10000
 	],
 	'combined'=>[
 		'segments'=>10,
@@ -58,7 +58,7 @@ const REWARD_SCHEME = [
 
 const MIN_NODE_SCORE = 80;
 
-const TOTAL_SUPPLY = 210000000;
+const TOTAL_SUPPLY = 106400000;
 const GIT_URL = "https://github.com/phpcoinn/node";
 const UPDATE_1_BLOCK_ZERO_TIME = 9000;
 const UPDATE_2_BLOCK_CHECK_IMPROVED = 25000;

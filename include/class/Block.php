@@ -248,7 +248,7 @@ class Block
 
     	$mining_segments = REWARD_SCHEME['mining']['segments'];
     	$mining_segment_block = REWARD_SCHEME['mining']['block_per_segment'];
-    	$mining_decrease_per_segment = $base_reward;
+    	$mining_decrease_per_segment = $base_reward / $mining_segments;
 
     	$combined_segmnets = REWARD_SCHEME['combined']['segments'];
     	$combined_segment_block = REWARD_SCHEME['combined']['block_per_segment'];
@@ -274,6 +274,7 @@ class Block
 		    $mn_reward = 0;
 		    $generator = 0;
 		    $pos_reward = 0;
+		    $phase = "genesis";
 	    } else if ($id <= $launch_blocks ) {
 			//launch from 1
 		    $total = $launch_reward;
@@ -281,21 +282,23 @@ class Block
 		    $generator = $total * 0.1;
 		    $mn_reward = 0;
 		    $pos_reward = 0;
+		    $phase = "launch";
 	    } else if ($id <= $mining_end_block) {
 		    //mining from 210000
-		    $total = ($mining_segments - floor(($id -1 - $launch_blocks) / $mining_segment_block)) * $mining_decrease_per_segment;
+		    $total = (floor(($id - $launch_blocks - 1) / $mining_segment_block) + 1) * $mining_decrease_per_segment;
 		    $miner = $total * 0.9;
 		    $generator = $total * 0.1;
 		    $mn_reward = 0;
 		    $pos_reward = 0;
+		    $phase = "mining";
 	    } else if ($id <= $combined_end_block) {
 			// combined
 		    $total = $base_reward;
-		    $miner_reward = ($combined_segmnets - 1 - floor(($id - 1 - $mining_end_block) / $combined_segment_block)) * $combined_decrease_per_segment;
+		    $miner_reward = ($combined_segmnets -1 - floor(($id - 1 - $mining_end_block) / $combined_segment_block)) * $combined_decrease_per_segment;
 		    $remain_reward = $base_reward - $miner_reward;
 		    $miner = $miner_reward * 0.9;
 		    $generator = $miner_reward * 0.1;
-		    $pos_ratio = 0.2;
+		    $pos_ratio = 0;
 		    $pos_reward = $pos_ratio * $remain_reward;
 		    $mn_reward = $remain_reward - $pos_reward;
 		    if($miner == 0 && $_config['testnet']) {
@@ -305,10 +308,11 @@ class Block
 			    $mn_reward = 0;
 			    $pos_reward = 0;
 		    }
+		    $phase = "combined";
 	    } else if ($id <= $deflation_end_block) {
 	    	//deflation
 		    $total = ($deflation_segments - 1 - floor(($id -1 - $combined_end_block) / $deflation_segment_block))*$deflation_decrease_per_segment;
-		    $pos_ratio = 0.2;
+		    $pos_ratio = 0;
 		    $pos_reward = $pos_ratio * $total;
 		    $mn_reward = $total - $pos_reward;
 		    $miner = 0;
@@ -320,6 +324,7 @@ class Block
 			    $mn_reward = 0;
 			    $pos_reward = 0;
 		    }
+		    $phase = "deflation";
 	    } else {
 		    $total = 0;
 		    $miner = 0;
@@ -333,6 +338,7 @@ class Block
 			    $mn_reward = 0;
 			    $pos_reward = 0;
 		    }
+		    $phase = "final";
 	    }
 	    $out = [
 	    	'total'=>$total,
@@ -340,7 +346,8 @@ class Block
 		    'generator'=>$generator,
 		    'masternode'=>$mn_reward,
 		    'pos'=>$pos_reward,
-		    'key'=>"$total-$miner-$generator-$mn_reward-$pos_reward"
+		    'key'=>"$phase-$total-$miner-$generator-$mn_reward-$pos_reward",
+		    'phase'=>$phase
 	    ];
         //_log("Reward ", json_encode($out));
 	    return $out;
