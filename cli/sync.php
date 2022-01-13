@@ -69,6 +69,8 @@ register_shutdown_function(function () {
 
 require_once dirname(__DIR__).'/include/init.inc.php';
 
+global $db;
+
 define("SYNC_LOCK_PATH", Nodeutil::getSyncFile());
 
 $arg = trim($argv[1]);
