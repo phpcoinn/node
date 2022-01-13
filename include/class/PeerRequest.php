@@ -39,7 +39,7 @@ class PeerRequest
 		}
 
 		if($_config['testnet']) {
-			$ip = $ip . ":81";
+			$ip = $ip . ":8001";
 		}
 
 		if(!Blacklist::checkIp($ip)) {

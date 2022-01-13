@@ -4,7 +4,8 @@
 const NETWORK = "testnet";
 const VERSION = "0.0.1";
 const BUILD_VERSION = 23;
-const DEVELOPMENT = false;
+const MIN_VERSION = "0.0.1";
+const DEVELOPMENT = true;
 //const XDEBUG = "XDEBUG_SESSION_START=PHPSTORM";
 //const XDEBUG_CLI = "-dxdebug.mode=debug -dxdebug.client_host=127.0.0.1 -dxdebug.client_port=9000 -dxdebug.start_with_request=yes";
 const XDEBUG = "";
@@ -57,5 +58,7 @@ const MIN_NODE_SCORE = 80;
 
 const TOTAL_SUPPLY = 714990;
 const GIT_URL = "https://github.com/phpcoinn/node";
-const UPDATE_1_BLOCK_ZERO_TIME = 9000;
-const UPDATE_2_BLOCK_CHECK_IMPROVED = 25000;
+const UPDATE_1_BLOCK_ZERO_TIME = 100000;
+const UPDATE_2_BLOCK_CHECK_IMPROVED = 11156;
+const UPDATE_3_ARGON_HARD = 11157;
+const UPDATE_4_NO_POOL_MINING = 11156;
