@@ -141,7 +141,7 @@ class Peer
 		global $db;
 		_log("Blacklist peer $id reason=$reason");
 		$db->run(
-			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*3600), 
+			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*5), 
 				blacklist_reason=:blacklist_reason WHERE id=:id",
 			[":id" => $id, ':blacklist_reason'=>$reason]
 		);
@@ -151,7 +151,7 @@ class Peer
 		global $db;
 		_log("Blacklist peer stuck $id reason=$reason");
 		$db->run(
-			"UPDATE peers SET stuckfail=stuckfail+1, blacklisted=".DB::unixTimeStamp()."+7200,
+			"UPDATE peers SET stuckfail=stuckfail+1, blacklisted=".DB::unixTimeStamp()."+60*10,
 			    blacklist_reason=:reason WHERE id=:id",
 			[":id" => $id, ":reason" => $reason]
 		);
