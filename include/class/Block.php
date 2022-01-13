@@ -878,7 +878,7 @@ class Block
 		$version = $this->version;
 		$expected_version = Block::versionCode($this->height);
 		if($expected_version != $version) {
-			_log("Block check: invalid version - expected ");
+			_log("Block check: invalid version $version - expected $expected_version");
 			return false;
 		}
 

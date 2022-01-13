@@ -366,7 +366,7 @@ foreach ($r as $x) {
     // get the current block and check it's blockchain
 	$res = peer_post($url."currentBlock", []);
     if ($res === false) {
-        _log("Peer $x[hostname] unresponsive url=$url response=$res");
+        _log("Peer $x[hostname] unresponsive url={$url}currentBlock response=$res");
         // if the peer is unresponsive, mark it as failed and blacklist it for a while
         Peer::blacklist($x['id'],"Unresponsive");
         continue;
