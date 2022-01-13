@@ -6,6 +6,10 @@
 |--------------------------------------------------------------------------
 */
 $_config['testnet'] = file_exists(dirname(__DIR__)."/testnet");
+if($_config['testnet']) {
+	require_once __DIR__ . "/config.testnet.inc.php";
+	return;
+}
 // The database DSN
 $_config['db_connect'] = 'mysql:host=localhost;dbname=ENTER-DB-NAME';
 // Alternative sqlite db
