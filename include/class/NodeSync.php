@@ -193,7 +193,7 @@ class NodeSync
 			foreach ($peers as $peer) {
 				$host = $peer['hostname'];
 				$url = $host . "/peer.php?q=";
-				$res = peer_post($url . "currentBlock", [], 5);
+				$res = peer_post($url . "currentBlock", []);
 				if ($res === false) {
 					$skipped_peer++;
 				} else {
@@ -224,7 +224,7 @@ class NodeSync
 			$limit = 10;
 			$url = $host."/peer.php?q=";
 			_log("Reading blocks from $height from peer $host", 3);
-			$peer_blocks = peer_post($url."getBlocks", ["height" => $height - $limit], 5);
+			$peer_blocks = peer_post($url."getBlocks", ["height" => $height - $limit]);
 			if ($peer_blocks === false) {
 				_log("Could not get block from $host - " . $height);
 			} else {

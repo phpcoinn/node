@@ -276,7 +276,7 @@ function isValidURL($url)
 }
 
 // POST data to an URL (usualy peer). The data is an array, json encoded with is sent as $_POST['data']
-function peer_post($url, $data = [], $timeout = 60, $debug = false)
+function peer_post($url, $data = [], $timeout = 30)
 {
     global $_config;
 
@@ -326,14 +326,14 @@ function peer_post($url, $data = [], $timeout = 60, $debug = false)
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 	curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, !DEVELOPMENT);
 	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
-	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
 	curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 	$result = curl_exec($ch);
 
 	$curl_error = curl_errno($ch);
 	if($curl_error) {
 		$error_msg = curl_error($ch);
-		_log("CURL error=".$curl_error." ".$error_msg, 5);
+		_log("CURL error=".$curl_error." ".$error_msg. " url=$url timeout=$timeout", 5);
 		//6 - Could not resolve host: miner1.phpcoin.net
 		//7 - Failed to connect to miner1.phpcoin.net port 80: Connection refused
 		//28 - Connection timed out after 5001 milliseconds

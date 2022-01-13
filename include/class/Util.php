@@ -304,7 +304,7 @@ class Util
 		}
 		$r = Peer::getActive();
 		foreach ($r as $x) {
-			$a = peer_post($x['hostname']."/peer.php?q=currentBlock", [], 5);
+			$a = peer_post($x['hostname']."/peer.php?q=currentBlock", []);
 			$enc = base58_encode($x['hostname']);
 			if ($argv[2] == "debug") {
 				echo "$enc\t";
@@ -530,7 +530,7 @@ class Util
 		if ($data===false) {
 			die("Could not find this block");
 		}
-		$response = peer_post($peer."/peer.php?q=submitBlock", $data, 60, true);
+		$response = peer_post($peer."/peer.php?q=submitBlock", $data);
 		var_dump($response);
 	}
 

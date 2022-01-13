@@ -112,7 +112,7 @@ if ($type == "block") {
     $hostname = base58_decode($peer);
     // send the block as POST to the peer
     _log("Block sent to $hostname:\n".print_r($data,1), 5);
-    $response = peer_post($hostname."/peer.php?q=submitBlock", $data, 60, $debug);
+    $response = peer_post($hostname."/peer.php?q=submitBlock", $data);
     _log("Propagating block to $hostname - [result: ".json_encode($response)."] $data[height] - $data[id]",3);
     if ($response == "block-ok") {
         echo "Block $id accepted. Exiting.\n";
@@ -142,7 +142,7 @@ if ($type == "block") {
         //start sending the requested block
         for ($i = $height + 1; $i <= $current['height']; $i++) {
             $data = Block::export("", $i);
-            $response = peer_post($hostname."/peer.php?q=submitBlock", $data, 60, $debug);
+            $response = peer_post($hostname."/peer.php?q=submitBlock", $data);
             if ($response != "block-ok") {
                 echo "Block $i not accepted. Exiting.\n";
                 _log("Block $i not accepted. Exiting");

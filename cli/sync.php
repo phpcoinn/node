@@ -272,7 +272,7 @@ if ($total_peers == 0) {
             $res=Peer::insert(md5($peer), $peer, 0);
         } else {
             // forces the other node to peer with us.
-            $res = peer_post($peer."/peer.php?q=peer", ["hostname" => $_config['hostname'], "repeer" => 1], 60, true);
+            $res = peer_post($peer."/peer.php?q=peer", ["hostname" => $_config['hostname'], "repeer" => 1]);
         }
         if ($res !== false) {
             $i++;
@@ -306,7 +306,7 @@ foreach ($r as $x) {
     $url = $x['hostname']."/peer.php?q=";
     // get their peers list
     if ($_config['get_more_peers']==true && $_config['passive_peering']!=true) {
-        $data = peer_post($url."getPeers", [], 30, true);
+        $data = peer_post($url."getPeers", []);
         if ($data === false) {
             _log("Peer $x[hostname] unresponsive data=".json_encode($data), 2);
             // if the peer is unresponsive, mark it as failed and blacklist it for a while
@@ -348,7 +348,7 @@ foreach ($r as $x) {
                 $peer['hostname'] = filter_var($peer['hostname'], FILTER_SANITIZE_URL);
                 // peer with each one
                 _log("Trying to peer with recommended peer: $peer[hostname]", 4);
-                $test = peer_post($peer['hostname']."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1], 5, true);
+                $test = peer_post($peer['hostname']."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1]);
                 if ($test !== false) {
                     $total_peers++;
                     echo "Peered with: $peer[hostname]\n";
@@ -362,7 +362,7 @@ foreach ($r as $x) {
     }
 
     // get the current block and check it's blockchain
-	$res = peer_post($url."currentBlock", [], 5);
+	$res = peer_post($url."currentBlock", []);
     if ($res === false) {
         _log("Peer $x[hostname] unresponsive url=$url response=$res");
         // if the peer is unresponsive, mark it as failed and blacklist it for a while
@@ -552,7 +552,7 @@ if ($total_peers < $_config['max_peers'] * 0.7) {
 $r = Peer::getReserved(intval($_config['max_test_peers']));
 foreach ($r as $x) {
     $url = $x['hostname']."/peer.php?q=";
-    $data = peer_post($url."ping", [], 5);
+    $data = peer_post($url."ping", []);
     if ($data === false) {
     	_log("blakclist peer ".$x['hostname']." because it is not answering");
         Peer::blacklist($x['id'],"Not answer");
