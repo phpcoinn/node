@@ -132,7 +132,7 @@ global $_config;
                         </div>
                     </div>
                 <?php } ?>
-                <?php if($_config['faucet']) { ?>
+                <?php if(isset($_config['faucet'])) { ?>
                     <div class="col-sm-6 col-md-2 col-6 my-3">
                         <div class="d-grid gap-2">
                             <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/faucet">

@@ -5,8 +5,12 @@ require_once dirname(__DIR__).'/vendor/autoload.php';
 
  error_reporting(E_ALL & ~E_NOTICE);
 //error_reporting(0);
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+$version = explode('.', PHP_VERSION);
+if($version[0] > 7) {
+	ini_set('display_errors', 0);
+} else {
+	ini_set('display_startup_errors', 1);
+}
 // not accessible directly
 if (php_sapi_name() !== 'cli' && substr_count($_SERVER['PHP_SELF'], "/") > 1
 	&& substr($_SERVER['PHP_SELF'], 0, 5) != "/apps") {
@@ -69,7 +73,7 @@ _log("checking schema update", 4);
 require_once __DIR__.'/schema.inc.php';
 
 // nothing is allowed while in maintenance
-if ($_config['maintenance'] == 1) {
+if (isset($_config['maintenance']) && $_config['maintenance'] == 1) {
     api_err("under-maintenance");
 }
 

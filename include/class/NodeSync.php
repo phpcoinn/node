@@ -17,7 +17,7 @@ class NodeSync
 		global $db;
 		Config::setSync(1);
 
-		$peers_count = @count($this->peers);
+		$peers_count = $this->peers==null ? 0 : @count($this->peers);
 
 		$syncing = true;
 		$loop_cnt = 0;
