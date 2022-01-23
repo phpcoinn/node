@@ -697,8 +697,8 @@ class Util
 
 		for($i=$start;$i<=$stop;$i++) {
 			$block = Block::export("",$i);
-			$res = Block::getFromArray($block)->verifyBlock();
-			echo "Verify block $i / $stop res=$res".PHP_EOL;
+			$res = Block::getFromArray($block)->verifyBlock($error);
+			echo "Verify block $i / $stop res=$res error=$error".PHP_EOL;
 			if(!$res) {
 				return;
 			}
