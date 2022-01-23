@@ -741,6 +741,9 @@ class Util
 
 	static function importdb($argv) {
 		$file = trim($argv[2]);
+		if(isset($argv[3])) {
+			$options = $argv[3];
+		}
 		if(empty($file)) {
 			die("Missing argument <file>".PHP_EOL."Command: importdb <file>".PHP_EOL);
 		}
@@ -754,7 +757,7 @@ class Util
 		echo "Importing database...".PHP_EOL;
 		global $db;
 		$db_name = $db->single('select database()');
-		$cmd = "mysql $db_name < $file";
+		$cmd = "mysql $options $db_name < $file";
 		shell_exec($cmd);
 		echo "Database imported".PHP_EOL;
 	}
