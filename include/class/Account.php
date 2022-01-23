@@ -119,6 +119,22 @@ class Account
 				        $trans['type_label'] = "debit";
 				        $sign="-";
 			        }
+		        } elseif ($x['type'] == TX_TYPE_MN_CREATE) {
+			        if ($x['dst'] == $id) {
+				        $trans['type_label'] = "credit";
+				        $sign="+";
+			        } else {
+				        $trans['type_label'] = "debit";
+				        $sign="-";
+			        }
+		        } elseif ($x['type'] == TX_TYPE_MN_REMOVE) {
+			        if ($x['dst'] == $id) {
+				        $trans['type_label'] = "credit";
+				        $sign="+";
+			        } else {
+				        $trans['type_label'] = "debit";
+				        $sign="-";
+			        }
 		        } else {
 			        $trans['type_label'] = "other";
 		        }

@@ -373,13 +373,13 @@ class Api
 		$type = intval($data['type']);
 		$dst = san($data['dst']);
 
-		if (!in_array($type, [TX_TYPE_SEND])) {
-			api_err("Invalid transaction type");
+		if (!in_array($type, [TX_TYPE_SEND, TX_TYPE_MN_CREATE, TX_TYPE_MN_REMOVE])) {
+			api_err("Invalid transaction type: $type");
 		}
 
 
 
-		if ($type==TX_TYPE_SEND) {
+		if (in_array($type,[TX_TYPE_SEND, TX_TYPE_MN_CREATE])) {
 			if (!Account::valid($dst)) {
 				api_err("Invalid destination address");
 			}

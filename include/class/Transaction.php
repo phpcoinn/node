@@ -48,11 +48,50 @@ class Transaction
 	        $res = true;
 	        if($type == TX_TYPE_REWARD) {
 		        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
-	        } else if ($type == TX_TYPE_SEND) {
+	        }
+			if ($type == TX_TYPE_SEND) {
 		        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
 		        $res = $res && Account::addBalance($tx->src, $tx->val);
 		        $tx->add_mempool();
 	        }
+
+	        if ($type == TX_TYPE_MN_CREATE) {
+		        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
+		        $res = $res && Account::addBalance($tx->src, $tx->val);
+		        $tx->add_mempool();
+		        if($res === false) {
+			        _log("Update balance for reverse transaction failed");
+			        return false;
+		        }
+				$publicKey = Account::publicKey($tx->dst);
+				$res = Masternode::delete($publicKey);
+				if(!$res) {
+					_log("Error deleting masternode");
+					return false;
+				}
+	        }
+
+	        if ($type == TX_TYPE_MN_REMOVE) {
+		        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
+		        $res = $res && Account::addBalance($tx->src, $tx->val);
+		        $tx->add_mempool();
+		        if($res === false) {
+			        _log("Update balance for reverse transaction failed");
+			        return false;
+		        }
+		        $height = Masternode::getMnCreateHeight($tx->publicKey);
+				if(!$height) {
+					_log("Can not find mn create tx height");
+					return false;
+				}
+				$res = Masternode::create($tx->publicKey, $height);
+				if(!$res) {
+					_log("Can not reverse create masternode");
+					return false;
+				}
+	        }
+
+
 	        if($res === false) {
 		        _log("Update balance for reverse transaction failed");
 		        return false;
@@ -125,6 +164,7 @@ class Transaction
         $height = $current['height'] + 1;
 	    $r = Mempool::getTxs($height, $max);
         $transactions = [];
+		$mncreate = [];
         if (count($r) > 0) {
             $i = 0;
             $balance = [];
@@ -241,7 +281,7 @@ class Transaction
 			_log("Error checking account address");
 			return false;
 		}
-		if ($this->type == TX_TYPE_SEND) {
+		if ($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_MN_CREATE || $this->type == TX_TYPE_MN_REMOVE) {
 			$res = Account::checkAccount($this->dst, "", $block);
 			if ($res === false) {
 				_log("Error checking account address for send");
@@ -271,13 +311,42 @@ class Transaction
 		$res = true;
 		if($type == TX_TYPE_REWARD) {
 			$res = $res && Account::addBalance($this->dst, $this->val);
-		} else if ($type == TX_TYPE_SEND) {
+		} else if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE) {
 			$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
 			$res = $res && Account::addBalance($this->dst, ($this->val));
 		}
 		if($res === false) {
 			_log("Error updating balance for transaction ".$this->id);
 			return false;
+		}
+
+		if ($type == TX_TYPE_MN_CREATE) {
+			$dstPublicKey = Account::publicKey($this->dst);
+			$res = Masternode::create($dstPublicKey, $height);
+			if(!$res) {
+				_log("Can not create masternode");
+				return false;
+			}
+		}
+
+		if ($type == TX_TYPE_MN_REMOVE) {
+			$res = true;
+			$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
+			$res = $res && Account::addBalance($this->dst, ($this->val));
+			if($res === false) {
+				_log("Error updating balance for transaction ".$this->id);
+				return false;
+			}
+			$mn = Masternode::get($this->publicKey);
+			if(!$mn) {
+				_log("Masternode with public key {$this->publicKey} does not exists");
+				return false;
+			}
+			$res = Masternode::delete($this->publicKey);
+			if(!$res) {
+				_log("Can not delete masternode with public key: ".$this->publicKey);
+				return false;
+			}
 		}
 
 		Mempool::delete($this->id);
@@ -312,7 +381,6 @@ class Transaction
         }
         $base = $this->getSignatureBase();
 
-
         // the value must be >=0
         if ($this->val <= 0) {
             _log("{$this->val} - Value <= 0", 3);
@@ -345,6 +413,14 @@ class Transaction
             return false;
         }
 
+		//check types
+	    $type = $this->type;
+		if(!in_array($type, [TX_TYPE_REWARD, TX_TYPE_SEND, TX_TYPE_MN_CREATE, TX_TYPE_MN_REMOVE])) {
+			$error = "Invalid transaction type $type";
+			_log($error);
+			return false;
+		}
+
         if($this->type==TX_TYPE_REWARD) {
             $res = $this->checkRewards($height);
             if(!$res) {
@@ -356,7 +432,7 @@ class Transaction
         }
 
 
-        if ($this->type==TX_TYPE_SEND) {
+        if ($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_MN_CREATE || $this->type == TX_TYPE_MN_REMOVE) {
             // invalid destination address
             if (!Account::valid($this->dst)) {
                 _log("{$this->id} - Invalid destination address");
@@ -398,6 +474,88 @@ class Transaction
             _log("{$this->id} - Invalid signature - $base");
             return false;
         }
+
+		try {
+
+			if($this->type==TX_TYPE_MN_CREATE) {
+
+				$startHeight = Block::getMnStartHeight();
+				if ($height < Block::getMnStartHeight()) {
+					throw new Exception("Masternode can not be created because of height. Start height is $startHeight, tx height is $height");
+				}
+
+				if(!$verify) {
+					$res = Masternode::existsPublicKey($this->publicKey);
+					$src = Account::getAddress($this->publicKey);
+					if ($res) {
+						//check amount to send
+						$balance = Account::pendingBalance($src);
+						if ($this->val > $balance - MN_COLLATERAL) {
+							throw new Exception("Invalid amount to transfer form masternode. balance=$balance val=" . $this->val);
+						}
+					}
+
+					$res = Masternode::existsPublicKey($this->publicKey);
+					if ($res) {
+						throw new Exception("Source public key {$this->publicKey} is already a masternode");
+					}
+					$dst = $this->dst;
+					$dstPublicKey = Account::publicKey($dst);
+					if (!$dstPublicKey) {
+						throw new Exception("Destination address $dst is not verified!");
+					}
+					$res = Masternode::existsPublicKey($dstPublicKey);
+					if ($res) {
+						throw new Exception("Destination address $dst is already a masternode");
+					}
+				}
+				if($this->val != MN_COLLATERAL) {
+					throw new Exception("Invalid masternode collateral {$this->val}, must be ".MN_COLLATERAL);
+				}
+			}
+
+			if($this->type==TX_TYPE_MN_REMOVE) {
+				$startHeight = Block::getMnStartHeight();
+				if($height < Block::getMnStartHeight()) {
+					throw new Exception("Masternode can not be removed because of height. Start height is $startHeight, tx height is $height");
+				}
+
+				if(!$verify) {
+					$masternode = Masternode::get($this->publicKey);
+					if(!$masternode) {
+						throw new Exception("Can not find masternode with public key ".$this->publicKey);
+					}
+					if($height < $masternode['height'] + MN_MIN_RUN_BLOCKS ) {
+						throw new Exception("Masternode must run at least ".MN_MIN_RUN_BLOCKS." blocks. Created at block ". $masternode['height']. " check block=".$height);
+					}
+					$res = Masternode::existsPublicKey($this->publicKey);
+					if(!$res) {
+						throw new Exception("Source public key {$this->publicKey} is not masternode");
+					}
+					$dst = $this->dst;
+					$dstPublicKey = Account::publicKey($dst);
+					if($dstPublicKey) {
+						$res = Masternode::existsPublicKey($dstPublicKey);
+						if($res) {
+							throw new Exception("Destination address $dst can not be masternode");
+						}
+					}
+					$masternode = Masternode::get($this->publicKey);
+					if(!$masternode) {
+						throw new Exception("Can not find masternode with public key ".$this->publicKey);
+					}
+				}
+
+				if($this->val != MN_COLLATERAL) {
+					throw new Exception("Invalid masternode collateral {$this->val}, must be ".MN_COLLATERAL);
+				}
+			}
+
+		} catch (Exception $e) {
+			$error = $e->getMessage();
+			_log($error);
+			return false;
+		}
 
         return true;
     }
@@ -533,6 +691,10 @@ class Transaction
 		    $trans['type_label'] = "mining";
 	    } elseif ($x['type'] == TX_TYPE_SEND) {
 		    $trans['type_label'] = "transfer";
+	    } elseif ($x['type'] == TX_TYPE_MN_CREATE) {
+		    $trans['type_label'] = "masternode create";
+	    } elseif ($x['type'] == TX_TYPE_MN_REMOVE) {
+		    $trans['type_label'] = "masternode remove";
 	    } else {
 		    $trans['type_label'] = "other";
 	    }
@@ -656,6 +818,20 @@ class Transaction
 		    $error = "Not enough funds (mempool)";
 		    return false;
 	    }
+
+		if($this->type == TX_TYPE_MN_CREATE) {
+			$cnt = Mempool::getByDstAndType($this->dst, $this->type);
+			if($cnt > 0) {
+				$error = "Similar transaction already in mempool";
+				return false;
+			}
+			$publicKey = Account::publicKey($this->dst);
+			$res = Masternode::existsPublicKey($publicKey);
+			if($res) {
+				$error = "Masternode already exists";
+				return false;
+			}
+		}
 
 	    $this->add_mempool("local");
 	    $hashp=escapeshellarg(san($hash));

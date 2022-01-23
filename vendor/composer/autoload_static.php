@@ -20,6 +20,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         'Blockchain' => __DIR__ . '/../..' . '/include/class/Blockchain.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Config' => __DIR__ . '/../..' . '/include/class/Config.php',
+        'Masternode' => __DIR__ . '/../..' . '/include/class/Masternode.php',
         'Mempool' => __DIR__ . '/../..' . '/include/class/Mempool.php',
         'Minepool' => __DIR__ . '/../..' . '/include/class/Minepool.php',
         'Miner' => __DIR__ . '/../..' . '/include/class/Miner.php',

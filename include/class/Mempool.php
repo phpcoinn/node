@@ -114,4 +114,10 @@ class Mempool
 		return $r;
 	}
 
+	public static function getByDstAndType($dst, $type) {
+		global $db;
+		$sql="select count(1) from mempool where dst=:dst and type=:type";
+		return $db->single($sql, [":dst"=>$dst, ":type"=>$type]);
+	}
+
 }

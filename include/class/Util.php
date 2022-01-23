@@ -734,7 +734,7 @@ class Util
 		global $db;
 		$db_name = $db->single('select database()');
 		echo "Exporting database...".PHP_EOL;
-		$cmd = "mysqldump --single-transaction --compatible=ansi --no-tablespaces $db_name accounts blocks transactions > $file";
+		$cmd = "mysqldump --single-transaction --compatible=ansi --no-tablespaces $db_name accounts blocks transactions masternode > $file";
 		shell_exec($cmd);
 		echo "Database exported".PHP_EOL;
 	}

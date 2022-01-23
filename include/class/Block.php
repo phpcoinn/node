@@ -507,7 +507,7 @@ class Block
 
 		        $type = $tx->type;
 
-		        if ($type == TX_TYPE_SEND) {
+		        if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE || $type == TX_TYPE_MN_REMOVE) {
 
 			        if ($tx->src == $tx->dst) {
 				        _log("Transaction now allowed to itself");
@@ -883,18 +883,18 @@ class Block
 				throw new Exception("Block check: invalid version $version - expected $expected_version");
 			}
 
-		$prev_block = Block::getAtHeight($height - 1);
+			$prev_block = Block::getAtHeight($height - 1);
 
-		$elapsed = 0;
-		if($prev_block) {
-			$prev_date = $prev_block['date'];
-			$elapsed = $this->date - $prev_date;
-			$prev_block_date = $prev_block['date'];
-			$prev_block_id = $prev_block['id'];
-		} else {
-			$prev_block_date = $this->date;
-			$prev_block_id = "";
-		}
+			$elapsed = 0;
+			if($prev_block) {
+				$prev_date = $prev_block['date'];
+				$elapsed = $this->date - $prev_date;
+				$prev_block_date = $prev_block['date'];
+				$prev_block_id = $prev_block['id'];
+			} else {
+				$prev_block_date = $this->date;
+				$prev_block_id = "";
+			}
 
 			$res = $this->verifyArgon($prev_block_date, $elapsed);
 			if(!$res) {
@@ -990,5 +990,13 @@ class Block
 		} else {
 			return '$argon2i$v=19$m=32768,t=2,p=1';
 		}
+	}
+
+	static function getMnStartHeight() {
+		$mining_segments = REWARD_SCHEME['mining']['segments'];
+		$mining_segment_block = REWARD_SCHEME['mining']['block_per_segment'];
+		$launch_blocks = REWARD_SCHEME['launch']['blocks'];
+		$mining_end_block = ($mining_segments * $mining_segment_block) + $launch_blocks;
+		return $mining_end_block +1;
 	}
 }
