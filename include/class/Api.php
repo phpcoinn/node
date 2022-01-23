@@ -23,7 +23,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=getAddress  02. getAddress
+	 * @api {get} /api.php?q=getAddress getAddress
 	 * @apiName getAddress
 	 * @apiGroup API
 	 * @apiDescription Converts the public key to an PHP address.
@@ -41,7 +41,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=base58  03. base58
+	 * @api {get} /api.php?q=base58  base58
 	 * @apiName base58
 	 * @apiGroup API
 	 * @apiDescription Converts a string to base58.
@@ -55,7 +55,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=getBalance  04. getBalance
+	 * @api {get} /api.php?q=getBalance  getBalance
 	 * @apiName getBalance
 	 * @apiGroup API
 	 * @apiDescription Returns the balance of a specific address or public key.
@@ -86,7 +86,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=getPendingBalance  05. getPendingBalance
+	 * @api {get} /api.php?q=getPendingBalance  getPendingBalance
 	 * @apiName getPendingBalance
 	 * @apiGroup API
 	 * @apiDescription Returns the pending balance, which includes pending transactions, of a specific address or public key.
@@ -115,6 +115,17 @@ class Api
 		api_echo(Account::pendingBalance($address));
 	}
 
+	/**
+	 * @api {get} /api.php?q=getMempoolBalance  getMempoolBalance
+	 * @apiName getMempoolBalance
+	 * @apiGroup API
+	 * @apiDescription Returns only balance in mempool of a specific address or public key.
+	 *
+	 * @apiParam {string} [public_key] Public key
+	 * @apiParam {string} [address] Address
+	 *
+	 * @apiSuccess {string} data The PHP balance in mempool
+	 */
 	static function getMempoolBalance($data) {
 		$address = $data['address'];
 		if (empty($address)) {
@@ -128,7 +139,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=getTransactions  06. getTransactions
+	 * @api {get} /api.php?q=getTransactions  getTransactions
 	 * @apiName getTransactions
 	 * @apiGroup API
 	 * @apiDescription Returns the latest transactions of an address.
@@ -145,12 +156,13 @@ class Api
 	 * @apiSuccess {numeric} height  Block height
 	 * @apiSuccess {string} id  Transaction ID/HASH
 	 * @apiSuccess {string} message  Transaction's message
-	 * @apiSuccess {string} signature  Transaction's signature
 	 * @apiSuccess {string} public_key  Account's public_key
+	 * @apiSuccess {string} sign Sign of transaction related to address
+	 * @apiSuccess {string} signature  Transaction's signature
 	 * @apiSuccess {string} src  Sender's address
-	 * @apiSuccess {string} type  "debit", "credit" or "mempool"
+	 * @apiSuccess {numeric} type Transaction type
+	 * @apiSuccess {string} type_label Transaction label
 	 * @apiSuccess {numeric} val Transaction value
-	 * @apiSuccess {numeric} version Transaction version
 	 */
 	static function getTransactions($data) {
 		$address = san($data['address']);
@@ -173,7 +185,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=getTransaction  07. getTransaction
+	 * @api {get} /api.php?q=getTransaction  getTransaction
 	 * @apiName getTransaction
 	 * @apiGroup API
 	 * @apiDescription Returns one transaction.
@@ -181,19 +193,18 @@ class Api
 	 * @apiParam {string} transaction Transaction ID
 	 *
 	 * @apiSuccess {string} block  Block ID
-	 * @apiSuccess {numeric} confirmation Number of confirmations
-	 * @apiSuccess {numeric} date  Transaction's date in UNIX TIMESTAMP format
-	 * @apiSuccess {string} dst  Transaction destination
-	 * @apiSuccess {numeric} fee  The transaction's fee
 	 * @apiSuccess {numeric} height  Block height
 	 * @apiSuccess {string} id  Transaction ID/HASH
-	 * @apiSuccess {string} message  Transaction's message
-	 * @apiSuccess {string} signature  Transaction's signature
-	 * @apiSuccess {string} public_key  Account's public_key
-	 * @apiSuccess {string} src  Sender's address
-	 * @apiSuccess {string} type  "debit", "credit" or "mempool"
+	 * @apiSuccess {string} dst  Transaction destination
 	 * @apiSuccess {numeric} val Transaction value
-	 * @apiSuccess {numeric} version Transaction version
+	 * @apiSuccess {numeric} fee  The transaction's fee
+	 * @apiSuccess {string} signature  Transaction's signature
+	 * @apiSuccess {string} message  Transaction's message
+	 * @apiSuccess {string} type  Transaction type
+	 * @apiSuccess {numeric} date  Transaction's date in UNIX TIMESTAMP format
+	 * @apiSuccess {string} public_key  Account's public_key
+	 * @apiSuccess {numeric} confirmation Number of confirmations
+	 * @apiSuccess {string} type_label  Transaction type label
 	 */
 	static function getTransaction($data) {
 		$id = san($data['transaction']);
@@ -208,7 +219,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=getPublicKey  08. getPublicKey
+	 * @api {get} /api.php?q=getPublicKey  getPublicKey
 	 * @apiName getPublicKey
 	 * @apiGroup API
 	 * @apiDescription Returns the public key of a specific address.
@@ -234,10 +245,10 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=generateAccount  09. generateAccount
+	 * @api {get} /api.php?q=generateAccount  generateAccount
 	 * @apiName generateAccount
 	 * @apiGroup API
-	 * @apiDescription Generates a new account. This function should only be used when the node is on the same host or over a really secure network.
+	 * @apiDescription Generates a new account.
 	 *
 	 * @apiSuccess {string} address Account address
 	 * @apiSuccess {string} public_key Public key
@@ -249,19 +260,22 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=currentBlock  10. currentBlock
+	 * @api {get} /api.php?q=currentBlock  currentBlock
 	 * @apiName currentBlock
 	 * @apiGroup API
 	 * @apiDescription Returns the current block.
 	 *
-	 * @apiSuccess {string} id Blocks id
+	 * @apiSuccess {string} id Block id
 	 * @apiSuccess {string} generator Block Generator
 	 * @apiSuccess {numeric} height Height
 	 * @apiSuccess {numeric} date Block's date in UNIX TIMESTAMP format
 	 * @apiSuccess {string} nonce Mining nonce
 	 * @apiSuccess {string} signature Signature signed by the generator
 	 * @apiSuccess {numeric} difficulty The base target / difficulty
+	 * @apiSuccess {numeric} transactions Number of transactions in block
+	 * @apiSuccess {string} version Block version
 	 * @apiSuccess {string} argon Mining argon hash
+	 * @apiSuccess {string} miner Miner who found block
 	 */
 	static function currentBlock($data) {
 		$current = Block::current();
@@ -269,7 +283,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=getBlock  11. getBlock
+	 * @api {get} /api.php?q=getBlock  getBlock
 	 * @apiName getBlock
 	 * @apiGroup API
 	 * @apiDescription Returns the block.
@@ -283,7 +297,11 @@ class Api
 	 * @apiSuccess {string} nonce Mining nonce
 	 * @apiSuccess {string} signature Signature signed by the generator
 	 * @apiSuccess {numeric} difficulty The base target / difficulty
+	 * @apiSuccess {numeric} transactions Number of transactions in block
+	 * @apiSuccess {string} version Block version
 	 * @apiSuccess {string} argon Mining argon hash
+	 * @apiSuccess {string} miner Miner who found block
+	 * @apiSuccess {array} data List of transactions in block
 	 */
 	static function getBlock($data) {
 		$height = san($data['height']);
@@ -296,7 +314,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=getBlockTransactions  12. getBlockTransactions
+	 * @api {get} /api.php?q=getBlockTransactions  getBlockTransactions
 	 * @apiName getBlockTransactions
 	 * @apiGroup API
 	 * @apiDescription Returns the transactions of a specific block.
@@ -313,12 +331,12 @@ class Api
 	 * @apiSuccess {numeric} height  Block height
 	 * @apiSuccess {string} id  Transaction ID/HASH
 	 * @apiSuccess {string} message  Transaction's message
-	 * @apiSuccess {string} signature  Transaction's signature
 	 * @apiSuccess {string} public_key  Account's public_key
+	 * @apiSuccess {string} signature  Transaction's signature
 	 * @apiSuccess {string} src  Sender's address
-	 * @apiSuccess {string} type  "debit", "credit" or "mempool"
+	 * @apiSuccess {numeric} type Transaction type
+	 * @apiSuccess {string} type_label Transaction type label
 	 * @apiSuccess {numeric} val Transaction value
-	 * @apiSuccess {numeric} version Transaction version
 	 */
 	static function getBlockTransactions($data) {
 		$height = san($data['height']);
@@ -338,7 +356,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=version  13. version
+	 * @api {get} /api.php?q=version version
 	 * @apiName version
 	 * @apiGroup API
 	 * @apiDescription Returns the node's version.
@@ -351,7 +369,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=send  14. send
+	 * @api {get} /api.php?q=send  send
 	 * @apiName send
 	 * @apiGroup API
 	 * @apiDescription Sends a transaction.
@@ -362,7 +380,7 @@ class Api
 	 * @apiParam {string} [signature] Transaction signature. It's recommended that the transaction is signed before being sent to the node to avoid sending your private key to the node.
 	 * @apiParam {numeric} [date] Transaction's date in UNIX TIMESTAMP format. Requried when the transaction is pre-signed.
 	 * @apiParam {string} [message] A message to be included with the transaction. Maximum 128 chars.
-	 * @apiParam {numeric} [type] The version of the transaction. 1 to send coins.
+	 * @apiParam {numeric} [type] The type of the transaction. 1 to send coins.
 	 *
 	 * @apiSuccess {string} data  Transaction id
 	 */
@@ -434,7 +452,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=mempoolSize  15. mempoolSize
+	 * @api {get} /api.php?q=mempoolSize  mempoolSize
 	 * @apiName mempoolSize
 	 * @apiGroup API
 	 * @apiDescription Returns the number of transactions in mempool.
@@ -447,7 +465,7 @@ class Api
 	}
 
 	/**
-	 * @api {get} /api.php?q=checkSignature  17. checkSignature
+	 * @api {get} /api.php?q=checkSignature  checkSignature
 	 * @apiName checkSignature
 	 * @apiGroup API
 	 * @apiDescription Checks a signature against a public key
@@ -467,7 +485,7 @@ class Api
 	}
 
 	/**
-	 * @api            {get} /api.php?q=sync  20. sync
+	 * @api            {get} /api.php?q=sync sync
 	 * @apiName        sync
 	 * @apiGroup       API
 	 * @apiDescription Returns details about the node's sync process.
@@ -486,20 +504,24 @@ class Api
 	}
 
 	/**
-	 * @api            {get} /api.php?q=node-info  21. node-info
-	 * @apiName        node-info
+	 * @api            {get} /api.php?q=nodeInfo  nodeInfo
+	 * @apiName        nodeInfo
 	 * @apiGroup       API
 	 * @apiDescription Returns details about the node.
 	 *
 	 * @apiSuccess {object}  data A collection of data about the node.
 	 * @apiSuccess {string} data.hostname The hostname of the node.
 	 * @apiSuccess {string} data.version The current version of the node.
+	 * @apiSuccess {string} data.network Node network.
 	 * @apiSuccess {string} data.dbversion The database schema version for the node.
 	 * @apiSuccess {number} data.accounts The number of accounts known by the node.
 	 * @apiSuccess {number} data.transactions The number of transactions known by the node.
 	 * @apiSuccess {number} data.mempool The number of transactions in the mempool.
 	 * @apiSuccess {number} data.masternodes The number of masternodes known by the node.
 	 * @apiSuccess {number} data.peers The number of valid peers.
+	 * @apiSuccess {number} data.height Current height of node.
+	 * @apiSuccess {number} data.block Current block id of node.
+	 * @apiSuccess {number} data.time Current time on node.
 	 */
 	static function nodeInfo($data) {
 		global $db;
@@ -528,7 +550,7 @@ class Api
 	}
 
 	/**
-	 * @api            {get} /api.php?q=checkAddress  22. checkAddress
+	 * @api            {get} /api.php?q=checkAddress  checkAddress
 	 * @apiName        checkAddress
 	 * @apiGroup       API
 	 * @apiDescription Checks the validity of an address.
@@ -553,6 +575,25 @@ class Api
 		api_echo(true);
 	}
 
+	/**
+	 * @api            {get} /api.php?q=getPeers  getPeers
+	 * @apiName        getPeers
+	 * @apiGroup       API
+	 * @apiDescription Return all peers from node
+	 *
+	 * @apiSuccess {numeric} id Id of peer in internal database (not relevant)
+	 * @apiSuccess {string} hostname Peer hostname
+	 * @apiSuccess {numeric} blacklisted UNIX timestamp until peer is blacklisted
+	 * @apiSuccess {numeric} ping UNIX timestamp when peer was last pinged
+	 * @apiSuccess {numeric} reserve (net relevant)
+	 * @apiSuccess {numeric} fails Number of failed conections to peer
+	 * @apiSuccess {numeric} stuckfail Number of failed stuck conentions to peer
+	 * @apiSuccess {numeric} height Blockchain height of peer
+	 * @apiSuccess {string} appshash Hash of peer apps
+	 * @apiSuccess {numeric} score Peer node score
+	 * @apiSuccess {string} blacklist_reason Reason why peer is blacklisted
+	 * @apiSuccess {string} version Version of peer node
+	 */
 	static function getPeers($data) {
 		$peers = Peer::getAll();
 		api_echo($peers);

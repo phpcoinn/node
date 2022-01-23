@@ -23,11 +23,11 @@
     "stream-browserify": "^2.0.2"
   },
   "apidoc": {
-    "title": "Custom apiDoc browser title",
-    "url": "/doc/"
+    "title": "PHPCoin Node API",
+    "url": ""
   },
   "scripts": {
-    "build_doc": "rm -rf doc && node_modules/.bin/apidoc -o doc/ -i ../ -f Api.php -f Util.php -f PeerRequest.php",
+    "build_doc": "rm -rf doc && node_modules/.bin/apidoc -o ../web/doc/ -i ../ -f Api.php",
     "build_web_miner": "node_modules/.bin/browserify js/web-miner.js -o ../web/apps/common/js/web-miner.js"
   },
   "dependencies": {
