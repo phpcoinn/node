@@ -106,6 +106,7 @@ class Nodeutil
 	static function deleteLatestBlocks($no) {
 		$syncFile = Nodeutil::getSyncFile();
 		if (file_exists($syncFile)) {
+			$_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Sync running. Wait for it to finish']];
 			_log("Sync running. Wait for it to finish", 3);
 			return;
 		}
@@ -116,7 +117,11 @@ class Nodeutil
 	}
 
 	static function deleteFromHeight($height) {
-		$no = Block::getHeight() - $height;
+		if($height < 0) {
+			$no = abs($height);
+		} else {
+			$no = Block::getHeight() - $height;
+		}
 		self::deleteLatestBlocks($no);
 	}
 
