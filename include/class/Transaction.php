@@ -12,6 +12,8 @@ class Transaction
 	public $publicKey;
 	public $date;
 	public $signature;
+	public $height;
+	public $peer;
 	public $id;
 
 	public $src;
@@ -84,6 +86,8 @@ class Transaction
 	    $trans->src = $x['src'];
 	    $trans->fee = $x['fee'];
 	    $trans->signature = $x['signature'];
+	    $trans->height = $x['height'];
+	    $trans->peer = $x['peer'];
 	    return $trans;
     }
 
@@ -114,7 +118,7 @@ class Transaction
     }
 
     // returns X  transactions from mempool
-    public static function mempool($max)
+    public static function mempool($max, $with_errors=false, $as_mine_data=true)
     {
         global $db;
         $current = Block::current();
@@ -131,24 +135,32 @@ class Transaction
                     break;
                 }
 
-
+				$tx_error = false;
                 if (empty($x['public_key'])) {
-                    _log("$x[id] - Transaction has empty public_key");
-                    continue;
+	                $tx_error = "Transaction has empty public_key";
+					if(!$with_errors) {
+                        continue;
+					}
                 }
                 if (empty($x['src'])) {
-                    _log("$x[id] - Transaction has empty src");
-                    continue;
+	                $tx_error = "Transaction has empty src";
+	                if(!$with_errors) {
+		                continue;
+	                }
                 }
-                if (!$trans->check($current['height'])) {
-                    _log("$x[id] - Transaction Check Failed");
-                    continue;
+                if (!$trans->verify($current['height'], $error)) {
+	                $tx_error = "Transaction Check Failed: ".$error;
+	                if(!$with_errors) {
+		                continue;
+	                }
                 }
   
                 $balance[$x['src']] += $x['val'] + $x['fee'];
                 if ($db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $x['id']]) > 0) {
-                    _log("$x[id] - Duplicate transaction");
-                    continue; //duplicate transaction
+	                $tx_error = "Duplicate transaction";
+	                if(!$with_errors) {
+		                continue;
+	                }
                 }
 
                 $res = $db->single(
@@ -157,16 +169,31 @@ class Transaction
                 );
 
                 if ($res == 0) {
-                    _log("$x[id] - Not enough funds in balance");
-                    continue; // not enough balance for the transactions
+	                $tx_error = "Not enough funds in balance";
+	                if(!$with_errors) {
+		                continue;
+	                }
                 }
+
                 $i++;
-                $transactions[$x['id']] = $trans->toArray();
+				if($tx_error) {
+					_log("$x[id] - $tx_error");
+				}
+	            $tx_arr = $trans->toArray();
+				if($tx_error && $with_errors) {
+					$tx_arr['error']=$tx_error;
+				}
+				if(!$as_mine_data) {
+					$tx_arr['height']=$trans->height;
+					$tx_arr['peer']=$trans->peer;
+				}
+                $transactions[$x['id']] = $tx_arr;
             }
         }
         // always sort the array
-        ksort($transactions);
-
+	    if(!$as_mine_data) {
+            ksort($transactions);
+	    }
         return $transactions;
     }
 
