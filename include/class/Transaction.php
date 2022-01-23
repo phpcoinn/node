@@ -272,13 +272,16 @@ class Transaction
 	}
 
     // check the transaction for validity
-    public function check($height = 0)
+    public function check($height = 0, $verify = false, &$error = null)
     {
         global $db;
         // if no specific block, use current
+
+	    $current = Block::current();
+		$last_height = $current['height'];
+
         if ($height === 0) {
-            $current = Block::current();
-            $height = $current['height'];
+            $height = $last_height;
         }
         $base = $this->getSignatureBase();
 
@@ -370,6 +373,12 @@ class Transaction
         }
 
         return true;
+    }
+
+
+    public function verify($height = 0, &$error = null)
+    {
+		return $this->check($height, true, $error);
     }
 
     function checkRewards($height) {
@@ -593,8 +602,8 @@ class Transaction
 		    return false;
 	    }
 
-	    if (!$this->check()) {
-		    $error = "Transaction signature failed";
+	    if (!$this->verify(0, $err)) {
+		    $error = "Transaction signature failed. Error: $err";
 		    return false;
 	    }
 		$res = Mempool::existsTx($hash);

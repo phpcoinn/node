@@ -859,28 +859,29 @@ class Block
 	    return $res;
     }
 
-	public function verifyBlock() {
+	public function verifyBlock(&$error = false) {
 
 		$data = $this->data;
 		$height = $this->height;
 
-		$public_key = Account::publicKey($this->generator);
-		if(empty($public_key)) {
-			_log("No public key for block address");
-			return false;
-		}
+		$error = false;
 
-		if(count($data)==0 && $height>1) {
-			_log("No transactions");
-			return false;
-		}
+		try {
 
-		$version = $this->version;
-		$expected_version = Block::versionCode($this->height);
-		if($expected_version != $version) {
-			_log("Block check: invalid version $version - expected $expected_version");
-			return false;
-		}
+			$public_key = Account::publicKey($this->generator);
+			if(empty($public_key)) {
+				throw new Exception("No public key for block address");
+			}
+
+			if(count($data)==0 && $height>1) {
+				throw new Exception("No transactions");
+			}
+
+			$version = $this->version;
+			$expected_version = Block::versionCode($this->height);
+			if($expected_version != $version) {
+				throw new Exception("Block check: invalid version $version - expected $expected_version");
+			}
 
 		$prev_block = Block::getAtHeight($height - 1);
 
@@ -895,57 +896,52 @@ class Block
 			$prev_block_id = "";
 		}
 
-		$res = $this->verifyArgon($prev_block_date, $elapsed);
-		if(!$res) {
-			_log("Check argon failed");
-			return false;
-		}
-
-		$nonce = $this->nonce;
-		$calcNonce = $this->calculateNonce($prev_block_date, $elapsed);
-		if($calcNonce != $nonce) {
-			_log("Check nonce failed");
-			return false;
-		}
-		$hit = $this->calculateHit();
-		$target = $this->calculateTarget($elapsed);
-		$res =  $this->checkHit($hit, $target, $height);
-		if(!$res) {
-			_log("Mine check failed hit=$hit target=$target");
-			return false;
-		}
-
-		ksort($data);
-		foreach ($data as $transaction) {
-			$tx_base = "{$transaction['val']}-{$transaction['fee']}-{$transaction['dst']}-".
-				"{$transaction['message']}-{$transaction['type']}-{$transaction['public_key']}-{$transaction['date']}";
-			$res = ec_verify($tx_base, $transaction['signature'], $transaction['public_key']);
+			$res = $this->verifyArgon($prev_block_date, $elapsed);
 			if(!$res) {
-				_log("Transaction signature failed");
-				_log("tx_base=$tx_base 
-signature=".$transaction['signature']." 
-public_key=".$transaction['public_key'],5);
-//				if($height != 9) {
-//					return false;
-//				}
+				throw new Exception("Check argon failed");
 			}
-		}
 
-		$data = json_encode($data);
-		$this->prevBlockId = $prev_block_id;
-		$signature_base = $this->getSignatureBase();
-		$res = ec_verify($signature_base, $this->signature, $public_key);
-		if(!$res) {
-			_log("Block signature check failed signature_base=$signature_base signature={$this->signature} public_key=$public_key");
-			return false;
-		}
+			$nonce = $this->nonce;
+			$calcNonce = $this->calculateNonce($prev_block_date, $elapsed);
+			if($calcNonce != $nonce) {
+				throw new Exception("Check nonce failed");
+			}
+			$hit = $this->calculateHit();
+			$target = $this->calculateTarget($elapsed);
+			$res =  $this->checkHit($hit, $target, $height);
+			if(!$res) {
+				throw new Exception("Mine check failed hit=$hit target=$target");
+			}
 
-		$hash_base = $this->getHashBase();
-		$hash = hash("sha256", $hash_base);
-		$calcBlockId = hex2coin($hash);
-		$id = $this->id;
-		if($calcBlockId != $id) {
-			_log("Invalid block id");
+			ksort($data);
+			foreach ($data as $transaction) {
+
+				$tx = Transaction::getFromArray($transaction);
+				$res = $tx->verify($height, $tx_error);
+				if(!$res) {
+					throw new Exception("Transaction id=".$tx->id." check failed: ".$tx_error);
+				}
+			}
+
+			$data = json_encode($data);
+			$this->prevBlockId = $prev_block_id;
+			$signature_base = $this->getSignatureBase();
+			$res = ec_verify($signature_base, $this->signature, $public_key);
+			if(!$res) {
+				throw new Exception("Block signature check failed signature_base=$signature_base signature={$this->signature} public_key=$public_key");
+			}
+
+			$hash_base = $this->getHashBase();
+			$hash = hash("sha256", $hash_base);
+			$calcBlockId = hex2coin($hash);
+			$id = $this->id;
+			if($calcBlockId != $id) {
+				throw new Exception("Invalid block id");
+			}
+
+		} catch (Exception $e) {
+			$error = $e->getMessage();
+			_log($error);
 			return false;
 		}
 
