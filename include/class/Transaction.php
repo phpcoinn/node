@@ -312,92 +312,87 @@ class Transaction
         }
         $base = $this->getSignatureBase();
 
+		try {
 
-        // the value must be >=0
-        if ($this->val <= 0) {
-            _log("{$this->val} - Value <= 0", 3);
-            return false;
-        }
+	        // the value must be >=0
+	        if ($this->val <= 0) {
+	            throw new Exception("{$this->val} - Value <= 0", 3);
+	        }
 
-        // the fee must be >=0
-        if ($this->fee < 0) {
-            _log("{$this->fee} - Fee below 0", 3);
-            return false;
-        }
+	        // the fee must be >=0
+	        if ($this->fee < 0) {
+		        throw new Exception("{$this->fee} - Fee below 0", 3);
+	        }
 
-	    //genesis transaction
-	    $mining_segments = REWARD_SCHEME['mining']['segments'];
-	    $mining_segment_block = REWARD_SCHEME['mining']['block_per_segment'];
-	    $launch_blocks = REWARD_SCHEME['launch']['blocks'];
-	    $mining_end_block = ($mining_segments * $mining_segment_block) + $launch_blocks;
-	    if($this->publicKey==GENESIS_DATA['public_key'] && $this->type==TX_TYPE_SEND && $height < $mining_end_block) {
-		    _log("Genesis can not spend before locked height");
-		    return false;
-	    }
+		    //genesis transaction
+		    $mining_segments = REWARD_SCHEME['mining']['segments'];
+		    $mining_segment_block = REWARD_SCHEME['mining']['block_per_segment'];
+		    $launch_blocks = REWARD_SCHEME['launch']['blocks'];
+		    $mining_end_block = ($mining_segments * $mining_segment_block) + $launch_blocks;
+		    if($this->publicKey==GENESIS_DATA['public_key'] && $this->type==TX_TYPE_SEND && $height < $mining_end_block) {
+			    throw new Exception("Genesis can not spend before locked height");
+		    }
 
-	    $fee = $this->val * TX_FEE;
-	    $fee = num($fee);
+		    $fee = $this->val * TX_FEE;
+		    $fee = num($fee);
 
-        // added fee does not match
-        if ($fee != $this->fee) {
-            _log("{$this->id} - Invalid fee");
-            _log(json_encode($this), 3);
-            return false;
-        }
+	        // added fee does not match
+	        if ($fee != $this->fee) {
+		        throw new Exception("{$this->id} - Invalid fee ".json_encode($this));
+	        }
 
-        if($this->type==TX_TYPE_REWARD) {
-            $res = $this->checkRewards($height);
-            if(!$res) {
-	            if($height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
-		            _log("Transaction rewards check failed");
-		            return false;
+	        if($this->type==TX_TYPE_REWARD) {
+	            $res = $this->checkRewards($height);
+	            if(!$res) {
+		            if($height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
+			            throw new Exception("Transaction rewards check failed");
+		            }
+		        }
+	        }
+
+
+	        if ($this->type==TX_TYPE_SEND) {
+	            // invalid destination address
+	            if (!Account::valid($this->dst)) {
+		            throw new Exception("{$this->id} - Invalid destination address");
+	            }
+	            $src = Account::getAddress($this->publicKey);
+	            if($src==$this->dst) {
+		            throw new Exception("{$this->id} - Invalid destination address");
 	            }
 	        }
-        }
 
 
-        if ($this->type==TX_TYPE_SEND) {
-            // invalid destination address
-            if (!Account::valid($this->dst)) {
-                _log("{$this->id} - Invalid destination address");
-                return false;
-            }
-            $src = Account::getAddress($this->publicKey);
-            if($src==$this->dst) {
-	            _log("{$this->id} - Invalid destination address");
-	            return false;
-            }
-        }
+	        // public key must be at least 15 chars / probably should be replaced with the validator function
+	        if (strlen($this->publicKey) < 15) {
+		        throw new Exception("{$this->id} - Invalid public key size");
+	        }
+	        // no transactions before the genesis
+	        if ($this->date < GENESIS_TIME) {
+		        throw new Exception("{$this->id} - Date before genesis");
+	        }
+	        // no future transactions
+	        if ($this->date > time() + 86400) {
+		        throw new Exception("{$this->id} - Date in the future");
+	        }
+	        $thisId = $this->id;
+	        $id = $this->hash();
+	        // the hash does not match our regenerated hash
+	        if ($thisId != $id) {
+		        throw new Exception("{$this->id} - $id - Invalid hash");
+	        }
+
+	        //verify the ecdsa signature
+	        if (!Account::checkSignature($base, $this->signature, $this->publicKey)) {
+		        throw new Exception("{$this->id} - Invalid signature - $base");
+	        }
 
 
-        // public key must be at least 15 chars / probably should be replaced with the validator function
-        if (strlen($this->publicKey) < 15) {
-            _log("{$this->id} - Invalid public key size");
-            return false;
-        }
-        // no transactions before the genesis
-        if ($this->date < GENESIS_TIME) {
-            _log("{$this->id} - Date before genesis");
-            return false;
-        }
-        // no future transactions
-        if ($this->date > time() + 86400) {
-            _log("{$this->id} - Date in the future");
-            return false;
-        }
-        $thisId = $this->id;
-        $id = $this->hash();
-        // the hash does not match our regenerated hash
-        if ($thisId != $id) {
-                _log("{$this->id} - $id - Invalid hash");
-                return false;
-        }
-
-        //verify the ecdsa signature
-        if (!Account::checkSignature($base, $this->signature, $this->publicKey)) {
-            _log("{$this->id} - Invalid signature - $base");
-            return false;
-        }
+		} catch (Exception $e) {
+			$error = $e->getMessage();
+			_log("Transaction {$this->id} check failed: ".$error);
+			return false;
+		}
 
         return true;
     }
