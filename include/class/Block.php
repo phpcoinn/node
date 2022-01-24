@@ -435,8 +435,10 @@ class Block
 
 //        $block_date = $time;
 	    if($calcNonce != $this->nonce) {
-		    _log("Invalid nonce {$this->nonce} - {$prev_date}-{$elapsed} calcNonce=$calcNonce");
-		    return false;
+		    if($this->height > UPDATE_3_ARGON_HARD) {
+			    _log("Invalid nonce {$this->nonce} - {$prev_date}-{$elapsed} calcNonce=$calcNonce");
+			    return false;
+		    }
 	    }
 
 	    if(strlen($this->nonce) != 64) {
@@ -904,13 +906,17 @@ class Block
 			$nonce = $this->nonce;
 			$calcNonce = $this->calculateNonce($prev_block_date, $elapsed);
 			if($calcNonce != $nonce) {
-				throw new Exception("Check nonce failed");
+				if($height > UPDATE_3_ARGON_HARD) {
+					throw new Exception("Check nonce failed");
+				}
 			}
 			$hit = $this->calculateHit();
 			$target = $this->calculateTarget($elapsed);
 			$res =  $this->checkHit($hit, $target, $height);
 			if(!$res) {
-				throw new Exception("Mine check failed hit=$hit target=$target");
+				if($height > UPDATE_3_ARGON_HARD) {
+					throw new Exception("Mine check failed hit=$hit target=$target");
+				}
 			}
 
 			ksort($data);
