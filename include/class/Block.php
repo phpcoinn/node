@@ -455,10 +455,11 @@ class Block
 	    if(!$res) {
 		    if($this->height > UPDATE_3_ARGON_HARD) {
 			    _log("invalid hit or target");
+			    return false;
 		    }
 	    }
 
-	    return $res;
+	    return true;
 
     }
 
