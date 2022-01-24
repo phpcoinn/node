@@ -425,6 +425,10 @@ class Block
 	        return false;
         }
 
+	    //store real mine data because pool can change it
+	    $miner = $this->miner;
+	    $argon = $this->argon;
+
 	    //verify argon
 	    if(!$this->verifyArgon($prev_date, $elapsed)) {
 		    _log("Invalid argon={$this->argon}");
@@ -435,10 +439,8 @@ class Block
 
 //        $block_date = $time;
 	    if($calcNonce != $this->nonce) {
-		    if($this->height > UPDATE_3_ARGON_HARD) {
-			    _log("Invalid nonce {$this->nonce} - {$prev_date}-{$elapsed} calcNonce=$calcNonce");
-			    return false;
-		    }
+		    _log("Invalid nonce {$this->nonce} - {$prev_date}-{$elapsed} calcNonce=$calcNonce");
+		    return false;
 	    }
 
 	    if(strlen($this->nonce) != 64) {
@@ -453,11 +455,12 @@ class Block
 		    " difficulty=".$this->difficulty." elapsed=".$elapsed, 5);
 	    $res = $this->checkHit($hit, $target, $this->height);
 	    if(!$res) {
-		    if($this->height > UPDATE_3_ARGON_HARD) {
-			    _log("invalid hit or target");
-			    return false;
-		    }
+		    _log("invalid hit or target");
+		    return false;
 	    }
+
+	    $this->miner = $miner;
+	    $this->argon = $argon;
 
 	    return true;
 
@@ -820,10 +823,37 @@ class Block
 	        $argon = $this->argon;
 	        $calcArgon = $this->calculateArgonHash($date, $elapsed);
 	        if($argon != $calcArgon) {
-			    if($this->height > 34500) {
+				//possible pool mining test
+		        $txs = $this->data;
+				foreach($txs as $tx) {
+					$msg = $tx['message'];
+					$poolArgon = null;
+					if (substr($msg, 0, strlen("pool|")) == "pool|") {
+						$arr = explode("|", $msg);
+						$poolMinerAddress=$arr[1];
+						$poolMinerAddressSignature=$arr[2];
+						$poolMinerPublicKey = Account::publicKey($poolMinerAddress);
+						$base = "{$date}-{$elapsed}";
+						$options = self::hashingOptions($this->height);
+						if($this->height < UPDATE_3_ARGON_HARD) {
+							$options['salt']=substr($poolMinerAddress, 0, 16);
+						}
+						$poolArgon = @password_hash(
+							$base,
+							HASHING_ALGO,
+							$options
+						);
+						break;
+					}
+				}
+
+			    if($argon != $poolArgon) {
 	                _log("Argon not match argon=$argon calcArgon=$calcArgon", 3);
 				    return false;
 			    }
+				//pool changes mine data
+				$this->argon = $poolArgon;
+				$this->miner = $poolMinerAddress;
 		    }
 	    }
     	return true;
@@ -901,26 +931,29 @@ class Block
 			$prev_block_id = "";
 		}
 
+			//store real mine data because pool can change it
+			$miner = $this->miner;
+			$argon = $this->argon;
+
 			$res = $this->verifyArgon($prev_block_date, $elapsed);
 			if(!$res) {
 				throw new Exception("Check argon failed");
 			}
-
 			$nonce = $this->nonce;
 			$calcNonce = $this->calculateNonce($prev_block_date, $elapsed);
 			if($calcNonce != $nonce) {
-				if($height > UPDATE_3_ARGON_HARD) {
-					throw new Exception("Check nonce failed");
-				}
+				throw new Exception("Check nonce failed");
 			}
 			$hit = $this->calculateHit();
 			$target = $this->calculateTarget($elapsed);
 			$res =  $this->checkHit($hit, $target, $height);
 			if(!$res) {
-				if($height > UPDATE_3_ARGON_HARD) {
-					throw new Exception("Mine check failed hit=$hit target=$target");
-				}
+				throw new Exception("Mine check failed hit=$hit target=$target");
 			}
+			//restore mine data
+			$this->miner = $miner;
+			$this->argon = $argon;
+
 
 			ksort($data);
 			foreach ($data as $transaction) {

@@ -303,12 +303,9 @@ class Transaction
     {
         global $db;
         // if no specific block, use current
-
-	    $current = Block::current();
-		$last_height = $current['height'];
-
         if ($height === 0) {
-            $height = $last_height;
+	        $current = Block::current();
+            $height = $current['height'];
         }
         $base = $this->getSignatureBase();
 
