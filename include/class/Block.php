@@ -453,7 +453,9 @@ class Block
 		    " difficulty=".$this->difficulty." elapsed=".$elapsed, 5);
 	    $res = $this->checkHit($hit, $target, $this->height);
 	    if(!$res) {
-	    	_log("invalid hit or target");
+		    if($this->height > UPDATE_3_ARGON_HARD) {
+			    _log("invalid hit or target");
+		    }
 	    }
 
 	    return $res;
