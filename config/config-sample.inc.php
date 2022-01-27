@@ -11,7 +11,7 @@ if($_config['testnet']) {
 	return;
 }
 // The database DSN
-$_config['db_connect'] = 'mysql:host=localhost;dbname=ENTER-DB-NAME';
+$_config['db_connect'] = 'mysql:host=localhost;dbname=ENTER-DB-NAME;charset=utf8';
 // Alternative sqlite db
 //$_config['db_connect'] = 'sqlite:DB-PATH';
 
