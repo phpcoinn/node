@@ -434,7 +434,7 @@ class Block
 	    $calcNonce = $this->calculateNonce($prev_date, $elapsed);
 
 //        $block_date = $time;
-	    if($calcNonce != $this->nonce) {
+	    if($calcNonce != $this->nonce && $this->height > UPDATE_3_ARGON_HARD) {
 		    _log("Invalid nonce {$this->nonce} - {$prev_date}-{$elapsed} calcNonce=$calcNonce");
 		    return false;
 	    }
@@ -450,7 +450,7 @@ class Block
 	    _log("Check hit= " . $hit. " target=" . $target . " current_height=".$this->height.
 		    " difficulty=".$this->difficulty." elapsed=".$elapsed, 5);
 	    $res = $this->checkHit($hit, $target, $this->height);
-	    if(!$res) {
+	    if(!$res && $this->height > UPDATE_3_ARGON_HARD) {
 		    _log("invalid hit or target");
 		    return false;
 	    }
