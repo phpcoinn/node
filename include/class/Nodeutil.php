@@ -128,9 +128,9 @@ class Nodeutil
 	static function calculateAccountsHash() {
 		global $db;
 		if($db->isSqlite()) {
-			$res=$db->run("SELECT *, printf('%.".COIN_DECIMALS."f', balance) as balance FROM accounts ORDER by id ASC");
+			$res=$db->run("SELECT id,public_key,block,printf('%.".COIN_DECIMALS."f', abs(round(balance,8))) as balance, alias FROM accounts ORDER by id collate NOCASE");
 		} else {
-			$res=$db->run("SELECT * FROM accounts ORDER by id ASC");
+			$res=$db->run("SELECT * FROM accounts ORDER by id");
 		}
 		$current=Block::current();
 		return [

@@ -74,6 +74,7 @@ compare-blocks <peer> [<limit>]             - Compare blocks with peer
 compare-accounts <peer>                     - Compare accounts with peer
 masternode-hash                             - Calculate masternode hash
 accounts-hash                               - Calculate accounts hash
+blocks-hash <height>                        - Calculate blocks hash
 version                                     - Show node version
 sendblock <height> <peer>                   - Send block to peer
 recheck-external-blocks <peer> [<height>]   - Recheck blocks from <height> at <peer>

@@ -50,7 +50,11 @@ class Mempool
 	public static function mempoolBalance($id)
 	{
 		global $db;
-		$mem = $db->single("SELECT SUM(if(src=:id1, -(val+fee), (val+fee))) FROM mempool WHERE src=:id2 or dst=:id3", [":id1" => $id,":id2" => $id,":id3" => $id]);
+		if($db->isSqlite()) {
+			$mem = $db->single("SELECT SUM(case when src=:id1 then -(val+fee) else (val+fee) end) FROM mempool WHERE src=:id2 or dst=:id3", [":id1" => $id,":id2" => $id,":id3" => $id]);
+		} else {
+			$mem = $db->single("SELECT SUM(if(src=:id1, -(val+fee), (val+fee))) FROM mempool WHERE src=:id2 or dst=:id3", [":id1" => $id,":id2" => $id,":id3" => $id]);
+		}
 		return num($mem);
 	}
 

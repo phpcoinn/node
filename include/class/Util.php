@@ -507,6 +507,13 @@ class Util
 		echo "Hash:\t\t".$res['hash']."\n\n";
 	}
 
+	static function blocksHash($argv) {
+		$height=intval($argv[2]);
+		$res=Nodeutil::calculateBlocksHash($height);
+		echo "Height:\t\t".$res['height']."\n";
+		echo "Hash:\t\t".$res['hash']."\n\n";
+	}
+
 	static function version() {
 		echo "\n\n".VERSION."\n\n";
 	}
