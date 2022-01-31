@@ -391,56 +391,14 @@ class Api
 		$type = intval($data['type']);
 		$dst = san($data['dst']);
 
-		if (!in_array($type, [TX_TYPE_SEND])) {
-			api_err("Invalid transaction type");
-		}
-
-
-
-		if ($type==TX_TYPE_SEND) {
-			if (!Account::valid($dst)) {
-				api_err("Invalid destination address");
-			}
-		}
-
-
 		$public_key = san($data['public_key']);
-		if (!Account::validKey($public_key)) {
-			api_err("Invalid public key");
-		}
-		if ($_config['use_official_blacklist']!==false) {
-			if (Blacklist::checkPublicKey($public_key)) {
-				api_err("Blacklisted account");
-			}
-		}
-
 		$signature = san($data['signature']);
-		if (!Account::validKey($signature)) {
-			api_err("Invalid signature");
-		}
 		$date = $data['date'] + 0;
-
 		if ($date == 0) {
 			$date = time();
 		}
-		if ($date < time() - (3600 * 24 * 48)) {
-			api_err("The date is too old");
-		}
-		if ($date > time() + 86400) {
-			api_err("Invalid Date");
-		}
-
-
 		$message=$data['message'];
-		if (strlen($message) > 128) {
-			api_err("The message must be less than 128 chars");
-		}
 		$val = $data['val'] + 0;
-
-		if ($val < 0) {
-			api_err("Invalid value");
-		}
-
 		$transaction = new Transaction($public_key,$dst,$val,$type,$date,$message);
 		$transaction->signature = $signature;
 		$hash = $transaction->addToMemPool($error);

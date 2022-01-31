@@ -193,13 +193,13 @@ class Transaction
 		                continue;
 	                }
                 }
-                if (!$trans->verify($current['height'], $error)) {
+                if (!$trans->check($current['height'], false, $error)) {
 	                $tx_error = "Transaction Check Failed: ".$error;
 	                if(!$with_errors) {
 		                continue;
 	                }
                 }
-  
+
                 $balance[$x['src']] += $x['val'] + $x['fee'];
                 if ($db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $x['id']]) > 0) {
 	                $tx_error = "Duplicate transaction";
@@ -318,7 +318,7 @@ class Transaction
 	}
 
 	// add a new transaction to the blockchain
-	public function add($block, $height, $bootstrapping = false)
+	public function add($block, $height)
 	{
 		global $db;
 
@@ -421,7 +421,7 @@ class Transaction
         global $db, $_config;
         // if no specific block, use current
         if ($height === 0) {
-	        $current = Block::current();
+	    $current = Block::current();
             $height = $current['height'];
         }
         $base = $this->getSignatureBase();

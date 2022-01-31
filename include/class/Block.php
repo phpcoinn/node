@@ -46,100 +46,101 @@ class Block
 		$this->prevBlockId = $prevBlockId;
 	}
 
-	public function add($bootstrapping=false)
+	public function add($bootstrapping=false, &$error = null)
     {
         global $db;
 
         _log("Block insert height=".$this->height, 3);
 
-	    if (!$bootstrapping) {
+		try {
 
-	        if(empty($this->generator)) {
-		        $this->generator = Account::getAddress($this->publicKey);
+		    if (!$bootstrapping) {
+
+		        if(empty($this->generator)) {
+			        $this->generator = Account::getAddress($this->publicKey);
+		        }
+
+		        // the transactions are always sorted in the same way, on all nodes, as they are hashed as json
+		        ksort($this->data);
+
+		        if(count($this->data)==0 && $this->height>1) {
+		            throw new Exception("No transactions");
+		        }
+
+		        if($this->version != Block::versionCode($this->height)) {
+			        throw new Exception("Wrong version code");
+		        }
+
+		        // create the hash / block id
+		        $hash = $this->hash();
+
+		        // create the block data and check it against the signature
+		        $info = $this->getSignatureBase();
+		    // _log($info,3);
+
+	            if (!Account::checkSignature($info, $this->signature, $this->publicKey)) {
+		            throw new Exception("Block signature check failed info=$info signature={$this->signature} public_key={$this->publicKey}");
+	            }
+
+	            if (!$this->parse_block(true, false, $bl_error)) {
+		            throw new Exception("Parse block failed: ".$bl_error);
+	            }
+
+	            $currentHeight = Block::getHeight();
+	            _log("Checking block height currentHeight=$currentHeight height={$this->height}", 3);
+	            if($this->height - $currentHeight != 1) {
+		            throw new Exception("Block height failed");
+	            }
+	        }
+	        // lock table to avoid race conditions on blocks
+	        $db->lockTables();
+	        $db->beginTransaction();
+	        $total = count($this->data);
+
+
+	        $bind = [
+	            ":id"           => $this->id,
+	            ":generator"    => $this->generator,
+	            ":miner"        => $this->miner,
+	            ":signature"    => $this->signature,
+	            ":height"       => $this->height,
+	            ":date"         => $this->date,
+	            ":nonce"        => $this->nonce,
+	            ":difficulty"   => $this->difficulty,
+	            ":argon"        => $this->argon,
+	            ":version"        => $this->version,
+	            ":transactions" => $total,
+	        ];
+	        $res = Block::insert($bind);
+	        if ($res != 1) {
+	            // rollback and exit if it fails
+	            $db->rollback();
+	            $db->unlockTables();
+		        throw new Exception("Block DB insert failed");
+	        } else {
+	            _log("Inserted new block height={$this->height} id=$hash ",1);
 	        }
 
-	        // the transactions are always sorted in the same way, on all nodes, as they are hashed as json
-	        ksort($this->data);
+	        // parse the block's transactions and insert them to db
+	        $res = $this->parse_block(false, $bootstrapping);
 
-	        if(count($this->data)==0 && $this->height>1) {
-	            _log("No transactions");
-	            return false;
+	        // if any fails, rollback
+	        if ($res == false) {
+	            $db->rollback();
+		        $db->unlockTables();
+		        throw new Exception("Rollback block");
+	        } else {
+	            _log("Committing block height=".$this->height, 4);
+	            $db->commit();
+		        $db->unlockTables();
+		        return true;
 	        }
 
-	        if($this->version != Block::versionCode($this->height)) {
-		        _log("Wrong version code");
-		        return false;
-	        }
-
-	        // create the hash / block id
-	        $hash = $this->hash();
-
-	        // create the block data and check it against the signature
-	        $info = $this->getSignatureBase();
-	    // _log($info,3);
-
-            if (!Account::checkSignature($info, $this->signature, $this->publicKey)) {
-                _log("Block signature check failed info=$info signature={$this->signature} public_key={$this->publicKey}");
-                return false;
-            }
-
-            if (!$this->parse_block(true)) {
-                _log("Parse block failed");
-                return false;
-            }
-
-            $currentHeight = Block::getHeight();
-            _log("Checking block height currentHeight=$currentHeight height={$this->height}", 3);
-            if($this->height - $currentHeight != 1) {
-	            _log("Block height failed");
-	            return false;
-            }
-        }
-        // lock table to avoid race conditions on blocks
-        $db->lockTables();
-        $db->beginTransaction();
-        $total = count($this->data);
-
-
-        $bind = [
-            ":id"           => $this->id,
-            ":generator"    => $this->generator,
-            ":miner"        => $this->miner,
-            ":signature"    => $this->signature,
-            ":height"       => $this->height,
-            ":date"         => $this->date,
-            ":nonce"        => $this->nonce,
-            ":difficulty"   => $this->difficulty,
-            ":argon"        => $this->argon,
-            ":version"        => $this->version,
-            ":transactions" => $total,
-        ];
-        $res = Block::insert($bind);
-        if ($res != 1) {
-            // rollback and exit if it fails
-            _log("Block DB insert failed");
-            $db->rollback();
-            $db->unlockTables();
-            return false;
-        } else {
-        	_log("Inserted new block height={$this->height} id=$hash ",1);
-        }
-
-        // parse the block's transactions and insert them to db
-        $res = $this->parse_block(false, $bootstrapping);
-
-        // if any fails, rollback
-        if ($res == false) {
-            _log("Rollback block");
-            $db->rollback();
-	        $db->unlockTables();
-	        return false;
-        } else {
-            _log("Committing block height=".$this->height, 4);
-            $db->commit();
-	        $db->unlockTables();
-	        return true;
-        }
+		} catch (Exception $e) {
+			$error = $e->getMessage();
+			_log($error);
+			return false;
+		}
     }
 
     static function getFromArray($b) {
@@ -460,86 +461,89 @@ class Block
     }
 
     // parse the block transactions
-    public function parse_block($test = true, $bootstrapping=false)
+    public function parse_block($test = true, $bootstrapping=false, &$error = null)
     {
         global $db;
 
-        if(!$bootstrapping) {
+		try {
+
+	        if(!$bootstrapping) {
 
 
-	        // data must be array
-	        if ($this->data === false) {
-		        _log("Block data is false");
-		        return false;
-	        }
-	        // no transactions means all are valid
-	        if (count($this->data) == 0) {
-		        return true;
-	        }
-
-	        // check if the number of transactions is not bigger than current block size
-	        if ($this->height > 1) {
-		        $max = Block::max_transactions();
-		        if (count($this->data) > $max) {
-			        _log("Too many transactions in block");
-			        return false;
+		        // data must be array
+		        if ($this->data === false) {
+			        throw new Exception("Block data is false");
 		        }
-	        }
-
-	        $balance = [];
-	        $mns = [];
-
-	        foreach ($this->data as $x) {
-		        //validate the transaction
-		        $tx = Transaction::getFromArray($x);
-		        if (!$tx->check($this->height)) {
-			        _log("Transaction check failed - {$tx->id}");
-			        return false;
+		        // no transactions means all are valid
+		        if (count($this->data) == 0) {
+			        return true;
 		        }
 
-		        // prepare total balance
-		        $balance[$tx->src] += $tx->val + $tx->fee;
-
-		        // check if the transaction is already on the blockchain
-		        if ($db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $tx->id]) > 0) {
-			        _log("Transaction already on the blockchain - {$tx->id}", 2);
-			        return false;
+		        // check if the number of transactions is not bigger than current block size
+		        if ($this->height > 1) {
+			        $max = Block::max_transactions();
+					$count = 0;
+			        foreach ($this->data as $x) {
+						if($x['type']==TX_TYPE_SEND) {
+							$count++;
+						}
+			        }
+			        if ($count > $max) {
+				        throw new Exception("Too many transactions in block count=".$count." max=$max");
+			        }
 		        }
 
-		        $type = $tx->type;
+		        $balance = [];
+		        $mns = [];
 
-		        if ($type == TX_TYPE_SEND) {
-
-			        if ($tx->src == $tx->dst) {
-				        _log("Transaction now allowed to itself");
-				        return false;
+		        foreach ($this->data as $x) {
+			        //validate the transaction
+			        $tx = Transaction::getFromArray($x);
+			        if (!$tx->check($this->height)) {
+				        throw new Exception("Transaction check failed - {$tx->id}");
 			        }
 
-			        // check if the account has enough balance to perform the transaction
-			        foreach ($balance as $id => $bal) {
-			        	$acc_balance = Account::getBalance($id);
-			        	if(round(floatval($acc_balance),8) < round($bal,8)) {
-					        _log("Not enough balance for transaction - $id balance=$acc_balance bal=$bal");
-					        return false; // not enough balance for the transactions
+			        // prepare total balance
+			        $balance[$tx->src] += $tx->val + $tx->fee;
+
+			        // check if the transaction is already on the blockchain
+			        if ($db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $tx->id]) > 0) {
+				        throw new Exception("Transaction already on the blockchain - {$tx->id}", 2);
+			        }
+
+			        $type = $tx->type;
+
+			        if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE || $type == TX_TYPE_MN_REMOVE) {
+				        // check if the account has enough balance to perform the transaction
+				        foreach ($balance as $id => $bal) {
+				            $acc_balance = Account::getBalance($id);
+				            if(round(floatval($acc_balance),8) < round($bal,8)) {
+					            throw new Exception("Not enough balance for transaction - $id balance=$acc_balance bal=$bal");
+					        }
 				        }
 			        }
 		        }
+
 	        }
 
-        }
+	        // if the test argument is false, add the transactions to the blockchain
+	        if ($test == false) {
+	            foreach ($this->data as $d) {
+		            $tx = Transaction::getFromArray($d);
+	                $res = $tx->add($this->id, $this->height, $bootstrapping);
+	                if ($res == false) {
+		                throw new Exception("Not valid transaction");
+	                }
+	            }
+	        }
 
-        // if the test argument is false, add the transactions to the blockchain
-        if ($test == false) {
-            foreach ($this->data as $d) {
-	            $tx = Transaction::getFromArray($d);
-                $res = $tx->add($this->id, $this->height, $bootstrapping);
-                if ($res == false) {
-                    return false;
-                }
-            }
-        }
+	        return true;
 
-        return true;
+		} catch (Exception $e) {
+			$error = $e->getMessage();
+			_log($error);
+			return false;
+		}
     }
 
 
@@ -874,18 +878,18 @@ class Block
 				throw new Exception("Block check: invalid version $version - expected $expected_version");
 			}
 
-		$prev_block = Block::getAtHeight($height - 1);
+			$prev_block = Block::getAtHeight($height - 1);
 
-		$elapsed = 0;
-		if($prev_block) {
-			$prev_date = $prev_block['date'];
-			$elapsed = $this->date - $prev_date;
-			$prev_block_date = $prev_block['date'];
-			$prev_block_id = $prev_block['id'];
-		} else {
-			$prev_block_date = $this->date;
-			$prev_block_id = "";
-		}
+			$elapsed = 0;
+			if($prev_block) {
+				$prev_date = $prev_block['date'];
+				$elapsed = $this->date - $prev_date;
+				$prev_block_date = $prev_block['date'];
+				$prev_block_id = $prev_block['id'];
+			} else {
+				$prev_block_date = $this->date;
+				$prev_block_id = "";
+			}
 
 			$res = $this->verifyArgon($prev_block_date, $elapsed);
 			if(!$res) {
