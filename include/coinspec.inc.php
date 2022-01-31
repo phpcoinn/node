@@ -29,6 +29,8 @@ const BLOCK_START_DIFFICULTY = "60000";
 const TX_FEE = 0;
 const TX_TYPE_REWARD = 0;
 const TX_TYPE_SEND = 1;
+const TX_TYPE_MN_CREATE = 2;
+const TX_TYPE_MN_REMOVE = 3;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
@@ -57,6 +59,11 @@ const REWARD_SCHEME = [
 ];
 
 const MIN_NODE_SCORE = 80;
+
+const FEATURE_MN = true;
+const MN_COLLATERAL = 10000;
+const MN_WAIT_BLOCKS = 100;
+const MN_MIN_RUN_BLOCKS = 1440*30;
 
 const TOTAL_SUPPLY = 106400000;
 const GIT_URL = "https://github.com/phpcoinn/node";

@@ -118,4 +118,22 @@ class Mempool
 		return $r;
 	}
 
+	public static function getByDstAndType($dst, $type) {
+		global $db;
+		$sql="select count(1) from mempool where dst=:dst and type=:type";
+		return $db->single($sql, [":dst"=>$dst, ":type"=>$type]);
+	}
+
+	public static function getBySrcAndType($src, $type) {
+		global $db;
+		$sql="select count(1) from mempool where src=:src and type=:type";
+		return $db->single($sql, [":src"=>$src, ":type"=>$type]);
+	}
+
+	public static function getAll() {
+		global $db;
+		$sql = "select * from mempool ORDER by height, date, val DESC";
+		return $db->run($sql);
+	}
+
 }

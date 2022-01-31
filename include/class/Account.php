@@ -119,6 +119,22 @@ class Account
 				        $trans['type_label'] = "debit";
 				        $sign="-";
 			        }
+		        } elseif ($x['type'] == TX_TYPE_MN_CREATE) {
+			        if ($x['dst'] == $id) {
+				        $trans['type_label'] = "credit";
+				        $sign="+";
+			        } else {
+				        $trans['type_label'] = "debit";
+				        $sign="-";
+			        }
+		        } elseif ($x['type'] == TX_TYPE_MN_REMOVE) {
+			        if ($x['dst'] == $id) {
+				        $trans['type_label'] = "credit";
+				        $sign="+";
+			        } else {
+				        $trans['type_label'] = "debit";
+				        $sign="-";
+			        }
 		        } else {
 			        $trans['type_label'] = "other";
 		        }
@@ -315,6 +331,17 @@ class Account
 	{
 		global $db;
 		$res = $db->single("SELECT balance FROM accounts WHERE id=:id", [":id" => $id]);
+		if ($res === false) {
+			$res = 0;
+		}
+
+		return num($res);
+	}
+
+	public static function getBalanceByPublicKey($publicKey)
+	{
+		global $db;
+		$res = $db->single("SELECT balance FROM accounts WHERE public_key=:public_key", [":public_key" => $publicKey]);
 		if ($res === false) {
 			$res = 0;
 		}

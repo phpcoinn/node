@@ -196,6 +196,11 @@ if($dbversion == 3) {
 	$dbversion = 4;
 }
 
+if($dbversion == 4) {
+	$db->run("alter table masternode modify ip varchar(16) null");
+	$dbversion = 5;
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);

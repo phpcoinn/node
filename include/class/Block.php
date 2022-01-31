@@ -981,4 +981,12 @@ class Block
 			return '$argon2i$v=19$m=32768,t=2,p=1';
 		}
 	}
+
+	static function getMnStartHeight() {
+		$mining_segments = REWARD_SCHEME['mining']['segments'];
+		$mining_segment_block = REWARD_SCHEME['mining']['block_per_segment'];
+		$launch_blocks = REWARD_SCHEME['launch']['blocks'];
+		$mining_end_block = ($mining_segments * $mining_segment_block) + $launch_blocks;
+		return $mining_end_block +1;
+	}
 }

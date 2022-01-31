@@ -148,6 +148,12 @@ class Wallet
 			case "login-link":
 				$this->loginLink();
 				break;
+			case "masternode-create":
+				$this->createMastenode(@$this->arg2);
+				break;
+			case "masternode-remove":
+				$this->removeMastenode(@$this->arg2, @$this->arg3);
+				break;
 			default:
 				echo !$this->create ? "Invalid command\n" : "";
 		}
@@ -387,8 +393,38 @@ class Wallet
 		);
 	}
 
+	//php wallet.php masternode-create LWNkKuU41paSgzFtnKgjiJsKkoo3HwV39C
+	function createMastenode($mnAddress) {
+		$date=time();
+		$msg = "mncreate";
+		$tx = new Transaction($this->public_key, $mnAddress, MN_COLLATERAL, TX_TYPE_MN_CREATE, $date, $msg);
+		$signature = $tx->sign($this->private_key);
+
+		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
+			array("dst" => $mnAddress, "val" => MN_COLLATERAL, "signature" => $signature,
+				"public_key" => $this->public_key, "type" => TX_TYPE_MN_CREATE,
+				"message" => $msg, "date" => $date));
+		$this->checkApiResponse($res);
+		echo "Transaction created: ".$res['data'];
+	}
+
+	function removeMastenode($payoutAddress) {
+		$mnAddress = Account::getAddress($this->public_key);
+		$date=time();
+		$msg = "mnremove";
+		$tx = new Transaction($this->public_key, $payoutAddress, MN_COLLATERAL, TX_TYPE_MN_REMOVE, $date, $msg);
+		$signature = $tx->sign($this->private_key);
+
+		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
+			array("dst" => $payoutAddress, "val" => MN_COLLATERAL, "signature" => $signature,
+				"public_key" => $this->public_key, "type" => TX_TYPE_MN_REMOVE,
+				"message" => $msg, "date" => $date));
+		$this->checkApiResponse($res);
+		echo "Transaction created: ".$res['data'];
+	}
+
 	function help() {
-		die("light-".COIN."-cli <command> <options>
+		die("wallet <command> <options>
 
 Commands:
 
@@ -402,7 +438,8 @@ transactions                    show the latest transactions
 transaction <id>                shows data about a specific transaction
 send <address> <value> <msg>    sends a transaction (message optional)
 login-link                      generate login link
-
+masternode-create <address>     create masternode with address
+masternode-remove <payoutaddress>    remove masternode with address
 ");
 	}
 
