@@ -286,7 +286,7 @@ if ($q == "info") {
 	@$generator_stat['ips'][$ip][$address]=$address;
 
 	if ($result) {
-		$res = $block->add();
+		$res = $block->add(false, $error);
 		$l .= " add=$res";
 		if ($res) {
 			$current = Block::current();
@@ -306,7 +306,7 @@ if ($q == "info") {
 			$generator_stat['rejected']++;
 			@$generator_stat['reject-reasons']['rejected - add']++;
 			saveGeneratorStat($generator_stat);
-			api_err("rejected - add");
+			api_err("Rejected block: ".$error);
 		}
 
 	} else {
