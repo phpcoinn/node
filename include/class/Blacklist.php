@@ -11,6 +11,7 @@ final class Blacklist
     public const PUBLIC_KEYS = [
         // phpcs:disable Generic.Files.LineLength
         // phpcs:enable
+	    // public_key => address
     ];
 
     /**

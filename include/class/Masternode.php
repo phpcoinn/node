@@ -87,13 +87,6 @@ class Masternode
 					throw new Exception("Source public key {$transaction->publicKey} is already a masternode");
 				}
 
-				//source address must have enough balance
-				$src = Account::getAddress($transaction->publicKey);
-				$balance = Account::pendingBalance($src);
-				if ($transaction->val > $balance - MN_COLLATERAL) {
-					throw new Exception("Invalid amount to transfer form masternode. balance=$balance val=" . $transaction->val);
-				}
-
 				//destionation address must be verified
 				$dst = $transaction->dst;
 				$dstPublicKey = Account::publicKey($dst);

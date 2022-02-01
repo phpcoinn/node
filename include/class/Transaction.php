@@ -469,10 +469,10 @@ class Transaction
 			}
 
 	        if($this->type==TX_TYPE_REWARD) {
-	            $res = $this->checkRewards($height);
+	            $res = $this->checkRewards($height, $err);
 	            if(!$res) {
 		            if($height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
-			            throw new Exception("Transaction rewards check failed");
+			            throw new Exception("Transaction rewards check failed: $err");
 		            }
 		        }
 	        }
@@ -495,11 +495,8 @@ class Transaction
 
 			$date = $this->date;
 			if(!$verify) {
-				if ($date < time() - (3600 * 24 * 48)) {
+				if ($date < time() - (3600 * 24 * 48)) {    //48 days
 					throw new Exception("The date is too old");
-				}
-				if ($date > time() + 86400) {
-					throw new Exception("Invalid Date");
 				}
 			}
 
@@ -519,7 +516,7 @@ class Transaction
 	            }
 	            $src = Account::getAddress($this->publicKey);
 	            if($src==$this->dst) {
-		            throw new Exception("{$this->id} - Invalid destination address");
+		            throw new Exception("{$this->id} - Invalid source address");
 	            }
 	        }
 
@@ -584,53 +581,58 @@ class Transaction
 		return $this->check($height, true, $error);
     }
 
-    function checkRewards($height) {
+    function checkRewards($height, &$error = null) {
 		$reward = Block::reward($height);
 		$msg = $this->msg;
-		if(empty($msg)) {
-			_log("Reward transaction message missing", 5);
+
+		try {
+
+			if(empty($msg)) {
+				throw new Exception("Reward transaction message missing");
+			}
+			if(!in_array($msg, ["nodeminer", "miner", "generator"]) &&
+				!(substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING)) {
+				throw new Exception("Reward transaction invalid message: $msg");
+			}
+			$miner = $reward['miner'];
+			$generator = $reward['generator'];
+			if($msg == "nodeminer") {
+				$val_check = num($miner + $generator);
+			} else if ($msg == "miner") {
+				$val_check = num($miner);
+			} else if ($msg == "generator") {
+				$val_check = num($generator);
+			} else if (substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING) {
+				$val_check = num($miner);
+			}
+			if(empty($val_check)) {
+				throw new Exception("Reward transaction no value");
+			}
+			if(num($this->val) != $val_check) {
+				throw new Exception("Reward transaction not valid: val=".$this->val." val_check=$val_check");
+			}
+			if (substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING) {
+				$arr = explode("|", $msg);
+				$poolMinerAddress=$arr[1];
+				$poolMinerAddressSignature=$arr[2];
+				$poolMinerPublicKey = Account::publicKey($poolMinerAddress);
+				if(empty($poolMinerPublicKey)) {
+					throw new Exception("Reward transaction not valid: not found public key for address $poolMinerAddress");
+				}
+				$res = Account::checkSignature($poolMinerAddress, $poolMinerAddressSignature, $poolMinerPublicKey);
+				if(!$res) {
+					throw new Exception("Reward transaction not valid: address signature failed poolMinerAddress=$poolMinerAddress poolMinerAddressSignature=$poolMinerAddressSignature");
+				}
+			}
+
+			return true;
+
+		} catch (Exception $e) {
+			$error = $e->getMessage();
+			_log($error);
 			return false;
 		}
-		if(!in_array($msg, ["nodeminer", "miner", "generator"]) &&
-			!(substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING)) {
-			_log("Reward transaction invalid message: $msg",5);
-			return false;
-		}
-		$miner = $reward['miner'];
-		$generator = $reward['generator'];
-		if($msg == "nodeminer") {
-			$val_check = num($miner + $generator);
-		} else if ($msg == "miner") {
-			$val_check = num($miner);
-		} else if ($msg == "generator") {
-			$val_check = num($generator);
-		} else if (substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING) {
-			$val_check = num($miner);
-		}
-		if(empty($val_check)) {
-			_log("Reward transaction no value",5);
-			return false;
-		}
-		if(num($this->val) != $val_check) {
-			_log("Reward transaction not valid: val=".$this->val." val_check=$val_check", 5);
-			return false;
-		}
-	    if (substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING) {
-	    	$arr = explode("|", $msg);
-	    	$poolMinerAddress=$arr[1];
-	    	$poolMinerAddressSignature=$arr[2];
-		    $poolMinerPublicKey = Account::publicKey($poolMinerAddress);
-		    if(empty($poolMinerPublicKey)) {
-			    _log("Reward transaction not valid: not found public key for address $poolMinerAddress", 5);
-			    return false;
-		    }
-		    $res = Account::checkSignature($poolMinerAddress, $poolMinerAddressSignature, $poolMinerPublicKey);
-		    if(!$res) {
-			    _log("Reward transaction not valid: address signature failed poolMinerAddress=$poolMinerAddress poolMinerAddressSignature=$poolMinerAddressSignature", 5);
-			    return false;
-		    }
-	    }
-		return true;
+
     }
 
 	public function sign($private_key)
@@ -810,7 +812,7 @@ class Transaction
 		    }
 
 		    if (!$this->check(0, false, $err)) {
-			    throw new Exception("Transaction signature failed. Error: $err");
+			    throw new Exception("Transaction check failed. Error: $err");
 		    }
 			$res = Mempool::existsTx($hash);
 		    if ($res != 0) {
@@ -831,6 +833,10 @@ class Transaction
 		    if ($balance - $memspent < $this->val + $this->fee) {
 			    throw new Exception("Not enough funds (mempool) expected=".($this->val + $this->fee). " balance=$balance mempool=$memspent");
 		    }
+
+			if($this->type == TX_TYPE_REWARD) {
+				throw new Exception("Not allowed type in mempool");
+			}
 
 			if($this->type == TX_TYPE_MN_CREATE) {
 				$cnt = Mempool::getByDstAndType($this->dst, $this->type);
