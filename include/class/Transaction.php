@@ -493,13 +493,6 @@ class Transaction
 				throw new Exception("Invalid signature");
 			}
 
-			$date = $this->date;
-			if(!$verify) {
-				if ($date < time() - (3600 * 24 * 48)) {    //48 days
-					throw new Exception("The date is too old");
-				}
-			}
-
 			if (strlen($this->msg) > 128) {
 				throw new Exception("The message must be less than 128 chars");
 			}
@@ -587,7 +580,7 @@ class Transaction
 
 		try {
 
-			if(empty($msg)) {
+			if(empty($msg) && $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 				throw new Exception("Reward transaction message missing");
 			}
 			if(!in_array($msg, ["nodeminer", "miner", "generator"]) &&
@@ -806,6 +799,13 @@ class Transaction
 	    $mempool_size = Transaction::getMempoolCount();
 
 		try {
+
+			if ($this->date < time() - (3600 * 24 * 48)) {
+				throw new Exception("The date is too old");
+			}
+			if ($this->date > time() + 86400) {
+				throw new Exception("Invalid Date");
+			}
 
 		    if($mempool_size + 1 > $max_txs) {
 			    throw new Exception("Not added transaction to mempool because is full: max_txs=$max_txs mempool_size=$mempool_size");
