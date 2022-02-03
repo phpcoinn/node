@@ -493,8 +493,8 @@ class Transaction
 				throw new Exception("Invalid signature");
 			}
 
-			if (strlen($this->msg) > 128) {
-				throw new Exception("The message must be less than 128 chars");
+			if (strlen($this->msg) > 255) {
+				throw new Exception("The message must be less than 255 chars");
 			}
 
 			if ($this->val < 0) {
