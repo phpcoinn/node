@@ -270,6 +270,12 @@ if ($q == "info") {
 
 	$generatorReward = num($rewardInfo['generator']);
 	$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $generatorReward, "generator");
+
+	$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $height, $mn_signature);
+	if($mn_reward_tx) {
+		$data[$mn_reward_tx['id']]=$mn_reward_tx;
+	}
+
 	$data[$reward_tx['id']] = $reward_tx;
 
 	ksort($data);
@@ -277,6 +283,13 @@ if ($q == "info") {
 
 	$block = new Block($generator, $address, $height, $date, $nonce, $data, $difficulty, $version, $argon, $prev_block['id']);
 	$block->publicKey = $_config['generator_public_key'];
+
+	if($mn_reward_tx) {
+		if($mn_reward_tx['dst']!=$generator) {
+			$block->masternode = $mn_reward_tx['dst'];
+			$block->mn_signature = $mn_signature;
+		}
+	}
 
 	$signature = $block->sign($_config['generator_private_key']);
 	$result = $block->mine();
