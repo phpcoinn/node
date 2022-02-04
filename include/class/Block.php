@@ -20,6 +20,9 @@ class Block
 	public $publicKey;
 	public $transactions;
 
+	public $masternode;
+	public $mn_signature;
+
 	/**
 	 * @param $generator
 	 * @param $miner
@@ -776,6 +779,10 @@ class Block
     	$parts[] = $this->version;
     	$parts[] = $this->argon;
     	$parts[] = $this->prevBlockId;
+		if($this->height >= Block::getMnStartHeight()) {
+			$parts[]=$this->masternode;
+			$parts[]=$this->mn_signature;
+		}
 		$info = implode("-", $parts);
 		_log("getSignatureBase=$info",5);
 		return $info;

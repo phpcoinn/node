@@ -149,10 +149,10 @@ class Wallet
 				$this->loginLink();
 				break;
 			case "masternode-create":
-				$this->createMastenode(@$this->arg2);
+				$this->createMasternode(@$this->arg2);
 				break;
 			case "masternode-remove":
-				$this->removeMastenode(@$this->arg2, @$this->arg3);
+				$this->removeMasternode(@$this->arg2, @$this->arg3);
 				break;
 			default:
 				echo !$this->create ? "Invalid command\n" : "";
@@ -394,7 +394,7 @@ class Wallet
 	}
 
 	//php wallet.php masternode-create LWNkKuU41paSgzFtnKgjiJsKkoo3HwV39C
-	function createMastenode($mnAddress) {
+	function createMasternode($mnAddress) {
 		$date=time();
 		$msg = "mncreate";
 		$tx = new Transaction($this->public_key, $mnAddress, MN_COLLATERAL, TX_TYPE_MN_CREATE, $date, $msg);
@@ -408,7 +408,7 @@ class Wallet
 		echo "Transaction created: ".$res['data'];
 	}
 
-	function removeMastenode($payoutAddress) {
+	function removeMasternode($payoutAddress) {
 		$mnAddress = Account::getAddress($this->public_key);
 		$date=time();
 		$msg = "mnremove";

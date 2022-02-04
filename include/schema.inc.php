@@ -201,6 +201,14 @@ if($dbversion == 4) {
 	$dbversion = 5;
 }
 
+if($dbversion == 5) {
+	$db->run("alter table masternode change last_won win_height int default 0 not null");
+	$db->run("alter table masternode add signature varchar(255) null;");
+	$db->run("alter table blocks add masternode varchar(128) null;");
+	$db->run("alter table blocks add mn_signature varchar(255) null;");
+	$dbversion = 6;
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);

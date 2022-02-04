@@ -594,7 +594,7 @@ if ($_config['masternode']==true&&!empty($_config['masternode_public_key'])&&!em
     }
 }
 
-
+Masternode::processBlock();
 
 Nodeutil::cleanTmpFiles();
 

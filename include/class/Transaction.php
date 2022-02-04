@@ -84,7 +84,7 @@ class Transaction
 					_log("Can not find mn create tx height");
 					return false;
 				}
-				$res = Masternode::create($tx->publicKey, $height);
+				$res = Masternode::create($tx->publicKey, $height, null);
 				if(!$res) {
 					_log("Can not reverse create masternode");
 					return false;
@@ -370,7 +370,7 @@ class Transaction
 
 		if ($type == TX_TYPE_MN_CREATE) {
 			$dstPublicKey = Account::publicKey($this->dst);
-			$res = Masternode::create($dstPublicKey, $height);
+			$res = Masternode::create($dstPublicKey, $height, null);
 			if(!$res) {
 				_log("Can not create masternode");
 				return false;
@@ -393,6 +393,13 @@ class Transaction
 			$res = Masternode::delete($this->publicKey);
 			if(!$res) {
 				_log("Can not delete masternode with public key: ".$this->publicKey);
+				return false;
+			}
+		}
+
+		if ($type == TX_TYPE_REWARD) {
+			$res = Masternode::processRewardTx($this, $error);
+			if(!$res) {
 				return false;
 			}
 		}
@@ -559,6 +566,13 @@ class Transaction
 				}
 			}
 
+			if($this->type==TX_TYPE_REWARD) {
+				$res = Masternode::checkTx($this, $height, $error);
+				if(!$res) {
+					throw new Exception("Invalid transaction for masternde reward: $error");
+				}
+			}
+
 		} catch (Exception $e) {
 			$error = $e->getMessage();
 			_log("Transaction {$this->id} check failed: ".$error);
@@ -583,18 +597,22 @@ class Transaction
 			if(empty($msg) && $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 				throw new Exception("Reward transaction message missing");
 			}
-			if(!in_array($msg, ["nodeminer", "miner", "generator"]) &&
-				!(substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING)) {
+			if(!in_array($msg, ["nodeminer", "miner", "generator","masternode"]) &&
+				!(substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING)
+				&& $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 				throw new Exception("Reward transaction invalid message: $msg");
 			}
 			$miner = $reward['miner'];
 			$generator = $reward['generator'];
+			$masternode = $reward['masternode'];
 			if($msg == "nodeminer") {
 				$val_check = num($miner + $generator);
 			} else if ($msg == "miner") {
 				$val_check = num($miner);
 			} else if ($msg == "generator") {
 				$val_check = num($generator);
+			} else if ($msg == "masternode") {
+				$val_check = num($masternode);
 			} else if (substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING) {
 				$val_check = num($miner);
 			}

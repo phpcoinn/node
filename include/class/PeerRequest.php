@@ -446,4 +446,9 @@ class PeerRequest
 		}
 	}
 
+	static function updateMasternode() {
+		$masternode = self::$data;
+		Masternode::updateMasternode($masternode);
+	}
+
 }
