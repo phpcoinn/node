@@ -7,7 +7,7 @@ if(file_exists(dirname(__DIR__)."/testnet")) {
 // mainnet specification
 const NETWORK = "mainnet-alpha";
 const VERSION = "1.0.3";
-const BUILD_VERSION = 39;
+const BUILD_VERSION = 40;
 const MIN_VERSION = "1.0.2";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -60,7 +60,7 @@ const REWARD_SCHEME = [
 
 const MIN_NODE_SCORE = 80;
 
-const FEATURE_MN = true;
+const FEATURE_MN = false;
 const MN_COLLATERAL = 10000;
 const MN_WAIT_BLOCKS = 100;
 const MN_MIN_RUN_BLOCKS = 1440*30;
