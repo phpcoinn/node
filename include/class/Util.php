@@ -851,7 +851,7 @@ class Util
 	static function update() {
 		$currentVersion = BUILD_VERSION;
 		echo "Checking node update current version = ".BUILD_VERSION.PHP_EOL;
-		$cmd= "curl -s https://raw.githubusercontent.com/phpcoinn/node/main/include/coinspec.inc.php | grep BUILD_VERSION";
+		$cmd= "curl -H 'Cache-Control: no-cache, no-store' -s https://raw.githubusercontent.com/phpcoinn/node/main/include/coinspec.inc.php | grep BUILD_VERSION";
 		$res = shell_exec($cmd);
 		$arr= explode(" ", $res);
 		$version = $arr[3];
