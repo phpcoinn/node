@@ -734,14 +734,20 @@ class Util
 	}
 
 	static function exportdb($argv) {
-		$file = $argv[2];
+
+		if(isset($argv[2])) {
+			$file = $argv[2];
+			if(isset($argv[3])) {
+				$options = $argv[3];
+			}
+		}
 		if(empty($file)) {
 			$file = getcwd() . "/blockchain.sql";
 		}
 		global $db;
 		$db_name = $db->single('select database()');
 		echo "Exporting database...".PHP_EOL;
-		$cmd = "mysqldump --single-transaction --compatible=ansi --no-tablespaces $db_name accounts blocks transactions masternode > $file";
+		$cmd = "mysqldump $options --single-transaction --compatible=ansi --no-tablespaces $db_name accounts blocks transactions masternode > $file";
 		shell_exec($cmd);
 		echo "Database exported".PHP_EOL;
 	}

@@ -201,10 +201,15 @@ class NodeSync
 					if ($data['id'] == $current['id']) {
 						$ok_block++;
 					} else {
-						$failed_block++;
+						$height_diff = $data['height']-$current['height'];
+						if(abs($height_diff)>1) {
+							$failed_block++;
+						} else {
+							$ok_block++;
+						}
 					}
 				}
-				_log("Checking peer $host block id=" . $data['id'] . " current=" . $current['id']);
+				_log("Node score: Checking peer $host block id=" . $data['id'] .  " height=" . $data['height'] . " current=" . $current['id'] . " height=".$current['height']);
 			}
 		}
 
@@ -213,7 +218,7 @@ class NodeSync
 		} else {
 			$node_score = ($ok_block / ($peers_count  - $skipped_peer))*100;
 		}
-		_log("NODE SCORE ok_block=$ok_block peers_count=$peers_count failed_peer=$failed_block skipped_peer=$skipped_peer node_score=$node_score", 2);
+		_log("Node score: ok_block=$ok_block peers_count=$peers_count failed_peer=$failed_block skipped_peer=$skipped_peer node_score=$node_score", 2);
 		$db->setConfig('node_score', $node_score);
 	}
 

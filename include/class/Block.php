@@ -125,22 +125,22 @@ class Block
 	        }
 
 	        // parse the block's transactions and insert them to db
-	        $res = $this->parse_block(false, $bootstrapping);
+	        $res = $this->parse_block(false, $bootstrapping, $perr);
+			if ($res == false) {
+				throw new Exception("Parse block failed: $perr");
+			}
 
-	        // if any fails, rollback
-	        if ($res == false) {
-	            $db->rollback();
-		        $db->unlockTables();
-		        throw new Exception("Rollback block");
-	        } else {
-	            _log("Committing block height=".$this->height, 4);
-	            $db->commit();
-		        $db->unlockTables();
-		        return true;
-	        }
+            _log("Committing block height=".$this->height, 4);
+            $db->commit();
+	        $db->unlockTables();
+	        return true;
 
 		} catch (Exception $e) {
 			$error = $e->getMessage();
+			if($db->inTransaction()) {
+				$db->rollback();
+				$db->unlockTables();
+			}
 			_log($error);
 			return false;
 		}
@@ -607,6 +607,8 @@ class Block
         $db->beginTransaction();
         $db->lockTables();
 
+	    $current = Block::current();
+
         foreach ($r as $x) {
             $res = Transaction::reverse($x['id']);
             if ($res === false) {
@@ -614,7 +616,6 @@ class Block
                 $db->rollback();
                 // the blockchain has some flaw, we should resync from scratch
            
-                $current = Block::current();
                 if (($current['date']<time()-(3600*48)) && $_config['auto_resync']!==false) {
                     _log("Blockchain corrupted. Resyncing from scratch.");
                     $db->fkCheck(false);
@@ -757,10 +758,14 @@ class Block
 	}
 
 	function calculateTarget($elapsed) {
+		global $_config;
 		if($elapsed == 0) {
 			return 0;
 		}
 		$target = gmp_div(gmp_mul($this->difficulty , BLOCK_TIME), $elapsed);
+		if($target == 0 && $_config['testnet']) {
+			$target = 1;
+		}
 		return $target;
 	}
 
