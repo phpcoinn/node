@@ -250,6 +250,8 @@ class Nodeutil
 							shell_exec($cmd);
 							$cmd = "cd ".ROOT."/web && mv apps_tmp apps";
 							shell_exec($cmd);
+							$cmd = "cd ".ROOT."/web && chown -R www-data:www-data apps";
+							shell_exec($cmd);
 						} else {
 							$appsHashFile = Nodeutil::getAppsHashFile();
 							file_put_contents($appsHashFile, $calHash);
