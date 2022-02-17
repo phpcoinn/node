@@ -84,18 +84,12 @@ class Transaction
 					_log("Can not find mn create tx height");
 					return false;
 				}
-				$res = Masternode::create($tx->publicKey, $height, null);
+				$res = Masternode::create($tx->publicKey, $height);
 				if(!$res) {
 					_log("Can not reverse create masternode");
-					return false;
 				}
 	        }
 
-
-	        if($res === false) {
-		        _log("Update balance for reverse transaction failed");
-		        return false;
-	        }
             $res = $db->run("DELETE FROM transactions WHERE id=:id", [":id" => $tx->id]);
             if ($res != 1) {
                 _log("Delete transaction failed");
@@ -370,7 +364,7 @@ class Transaction
 
 		if ($type == TX_TYPE_MN_CREATE) {
 			$dstPublicKey = Account::publicKey($this->dst);
-			$res = Masternode::create($dstPublicKey, $height, null);
+			$res = Masternode::create($dstPublicKey, $height);
 			if(!$res) {
 				_log("Can not create masternode");
 				return false;
@@ -402,6 +396,10 @@ class Transaction
 			if(!$res) {
 				return false;
 			}
+		}
+
+		if(Masternode::isLocalMasternode()) {
+			Masternode::processBlock();
 		}
 
 		Mempool::delete($this->id);
@@ -566,10 +564,12 @@ class Transaction
 				}
 			}
 
-			if($this->type==TX_TYPE_REWARD) {
-				$res = Masternode::checkTx($this, $height, $error);
-				if(!$res) {
-					throw new Exception("Invalid transaction for masternde reward: $error");
+			if($verify) {
+				if ($this->type == TX_TYPE_REWARD) {
+					$res = Masternode::checkTx($this, $height, $error);
+					if (!$res) {
+						throw new Exception("Invalid transaction for masternde reward: $error");
+					}
 				}
 			}
 

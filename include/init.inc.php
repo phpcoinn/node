@@ -158,4 +158,4 @@ if(!defined("MINER_RUN")) {
 	}
 }
 
-
+Masternode::runThread();

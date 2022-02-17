@@ -209,6 +209,18 @@ if($dbversion == 5) {
 	$dbversion = 6;
 }
 
+if($dbversion == 6) {
+	$db->run("alter table masternode add id varchar(128) null");
+	$db->run("alter table masternode modify win_height int null;");
+	$db->run("alter table masternode drop column blacklist;");
+	$db->run("alter table masternode drop column fails;");
+	$db->run("alter table masternode drop column status;");
+	$db->run("alter table masternode drop column vote_key;");
+	$db->run("alter table masternode drop column cold_last_won;");
+	$db->run("alter table masternode drop column voted;");
+	$dbversion = 7;
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);

@@ -385,7 +385,7 @@ class PeerRequest
 	static function getApps() {
 		global $_config;
 		if ($_config['repository']) {
-			_log("Received request getApps", 3);
+			_log("AppsHash: Received request getApps", 3);
 			$appsHashFile = Nodeutil::getAppsHashFile();
 			$buildArchive = false;
 			if (!file_exists($appsHashFile)) {
@@ -393,14 +393,14 @@ class PeerRequest
 				$appsHashCalc = calcAppsHash();
 			} else {
 				$appsHash = file_get_contents($appsHashFile);
-				_log("Read apps hash from file = ".$appsHash, 3);
+				_log("AppsHash: Read apps hash from file = ".$appsHash, 3);
 				$appsHashTime = filemtime($appsHashFile);
 				$now = time();
 				$elapsed = $now - $appsHashTime;
-				_log("Elapsed chaek time $elapsed", 3);
+				_log("AppsHash: Elapsed check time $elapsed", 3);
 				if ($elapsed > 60) {
 					$appsHashCalc = calcAppsHash();
-					_log("Calculated apps hash = ".$appsHashCalc, 3);
+					_log("AppsHash: Calculated apps hash = ".$appsHashCalc);
 					if ($appsHashCalc != $appsHash) {
 						$buildArchive = true;
 					}
@@ -409,19 +409,19 @@ class PeerRequest
 				}
 			}
 			if ($buildArchive) {
-				_log("build archive", 2);
+				_log("AppsHash: build archive", 2);
 				file_put_contents($appsHashFile, $appsHashCalc);
 				buildAppsArchive();
 				$dir = ROOT . "/cli";
-				_log("Propagating apps",3);
+				_log("AppsHash: Propagating apps",3);
 				system("php $dir/propagate.php apps $appsHashCalc > /dev/null 2>&1  &");
 			} else {
-				_log("No need to build archive",2);
+				_log("AppsHash: No need to build archive",2);
 			}
 			$signature = ec_sign($appsHashCalc, $_config['repository_private_key']);
 			api_echo(["hash" => $appsHashCalc, "signature" => $signature]);
 		} else {
-			api_err("No repository server");
+			api_err("AppsHash: No repository server");
 		}
 	}
 
@@ -448,7 +448,19 @@ class PeerRequest
 
 	static function updateMasternode() {
 		$masternode = self::$data;
-		Masternode::updateMasternode($masternode);
+		Masternode::updateMasternode($masternode, $error);
+		if($error) {
+			api_err($error);
+		} else {
+			api_echo("OK");
+		}
+	}
+
+	static function getMasternode() {
+		$public_key = self::$data;
+		_log("Masternode: getMasternode $public_key");
+		$masternode = Masternode::get($public_key);
+		api_echo($masternode);
 	}
 
 }

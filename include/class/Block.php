@@ -105,7 +105,9 @@ class Block
 	            ":id"           => $this->id,
 	            ":generator"    => $this->generator,
 	            ":miner"        => $this->miner,
+	            ":masternode"   => $this->masternode,
 	            ":signature"    => $this->signature,
+	            ":mn_signature" => $this->mn_signature,
 	            ":height"       => $this->height,
 	            ":date"         => $this->date,
 	            ":nonce"        => $this->nonce,
@@ -153,6 +155,8 @@ class Block
 	    $block->id = $b['id'];
 	    $block->publicKey = $b['public_key'];
 	    $block->transactions = $b['transactions'];
+	    $block->masternode = $b['masternode'];
+	    $block->mn_signature = $b['mn_signature'];
 	    return $block;
     }
 
@@ -525,6 +529,7 @@ class Block
 					        }
 				        }
 			        }
+
 		        }
 
 	        }
@@ -636,6 +641,7 @@ class Block
                 $db->unlockTables();
                 return false;
             }
+
             $res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $x['id']]);
             if ($res != 1) {
                 _log("Delete block failed.");
@@ -645,6 +651,17 @@ class Block
             } else {
             	_log("Deleted block id=".$x['id']." height=".$x['height'],1);
             }
+
+
+	        $res = Masternode::reverseBlock($current);
+	        if(!$res) {
+		        _log("Reverse masternode winner failed");
+		        $db->rollback();
+		        $db->unlockTables();
+		        return false;
+	        }
+
+
 //            $this->reverse_log($x['id']);
         }
 
@@ -859,8 +876,8 @@ class Block
     	global $db;
 	    $res = $db->run(
 		    "INSERT into blocks 
-				(id, generator, miner, height, `date`, nonce, signature, difficulty, argon, transactions, version)	
-				values (:id, :generator, :miner, :height, :date, :nonce, :signature, :difficulty, :argon, :transactions, :version)",
+				(id, generator, miner, height, `date`, nonce, signature, difficulty, argon, transactions, version, masternode, mn_signature)	
+				values (:id, :generator, :miner, :height, :date, :nonce, :signature, :difficulty, :argon, :transactions, :version, :masternode, :mn_signature)",
 		    $bind
 	    );
 	    return $res;
@@ -943,6 +960,11 @@ class Block
 			$id = $this->id;
 			if($calcBlockId != $id) {
 				throw new Exception("Invalid block id");
+			}
+
+			$res = Masternode::verifyBlock($this, $err);
+			if(!$res) {
+				throw new Exception("Not verified masternode reward ".$err);
 			}
 
 		} catch (Exception $e) {

@@ -222,5 +222,5 @@ if($type == "apps") {
 
 
 if($type == "masternode") {
-	Masternode::propagate();
+	Masternode::propagate($id);
 }

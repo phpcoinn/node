@@ -39,12 +39,12 @@ const REWARD_SCHEME = [
 		'reward'=> GENESIS_REWARD
 	],
 	'launch'=>[
-		'blocks' => 1000,
+		'blocks' => 10,
 		'reward'=> 10,
 	],
 	'mining'=>[
 		'segments'=>10,
-		'block_per_segment'=>1000
+		'block_per_segment'=>10
 	],
 	'combined'=>[
 		'segments'=>10,
@@ -59,13 +59,12 @@ const REWARD_SCHEME = [
 const MIN_NODE_SCORE = 30;
 
 const FEATURE_MN = true;
-const MN_COLLATERAL = 10000;
-const MN_WAIT_BLOCKS = 10;
+const MN_COLLATERAL = 1000;
 const MN_MIN_RUN_BLOCKS = 4;
 
 const TOTAL_SUPPLY = 714990;
 const GIT_URL = "https://github.com/phpcoinn/node";
-const UPDATE_1_BLOCK_ZERO_TIME = 100000;
-const UPDATE_2_BLOCK_CHECK_IMPROVED = 10000;
-const UPDATE_3_ARGON_HARD = 100000;
-const UPDATE_4_NO_POOL_MINING = 100000;
+const UPDATE_1_BLOCK_ZERO_TIME = 5;
+const UPDATE_2_BLOCK_CHECK_IMPROVED = 10;
+const UPDATE_3_ARGON_HARD = 15;
+const UPDATE_4_NO_POOL_MINING = 20;
