@@ -404,7 +404,7 @@ class Masternode
 			return;
 		}
 		_log("Masternode: propagating masternode $id pid=".getmypid());
-		$peers = Peer::getAll();
+		$peers = Peer::getActive();
 		if(count($peers)==0) {
 			_log("Masternode: No peers to propagate", 5);
 		} else {
