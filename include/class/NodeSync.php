@@ -214,7 +214,7 @@ class NodeSync
 		}
 
 		if($peers_count - $skipped_peer == 0 ) {
-			$node_score = 100;
+			$node_score = 0;
 		} else {
 			$node_score = ($ok_block / ($peers_count  - $skipped_peer))*100;
 		}
