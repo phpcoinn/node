@@ -275,13 +275,13 @@ if ($total_peers == 0) {
             $res=Peer::insert(md5($peer), $peer, 0);
         } else {
             // forces the other node to peer with us.
-            $res = peer_post($peer."/peer.php?q=peer", ["hostname" => $_config['hostname'], "repeer" => 1]);
+            $res = peer_post($peer."/peer.php?q=peer", ["hostname" => $_config['hostname'], "repeer" => 1], 30, $err);
         }
         if ($res !== false) {
             $i++;
             echo "Peering OK - $peer\n";
         } else {
-            echo "Peering FAIL - $peer\n";
+            echo "Peering FAIL - $peer Error: $err\n";
         }
         if ($i > $_config['max_peers']) {
             break;

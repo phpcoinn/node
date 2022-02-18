@@ -278,7 +278,7 @@ function isValidURL($url)
 }
 
 // POST data to an URL (usualy peer). The data is an array, json encoded with is sent as $_POST['data']
-function peer_post($url, $data = [], $timeout = 30)
+function peer_post($url, $data = [], $timeout = 30, &$err= null)
 {
     global $_config;
 
@@ -351,7 +351,8 @@ function peer_post($url, $data = [], $timeout = 30)
 
     // the function will return false if something goes wrong
     if ($res['status'] != "ok" || $res['coin'] != COIN || (isset($res['network']) && $res['network'] != NETWORK)) {
-    	_log("Peer response to $url not ok res=".json_encode($res));
+    	_log("Peer response to $url not ok", 5);
+	    $err = $res['data'];
         return false;
     } else {
     	Peer::storePing($url);

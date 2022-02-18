@@ -74,11 +74,11 @@ class PeerRequest
 		if ($res == 1) {
 			_log("$hostname is already in peer db",3);
 			if ($data['repeer'] == 1) {
-				$res = peer_post($hostname."/peer.php?q=peer", ["hostname" => $_config['hostname']]);
+				$res = peer_post($hostname."/peer.php?q=peer", ["hostname" => $_config['hostname']], 30, $err);
 				if ($res !== false) {
 					api_echo("re-peer-ok");
 				} else {
-					api_err("re-peer failed - $res");
+					api_err("re-peer failed - $err");
 				}
 			}
 			api_echo("peer-ok-already");
@@ -97,7 +97,7 @@ class PeerRequest
 		// re-peer to make sure the peer is valid
 		if ($data['repeer'] == 1) {
 			_log("Repeer to $hostname",3);
-			$res = peer_post($hostname . "/peer.php?q=peer", ["hostname" => $_config['hostname']]);
+			$res = peer_post($hostname . "/peer.php?q=peer", ["hostname" => $_config['hostname']], 30, $err);
 			_log("peer response " . print_r($res,1),4);
 			if ($res !== false) {
 				_log("Repeer OK",3);
@@ -106,7 +106,7 @@ class PeerRequest
 				_log("Repeer FAILED - DELETING",2);
 				if($ip) {
 					Peer::deleteByIp($ip);
-					api_err("re-peer failed - $res");
+					api_err("re-peer failed - $err");
 				} else {
 					api_err("invalid peer ip");
 				}
@@ -435,11 +435,11 @@ class PeerRequest
 			_log("No need to update apps",3);
 			api_err("No need to update apps");
 		} else {
-			$res = peer_post(APPS_REPO_SERVER."/peer.php?q=getApps");
+			$res = peer_post(APPS_REPO_SERVER."/peer.php?q=getApps",[],30, $err);
 			_log("Contancting repo server response=".json_encode($res),3);
 			if($res === false) {
-				_log("No response from repo server",2);
-				api_err("No response from repo server");
+				_log("No response from repo server: $err",2);
+				api_err("No response from repo server: $err");
 			} else {
 				Nodeutil::downloadApps();
 			}

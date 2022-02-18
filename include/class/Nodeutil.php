@@ -200,10 +200,10 @@ class Nodeutil
 			}
 		}
 
-		$res = peer_post(APPS_REPO_SERVER."/peer.php?q=getApps");
+		$res = peer_post(APPS_REPO_SERVER."/peer.php?q=getApps", [], 30, $err);
 		_log("Contancting repo server response=".json_encode($res),3);
 		if($res === false) {
-			_log("No response from repo server",2);
+			_log("No response from repo server err=$err",2);
 		} else {
 			$hash = $res['hash'];
 			$signature = $res['signature'];

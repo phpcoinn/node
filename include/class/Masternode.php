@@ -416,8 +416,8 @@ class Masternode
 			$masternode = Masternode::get($public_key);
 			foreach ($peers as $peer) {
 				$url = $peer['hostname']."/peer.php?q=updateMasternode";
-				$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode]);
-				_log("Masternode: Propagating to peer: ".$peer['hostname']." res=".json_encode($res),5);
+				$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 30, $err);
+				_log("Masternode: Propagating to peer: ".$peer['hostname']." res=".json_encode($res). "err=$err",5);
 			}
 		}
 	}

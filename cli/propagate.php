@@ -115,8 +115,8 @@ if ($type == "block") {
     $hostname = base58_decode($peer);
     // send the block as POST to the peer
     _log("Block sent to $hostname:\n".print_r($data,1), 5);
-    $response = peer_post($hostname."/peer.php?q=submitBlock", $data);
-    _log("Propagating block to $hostname - [result: ".json_encode($response)."] $data[height] - $data[id]",3);
+    $response = peer_post($hostname."/peer.php?q=submitBlock", $data, 30, $err);
+    _log("Propagating block to $hostname - [result: ".$response."] $data[height] - $data[id]",3);
     if ($response == "block-ok") {
 	    _log("Block $id accepted. Exiting", 5);
         echo "Block $id accepted. Exiting.\n";
@@ -171,7 +171,7 @@ if ($type == "block") {
         _log("caliing propagate: php $dir/sync.php microsync '$ip'  > /dev/null 2>&1  &",3);
         system("php $dir/sync.php microsync '$ip'  > /dev/null 2>&1  &");
     } else {
-    	_log("Block not accepted ".$response);
+    	_log("Block not accepted ".$response." err=".$err);
         echo "Block not accepted!\n";
     }
 }
@@ -199,10 +199,10 @@ if ($type == "transaction") {
     foreach ($r as $x) {
     	$url = $x['hostname']."/peer.php?q=submitTransaction";
     	_log("Propagating to peer: ".$url,2);
-        $res = peer_post($url, $data);
+        $res = peer_post($url, $data, 30, $err);
         if (!$res) {
-	        _log("Transaction not accepted");
-            echo "Transaction not accepted\n";
+	        _log("Transaction not accepted: $err");
+            echo "Transaction not accepted: $err\n";
         } else {
 	        _log("Transaction accepted",2);
             echo "Transaction accepted\n";
