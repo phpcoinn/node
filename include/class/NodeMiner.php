@@ -19,12 +19,6 @@ class NodeMiner {
 
 	function getMiningInfo() {
 
-		$peers = Peer::getCount(true);
-		_log("Getting peers count = ".$peers, 3);
-		if($peers === 0 && false) {
-			_log("No connected peers");
-			return false;
-		}
 		$info = Blockchain::getMineInfo();
 		return $info;
 	}
@@ -42,12 +36,6 @@ class NodeMiner {
 			$this->cnt++;
 //			_log("Mining cnt: ".$this->cnt);
 
-			$info = $this->getMiningInfo();
-			if($info === false) {
-				_log("Can not get mining info");
-				return false;
-			}
-
 			$_config = Nodeutil::getConfig();
 
 			if (Config::isSync()) {
@@ -58,7 +46,13 @@ class NodeMiner {
 			$peersCount = Peer::getCount();
 			$minPeersCount = DEVELOPMENT ? 1 : 3;
 			if($peersCount < $minPeersCount) {
-				_log("Not enough node peers");
+				_log("Not enough node peers $peersCount min=$minPeersCount");
+				return false;
+			}
+
+			$info = $this->getMiningInfo();
+			if($info === false) {
+				_log("Can not get mining info");
 				return false;
 			}
 
