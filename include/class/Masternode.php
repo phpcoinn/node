@@ -72,7 +72,7 @@ class Masternode
 
 	function update() {
 		global $db;
-		_log("Masternode update win_height=".$this->win_height." public_key=".$this->public_key);
+		_log("Masternode update win_height=".$this->win_height." public_key=".$this->public_key, 5);
 		$sql="update masternode set height=:height,  signature=:signature, win_height=:win_height where public_key=:public_key";
 		$res = $db->run($sql, [
 			":public_key" => $this->public_key,
@@ -491,12 +491,12 @@ class Masternode
 				throw new Exception("Masternode: Can not sync local with remote masternode");
 			}
 
-			_log("Masternode: synced remote masternode id=".$masternode['id']. " signature=".$masternode['signature']);
+			_log("Masternode: synced remote masternode id=".$masternode['id']. " signature=".$masternode['signature'],1);
 			return true;
 
 		} catch (Exception $e) {
 			$error = $e->getMessage();
-			_log($error);
+			_log($error, 4);
 			return false;
 		}
 
@@ -506,7 +506,7 @@ class Masternode
 		if(!Masternode::allowedMasternodes($height)) {
 			return false;
 		}
-		_log("Masternode: generating reward transaction");
+		_log("Masternode: generating reward transaction", 5);
 		$winner = Masternode::getWinner($height);
 		if(!$winner) {
 			_log("Masternode: not found winner");

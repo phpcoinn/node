@@ -41,7 +41,7 @@ if (trim($argv[5]) == 'linear') {
 }
 $peer = san(trim($argv[3]));
 
-_log("Calling propagate.php",3);
+_log("Calling propagate.php",5);
 // broadcasting a block to all peers
 if ((empty($peer) || $peer == 'all') && $type == "block") {
     $whr = "";
@@ -92,11 +92,13 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 
 // broadcast a block to a single peer (usually a forked process from above)
 if ($type == "block") {
+	_log("Propagate block $id", 5);
     // current block or read cache
     if ($id == "current") {
         $current = Block::current();
         $data = Block::export($current['id']);
         if (!$data) {
+	        _log("Invalid Block data $id", 5);
             echo "Invalid Block data";
             exit;
         }
@@ -104,6 +106,7 @@ if ($type == "block") {
     	$file = ROOT."/tmp/$id";
         $data = file_get_contents($file);
         if (empty($data)) {
+	        _log("Invalid Block data $id", 5);
             echo "Invalid Block data";
             exit;
         }
@@ -115,6 +118,7 @@ if ($type == "block") {
     $response = peer_post($hostname."/peer.php?q=submitBlock", $data);
     _log("Propagating block to $hostname - [result: ".json_encode($response)."] $data[height] - $data[id]",3);
     if ($response == "block-ok") {
+	    _log("Block $id accepted. Exiting", 5);
         echo "Block $id accepted. Exiting.\n";
         exit;
     } elseif ($response['request'] == "microsync") {

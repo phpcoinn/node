@@ -69,7 +69,7 @@ if(is_array($query)) {
 }
 
 //check db update
-_log("checking schema update", 4);
+_log("checking schema update", 5);
 require_once __DIR__.'/schema.inc.php';
 
 // nothing is allowed while in maintenance
@@ -123,7 +123,7 @@ if(!isset($_config['sync_cron']) || $_config['sync_cron']===false) {
 		    system("php $dir/sync.php  > /dev/null 2>&1  &");
 		}
 	} else {
-		_log("No time for sync ".($t - $_config['sync_last'])." / ".$_config['sync_interval'], 4);
+		_log("No time for sync ".($t - $_config['sync_last'])." / ".$_config['sync_interval'], 5);
 	}
 } else {
 	_log("Sync not called", 4);
@@ -135,13 +135,13 @@ if(!isset($_config['sync_cron']) || $_config['sync_cron']===false) {
 if(!defined("MINER_RUN")) {
 	define("MINER_LOCK_PATH", ROOT . '/tmp/miner-lock');
 	if ($_config['miner'] == true && isset($_config['miner_public_key']) && isset($_config['miner_private_key'])) {
-		_log("Miner enabled", 4);
+		_log("Miner enabled", 5);
 		_log("minerFile=".MINER_LOCK_PATH." exists=" . file_exists(MINER_LOCK_PATH), 5);
 		if (!file_exists(MINER_LOCK_PATH)) {
-			_log("File not exists - Staring miner", 1);
+			_log("File not exists - Staring miner", 4);
 
 			$res = shell_exec("ps uax | grep '".ROOT."/cli/miner.php' | grep -v grep");
-			_log("Res len=".strlen($res)." var=".json_encode($res)." empty=".empty($res), 4);
+			_log("Res len=".strlen($res)." var=".json_encode($res)." empty=".empty($res), 5);
 			if(empty($res)) {
 				$dir = ROOT."/cli";
 				system("php $dir/miner.php > /dev/null 2>&1  &");
@@ -150,10 +150,10 @@ if(!defined("MINER_RUN")) {
 					_log( "php $dir/miner.php > /dev/null 2>&1  &", 4);
 				}
 			} else {
-				_log("Miner process already running",3);
+				_log("Miner process already running",5);
 			}
 		} else {
-			_log("Miner already started. File exists", 3);
+			_log("Miner already started. File exists", 5);
 		}
 	}
 }

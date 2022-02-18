@@ -24,7 +24,7 @@ function san_host($a)
 function api_err($data)
 {
     global $_config;
-    _log("api_err: ".$data,3);
+    _log("api_err: ".json_encode($data),4);
 
     if (!headers_sent()) {
         header('Content-Type: application/json');
@@ -41,7 +41,7 @@ function api_echo($data)
     if (!headers_sent()) {
         header('Content-Type: application/json');
     }
-    _log($data, 4);
+    _log("api_echo: " . json_encode($data), 5);
     echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK]);
     exit;
 }
@@ -57,7 +57,9 @@ function _log($data, $verbosity = 0)
 
     global $log_prefix;
 
-    $res = "$date $log_prefix ".$file.":".$trace[$loc]['line'];
+	$pid = getmypid();
+
+    $res = "$date [$verbosity] [$pid] $log_prefix ".$file.":".$trace[$loc]['line'];
 
     if (!empty($trace[$loc]['class'])) {
         $res .= "---".$trace[$loc]['class'];
@@ -315,7 +317,7 @@ function peer_post($url, $data = [], $timeout = 30)
 
 //    $context = stream_context_create($opts);
 
-    _log("Posting to $url data ".$postdata." timeout=$timeout", 4);
+    _log("Posting to $url data ".$postdata." timeout=$timeout", 5);
 
 	$ch = curl_init();
 

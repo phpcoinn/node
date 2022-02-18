@@ -140,23 +140,23 @@ if ($current['height']==1 && BOOTSTRAPING) {
 $microsync = false;
 if ($arg == "microsync" && !empty($arg2)) {
     do {
-	    _log("Find peer by ip = $arg2", 3);
+	    _log("Microsync: Find peer by ip = $arg2", 3);
         // the microsync runs only against 1 specific peer
         $x = Peer::findByIp($arg2);
 	    $current = Block::current();
 
         if (!$x) {
             echo "Invalid node - $arg2\n";
-            _log("Invalid node $arg2");
+            _log("Microsync: Invalid node $arg2");
             break;
         }
-        _log("Get block ".$current['height']." from peer ".$x['hostname'],3);
+        _log("Microsync: Get block ".$current['height']." from peer ".$x['hostname'],3);
         $url = $x['hostname']."/peer.php?q=";
         $data = peer_post($url."getBlock", ["height" => $current['height']]);
 
         if (!$data) {
             echo "Invalid getBlock result\n";
-            _log("Invalid getBlock result");
+            _log("Microsync: Invalid getBlock result");
             break;
         }
         $data['id'] = san($data['id']);
@@ -164,7 +164,7 @@ if ($arg == "microsync" && !empty($arg2)) {
         // nothing to be done, same blockchain
         if ($data['id'] == $current['id']) {
             echo "Same block\n";
-            _log("nothing to be done, same blockchain",2);
+            _log("Microsync: nothing to be done, same blockchain",2);
             break;
         }
 
@@ -185,6 +185,7 @@ if ($arg == "microsync" && !empty($arg2)) {
 
         // add the new block
         echo "Starting to sync last block from $x[hostname]\n";
+        _log("Microsync: Starting to sync last block from $x[hostname]");
         $b = $data;
 		$prev = Block::current();
         $block = Block::getFromArray($b);
@@ -200,7 +201,7 @@ if ($arg == "microsync" && !empty($arg2)) {
             break;
         }
 
-        _log("Synced block from ".$x[hostname]." - $b[height] $b[difficulty]", 2);
+        _log("Microsync: Synced block from ".$x[hostname]." - $b[height] $b[difficulty]", 2);
     } while (0);
 
     @rmdir(SYNC_LOCK_PATH);
