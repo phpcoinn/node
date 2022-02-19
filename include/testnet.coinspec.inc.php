@@ -32,7 +32,7 @@ const TX_TYPE_MN_REMOVE = 3;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
-const REMOTE_PEERS_LIST_URL = "http://nuc:8001/peers.php";
+const REMOTE_PEERS_LIST_URL = "https://node1.testnet.phpcoin.net:8001/peers.php";
 
 const REWARD_SCHEME = [
 	'genesis' => [
