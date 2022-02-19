@@ -187,7 +187,7 @@ class Nodeutil
 		global $_config;
 		if(!defined("APPS_REPO_SERVER")) {
 			if($_config['testnet'] ) {
-				define("APPS_REPO_SERVER", "https://repo.testnet.phpcoin.net");
+				define("APPS_REPO_SERVER", "https://repo.testnet.phpcoin.net:8001");
 			} else {
 				define("APPS_REPO_SERVER", "https://repo.phpcoin.net");
 			}
