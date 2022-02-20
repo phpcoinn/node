@@ -91,6 +91,8 @@ empty-mempool                               - Empty mempool
 update                                      - Check node for newest version and update
 exportdb                                    - Export database as backup
 importdb <file>                             - Restore blockchain database from backup
+check-masternode                            - Check local masternode
+reset-masternode                            - Reset local masternode
 ";
 	}
 }

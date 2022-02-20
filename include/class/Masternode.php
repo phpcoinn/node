@@ -312,16 +312,18 @@ class Masternode
 	static function checkLocalMasternode() {
 		global $_config, $db;
 		if(!self::isLocalMasternode()) {
+			_log("Masternode: Local masternode not configured");
 			return;
 		}
 		$publicKey = $_config['masternode_public_key'];
-		$localMasternode = Masternode::get($_config['masternode_public_key']);
+		$localMasternode = Masternode::get($publicKey);
 		if($localMasternode) {
+			_log("Masternode: Local masternode already exists");
 			return;
 		}
 
 		$id = Account::getAddress($publicKey);
-		$sql="select t.dst, max(t.height) as create_height, count(t.id) as created
+		$sql="select max(t.height) as create_height, count(t.id) as created
 			from transactions t
 			where t.type = :create and t.dst = :id";
 		$res = $db->row($sql, [":create"=>TX_TYPE_MN_CREATE, ":id"=>$id]);
@@ -334,6 +336,7 @@ class Masternode
 		$res = $db->row($sql, [":remove"=>TX_TYPE_MN_REMOVE, ":public_key"=>$publicKey]);
 		$removed = $res['removed'];
 		if($created == $removed ) {
+			_log("Masternode: No new masternode to create created=$created removed=$removed");
 			return;
 		}
 		Masternode::create($publicKey, $create_height);
@@ -773,6 +776,64 @@ class Masternode
 			return false;
 		}
 
+	}
+
+	public static function checkSend($transaction)
+	{
+		$height = Block::getHeight();
+		if (Masternode::allowedMasternodes($height)) {
+			$masternode = Masternode::get($transaction->publicKey);
+			if($masternode) {
+				$balance = Account::getBalanceByPublicKey($transaction->publicKey);
+				$memspent = Mempool::getSourceMempoolBalance($transaction->src);
+				if(floatval($balance) - floatval($memspent) - $transaction->val < MN_COLLATERAL) {
+					throw new Exception("Can not spent more than collateral. Balance=$balance memspent=$memspent amount=".$transaction->val);
+				}
+			}
+		}
+	}
+
+	static function checkMasternode() {
+		global $_config;
+		$height = Block::getHeight();
+		if(!Masternode::allowedMasternodes($height)) {
+			echo "Masternode phase not started".PHP_EOL;
+			return;
+		}
+		if(!Masternode::isLocalMasternode()) {
+			echo "Node is not configured as masternode".PHP_EOL;
+			return;
+		}
+		$masternode = Masternode::get($_config['masternode_public_key']);
+		if(!$masternode) {
+			echo "Error: local masternode not found in list".PHP_EOL;
+			return;
+		}
+		$masternode = Masternode::fromDB($masternode);
+		$res = $masternode->check($height, $error);
+		if(!$res) {
+			echo "Error: local masternode not valid: ".PHP_EOL.$error.PHP_EOL;
+			return;
+		}
+		echo "Local masternode valid".PHP_EOL;
+		echo "Address: " . Account::getAddress($_config['masternode_public_key']).PHP_EOL;
+	}
+
+	static function resetMasternode() {
+		$height = Block::getHeight();
+		if(!Masternode::allowedMasternodes($height)) {
+			echo "Masternode phase not started".PHP_EOL;
+			return;
+		}
+		if(!Masternode::isLocalMasternode()) {
+			echo "Node is not configured as masternode".PHP_EOL;
+			return;
+		}
+		global $_config;
+		Masternode::delete($_config['masternode_public_key']);
+		$lock_file = ROOT."/tmp/mn-lock";
+		@rmdir($lock_file);
+		echo "Masternode deleted! Will be recreated in next process".PHP_EOL;
 	}
 
 }

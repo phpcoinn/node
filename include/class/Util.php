@@ -870,4 +870,12 @@ class Util
 		echo "Finished".PHP_EOL;
 	}
 
+	static function checkMasternode() {
+		Masternode::checkMasternode();
+	}
+
+	static function resetMasternode() {
+		Masternode::resetMasternode();
+	}
+
 }

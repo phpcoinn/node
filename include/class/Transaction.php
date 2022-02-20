@@ -870,6 +870,8 @@ class Transaction
 			    }
 		    }
 
+			Masternode::checkSend($this);
+
 		} catch (Exception $e) {
 			$error = $e->getMessage();
 			_log($error);

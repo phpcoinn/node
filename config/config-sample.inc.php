@@ -159,3 +159,9 @@ $_config['wallet']=false;
 $_config['wallet_public_key']="";
 $_config['wallet_private_key']="";
 
+/**
+ * Masternode configuration
+ */
+$_config['masternode']=false;
+$_config['masternode_public_key']="";
+$_config['masternode_private_key']="";

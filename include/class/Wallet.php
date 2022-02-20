@@ -315,7 +315,7 @@ class Wallet
 		if(DEVELOPMENT) {
 			return "https://spectre:8000";
 		} else {
-			return $peer;
+			return "https://node1.testnet.phpcoin.net:8001"; //$peer;
 		}
 	}
 
@@ -395,6 +395,10 @@ class Wallet
 
 	//php wallet.php masternode-create LWNkKuU41paSgzFtnKgjiJsKkoo3HwV39C
 	function createMasternode($mnAddress) {
+		if(empty($mnAddress)) {
+			echo "Missing destination address".PHP_EOL;
+			exit;
+		}
 		$date=time();
 		$msg = "mncreate";
 		$tx = new Transaction($this->public_key, $mnAddress, MN_COLLATERAL, TX_TYPE_MN_CREATE, $date, $msg);
@@ -405,7 +409,7 @@ class Wallet
 				"public_key" => $this->public_key, "type" => TX_TYPE_MN_CREATE,
 				"message" => $msg, "date" => $date));
 		$this->checkApiResponse($res);
-		echo "Transaction created: ".$res['data'];
+		echo "Transaction created: ".$res['data'].PHP_EOL;
 	}
 
 	function removeMasternode($payoutAddress) {
@@ -420,7 +424,7 @@ class Wallet
 				"public_key" => $this->public_key, "type" => TX_TYPE_MN_REMOVE,
 				"message" => $msg, "date" => $date));
 		$this->checkApiResponse($res);
-		echo "Transaction created: ".$res['data'];
+		echo "Transaction created: ".$res['data'].PHP_EOL;
 	}
 
 	function help() {
