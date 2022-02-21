@@ -7,8 +7,8 @@ if(file_exists(dirname(__DIR__)."/testnet")) {
 // mainnet specification
 const NETWORK = "mainnet-alpha";
 const VERSION = "1.0.3";
-const BUILD_VERSION = 43;
-const MIN_VERSION = "1.0.2";
+const BUILD_VERSION = 44;
+const MIN_VERSION = "1.0.3";
 const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
