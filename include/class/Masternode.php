@@ -8,6 +8,7 @@ class Masternode
 	public $height;
 	public $win_height;
 	public $signature;
+	public $ip;
 
 	function __construct()
 	{
@@ -73,12 +74,13 @@ class Masternode
 	function update() {
 		global $db;
 		_log("Masternode update win_height=".$this->win_height." public_key=".$this->public_key, 5);
-		$sql="update masternode set height=:height,  signature=:signature, win_height=:win_height where public_key=:public_key";
+		$sql="update masternode set height=:height,  signature=:signature, win_height=:win_height, ip=:ip where public_key=:public_key";
 		$res = $db->run($sql, [
 			":public_key" => $this->public_key,
 			":height"=>$this->height,
 			":signature"=>$this->signature,
 			":win_height"=>$this->win_height,
+			":ip"=>$this->ip,
 		]);
 		return $res;
 	}
@@ -447,6 +449,7 @@ class Masternode
 			$savedMasternode->height = $masternode['height'];
 			$savedMasternode->signature = $masternode['signature'];
 			$savedMasternode->win_height = $masternode['win_height'];
+			$savedMasternode->ip=$masternode['ip'];
 			$res = $savedMasternode->update();
 			if($res === false) {
 				_log("Masternode: Can not update masternode");
@@ -456,7 +459,7 @@ class Masternode
 		return true;
 	}
 
-	static function updateMasternode($data, &$error) {
+	static function updateMasternode($data, $ip, &$error) {
 
 		global $_config;
 
@@ -466,7 +469,7 @@ class Masternode
 			$mn_height=$data['height'];
 			$height = Block::getHeight();
 
-			//_log("Masternode: updateMasternode mn_height=$mn_height height=$height masternode=" . $masternode['public_key']. " win_height=".$masternode['win_height']. " signature=".$masternode['signature']);
+			_log("Masternode: updateMasternode ip=$ip mn_height=$mn_height height=$height masternode=" . $masternode['public_key']. " win_height=".$masternode['win_height']. " signature=".$masternode['signature']);
 
 			if(!Masternode::allowedMasternodes($height)) {
 				throw new Exception("Masternode: Not allowed masternodes");
@@ -474,7 +477,7 @@ class Masternode
 
 
 			if($mn_height != $height) {
-				throw new Exception("Masternode: Received height is different than local - skip");
+				throw new Exception("Masternode: Received height $mn_height is different than local $height - skip");
 			}
 
 
@@ -489,12 +492,13 @@ class Masternode
 			}
 
 //		    _log("Masternode: synced ".$masternode['public_key']." win_height=".$masternode['win_height']);
+			$masternode['ip']=$ip;
 			$res = Masternode::sync($masternode);
 			if(!$res) {
 				throw new Exception("Masternode: Can not sync local with remote masternode");
 			}
 
-			_log("Masternode: synced remote masternode id=".$masternode['id']. " signature=".$masternode['signature'],1);
+			_log("Masternode: synced remote masternode $ip id=".$masternode['id']. " signature=".$masternode['signature'],1);
 			return true;
 
 		} catch (Exception $e) {

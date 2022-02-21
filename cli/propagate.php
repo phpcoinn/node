@@ -116,7 +116,7 @@ if ($type == "block") {
     // send the block as POST to the peer
     _log("Block sent to $hostname:\n".print_r($data,1), 5);
     $response = peer_post($hostname."/peer.php?q=submitBlock", $data, 30, $err);
-    _log("Propagating block to $hostname - [result: ".$response."] $data[height] - $data[id]",3);
+    _log("Propagating block to $hostname - [result: ".json_encode($response)."] $data[height] - $data[id]",3);
     if ($response == "block-ok") {
 	    _log("Block $id accepted. Exiting", 5);
         echo "Block $id accepted. Exiting.\n";

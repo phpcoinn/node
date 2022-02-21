@@ -625,6 +625,9 @@ class Util
 	}
 
 	static function rewardsScheme($real=true) {
+		$rows = Blockchain::calculateRewardsScheme($real);
+
+
 		echo str_pad("phase", 10);
 		echo str_pad("block", 10);
 		echo str_pad('total', 10);
@@ -638,43 +641,19 @@ class Util
 		echo str_pad('supply', 10);
 		echo PHP_EOL;
 
-		$prev_reward = 0;
-		$total_supply = 0;
-
-		$start_block = 1;
-		$start_time = GENESIS_TIME;
-
-		if($real) {
-			$block = Block::current(true);
-			$start_block = $block->height + 1;
-			$start_time = $block->date;
-			$total_supply = Account::getCirculation();
-		}
-
-		for($i=$start_block;$i<=PHP_INT_MAX;$i++) {
-			$reward = Block::reward($i);
-			$elapsed = ($i-$start_block) * BLOCK_TIME;
-			$time = $start_time + $elapsed;
-			$total_supply += $reward['total'];
-			$days = $elapsed / 60 / 60 / 24;
-			if($reward['key'] != $prev_reward) {
-				echo str_pad($reward['phase'], 10);
-				echo str_pad($i, 10);
-				echo str_pad($reward['total'], 10);
-				echo str_pad($reward['miner'], 10);
-				echo str_pad($reward['generator'], 10);
-				echo str_pad($reward['masternode'], 10);
-				echo str_pad($reward['pos'], 10);
-				echo str_pad($elapsed, 24);
-				echo str_pad(round($days,2), 10);
-				echo str_pad(date("Y-m-d H:i:s",$time), 24);
-				echo str_pad($total_supply, 10);
-				echo PHP_EOL;
-			}
-			if($reward['total']==0) {
-				break;
-			}
-			$prev_reward = $reward['key'];
+		foreach ($rows as $row) {
+			echo str_pad($row['phase'], 10);
+			echo str_pad($row['block'], 10);
+			echo str_pad($row['total'], 10);
+			echo str_pad($row['miner'], 10);
+			echo str_pad($row['gen'], 10);
+			echo str_pad($row['mn'], 10);
+			echo str_pad($row['pos'], 10);
+			echo str_pad($row['elapsed'], 24);
+			echo str_pad(round($row['days'],2), 10);
+			echo str_pad(date("Y-m-d H:i:s",$row['time']), 24);
+			echo str_pad($row['supply'], 10);
+			echo PHP_EOL;
 		}
 	}
 

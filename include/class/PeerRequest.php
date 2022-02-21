@@ -259,7 +259,7 @@ class PeerRequest
 				$pr['ip'] = escapeshellcmd(san_ip($pr['ip']));
 				$dir = ROOT."/cli";
 				system( "php $dir/propagate.php block current '$peer_host' '$pr[ip]'   > /dev/null 2>&1  &");
-				_log('['.$ip."] block too old, sending our current block - $data[height]",3);
+				_log('['.$ip."] block too old, sending our current block - $current[height]",3);
 
 				api_err("block-too-old");
 			}
@@ -448,7 +448,8 @@ class PeerRequest
 
 	static function updateMasternode() {
 		$masternode = self::$data;
-		Masternode::updateMasternode($masternode, $error);
+		$ip = self::$ip;
+		Masternode::updateMasternode($masternode, $ip, $error);
 		if($error) {
 			api_err($error);
 		} else {

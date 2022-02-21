@@ -309,13 +309,6 @@ class Block
 		    $pos_ratio = 0;
 		    $pos_reward = $pos_ratio * $remain_reward;
 		    $mn_reward = $remain_reward - $pos_reward;
-		    if($miner == 0 && $_config['testnet']) {
-			    $total = 1;
-			    $miner = 0.9;
-			    $generator = 0.1;
-			    $mn_reward = 0;
-			    $pos_reward = 0;
-		    }
 		    $phase = "combined";
 	    } else if ($id <= $deflation_end_block) {
 	    	//deflation
@@ -325,13 +318,6 @@ class Block
 		    $mn_reward = $total - $pos_reward;
 		    $miner = 0;
 		    $generator = 0;
-		    if($miner == 0 && $_config['testnet']) {
-			    $total = 1;
-			    $miner = 0.9;
-			    $generator = 0.1;
-			    $mn_reward = 0;
-			    $pos_reward = 0;
-		    }
 		    $phase = "deflation";
 	    } else {
 		    $total = 0;
@@ -339,13 +325,6 @@ class Block
 		    $mn_reward = 0;
 		    $pos_reward = 0;
 		    $generator = 0;
-		    if($miner == 0 && $_config['testnet']) {
-			    $total = 1;
-			    $miner = 0.9;
-			    $generator = 0.1;
-			    $mn_reward = 0;
-			    $pos_reward = 0;
-		    }
 		    $phase = "final";
 	    }
 	    $out = [
