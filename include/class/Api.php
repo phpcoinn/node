@@ -482,7 +482,7 @@ class Api
 	 * @apiSuccess {number} data.time Current time on node.
 	 */
 	static function nodeInfo($data) {
-		global $db;
+		global $db, $_config;
 		$dbVersion = $db->single("SELECT val FROM config WHERE cfg='dbversion'");
 		$hostname = $db->single("SELECT val FROM config WHERE cfg='hostname'");
 		$accounts = $db->single("SELECT COUNT(1) FROM accounts");
@@ -491,6 +491,9 @@ class Api
 		$mempool = Mempool::getSize();
 		$peers = Peer::getCount();
 		$current = Block::current();
+		$generator = isset($_config['generator_public_key']) && $_config['generator'] ? Account::getAddress($_config['generator_public_key']) : null;
+		$miner = isset($_config['miner_public_key']) && $_config['miner'] ? Account::getAddress($_config['miner_public_key']) : null;
+		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'] ? Account::getAddress($_config['masternode_public_key']) : null;
 		api_echo([
 			'hostname'     => $hostname,
 			'version'      => VERSION,
@@ -502,8 +505,11 @@ class Api
 			'masternodes'  => $masternodes,
 			'peers'        => $peers,
 			'height'       => $current['height'],
-			'block'       => $current['id'],
-			'time'       => time(),
+			'block'        => $current['id'],
+			'time'         => time(),
+			'generator'    => $generator,
+			'miner'        => $miner,
+			'masternode'   => $masternode,
 		]);
 	}
 

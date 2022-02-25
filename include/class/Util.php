@@ -857,4 +857,69 @@ class Util
 		Masternode::resetMasternode();
 	}
 
+	static function importPrivateKey($argv) {
+		$privateKey = trim($argv[2]);
+		if(empty($privateKey)) {
+			echo "Missing private key".PHP_EOL;
+			exit;
+		}
+		$private_key = coin2pem($privateKey, true);
+		$pkey = openssl_pkey_get_private($private_key);
+		if(!$pkey) {
+			echo "Invalid private key $privateKey".PHP_EOL;
+			exit;
+		}
+		$k = openssl_pkey_get_details($pkey);
+		$public_key = pem2coin($k['key']);
+
+		echo "phpcoin".PHP_EOL;
+		echo $privateKey.PHP_EOL;
+		echo $public_key.PHP_EOL;
+
+	}
+
+	static function masternodeSign($argv) {
+		global $_config;
+		$message = trim($argv[2]);
+		if(empty($message)) {
+			echo "Missing message".PHP_EOL;
+			exit;
+		}
+		if(!Masternode::isLocalMasternode()) {
+			echo "Local node is not masternode".PHP_EOL;
+		}
+		$signature = ec_sign($message, $_config['masternode_private_key']);
+		echo $signature . PHP_EOL;
+	}
+
+	static function verify($argv) {
+		$message = trim($argv[2]);
+		$signature = trim($argv[3]);
+		$key = trim($argv[4]);
+		if(empty($message)) {
+			echo "Missing message".PHP_EOL;
+			exit;
+		}
+		if(empty($signature)) {
+			echo "Missing signature".PHP_EOL;
+			exit;
+		}
+		if(empty($key)) {
+			echo "Missing public key or address".PHP_EOL;
+			exit;
+		}
+		if(Account::valid($key)) {
+			$address = $key;
+			$publicKey = Account::publicKey($address);
+		} else {
+			$publicKey = $key;
+		}
+		$res = @ec_verify($message, $signature, $publicKey);
+		if($res) {
+			echo "Signature valid".PHP_EOL;
+		} else {
+			echo "Signature not valid".PHP_EOL;
+		}
+	}
+
 }

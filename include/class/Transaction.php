@@ -351,14 +351,14 @@ class Transaction
 
 		$type = $this->type;
 		$res = true;
-		if($type == TX_TYPE_REWARD) {
+		if($type == TX_TYPE_REWARD && $this->val > 0) {
 			$res = $res && Account::addBalance($this->dst, $this->val);
 		} else if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE) {
 			$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
 			$res = $res && Account::addBalance($this->dst, ($this->val));
 		}
 		if($res === false) {
-			_log("Error updating balance for transaction ".$this->id);
+			_log("Error updating balance for transaction ".$this->id." type=$type");
 			return false;
 		}
 
@@ -431,10 +431,17 @@ class Transaction
         }
         $base = $this->getSignatureBase();
 
+		$reward = Block::reward($height);
+	    $phase = $reward['phase'];
+
 		try {
 
+			if ($this->val < 0) {
+				throw new Exception("{$this->val} - Value < 0", 3);
+			}
+
 	        // the value must be >=0
-	        if ($this->val <= 0) {
+	        if ($this->val <= 0 && in_array($phase, ["genesis","launch","mining"])) {
 	            throw new Exception("{$this->val} - Value <= 0", 3);
 	        }
 

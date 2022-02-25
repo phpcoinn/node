@@ -53,46 +53,49 @@ if(method_exists(Util::class, $cmd)) {
 	} else {
 		echo "Invalid command: $str\n";
 		echo "Available commands:
-clean                                       - Cleans the entire database
-pop [<n>]                                   - Delete n (default 1) last blocks
-block-time                                  - Shows the block time of the last 100 blocks
-peer <peer>                                 - Creates a peering session with another node
-current                                     - Prints the current block in var_dump
-blocks <height> [<limit>]                   - Prints the id and the height of the blocks >= <height>, max 100 or <limit>
-recheck-blocks                              - Recheck all the blocks to make sure the blockchain is correct
-peers                                       - Prints all the peers and their status
-mempool                                     - Prints the number of transactions in mempool
-delete-peer <peer>                          - Removes a peer from the peerlist
-recheck-peers                               - Check all saved peers
-peers-block [<diff>]                        - Prints the current height of all the peers and shows. <diff> show only different height than current
-balance <address|public_key>                - Prints the balance of an address or a public key
-block <height|id>                           - Returns a specific block
-check-address <address>                     - Checks a specific address for validity
-get-address <public_key>                    - Converts a public key into an address
-clean-blacklist                             - Delete blacklisted peers
-compare-blocks <peer> [<limit>]             - Compare blocks with peer
-compare-accounts <peer>                     - Compare accounts with peer
-masternode-hash                             - Calculate masternode hash
-accounts-hash                               - Calculate accounts hash
-blocks-hash <height>                        - Calculate blocks hash
-version                                     - Show node version
-sendblock <height> <peer>                   - Send block to peer
-recheck-external-blocks <peer> [<height>]   - Recheck blocks from <height> at <peer>
-check-block <peer> <height>                 - Check block at peer
-find-forked-block <peer>                    - Find forked block at peer
-validate-public-key <public-key>            - Validates public key
-rewards-scheme                              - Prints reward scheme by blocks
-download-apps                               - Download and update apps from repository
-verify-blocks [start-stop]                  - Verify blocks in blockchain
-exportchain [<file>]                        - Export blockchain to file
-importchain <file> [<verify>]               - Import and verify blocks from file
-clear-peers                                 - Clear peers database
-empty-mempool                               - Empty mempool
-update                                      - Check node for newest version and update
-exportdb                                    - Export database as backup
-importdb <file>                             - Restore blockchain database from backup
-check-masternode                            - Check local masternode
-reset-masternode                            - Reset local masternode
+clean                                                   - Cleans the entire database
+pop [<n>]                                               - Delete n (default 1) last blocks
+block-time                                              - Shows the block time of the last 100 blocks
+peer <peer>                                             - Creates a peering session with another node
+current                                                 - Prints the current block in var_dump
+blocks <height> [<limit>]                               - Prints the id and the height of the blocks >= <height>, max 100 or <limit>
+recheck-blocks                                          - Recheck all the blocks to make sure the blockchain is correct
+peers                                                   - Prints all the peers and their status
+mempool                                                 - Prints the number of transactions in mempool
+delete-peer <peer>                                      - Removes a peer from the peerlist
+recheck-peers                                           - Check all saved peers
+peers-block [<diff>]                                    - Prints the current height of all the peers and shows. <diff> show only different height than current
+balance <address|public_key>                            - Prints the balance of an address or a public key
+block <height|id>                                       - Returns a specific block
+check-address <address>                                 - Checks a specific address for validity
+get-address <public_key>                                - Converts a public key into an address
+clean-blacklist                                         - Delete blacklisted peers
+compare-blocks <peer> [<limit>]                         - Compare blocks with peer
+compare-accounts <peer>                                 - Compare accounts with peer
+masternode-hash                                         - Calculate masternode hash
+accounts-hash                                           - Calculate accounts hash
+blocks-hash <height>                                    - Calculate blocks hash
+version                                                 - Show node version
+sendblock <height> <peer>                               - Send block to peer
+recheck-external-blocks <peer> [<height>]               - Recheck blocks from <height> at <peer>
+check-block <peer> <height>                             - Check block at peer
+find-forked-block <peer>                                - Find forked block at peer
+validate-public-key <public-key>                        - Validates public key
+rewards-scheme                                          - Prints reward scheme by blocks
+download-apps                                           - Download and update apps from repository
+verify-blocks [start-stop]                              - Verify blocks in blockchain
+exportchain [<file>]                                    - Export blockchain to file
+importchain <file> [<verify>]                           - Import and verify blocks from file
+clear-peers                                             - Clear peers database
+empty-mempool                                           - Empty mempool
+update                                                  - Check node for newest version and update
+exportdb                                                - Export database as backup
+importdb <file>                                         - Restore blockchain database from backup
+check-masternode                                        - Check local masternode
+reset-masternode                                        - Reset local masternode
+import-private-key <private_key>                        - Recreate wallet from private key
+masternode-sign <message>                               - Sign message with masternode private key
+verify <message> <signature> <public_key|address>       - Verify message signature with public key or address	
 ";
 	}
 }
