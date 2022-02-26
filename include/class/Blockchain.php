@@ -60,7 +60,6 @@ class Blockchain
 	static function calculateRewardsScheme($real=true) {
 
 		$prev_reward = null;
-		$prev_block = null;
 		$total_supply = 0;
 
 		$start_block = 1;
@@ -79,7 +78,6 @@ class Blockchain
 			$reward = Block::reward($i);
 			$elapsed = ($i-$start_block) * BLOCK_TIME;
 			$time = $start_time + $elapsed;
-//			$total_supply += $reward['total'];
 			$days = $elapsed / 60 / 60 / 24;
 			if($reward['key'] != $prev_reward) {
 				$rows[$reward['key']] = [
@@ -93,8 +91,8 @@ class Blockchain
 					'elapsed' => $elapsed,
 					'days' => $days,
 					'time' => $time,
-//					'supply' => $total_supply,
-					'segment'=>$reward['segment']
+					'segment'=>$reward['segment'],
+					'key'=>$reward['key']
 				];
 			}
 			if($reward['total']==0) {
@@ -113,6 +111,11 @@ class Blockchain
 			}
 		}
 
-		return $rows;
+		$rows2 = [];
+		foreach ($rows as $row2) {
+			$rows2[$row2['key']]=$row2;
+		}
+
+		return $rows2;
 	}
 }
