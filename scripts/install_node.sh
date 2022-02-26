@@ -14,7 +14,7 @@ echo "PHPCoin: update system"
 echo "==================================================================================================="
 apt update
 echo "install php with apache server"
-apt install apache2 php libapache2-mod-php php-mysql php-gmp php-bcmath php-curl -y
+apt install apache2 php libapache2-mod-php php-mysql php-gmp php-bcmath php-curl unzip -y
 apt install mysql-server -y
 
 echo "PHPCoin: create database and set use"
