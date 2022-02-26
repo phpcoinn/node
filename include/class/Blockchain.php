@@ -79,12 +79,9 @@ class Blockchain
 			$reward = Block::reward($i);
 			$elapsed = ($i-$start_block) * BLOCK_TIME;
 			$time = $start_time + $elapsed;
-			$total_supply += $reward['total'];
+//			$total_supply += $reward['total'];
 			$days = $elapsed / 60 / 60 / 24;
 			if($reward['key'] != $prev_reward) {
-				if($prev_reward) {
-					$rows[$prev_reward]['end_block']=$i-1;
-				}
 				$rows[$reward['key']] = [
 					'phase' => $reward['phase'],
 					'block' => $i,
@@ -96,7 +93,8 @@ class Blockchain
 					'elapsed' => $elapsed,
 					'days' => $days,
 					'time' => $time,
-					'supply' => $total_supply,
+//					'supply' => $total_supply,
+					'segment'=>$reward['segment']
 				];
 			}
 			if($reward['total']==0) {
@@ -104,6 +102,17 @@ class Blockchain
 			}
 			$prev_reward = $reward['key'];
 		}
+
+		$rows = array_values($rows);
+		foreach ($rows as $index => &$row) {
+			if(isset($rows[$index+1])) {
+				$row['end_block'] = $rows[$index+1]['block']-1;
+				$row['blocks']=$row['end_block'] - $row['block'] + 1;
+				$total_supply += $row['blocks'] * $row['total'];
+				$row['supply'] = $total_supply;
+			}
+		}
+
 		return $rows;
 	}
 }

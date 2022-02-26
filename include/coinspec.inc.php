@@ -7,7 +7,7 @@ if(file_exists(dirname(__DIR__)."/testnet")) {
 // mainnet specification
 const NETWORK = "mainnet-alpha";
 const VERSION = "1.0.3";
-const BUILD_VERSION = 45;
+const BUILD_VERSION = 46;
 const MIN_VERSION = "1.0.2";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -41,20 +41,23 @@ const REWARD_SCHEME = [
 		'reward'=> GENESIS_REWARD
 	],
 	'launch'=>[
-		'blocks' => 100000,
+		'blocks' => 100000 - 1,
 		'reward'=> 10,
 	],
 	'mining'=>[
-		'segments'=>10,
-		'block_per_segment'=>10000
+		'block_per_segment'=>[
+			10000,10000,10000,10000,10000,10000,10000,10000,10000,10000
+		]
 	],
 	'combined'=>[
-		'segments'=>10,
-		'block_per_segment'=>50000
+		'block_per_segment'=>[
+			50000,50000,50000,50000,50000,50000,50000,50000,50000,50000
+		]
 	],
 	'deflation'=>[
-		'segments'=>10,
-		'block_per_segment'=>100000
+		'block_per_segment'=>[
+			100000,100000,100000,100000,100000,100000,100000,100000,100000,100000
+		]
 	]
 ];
 

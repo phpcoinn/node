@@ -451,11 +451,8 @@ class Transaction
 	        }
 
 		    //genesis transaction
-		    $mining_segments = REWARD_SCHEME['mining']['segments'];
-		    $mining_segment_block = REWARD_SCHEME['mining']['block_per_segment'];
-		    $launch_blocks = REWARD_SCHEME['launch']['blocks'];
-		    $mining_end_block = ($mining_segments * $mining_segment_block) + $launch_blocks;
-		    if($this->publicKey==GENESIS_DATA['public_key'] && $this->type==TX_TYPE_SEND && $height < $mining_end_block) {
+		    $mining_end_block = Block::getMnStartHeight();
+		    if($this->publicKey==GENESIS_DATA['public_key'] && $this->type==TX_TYPE_SEND && $height <= $mining_end_block) {
 			    throw new Exception("Genesis can not spend before locked height");
 		    }
 

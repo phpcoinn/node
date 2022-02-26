@@ -39,20 +39,23 @@ const REWARD_SCHEME = [
 		'reward'=> GENESIS_REWARD
 	],
 	'launch'=>[
-		'blocks' => 10,
+		'blocks' => 10 - 1,
 		'reward'=> 10,
 	],
 	'mining'=>[
-		'segments'=>10,
-		'block_per_segment'=>10
+		'block_per_segment'=>[
+			10, 10, 10, 10, 10, 10, 10, 10, 10, 10
+		]
 	],
 	'combined'=>[
-		'segments'=>10,
-		'block_per_segment'=>1000
+		'block_per_segment'=>[
+			1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000
+		]
 	],
 	'deflation'=>[
-		'segments'=>10,
-		'block_per_segment'=>1000
+		'block_per_segment'=>[
+			1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000
+		]
 	]
 ];
 
