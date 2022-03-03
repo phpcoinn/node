@@ -154,6 +154,9 @@ class Wallet
 			case "masternode-remove":
 				$this->removeMasternode(@$this->arg2, @$this->arg3);
 				break;
+			case "sign":
+				$this->sign(@$this->arg2);
+				break;
 			default:
 				echo !$this->create ? "Invalid command\n" : "";
 		}
@@ -315,7 +318,7 @@ class Wallet
 		if(DEVELOPMENT) {
 			return "https://spectre:8000";
 		} else {
-			return "https://node1.testnet.phpcoin.net:8001"; //$peer;
+			return "https://node1.phpcoin.net"; //$peer;
 		}
 	}
 
@@ -427,6 +430,15 @@ class Wallet
 		echo "Transaction created: ".$res['data'].PHP_EOL;
 	}
 
+	function sign($message) {
+		if(empty($message)) {
+			echo "Message is empty!".PHP_EOL;
+			exit;
+		}
+		$res = ec_sign($message, $this->private_key);
+		echo $res . PHP_EOL;
+	}
+
 	function help() {
 		die("wallet <command> <options>
 
@@ -444,6 +456,7 @@ send <address> <value> <msg>    sends a transaction (message optional)
 login-link                      generate login link
 masternode-create <address>     create masternode with address
 masternode-remove <payoutaddress>    remove masternode with address
+sign <message>                  sign message with wallet private key
 ");
 	}
 
