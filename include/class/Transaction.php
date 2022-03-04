@@ -874,7 +874,9 @@ class Transaction
 			    }
 		    }
 
-			Masternode::checkSend($this);
+			if($this->type == TX_TYPE_SEND) {
+				Masternode::checkSend($this);
+			}
 
 		} catch (Exception $e) {
 			$error = $e->getMessage();

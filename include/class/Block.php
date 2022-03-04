@@ -518,26 +518,24 @@ class Block
 				        throw new Exception("Transaction check failed - {$tx->id}");
 			        }
 
-			        // prepare total balance
-			        $balance[$tx->src] += $tx->val + $tx->fee;
-
 			        // check if the transaction is already on the blockchain
 			        if ($db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $tx->id]) > 0) {
 				        throw new Exception("Transaction already on the blockchain - {$tx->id}", 2);
 			        }
 
+			        // prepare total balance
 			        $type = $tx->type;
-
 			        if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE || $type == TX_TYPE_MN_REMOVE) {
-				        // check if the account has enough balance to perform the transaction
-				        foreach ($balance as $id => $bal) {
-				            $acc_balance = Account::getBalance($id);
-				            if(round(floatval($acc_balance),8) < round($bal,8)) {
-					            throw new Exception("Not enough balance for transaction - $id balance=$acc_balance bal=$bal");
-					        }
-				        }
+				        $balance[$tx->src] += $tx->val + $tx->fee;
 			        }
 
+		        }
+
+		        foreach ($balance as $id => $bal) {
+			        $acc_balance = Account::getBalance($id);
+			        if(round(floatval($acc_balance),8) < round($bal,8)) {
+				        throw new Exception("Not enough balance for transaction - $id account_balance=$acc_balance transaction_balance=$bal");
+			        }
 		        }
 
 	        }

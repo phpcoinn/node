@@ -562,4 +562,18 @@ class Api
 		$peers = Peer::getAll();
 		api_echo($peers);
 	}
+
+
+	static function getMasternodes($data) {
+		api_echo(Masternode::getAll());
+	}
+	
+	static function getMasternodesForAddress($data) {
+		$address = $data['address'];
+		$public_key = Account::publicKey($address);
+		if(!$public_key) {
+			api_err("Invalid address");
+		}
+		api_echo(Masternode::getMasternodesForPublicKey($public_key));
+	}
 }

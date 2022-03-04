@@ -840,4 +840,14 @@ class Masternode
 		echo "Masternode deleted! Will be recreated in next process".PHP_EOL;
 	}
 
+	static function getMasternodesForPublicKey($public_key) {
+		global $db;
+		$sql="select t.dst as masternode_address, a.balance as masternode_balance
+			from transactions t
+			left join masternode m on (m.id = t.dst)
+			left join accounts a on (m.id = a.id)
+			where t.type = :mn_create and t.public_key = :public_key";
+		return $db->run($sql, [":mn_create" => TX_TYPE_MN_CREATE, ":public_key" => $public_key]);
+	}
+
 }
