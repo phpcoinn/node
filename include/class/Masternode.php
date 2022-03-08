@@ -846,7 +846,9 @@ class Masternode
 			from transactions t
 			left join masternode m on (m.id = t.dst)
 			left join accounts a on (m.id = a.id)
-			where t.type = :mn_create and t.public_key = :public_key";
+			where t.type = :mn_create and t.public_key = :public_key
+			and m.id is not null
+			group by m.id";
 		return $db->run($sql, [":mn_create" => TX_TYPE_MN_CREATE, ":public_key" => $public_key]);
 	}
 

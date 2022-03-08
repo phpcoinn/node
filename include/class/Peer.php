@@ -166,7 +166,7 @@ class Peer
 
 	static function getPeers() {
 		global $db;
-		return $db->run("SELECT ip,hostname FROM peers WHERE blacklisted<".DB::unixTimeStamp()." ORDER by ".DB::random());
+		return $db->run("SELECT ip,hostname,height FROM peers WHERE blacklisted<".DB::unixTimeStamp()." ORDER by ".DB::random());
 	}
 
 	static function getPeersForPropagate($linear) {
