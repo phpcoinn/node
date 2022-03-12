@@ -57,6 +57,13 @@ mkdir web/apps
 chown -R www-data:www-data tmp
 chown -R www-data:www-data web/apps
 
+export IP=$(curl -s http://whatismyip.akamai.com/)
+echo "PHPCoin: open start page"
+echo "==================================================================================================="
+curl "http://$IP" > /dev/null 2>&1
+
+sleep 5
+
 echo "PHPCoin: import blockchain"
 echo "==================================================================================================="
 cd /var/www/phpcoin/tmp
@@ -64,13 +71,6 @@ wget https://phpcoin.net/download/blockchain.sql.zip
 unzip blockchain.sql.zip
 cd /var/www/phpcoin
 php cli/util.php importdb tmp/blockchain.sql
-
-export IP=$(curl -s http://whatismyip.akamai.com/)
-echo "PHPCoin: open start page"
-echo "==================================================================================================="
-curl "http://$IP" > /dev/null 2>&1
-
-sleep 5
 
 echo "PHPCoin: synchronize apps"
 echo "==================================================================================================="

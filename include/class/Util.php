@@ -742,10 +742,6 @@ class Util
 		if(!file_exists($file)) {
 			die("Can not found file: $file".PHP_EOL);
 		}
-		$lockFile = Nodeutil::getSyncFile();
-		if (file_exists($lockFile)) {
-			die("Sync running. Wait for it to finish");
-		}
 		echo "Importing database...".PHP_EOL;
 		global $db;
 		$db_name = $db->single('select database()');
