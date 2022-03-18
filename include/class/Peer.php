@@ -31,9 +31,9 @@ class Peer
 		return $rows;
 	}
 
-	static function getActive($limit=100) {
+	static function getActive($limit=100, $includeReserved = false) {
 		global $db;
-		$sql="select * from peers WHERE  blacklisted < ".DB::unixTimeStamp()." AND reserve=0  ORDER by ".DB::random()." LIMIT :limit";
+		$sql="select * from peers WHERE  blacklisted < ".DB::unixTimeStamp()." " . ($includeReserved ? "" : "AND reserve=0 ") . " ORDER by ".DB::random()." LIMIT :limit";
 		$rows = $db->run($sql, ["limit"=>$limit]);
 		return $rows;
 	}

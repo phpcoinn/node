@@ -301,7 +301,7 @@ if ($total_peers == 0) {
 $peerBlocks = [];
 
 // contact all the active peers
-$r=Peer::getActive(10);
+$r=Peer::getActive(10, true);
 
  $i = 0;
 foreach ($r as $x) {

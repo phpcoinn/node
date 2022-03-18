@@ -28,6 +28,7 @@ function api_err($data)
 
     if (!headers_sent()) {
         header('Content-Type: application/json');
+	    header('Access-Control-Allow-Origin: *');
     }
     echo json_encode(["status" => "error", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK]);
     exit;
@@ -40,6 +41,7 @@ function api_echo($data)
 
     if (!headers_sent()) {
         header('Content-Type: application/json');
+	    header('Access-Control-Allow-Origin: *');
     }
     _log("api_echo: " . json_encode($data), 5);
     echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK]);

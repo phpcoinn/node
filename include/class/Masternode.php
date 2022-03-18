@@ -405,25 +405,38 @@ class Masternode
 		if(!Masternode::allowedMasternodes($height)) {
 			return;
 		}
-		if($id == "local" && !Masternode::isLocalMasternode()) {
+		if(!Masternode::isLocalMasternode()) {
 			return;
 		}
-		_log("Masternode: propagating masternode $id pid=".getmypid());
-		$peers = Peer::getActive();
-		if(count($peers)==0) {
-			_log("Masternode: No peers to propagate", 5);
-		} else {
-			if($id == "local") {
-				$public_key = $_config['masternode_public_key'];
+
+		$public_key = $_config['masternode_public_key'];
+		$masternode = Masternode::get($public_key);
+
+		if($id === "local") {
+			//start propagate to each peer
+			_log("Masternode: propagating masternode $id pid=".getmypid());
+			$peers = Peer::getActive(10, true);
+			if(count($peers)==0) {
+				_log("Masternode: No peers to propagate", 5);
 			} else {
-				$public_key = $id;
+				foreach ($peers as $peer) {
+					$peer = base64_encode($peer['hostname']);
+					$dir = ROOT."/cli";
+					$res = shell_exec("ps uax | grep '$dir/propagate.php masternode $peer' | grep -v grep");
+					if(!$res) {
+						$cmd = "php $dir/propagate.php masternode $peer > /dev/null 2>&1  &";
+						system($cmd);
+					}
+
+				}
 			}
-			$masternode = Masternode::get($public_key);
-			foreach ($peers as $peer) {
-				$url = $peer['hostname']."/peer.php?q=updateMasternode";
-				$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 30, $err);
-				_log("Masternode: Propagating to peer: ".$peer['hostname']." res=".json_encode($res). "err=$err",5);
-			}
+		} else {
+			//propagate to single peer
+			$peer = base64_decode($id);
+			_log("Masternode: propagating masternode to $peer pid=".getmypid());
+			$url = $peer."/peer.php?q=updateMasternode";
+			$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 30, $err);
+			_log("Masternode: Propagating to peer: ".$peer." res=".json_encode($res). " err=$err",5);
 		}
 	}
 
