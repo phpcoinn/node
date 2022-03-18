@@ -82,6 +82,8 @@ cd /var/www/phpcoin/scripts
 chmod +x install_update.sh
 ./install_update.sh
 
+rm -rf /var/www/phpcoin/tmp/sync-lock
+
 echo "==================================================================================================="
 echo "PHPCoin: Install finished"
 echo "PHPCoin: Open your node at http://$IP"
