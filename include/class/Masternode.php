@@ -48,6 +48,7 @@ class Masternode
 		$masternode->win_height = $row['win_height'];
 		$masternode->signature = $row['signature'];
 		$masternode->id = $row['id'];
+		$masternode->ip = $row['ip'];
 		return $masternode;
 	}
 

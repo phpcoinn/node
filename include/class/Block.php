@@ -549,6 +549,11 @@ class Block
 		                throw new Exception("Not valid transaction");
 	                }
 	            }
+
+		        if(Masternode::isLocalMasternode()) {
+			        Masternode::processBlock();
+		        }
+
 	        }
 
 	        return true;

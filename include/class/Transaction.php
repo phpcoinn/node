@@ -398,10 +398,6 @@ class Transaction
 			}
 		}
 
-		if(Masternode::isLocalMasternode()) {
-			Masternode::processBlock();
-		}
-
 		Mempool::delete($this->id);
 		return true;
 	}
