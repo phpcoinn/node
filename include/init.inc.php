@@ -158,4 +158,6 @@ if(!defined("MINER_RUN")) {
 	}
 }
 
-Masternode::runThread();
+if(!defined("SKIP_MASTERNODE_THREAD")) {
+	Masternode::runThread();
+}

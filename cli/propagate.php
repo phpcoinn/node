@@ -26,6 +26,9 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 */
 set_time_limit(360);
 global $db, $_config;
+
+define("SKIP_MASTERNODE_THREAD", true);
+
 require_once dirname(__DIR__).'/include/init.inc.php';
 
 $type = san($argv[1]);
