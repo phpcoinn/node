@@ -226,6 +226,15 @@ if($dbversion == 7) {
 	$dbversion = 8;
 }
 
+if($dbversion == 8) {
+	$db->run("alter table peers add miner tinyint(1) default 0 null;");
+	$db->run("alter table peers add generator tinyint(1) default 0 null;");
+	$db->run("alter table peers add masternode tinyint(1) default 0 null;");
+	$db->run("alter table peers add response_cnt int default 0 null;");
+	$db->run("alter table peers add response_time decimal(20,8) default 0 null;");
+	$dbversion = 9;
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
