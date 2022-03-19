@@ -129,9 +129,9 @@ class Peer
 		global $_config;
 		$appsHashFile = Nodeutil::getAppsHashFile();
 		$appsHash = @file_get_contents($appsHashFile);
-		$generator = isset($_config['generator_public_key']) && $_config['generator'] ? Account::getAddress($_config['generator_public_key']) : null;
-		$miner = isset($_config['miner_public_key']) && $_config['miner'] ? Account::getAddress($_config['miner_public_key']) : null;
-		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'] ? Account::getAddress($_config['masternode_public_key']) : null;
+		$generator = isset($_config['generator_public_key']) && $_config['generator'];
+		$miner = isset($_config['miner_public_key']) && $_config['miner'];
+		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'];
 		return [
 			"height" => Block::getHeight(),
 			"appshash" => $appsHash,
