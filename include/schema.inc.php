@@ -235,6 +235,11 @@ if($dbversion == 8) {
 	$dbversion = 9;
 }
 
+if($dbversion == 9) {
+	$db->run("alter table peers add block_id varchar(128) null;");
+	$dbversion = 10;
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
