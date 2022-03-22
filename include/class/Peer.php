@@ -261,7 +261,7 @@ class Peer
 		$miner = isset($info['miner']) && $info['miner'] ? 1 : 0 ;
 		$generator = isset($info['generator']) && $info['generator'] ? 1 : 0 ;
 		$masternode = isset($info['masternode']) && $info['masternode'] ? 1 : 0 ;
-		$db->run("UPDATE peers SET height=:height, appshash=:appshash, score=:score, version=:version,  
+		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, appshash=:appshash, score=:score, version=:version,  
 				miner=:miner, generator=:generator, masternode=:masternode
 				WHERE id=:id",
 			[":id" => $id, ':height'=>$info['height'], ':appshash'=>$info['appshash'],
