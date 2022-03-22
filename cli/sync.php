@@ -329,33 +329,13 @@ foreach ($r as $x) {
     _log("Contacting peer $x[hostname]",4);
     $url = $x['hostname']."/peer.php?q=";
 
-
-	// get the current block and check it's blockchain
-	$res = peer_post($url."currentBlock", []);
-	if ($res === false) {
-		_log("Peer $x[hostname] unresponsive url={$url}currentBlock response=$res");
-		// if the peer is unresponsive, mark it as failed and blacklist it for a while
-		Peer::blacklist($x['id'],"Unresponsive");
-		continue;
-	}
-
-	$data = $res['block'];
-	$info = $res['info'];
-
-
     // peer was responsive, mark it as good
     if ($x['fails'] > 0) {
         Peer::clearFails($x['id']);
     }
 
-	Peer::updateInfo($x['id'], $info);
-
-	_log("Received peer info ".json_encode($info), 3);
-	$data['id'] = san($data['id']);
-	$data['height'] = san($data['height']);
-
-	//$data['id']=$x['block_id'];
-	//$data['height']=$x['height'];
+	$data['id']=$x['block_id'];
+	$data['height']=$x['height'];
 
     if ($current['height'] > 1 && $data['height'] < $current['height'] - 100) {
 	    _log("blacklist peer $url because is 100 blocks behind, our height=".$current['height']." peer_height=".$data['height']);

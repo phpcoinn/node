@@ -301,7 +301,8 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null)
             "coin" => COIN,
 	        "version"=>VERSION,
 	        "network"=>NETWORK,
-	        "requestId" => uniqid()
+	        "requestId" => uniqid(),
+	        "info"=>Peer::getInfo()
         ]
     );
 

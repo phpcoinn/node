@@ -6,6 +6,7 @@ class PeerRequest
 	public static $ip;
 	public static $data;
 	public static $requestId;
+	public static $info;
 
 	static function processRequest() {
 		global $_config;
@@ -31,6 +32,8 @@ class PeerRequest
 		$requestId = $_POST['requestId'];
 		_log("Peer request from IP = $ip requestId=$requestId",4);
 
+		$info = $_POST['info'];
+
 		$ip = Peer::validateIp($ip);
 		_log("Filtered IP = $ip",4);
 
@@ -46,9 +49,14 @@ class PeerRequest
 			api_err("blocked-ip");
 		}
 
+		if(!empty($info)) {
+			Peer::updatePeerInfo($ip, $info);
+		}
+
 		self::$ip=$ip;
 		self::$data=$data;
 		self::$requestId=$requestId;
+		self::$info = $info;
 	}
 
 	static function peer() {
@@ -207,7 +215,7 @@ class PeerRequest
 		// receive a  new block from a peer
 		_log("Sync: Receive new block from a peer $ip : id=".$data['id']." height=".$data['height']." current=".$current['height']);
 
-		Peer::updateHeight($ip, $data);
+//		Peer::updateHeight($ip, $data);
 
 		// if sync, refuse all
 		if (Config::isSync()) {

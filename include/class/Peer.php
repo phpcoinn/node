@@ -150,14 +150,16 @@ class Peer
 		$generator = isset($_config['generator_public_key']) && $_config['generator'];
 		$miner = isset($_config['miner_public_key']) && $_config['miner'];
 		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'];
+		$current = Block::current();
 		return [
-			"height" => Block::getHeight(),
+			"height" => $current['height'],
 			"appshash" => $appsHash,
 			"score"=>$_config['node_score'],
 			"version"=> VERSION . "." . BUILD_VERSION,
 			"miner"=>$miner,
 			"generator"=>$generator,
 			"masternode"=>$masternode,
+			"block"=>$current['id']
 		];
 	}
 
@@ -267,6 +269,18 @@ class Peer
 			[":id" => $id, ':height'=>$info['height'], ':appshash'=>$info['appshash'],
 				':score'=>$info['score'], ':version' => $info['version'],
 				':miner' => $miner, ':generator' => $generator, ':masternode'=>$masternode]);
+	}
+
+	static function updatePeerInfo($ip, $info) {
+		global $db;
+		//_log("Peer request: update info from $ip ".json_encode($info));
+		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, block_id=:block_id, appshash=:appshash, score=:score, version=:version,  
+				miner=:miner, generator=:generator, masternode=:masternode
+				WHERE ip=:ip",
+			[":ip" => $ip, ':height'=>$info['height'], ':appshash'=>$info['appshash'],
+				':score'=>$info['score'], ':version' => $info['version'],
+				':miner' => $info['miner'], ':generator' => $info['generator'], ':masternode'=>$info['masternode'],
+				':block_id' => $info['block_id']]);
 	}
 
 	static function storePing($url, $curl_info) {
