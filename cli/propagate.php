@@ -66,7 +66,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 	    _log("Could not write the cache file");
         die("Could not write the cache file");
     }
-    $r = Peer::getPeersForPropagate($linear);
+    $r = Peer::getPeersForPropagate();
     foreach ($r as $x) {
         if($x['hostname']==$_config['hostname']) continue;
         // encode the hostname in base58 and sanitize the IP to avoid any second order shell injections

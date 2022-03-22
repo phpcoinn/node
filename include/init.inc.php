@@ -1,4 +1,5 @@
 <?php
+$GLOBALS['start_time']=microtime(true);
 // UTC timezone by default
 date_default_timezone_set("UTC");
 require_once dirname(__DIR__).'/vendor/autoload.php';

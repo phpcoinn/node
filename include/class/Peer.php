@@ -9,7 +9,7 @@ class Peer
 
 	static function getCount($live=false) {
 		global $db;
-		$sql="select count(*) as cnt from peers where reserve=0 AND blacklisted < ".DB::unixTimeStamp();
+		$sql="select count(*) as cnt from peers where blacklisted < ".DB::unixTimeStamp();
 		if($live) {
 			$sql.=" AND ping >".DB::unixTimeStamp()."-86400";
 		}
@@ -35,6 +35,24 @@ class Peer
 		global $db;
 		$sql="select * from peers WHERE  blacklisted < ".DB::unixTimeStamp()." " . ($includeReserved ? "" : "AND reserve=0 ") . " ORDER by ".DB::random()." LIMIT :limit";
 		$rows = $db->run($sql, ["limit"=>$limit]);
+		return $rows;
+	}
+
+	static function getPeersForSync() {
+		global $db;
+		$sql="select * from peers 
+			where blacklisted < ".DB::unixTimeStamp()."
+			  and ping > ".DB::unixTimeStamp()."- 60*2
+			  and response_cnt>0 order by response_time/response_cnt";
+		$rows = $db->run($sql);
+		return $rows;
+	}
+
+	static function getPeersForMasternode() {
+		global $db;
+		$sql="select * from peers p WHERE p.blacklisted < ".DB::unixTimeStamp()." 
+			and (p.miner = 1 or p.generator = 1)";
+		$rows = $db->run($sql);
 		return $rows;
 	}
 
@@ -175,15 +193,9 @@ class Peer
 		return $db->run("SELECT ip,hostname,height FROM peers WHERE blacklisted<".DB::unixTimeStamp()." ORDER by ".DB::random());
 	}
 
-	static function getPeersForPropagate($linear) {
+	static function getPeersForPropagate() {
 		global $db;
-		// broadcasting to all peers
-		$ewhr = "";
-		// boradcasting to only certain peers
-		if ($linear == true) {
-			$ewhr = " ORDER by ".DB::random()." LIMIT 5";
-		}
-		$r = $db->run("SELECT * FROM peers WHERE blacklisted < ".DB::unixTimeStamp()." AND reserve=0 $ewhr");
+		$r = $db->run("SELECT * FROM peers WHERE blacklisted < ".DB::unixTimeStamp());
 		return $r;
 	}
 
@@ -246,19 +258,26 @@ class Peer
 
 	static function updateInfo($id, $info) {
 		global $db;
-		$db->run("UPDATE peers SET height=:height, appshash=:appshash, score=:score, version=:version WHERE id=:id",
+		$miner = isset($info['miner']) && $info['miner'] ? 1 : 0 ;
+		$generator = isset($info['generator']) && $info['generator'] ? 1 : 0 ;
+		$masternode = isset($info['masternode']) && $info['masternode'] ? 1 : 0 ;
+		$db->run("UPDATE peers SET height=:height, appshash=:appshash, score=:score, version=:version,  
+				miner=:miner, generator=:generator, masternode=:masternode
+				WHERE id=:id",
 			[":id" => $id, ':height'=>$info['height'], ':appshash'=>$info['appshash'],
-				':score'=>$info['score'], ':version' => $info['version']]);
+				':score'=>$info['score'], ':version' => $info['version'],
+				':miner' => $miner, ':generator' => $generator, ':masternode'=>$masternode]);
 	}
 
-	static function storePing($url) {
+	static function storePing($url, $curl_info) {
 		$info = parse_url($url);
 		$hostname = $info['host'];
+		$connect_time = $curl_info["connect_time"];
 		global $db;
-		_log("Updating ping for peer $hostname", 4);
-		$db->run("update peers set ping = ".DB::unixTimeStamp()." where hostname like :hostname",
-			[ ":hostname"=>"%$hostname%"]);
-
+		$res = $db->run("update peers set 
+			response_cnt=response_cnt+1, response_time=response_time+:time 
+			where hostname like :hostname",
+			[ ":hostname"=>"%$hostname%",":time"=>$connect_time]);
 	}
 
 	public static function findByHostname($hostName)
@@ -269,6 +288,29 @@ class Peer
 			[":hostname" => $hostName]
 		);
 		return $x;
+	}
+
+	public static function updateTimeInfo($hostname, $connect_time)
+	{
+		global $db;
+		if(empty($connect_time)) {
+			return;
+		}
+		$sql="update peers 
+		set response_cnt=response_cnt+1, response_time=response_time+:time 
+		where hostname = :hostname";
+		$res = $db->run($sql, [":time"=>$connect_time, ":hostname"=>$hostname]);
+	}
+
+	public static function updateHeight($ip, $data)
+	{
+		global $db;
+		$height = $data['height'];
+		$block_id = $data['id'];
+		_log("Sync: update peer height ip=$ip height=$height block=$block_id");
+		$sql="update peers set ping = ".DB::unixTimeStamp().", height = :height, block_id=:block_id where ip=:ip";
+		$res =$db->run($sql, [":height"=>$height, ":ip"=>$ip, ":block_id"=>$block_id]);
+		return $res;
 	}
 
 }

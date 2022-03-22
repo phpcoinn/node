@@ -304,88 +304,38 @@ $peerBlocks = [];
 $r=Peer::getActive(10, true);
 
  $i = 0;
+
+$peered = [];
+$peer_cnt = 0;
+
+$min = intval(date("i"));
+$run_get_more_peers = $min % 5 == 0;
+
+_log("Sync: check run_get_more_peers=$run_get_more_peers");
+
+if($run_get_more_peers) {
+	$dir = ROOT."/cli";
+	$cmd = "$dir/util.php get-more-peers";
+	$res = shell_exec("ps uax | grep '$cmd' | grep -v grep");
+	if(!$res) {
+		$exec_cmd = "php $cmd > /dev/null 2>&1  &";
+		system($exec_cmd);
+	}
+}
+
+
+$t1= microtime(true);
 foreach ($r as $x) {
     _log("Contacting peer $x[hostname]",4);
     $url = $x['hostname']."/peer.php?q=";
-    // get their peers list
-    if ($_config['get_more_peers']==true && $_config['passive_peering']!=true) {
-        $data = peer_post($url."getPeers", []);
-        if ($data === false) {
-            _log("Peer $x[hostname] unresponsive data=".json_encode($data), 2);
-            // if the peer is unresponsive, mark it as failed and blacklist it for a while
-	        _log("blacklist peer $url because is unresponsive");
-            Peer::blacklist($x['id'], "Unresponsive");
-            continue;
-        }
-        if(is_array($data) && count($data)==0) {
-	        _log("blacklist peer $url because it has no peers");
-	        Peer::blacklist($x['id'], "No peers");
-	        continue;
-        }
-        foreach ($data as $peer) {
-            // store the hostname as md5 hash, for easier checking
-            $peer['hostname'] = san_host($peer['hostname']);
-            $peer['ip'] = san_ip($peer['ip']);
-            $pid = md5($peer['hostname']);
-            // do not peer if we are already peered
-            if ($peered[$pid] == 1) {
-                continue;
-            }
-            $peered[$pid] = 1;
-
-            if(!Peer::validate($peer['hostname'])) {
-	            continue;
-            }
-            // if it's our hostname, ignore
-            if ($peer['hostname'] == $_config['hostname']) {
-                continue;
-            }
-            // make sure there's no peer in db with this ip or hostname
-	        $single = Peer::getSingle($peer['hostname'], $peer['ip']);
-            if (!$single) {
-                $i++;
-                // check a max_test_peers number of peers from each peer
-                if ($i > $_config['max_test_peers']) {
-                    break;
-                }
-                $peer['hostname'] = filter_var($peer['hostname'], FILTER_SANITIZE_URL);
-                // peer with each one
-                _log("Trying to peer with recommended peer: $peer[hostname]", 4);
-                $test = peer_post($peer['hostname']."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1]);
-                if ($test !== false) {
-                    $total_peers++;
-                    echo "Peered with: $peer[hostname]\n";
-                    // a single new peer per sync
-                    $_config['get_more_peers']=false;
-                } else {
-					_log("Can not peer with ".$peer["hostname"]);
-                }
-            }
-        }
-    }
-
-    // get the current block and check it's blockchain
-	$res = peer_post($url."currentBlock", []);
-    if ($res === false) {
-        _log("Peer $x[hostname] unresponsive url={$url}currentBlock response=$res");
-        // if the peer is unresponsive, mark it as failed and blacklist it for a while
-        Peer::blacklist($x['id'],"Unresponsive");
-        continue;
-    }
-
-	$data = $res['block'];
-    $info = $res['info'];
 
     // peer was responsive, mark it as good
     if ($x['fails'] > 0) {
         Peer::clearFails($x['id']);
     }
 
-    Peer::updateInfo($x['id'], $info);
-
-    _log("Received peer info ".json_encode($info), 3);
-    $data['id'] = san($data['id']);
-    $data['height'] = san($data['height']);
+	$data['id']=$x['block_id'];
+	$data['height']=$x['height'];
 
     if ($current['height'] > 1 && $data['height'] < $current['height'] - 100) {
 	    _log("blacklist peer $url because is 100 blocks behind, our height=".$current['height']." peer_height=".$data['height']);

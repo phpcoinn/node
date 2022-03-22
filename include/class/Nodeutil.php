@@ -335,5 +335,15 @@ class Nodeutil
 		opcache_reset();
 	}
 
+	static function measure() {
+		if(isset($GLOBALS['start_time'])) {
+			$GLOBALS['end_time']=microtime(true);
+			$time = $GLOBALS['end_time'] - $GLOBALS['start_time'];
+			if($time > 1) {
+				_log("Time: url=".$_SERVER['REQUEST_URI']." time=$time");
+			}
+		}
+	}
+
 
 }

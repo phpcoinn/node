@@ -31,6 +31,7 @@ function api_err($data)
 	    header('Access-Control-Allow-Origin: *');
     }
     echo json_encode(["status" => "error", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK]);
+	//Nodeutil::measure();
     exit;
 }
 
@@ -45,6 +46,7 @@ function api_echo($data)
     }
     _log("api_echo: " . json_encode($data), 5);
     echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK]);
+	//Nodeutil::measure();
     exit;
 }
 
@@ -344,6 +346,8 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null)
 		return false;
 	}
 
+	$curl_info = curl_getinfo($ch);
+
 	curl_close ($ch);
 
 
@@ -357,16 +361,17 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null)
 	    $err = $res['data'];
         return false;
     } else {
-    	Peer::storePing($url);
+    	Peer::storePing($url, $curl_info);
     }
     return $res['data'];
 }
 
-function url_get($url) {
+function url_get($url,$timeout = 30) {
 	$ch = curl_init();
 	curl_setopt($ch, CURLOPT_URL,$url);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+	curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 	if(DEVELOPMENT) {
 		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, 0);
 		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, 0);

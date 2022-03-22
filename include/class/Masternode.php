@@ -415,7 +415,7 @@ class Masternode
 
 		if($id === "local") {
 			//start propagate to each peer
-			$peers = Peer::getActive(100, true);
+			$peers = Peer::getPeersForMasternode();
 			if(count($peers)==0) {
 				_log("Masternode: No peers to propagate", 5);
 			} else {

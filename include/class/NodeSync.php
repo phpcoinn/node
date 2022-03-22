@@ -172,9 +172,10 @@ class NodeSync
 
 		}
 
+		Config::setSync(0);
+
 		$this->calculateNodeScore();
 
-		Config::setSync(0);
 		if($syncing) {
 			_log("Blockchain SYNCED");
 		}
@@ -186,29 +187,49 @@ class NodeSync
 		$skipped_peer = 0;
 		$failed_block = 0;
 		$ok_block = 0;
-		$peers = Peer::getActive();
+		$peers = Peer::getPeersForSync();
 		$peers_count = count($peers);
 		$current = Block::current();
 		if ($peers_count) {
 			foreach ($peers as $peer) {
 				$host = $peer['hostname'];
-				$url = $host . "/peer.php?q=";
-				$res = peer_post($url . "currentBlock", []);
-				if ($res === false) {
-					$skipped_peer++;
+				if(empty($peer['block_id'])) {
+					$url = $host . "/peer.php?q=";
+					$res = peer_post($url . "currentBlock", []);
+					if ($res === false) {
+						$skipped_peer++;
+					} else{
+						$data = $res['block'];
+					}
 				} else {
-					$data = $res['block'];
-					if ($data['id'] == $current['id']) {
-						$ok_block++;
+					$data['id']=$peer['block_id'];
+					$data['height']=$peer['height'];
+				}
+
+				if ($data['id'] == $current['id']) {
+					$ok_block++;
+				} else {
+					$height_diff = $data['height']-$current['height'];
+					if(abs($height_diff)>1) {
+						$url = $host . "/peer.php?q=";
+							$res = peer_post($url . "currentBlock", []);
+							if ($res !== false) {
+								$data = $res['block'];
+								$height_diff = $data['height']-$current['height'];
+								$ip=$peer['ip'];
+								Peer::updateHeight($ip, $data);
+							}
+					}
+
+					if(abs($height_diff)>1) {
+						$failed_block++;
 					} else {
-						$height_diff = $data['height']-$current['height'];
-						if(abs($height_diff)>1) {
-							$failed_block++;
-						} else {
-							$ok_block++;
-						}
+						$ok_block++;
 					}
 				}
+
+
+				$data['id']=$peer['block_id'];
 				_log("Node score: Checking peer $host block id=" . $data['id'] .  " height=" . $data['height'] . " current=" . $current['id'] . " height=".$current['height']);
 			}
 		}

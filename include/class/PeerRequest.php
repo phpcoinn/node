@@ -201,15 +201,20 @@ class PeerRequest
 		$ip = self::$ip;
 		$data = self::$data;
 		global $_config;
+
+		$current = Block::current();
+
 		// receive a  new block from a peer
-		_log("Receive new block from a peer $ip : id=".$data['id']." height=".$data['height'],1);
+		_log("Sync: Receive new block from a peer $ip : id=".$data['id']." height=".$data['height']." current=".$current['height']);
+
+		Peer::updateHeight($ip, $data);
+
 		// if sync, refuse all
 		if (Config::isSync()) {
 			_log('['.$ip."] Block rejected due to sync");
 			api_err("sync");
 		}
 		$data['id'] = san($data['id']);
-		$current = Block::current();
 		// block already in the blockchain
 		if ($current['id'] == $data['id']) {
 			_log("block-ok",3);
