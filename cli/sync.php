@@ -325,27 +325,54 @@ if($run_get_more_peers) {
 
 
 $t1= microtime(true);
+
+//check all, but if ping is older contact peer
 foreach ($r as $x) {
-    _log("Contacting peer $x[hostname]",4);
-    $url = $x['hostname']."/peer.php?q=";
 
-    // peer was responsive, mark it as good
-    if ($x['fails'] > 0) {
-        Peer::clearFails($x['id']);
-    }
+	if(!isset($x['block_id'])) {
 
-	$data['id']=$x['block_id'];
-	$data['height']=$x['height'];
+		_log("Contacting peer $x[hostname]",4);
+		$url = $x['hostname']."/peer.php?q=";
 
-    if ($current['height'] > 1 && $data['height'] < $current['height'] - 100) {
-	    _log("blacklist peer $url because is 100 blocks behind, our height=".$current['height']." peer_height=".$data['height']);
-        Peer::blacklistStuck($x['id'],"100 blocks behind");
-        continue;
-    } else {
-        if ($x['stuckfail'] > 0) {
-            Peer::clearStuck($x['id']);
-        }
-    }
+		// get the current block and check it's blockchain
+		$res = peer_post($url."currentBlock", []);
+		if ($res === false) {
+			_log("Peer $x[hostname] unresponsive url={$url}currentBlock response=$res");
+			// if the peer is unresponsive, mark it as failed and blacklist it for a while
+			Peer::blacklist($x['id'],"Unresponsive");
+			continue;
+		}
+
+		$data = $res['block'];
+		$info = $res['info'];
+
+		// peer was responsive, mark it as good
+		if ($x['fails'] > 0) {
+			Peer::clearFails($x['id']);
+		}
+		Peer::updateInfo($x['id'], $info);
+
+		_log("Received peer info ".json_encode($info), 3);
+		$data['id'] = san($data['id']);
+		$data['height'] = san($data['height']);
+
+		if ($current['height'] > 1 && $data['height'] < $current['height'] - 100) {
+			_log("blacklist peer $url because is 100 blocks behind, our height=".$current['height']." peer_height=".$data['height']);
+			Peer::blacklistStuck($x['id'],"100 blocks behind");
+			continue;
+		} else {
+			if ($x['stuckfail'] > 0) {
+				Peer::clearStuck($x['id']);
+			}
+		}
+
+	} else {
+		$data['id']=$x['block_id'];
+		$data['height']=$x['height'];
+	}
+
+
+
     $total_active_peers++;
     // add the hostname and block relationship to an array
     $block_peers[$data['id']][] = $x['hostname'];
