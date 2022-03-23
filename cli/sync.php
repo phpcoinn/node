@@ -298,11 +298,6 @@ if ($total_peers == 0) {
     }
 }
 
-$peerBlocks = [];
-
-// contact all the active peers
-$r=Peer::getActive(10, true);
-
  $i = 0;
 
 $peered = [];
@@ -323,59 +318,84 @@ if($run_get_more_peers) {
 	}
 }
 
+//First get active peers
+$peers = Peer::getPeersForSync();
+//_log("PeerSync: syncing live peers ".count($peers));
+$peerData = [];
+foreach($peers as $peer) {
+	$hostname = $peer['hostname'];
+	if(empty($peer['block_id']) || empty($peer['height'])) {
+//		_log("PeerSync: skip live peer $hostname block_id=".$peer['block_id']." height=".$peer['height']." version=".$peer['version']);
+		continue;
+	}
+	$peerData[$hostname]=[
+		"peer"=>$peer,
+		"id"=>$peer["block_id"],
+		"height"=>$peer["height"]
+	];
+//	_log("PeerSync: add live peer data $hostname block_id=".$peer["block_id"]." height=".$peer["height"]);
+}
+
+$live_peers_count = count($peerData);
+
+//Then get all other peers
+$peers = Peer::getActive(100, true);
+//_log("PeerSync: syncing other peers ".count($peers));
+foreach($peers as $peer) {
+	$hostname = $peer['hostname'];
+	if(isset($peerData[$hostname])) {
+		continue;
+	}
+//	_log("PeerSync: Contacting peer $hostname");
+	$url = $hostname."/peer.php?q=";
+	$res = peer_post($url."currentBlock", [], 5);
+	if ($res === false) {
+//		_log("Peer $hostname unresponsive url={$url}currentBlock response=$res");
+		// if the peer is unresponsive, mark it as failed and blacklist it for a while
+		Peer::blacklist($peer['id'],"Unresponsive");
+		continue;
+	}
+	$data = $res['block'];
+	$info = $res['info'];
+
+	// peer was responsive, mark it as good
+	if ($peer['fails'] > 0) {
+		Peer::clearFails($peer['id']);
+	}
+	Peer::updateInfo($peer['id'], $info);
+	$peerData[$hostname]=[
+		"peer"=>$peer,
+		"id"=>$data['id'],
+		"height"=>$data["height"]
+	];
+//	_log("PeerSync: add other peer data id=".$peer['id']." $hostname block_id=".$data["id"]." height=".$data["height"]);
+}
+
+$peers_count = count($peerData);
+//_log("PeerSync: Get data from total $peers_count live=$live_peers_count");
 
 $t1= microtime(true);
 
+
+$peerStats = [];
+
 //check all, but if ping is older contact peer
-foreach ($r as $x) {
+foreach ($peerData as $hostname => $data) {
 
-	if(!isset($x['block_id'])) {
-
-		_log("Contacting peer $x[hostname]",4);
-		$url = $x['hostname']."/peer.php?q=";
-
-		// get the current block and check it's blockchain
-		$res = peer_post($url."currentBlock", []);
-		if ($res === false) {
-			_log("Peer $x[hostname] unresponsive url={$url}currentBlock response=$res");
-			// if the peer is unresponsive, mark it as failed and blacklist it for a while
-			Peer::blacklist($x['id'],"Unresponsive");
-			continue;
-		}
-
-		$data = $res['block'];
-		$info = $res['info'];
-
-		// peer was responsive, mark it as good
-		if ($x['fails'] > 0) {
-			Peer::clearFails($x['id']);
-		}
-		Peer::updateInfo($x['id'], $info);
-
-		_log("Received peer info ".json_encode($info), 3);
-		$data['id'] = san($data['id']);
-		$data['height'] = san($data['height']);
-
-		if ($current['height'] > 1 && $data['height'] < $current['height'] - 100) {
-			_log("blacklist peer $url because is 100 blocks behind, our height=".$current['height']." peer_height=".$data['height']);
-			Peer::blacklistStuck($x['id'],"100 blocks behind");
-			continue;
-		} else {
-			if ($x['stuckfail'] > 0) {
-				Peer::clearStuck($x['id']);
-			}
-		}
-
+	$peer = $data['peer'];
+	if ($current['height'] > 1 && $data['height'] < $current['height'] - 100) {
+		_log("PeerSync: blacklist peer $hostname because is 100 blocks behind, our height=".$current['height']." peer_height=".$data['height']);
+		Peer::blacklistStuck($peer['id'],"100 blocks behind");
+		continue;
 	} else {
-		$data['id']=$x['block_id'];
-		$data['height']=$x['height'];
+		if ($peer['stuckfail'] > 0) {
+			Peer::clearStuck($peer['id']);
+		}
 	}
-
-
 
     $total_active_peers++;
     // add the hostname and block relationship to an array
-    $block_peers[$data['id']][] = $x['hostname'];
+    $block_peers[$data['id']][] = $hostname;
     // count the number of peers with this block id
     $blocks_count[$data['id']]++;
     // keep block data for this block id
@@ -403,7 +423,7 @@ foreach ($r as $x) {
                 $largest_height = $data['height'];
                 $largest_height_block = $data['id'];
             } else {
-                    // if the blocks have the same number of transactions, choose the one with the highest derived integer from the first 12 hex characters
+				// if the blocks have the same number of transactions, choose the one with the highest derived integer from the first 12 hex characters
                 $no1 = hexdec(substr(coin2hex($largest_height_block), 0, 12));
                 $no2 = hexdec(substr(coin2hex($data['id']), 0, 12));
                 if (gmp_cmp($no1, $no2) == 1) {
@@ -417,8 +437,26 @@ foreach ($r as $x) {
             $largest_height_block = $data['id'];
         }
     }
+
 }
+
+
 $largest_size=$blocks_count[$largest_height_block];
+
+$peerStats['most_common']=$most_common;
+$peerStats['most_common_size']=$most_common_size;
+$peerStats['most_common_height']=$most_common_height;
+$peerStats['largest_height']=$largest_height;
+$peerStats['largest_size']=$largest_size;
+$peerStats['largest_most_common']=$largest_most_common;
+$peerStats['largest_most_common_size']=$largest_most_common_size;
+$peerStats['largest_most_common_height']=$largest_most_common_height;
+$peerStats['total_active_peers']=$total_active_peers;
+$peerStats['current_height']=$current['height'];
+
+//_log("PeerSync: STATS = ".json_encode($blocks_count));
+
+
 _log("Most common: $most_common\n");
 _log( "Most common block size: $most_common_size\n");
 _log( "Most common height: $most_common_height\n\n");
@@ -542,7 +580,6 @@ foreach ($r as $x) {
 	    Peer::clearFails($x['id']);
     }
 }
-
 
 
 NodeSync::recheckLastBlocks();

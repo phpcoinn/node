@@ -263,24 +263,26 @@ class Peer
 		$miner = isset($info['miner']) && $info['miner'] ? 1 : 0 ;
 		$generator = isset($info['generator']) && $info['generator'] ? 1 : 0 ;
 		$masternode = isset($info['masternode']) && $info['masternode'] ? 1 : 0 ;
-		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, appshash=:appshash, score=:score, version=:version,  
+//		_log("PeerSync: update peer data $id info=".json_encode($info));
+		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, block_id=:block_id, appshash=:appshash, score=:score, version=:version,  
 				miner=:miner, generator=:generator, masternode=:masternode
 				WHERE id=:id",
 			[":id" => $id, ':height'=>$info['height'], ':appshash'=>$info['appshash'],
 				':score'=>$info['score'], ':version' => $info['version'],
-				':miner' => $miner, ':generator' => $generator, ':masternode'=>$masternode]);
+				':miner' => $miner, ':generator' => $generator, ':masternode'=>$masternode,
+				':block_id' => $info['block']]);
 	}
 
 	static function updatePeerInfo($ip, $info) {
 		global $db;
-		//_log("Peer request: update info from $ip ".json_encode($info));
+//		_log("PeerSync: Peer request: update info from $ip ".json_encode($info));
 		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, block_id=:block_id, appshash=:appshash, score=:score, version=:version,  
 				miner=:miner, generator=:generator, masternode=:masternode
 				WHERE ip=:ip",
 			[":ip" => $ip, ':height'=>$info['height'], ':appshash'=>$info['appshash'],
 				':score'=>$info['score'], ':version' => $info['version'],
 				':miner' => $info['miner'], ':generator' => $info['generator'], ':masternode'=>$info['masternode'],
-				':block_id' => $info['block_id']]);
+				':block_id' => $info['block']]);
 	}
 
 	static function storePing($url, $curl_info) {
