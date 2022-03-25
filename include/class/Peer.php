@@ -300,7 +300,7 @@ class Peer
 	{
 		global $db;
 		$x = $db->row(
-			"SELECT id,hostname FROM peers WHERE reserve=0 AND blacklisted<".DB::unixTimeStamp()." AND hostname=:hostname",
+			"SELECT id,hostname FROM peers WHERE hostname=:hostname",
 			[":hostname" => $hostName]
 		);
 		return $x;

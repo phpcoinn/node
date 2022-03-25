@@ -382,8 +382,20 @@ $peerStats = [];
 //check all, but if ping is older contact peer
 foreach ($peerData as $hostname => $data) {
 
+	_log("PeerSync: check blacklist $hostname height=".$data['height']." id=".$data['id'],5);
+
 	$peer = $data['peer'];
-	if ($current['height'] > 1 && $data['height'] < $current['height'] - 100) {
+	if($current['height'] >= $data['height']) {
+		$block = Block::get($data['height']);
+		if(!empty($data['id']) && $block['id'] != $data['id']) {
+			_log("PeerSync: blacklist peer $hostname because of invalid block at height".$data['height']." my=".$block['id']." peer=".$data['id']);
+			Peer::blacklist($peer['id'], "Invalid block ".$data['height']);
+			continue;
+		}
+	}
+
+
+	if ($current['height'] > 1 && $data['height'] >1 && $data['height'] < $current['height'] - 100) {
 		_log("PeerSync: blacklist peer $hostname because is 100 blocks behind, our height=".$current['height']." peer_height=".$data['height']);
 		Peer::blacklistStuck($peer['id'],"100 blocks behind");
 		continue;
