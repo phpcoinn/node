@@ -454,7 +454,12 @@ class PeerRequest
 				_log("No response from repo server: $err",2);
 				api_err("No response from repo server: $err");
 			} else {
-				Nodeutil::downloadApps();
+				$res = Nodeutil::downloadApps($error);
+				if($res) {
+					api_echo("OK");
+				} else {
+					api_err("Error downloading apps: $error");
+				}
 			}
 		}
 	}

@@ -214,6 +214,7 @@ if ($type == "transaction") {
 }
 
 if($type == "apps") {
+	$hash = $argv[2];
 	_log("Propagating apps change",3);
 	$peers = Peer::getAll();
 	if(count($peers)==0) {
@@ -221,10 +222,21 @@ if($type == "apps") {
 	} else {
 		foreach ($peers as $peer) {
 			$url = $peer['hostname']."/peer.php?q=updateApps";
+			$hostname = base64_encode($peer['hostname']);
+			$dir = ROOT . "/cli";
+			$cmd = "php $dir/propagate.php appspeer $hash $hostname";
 			_log("Propagating to peer: ".$url,3);
-			$res = peer_post($url, ["hash"=>$argv[2]]);
+			Nodeutil::runSingleProcess($cmd);
 		}
 	}
+}
+
+if($type == "appspeer") {
+	$hash = $argv[2];
+	$hostname = $argv[3];
+	$hostname = base64_decode($hostname);
+	$url = $hostname."/peer.php?q=updateApps";
+	$res = peer_post($url, ["hash"=>$hash]);
 }
 
 

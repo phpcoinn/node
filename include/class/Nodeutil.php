@@ -183,7 +183,7 @@ class Nodeutil
 		return $ip;
 	}
 
-	static function downloadApps() {
+	static function downloadApps(&$error) {
 		global $_config;
 		if(!defined("APPS_REPO_SERVER")) {
 			if($_config['testnet'] ) {
@@ -203,14 +203,18 @@ class Nodeutil
 		$res = peer_post(APPS_REPO_SERVER."/peer.php?q=getApps", [], 30, $err);
 		_log("Contancting repo server response=".json_encode($res),3);
 		if($res === false) {
-			_log("No response from repo server err=$err",2);
+			$error = "No response from repo server err=$err";
+			_log($error,2);
+			return false;
 		} else {
 			$hash = $res['hash'];
 			$signature = $res['signature'];
 			$verify = Account::checkSignature($hash, $signature, APPS_REPO_SERVER_PUBLIC_KEY);
 			_log("Verify repo response hash=$hash signature=$signature verify=$verify",3);
 			if(!$verify) {
-				_log("Not verified signature from repo server",2);
+				$error = "Not verified signature from repo server";
+				_log($error,2);
+				return false;
 			} else {
 				$link = APPS_REPO_SERVER."/apps.php";
 				_log("Downloading archive file from link $link",3);
@@ -229,8 +233,9 @@ class Nodeutil
 						_log("Downloaded empty file from repo server");
 					} else {
 						if(file_exists(self::getAppsLockFile())) {
-							_log("Apps lock file exists - can not update");
-							return;
+							$error = "Apps lock file exists - can not update";
+							_log($error);
+							return false;
 						}
 						$lock = fopen(self::getAppsLockFile(), "w");
 						fclose($lock);
@@ -265,6 +270,8 @@ class Nodeutil
 				}
 			}
 		}
+
+		return true;
 	}
 
 	static function calcAppsHash() {
@@ -341,9 +348,19 @@ class Nodeutil
 			$time = $GLOBALS['end_time'] - $GLOBALS['start_time'];
 			if($time > 1) {
 				_log("Time: url=".$_SERVER['REQUEST_URI']." time=$time");
+				foreach($GLOBALS['measure'] as $section => $t) {
+					_log("Time: url=".$_SERVER['REQUEST_URI']." section=$section time=$t");
+				}
 			}
 		}
 	}
 
+	static function runSingleProcess($cmd) {
+		$res = shell_exec("ps uax | grep '$cmd' | grep -v grep");
+		if(!$res) {
+			$exec_cmd = "$cmd > /dev/null 2>&1  &";
+			system($exec_cmd);
+		}
+	}
 
 }
