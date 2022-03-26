@@ -439,19 +439,37 @@ class PeerRequest
 	}
 
 	static function updateApps() {
+
+		global $_config;
+		if(!defined("APPS_REPO_SERVER")) {
+			if($_config['testnet'] ) {
+				define("APPS_REPO_SERVER", "https://repo.testnet.phpcoin.net:8001");
+			} else {
+				define("APPS_REPO_SERVER", "https://repo.phpcoin.net");
+			}
+		}
+		if(!defined("APPS_REPO_SERVER_PUBLIC_KEY")) {
+			if($_config['testnet'] ) {
+				define("APPS_REPO_SERVER_PUBLIC_KEY", "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwUKtSuRJEs8RrRrkZbND1WxVNomPtvowAo5hzQr6xe2TUyHYLnzu2ubVMfBAYM4cBZJLckvxWenHB2nULzmU8VHz");
+			} else {
+				define("APPS_REPO_SERVER_PUBLIC_KEY", "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCyHWjnG15LHdWRRbNEmAPiYcyCqFZm1VKi8QziKYbMtrXUw8rqhrS3EEoyJxXASNZid9CsB1dg64u5sYgnUsrZg7C");
+			}
+		}
+
 		$data = self::$data;
 		$hash = $data['hash'];
 		$appsHashFile = Nodeutil::getAppsHashFile();
 		$appsHash = file_get_contents($appsHashFile);
-		_log("received update apps hash=$hash localHash=$appsHash",3);
-		if($appsHash == $hash) {
-			_log("No need to update apps",3);
+		_log("PeerApps: received update apps hash=$hash localHash=$appsHash",3);
+		if($appsHash == $hash && false) {
+			_log("PeerApps: No need to update apps",3);
 			api_err("No need to update apps");
 		} else {
-			$res = peer_post(APPS_REPO_SERVER."/peer.php?q=getApps",[],30, $err);
-			_log("Contancting repo server response=".json_encode($res),3);
+			$url = APPS_REPO_SERVER."/peer.php?q=getApps";
+			$res = peer_post($url,[],30, $err);
+			_log("PeerApps: Contancting repo server $url response=".json_encode($res),3);
 			if($res === false) {
-				_log("No response from repo server: $err",2);
+				_log("PeerApps: No response from repo server: $err",2);
 				api_err("No response from repo server: $err");
 			} else {
 				$res = Nodeutil::downloadApps($error);

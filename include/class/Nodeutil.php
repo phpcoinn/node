@@ -183,7 +183,7 @@ class Nodeutil
 		return $ip;
 	}
 
-	static function downloadApps(&$error) {
+	static function downloadApps(&$error=null) {
 		global $_config;
 		if(!defined("APPS_REPO_SERVER")) {
 			if($_config['testnet'] ) {
