@@ -213,13 +213,13 @@ class PeerRequest
 		$current = Block::current();
 
 		// receive a  new block from a peer
-		_log("Sync: Receive new block from a peer $ip : id=".$data['id']." height=".$data['height']." current=".$current['height']);
+		_log("Sync: Receive new block from a peer $ip : id=".$data['id']." height=".$data['height']." current=".$current['height'], 5);
 
 //		Peer::updateHeight($ip, $data);
 
 		// if sync, refuse all
 		if (Config::isSync()) {
-			_log('['.$ip."] Block rejected due to sync");
+			_log('['.$ip."] Block rejected due to sync", 5);
 			api_err("sync");
 		}
 		$data['id'] = san($data['id']);
@@ -294,7 +294,7 @@ class PeerRequest
 		$block->prevBlockId = $current['id'];
 
 		if (Config::isSync()) {
-			_log('['.$ip."] Block rejected due to sync");
+			_log('['.$ip."] Block rejected due to sync", 5);
 			api_err("sync");
 		}
 		$res = $block->add();

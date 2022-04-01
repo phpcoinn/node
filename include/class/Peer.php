@@ -323,7 +323,7 @@ class Peer
 		global $db;
 		$height = $data['height'];
 		$block_id = $data['id'];
-		_log("Sync: update peer height ip=$ip height=$height block=$block_id");
+		_log("Sync: update peer height ip=$ip height=$height block=$block_id", 5);
 		$sql="update peers set ping = ".DB::unixTimeStamp().", height = :height, block_id=:block_id where ip=:ip";
 		$res =$db->run($sql, [":height"=>$height, ":ip"=>$ip, ":block_id"=>$block_id]);
 		return $res;

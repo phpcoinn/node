@@ -367,9 +367,9 @@ class Masternode
 		if($masternode->signature) {
 			$res = $masternode->verify($height+1);
 			if($res) {
-				_log("Masternode: Local signature verified");
+				_log("Masternode: Local signature verified", 5);
 			} else {
-				_log("Masternode: Signature not verified for height ".($height+1));
+				_log("Masternode: Signature not verified for height ".($height+1), 5);
 				$sign = true;
 			}
 		} else {
@@ -389,7 +389,7 @@ class Masternode
 			}
 		}
 
-		_log("Masternode: Call propagate local mastenode win_height={$masternode->win_height} blockchain height=$height");
+		_log("Masternode: Call propagate local mastenode win_height={$masternode->win_height} blockchain height=$height", 5);
 
 		$dir = ROOT."/cli";
 		$res = shell_exec("ps uax | grep '$dir/propagate.php masternode local' | grep -v grep");
@@ -433,7 +433,7 @@ class Masternode
 		} else {
 			//propagate to single peer
 			$peer = base64_decode($id);
-			_log("Masternode: propagating masternode to $peer pid=".getmypid());
+			_log("Masternode: propagating masternode to $peer pid=".getmypid(), 5);
 			$url = $peer."/peer.php?q=updateMasternode";
 			$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 30, $err);
 			_log("Masternode: Propagating to peer: ".$peer." res=".json_encode($res). " err=$err",5);
@@ -482,7 +482,7 @@ class Masternode
 			$mn_height=$data['height'];
 			$height = Block::getHeight();
 
-			_log("Masternode: updateMasternode ip=$ip mn_height=$mn_height height=$height masternode=" . $masternode['public_key']. " win_height=".$masternode['win_height']. " signature=".$masternode['signature']);
+			_log("Masternode: updateMasternode ip=$ip mn_height=$mn_height height=$height masternode=" . $masternode['public_key']. " win_height=".$masternode['win_height']. " signature=".$masternode['signature'], 5);
 
 			if(!Masternode::allowedMasternodes($height)) {
 				throw new Exception("Masternode: Not allowed masternodes");
@@ -607,7 +607,7 @@ class Masternode
 		try {
 
 			if($block['masternode']) {
-				_log("Masternode: updating winner for block $height id=".$block['masternode']);
+				_log("Masternode: updating winner for block $height id=".$block['masternode'], 5);
 				$mnPublicKey = Account::publicKey($block['masternode']);
 				$res = Masternode::updateWinner($height, $mnPublicKey);
 				if($res === false) {

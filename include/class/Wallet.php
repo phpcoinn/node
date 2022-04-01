@@ -272,8 +272,9 @@ class Wallet
 		}
 		$date=time();
 		if(empty($msg)) $msg = "";
-		$info=$val."-".$fee."-".$address."-".$msg."-".TX_TYPE_SEND."-".$this->public_key."-".$date;
-		$signature=ec_sign($info, $this->private_key);
+
+		$transaction = new Transaction($this->public_key,$address,$val,TX_TYPE_SEND,$date,$msg);
+		$signature = $transaction->sign($this->private_key);
 
 		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
 			array("dst" => $address, "val" => $val, "signature" => $signature,

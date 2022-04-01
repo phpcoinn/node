@@ -230,7 +230,7 @@ class NodeSync
 
 
 				$data['id']=$peer['block_id'];
-				_log("Node score: Checking peer $host block id=" . $data['id'] .  " height=" . $data['height'] . " current=" . $current['id'] . " height=".$current['height']);
+				_log("Node score: Checking peer $host block id=" . $data['id'] .  " height=" . $data['height'] . " current=" . $current['id'] . " height=".$current['height'], 5);
 			}
 		}
 
@@ -288,7 +288,7 @@ class NodeSync
 
 				if (!$block->mine()) {
 					Config::setSync(1);
-					_log("Invalid block detected. Deleting everything after $data[height] - $data[id]");
+					_log("Invalid block detected. Deleting everything after height ".$i);
 					sleep(10);
 					$all_blocks_ok = false;
 					Block::delete($i);

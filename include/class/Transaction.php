@@ -302,12 +302,15 @@ class Transaction
 		];
 
 
-		$db->run(
+		$res = $db->run(
 			"INSERT into mempool  
 			    (peer, id, public_key, height, src, dst, val, fee, signature, type, message, `date`)
 			    values (:peer, :id, :public_key, :height, :src, :dst, :val, :fee, :signature, :type, :message, :date)",
 			$bind
 		);
+		if($res === false) {
+			return false;
+		}
 		return true;
 	}
 
@@ -617,7 +620,7 @@ class Transaction
 				$val_check = num($miner);
 			}
 			if(empty($val_check)) {
-				throw new Exception("Reward transaction no value");
+				throw new Exception("Reward transaction no value id=".$this->id, 5);
 			}
 			if(num($this->val) != $val_check) {
 				throw new Exception("Reward transaction not valid: val=".$this->val." val_check=$val_check");
@@ -874,17 +877,22 @@ class Transaction
 				Masternode::checkSend($this);
 			}
 
+			$res = $this->add_mempool("local");
+			if(!$res) {
+				throw new Exception("Error adding tansaction to mempool");
+			}
+			$hashp=escapeshellarg(san($hash));
+			$dir = dirname(dirname(__DIR__)) . "/cli";
+			system("php $dir/propagate.php transaction $hashp > /dev/null 2>&1  &");
+			return $hash;
+
 		} catch (Exception $e) {
 			$error = $e->getMessage();
 			_log($error);
 			return false;
 		}
 
-	    $this->add_mempool("local");
-	    $hashp=escapeshellarg(san($hash));
-	    $dir = dirname(dirname(__DIR__)) . "/cli";
-	    system("php $dir/propagate.php transaction $hashp > /dev/null 2>&1  &");
-	    return $hash;
+
     }
 
     static function getCount() {

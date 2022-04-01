@@ -306,7 +306,7 @@ $peer_cnt = 0;
 $min = intval(date("i"));
 $run_get_more_peers = $min % 5 == 0;
 
-_log("Sync: check run_get_more_peers=$run_get_more_peers");
+_log("Sync: check run_get_more_peers=$run_get_more_peers", 5);
 
 if($run_get_more_peers) {
 	$dir = ROOT."/cli";
@@ -469,17 +469,17 @@ $peerStats['current_height']=$current['height'];
 //_log("PeerSync: STATS = ".json_encode($blocks_count));
 
 
-_log("Most common: $most_common\n");
-_log( "Most common block size: $most_common_size\n");
-_log( "Most common height: $most_common_height\n\n");
-_log( "Longest chain height: $largest_height\n");
-_log( "Longest chain size: $largest_size\n\n");
-_log( "Larger Most common: $largest_most_common\n");
-_log( "Larger Most common block size: $largest_most_common_size\n");
-_log( "Larger Most common height: $largest_most_common_height\n\n");
-_log( "Total size: $total_active_peers\n\n");
+_log("Most common: $most_common", 5);
+_log( "Most common block size: $most_common_size",5);
+_log( "Most common height: $most_common_height",5);
+_log( "Longest chain height: $largest_height",5);
+_log( "Longest chain size: $largest_size",5);
+_log( "Larger Most common: $largest_most_common",5);
+_log( "Larger Most common block size: $largest_most_common_size",5);
+_log( "Larger Most common height: $largest_most_common_height",5);
+_log( "Total size: $total_active_peers",5);
 
-_log( "Current block: $current[height]\n");
+_log( "Current block: $current[height]",5);
 
 // if this is the node that's ahead, and other nodes are not catching up, pop 200
 

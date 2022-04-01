@@ -494,6 +494,12 @@ class Api
 		$generator = isset($_config['generator_public_key']) && $_config['generator'] ? Account::getAddress($_config['generator_public_key']) : null;
 		$miner = isset($_config['miner_public_key']) && $_config['miner'] ? Account::getAddress($_config['miner_public_key']) : null;
 		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'] ? Account::getAddress($_config['masternode_public_key']) : null;
+
+		$avgBlockTime10 = Blockchain::getAvgBlockTime(10);
+		$avgBlockTime100 = Blockchain::getAvgBlockTime(100);
+
+		$hashRate10 = round(Blockchain::getHashRate(10),2);
+		$hashRate100 = round(Blockchain::getHashRate(100),2);
 		api_echo([
 			'hostname'     => $hostname,
 			'version'      => VERSION,
@@ -510,6 +516,12 @@ class Api
 			'generator'    => $generator,
 			'miner'        => $miner,
 			'masternode'   => $masternode,
+			'totalSupply'  => TOTAL_SUPPLY,
+			'avgBlockTime10'  => $avgBlockTime10,
+			'avgBlockTime100'  => $avgBlockTime100,
+			'hashRate10'=>$hashRate10,
+			'hashRate100'=>$hashRate100,
+			'lastBlockTime'=>$current['date']
 		]);
 	}
 

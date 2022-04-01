@@ -152,7 +152,7 @@ if ($type == "block") {
             $response = peer_post($hostname."/peer.php?q=submitBlock", $data);
             if ($response != "block-ok") {
                 echo "Block $i not accepted. Exiting.\n";
-                _log("Block $i not accepted. Exiting");
+                _log("Block $i not accepted. Exiting", 5);
                 exit;
             }
             _log("Block\t$i\t accepted");
@@ -174,7 +174,7 @@ if ($type == "block") {
         _log("caliing propagate: php $dir/sync.php microsync '$ip'  > /dev/null 2>&1  &",3);
         system("php $dir/sync.php microsync '$ip'  > /dev/null 2>&1  &");
     } else {
-    	_log("Block not accepted ".$response." err=".$err);
+    	_log("Block not accepted ".$response." err=".$err, 5);
         echo "Block not accepted!\n";
     }
 }

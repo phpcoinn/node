@@ -922,7 +922,7 @@ class Util
 
 		global $_config;
 
-		_log("Sync: Util: get-more-peers");
+		_log("Sync: Util: get-more-peers", 5);
 		$peers=Peer::getPeersForSync();
 
 		$peered = [];
