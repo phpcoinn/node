@@ -500,6 +500,7 @@ class Api
 
 		$hashRate10 = round(Blockchain::getHashRate(10),2);
 		$hashRate100 = round(Blockchain::getHashRate(100),2);
+		$circulation = Account::getCirculation();
 		api_echo([
 			'hostname'     => $hostname,
 			'version'      => VERSION,
@@ -517,6 +518,7 @@ class Api
 			'miner'        => $miner,
 			'masternode'   => $masternode,
 			'totalSupply'  => TOTAL_SUPPLY,
+			'currentSupply'  => $circulation,
 			'avgBlockTime10'  => $avgBlockTime10,
 			'avgBlockTime100'  => $avgBlockTime100,
 			'hashRate10'=>$hashRate10,
