@@ -1,6 +1,4 @@
 #!/bin/bash
-# setup node on ubuntu server 21.04, 20.04, 18.04
-# one liner: curl -s https://raw.githubusercontent.com/phpcoinn/node/main/scripts/install_node.sh | bash
 
 echo "PHPCoin node Installation"
 echo "==================================================================================================="
@@ -60,28 +58,4 @@ mkdir web/apps
 chown -R www-data:www-data tmp
 chown -R www-data:www-data web/apps
 
-export IP=$(curl -s http://whatismyip.akamai.com/)
-echo "PHPCoin: open start page"
-echo "==================================================================================================="
-curl "http://127.0.0.1" > /dev/null 2>&1
-
-sleep 5
-mysql -e "update config set val='http://$IP' where cfg ='hostname'" $DB_NAME
-
-echo "PHPCoin: import blockchain"
-echo "==================================================================================================="
-cd /var/www/phpcoin/tmp
-wget -q https://phpcoin.net/download/blockchain.sql.zip
-unzip blockchain.sql.zip
-cd /var/www/phpcoin
-php cli/util.php importdb tmp/blockchain.sql
-
-echo "PHPCoin: synchronize apps"
-echo "==================================================================================================="
-php cli/util.php download-apps
-
-rm -rf /var/www/phpcoin/tmp/sync-lock
-
-echo "==================================================================================================="
-echo "PHPCoin: Install finished"
-echo "PHPCoin: Open your node at http://$IP"
+touch first-run
