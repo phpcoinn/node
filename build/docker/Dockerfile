@@ -42,6 +42,6 @@ RUN echo '<VirtualHost *:80>\n\
 && chown -R www-data:www-data web/apps \
 && touch first-run
 
-COPY scripts/docker_start.sh docker_start.sh
+COPY docker_start.sh docker_start.sh
 RUN chmod +x docker_start.sh
 CMD /docker_start.sh
