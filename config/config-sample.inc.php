@@ -95,7 +95,7 @@ $_config['use_official_blacklist'] = true;
 */
 
 // Recheck the last blocks
-$_config['sync_recheck_blocks'] = 0;
+$_config['sync_recheck_blocks'] = 10;
 
 // The interval to run the sync in seconds
 $_config['sync_interval'] = 60;
