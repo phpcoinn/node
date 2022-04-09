@@ -24,8 +24,9 @@ if test -f "$FILE"; then
     cd /var/www/phpcoin
     php cli/util.php importdb tmp/blockchain.sql
     rm first-run
+    > tmp/phpcoin.log
 fi
 
 php cli/util.php download-apps
 
-tail -f /var/www/phpcoin/tmp/phpcoin.log
+bash
