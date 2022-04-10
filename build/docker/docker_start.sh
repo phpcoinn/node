@@ -9,6 +9,9 @@ service apache2 start
 cd /var/www/phpcoin
 git pull origin main
 
+chown -R www-data:www-data tmp
+chown -R www-data:www-data web/apps
+
 FILE=first-run
 if test -f "$FILE"; then
     echo "First run node"
