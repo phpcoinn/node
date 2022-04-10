@@ -30,4 +30,7 @@ if test -f "$FILE"; then
 fi
 
 php cli/util.php download-apps
+
+rm -rf /var/www/phpcoin/tmp/sync-lock
+
 tail -f tmp/phpcoin.log
