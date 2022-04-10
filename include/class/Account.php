@@ -349,4 +349,11 @@ class Account
 		return num($res);
 	}
 
+	static function checkBalances() {
+		global $db;
+		$sql="select count(*) as cnt from accounts a where a.balance < 0";
+		$res =$db->single($sql);
+		return $res == 0;
+	}
+
 }

@@ -596,31 +596,6 @@ foreach ($r as $x) {
 
 NodeSync::recheckLastBlocks();
 
-if ($_config['masternode']==true&&!empty($_config['masternode_public_key'])&&!empty($_config['masternode_voting_public_key'])&&!empty($_config['masternode_voting_private_key'])) {
-    echo "Masternode votes\n";
-    $r=$db->run("SELECT * FROM masternode WHERE status=1 ORDER by ".DB::random()." LIMIT 3");
-    foreach ($r as $x) {
-        $blacklist=0;
-        $x['ip']=san_ip($x['ip']);
-        $ip = $x['ip'];
-//	    $ip = "peer1.localhost:8000";
-        echo "Testing masternode: $ip\n";
-        $f=file_get_contents("http://$ip/api.php?q=currentBlock");
-        if ($f) {
-            $res=json_decode($f, true);
-            $res=$res['data'];
-            if ($res['height']<$current['height']-10080) {
-                $blacklist=1;
-            }
-            echo "Masternode Height: ".$res['height']."\n";
-        } else {
-            echo "---> Unresponsive\n";
-            $blacklist=1;
-        }
-
-    }
-}
-
 Nodeutil::cleanTmpFiles();
 
 Minepool::deleteOldEntries();

@@ -317,7 +317,7 @@ class Wallet
 		}
 
 		if(DEVELOPMENT) {
-			return "https://spectre:8000";
+			return "http://spectre:8001";
 		} else {
 			return "https://node1.phpcoin.net"; //$peer;
 		}

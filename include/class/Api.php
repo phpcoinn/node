@@ -321,7 +321,6 @@ class Api
 	 *
 	 * @apiParam {numeric} [height] Block Height
 	 * @apiParam {string} [block] Block id
-	 * @apiParam {boolean} [includeMiningRewards] Include mining rewards
 	 *
 	 * @apiSuccess {string} block  Block ID
 	 * @apiSuccess {numeric} confirmations Number of confirmations
@@ -341,12 +340,8 @@ class Api
 	static function getBlockTransactions($data) {
 		$height = san($data['height']);
 		$block = san($data['block']);
-		$includeMiningRewards = (
-			isset($data['includeMiningRewards']) &&
-			!($data['includeMiningRewards'] === '0' || $data['includeMiningRewards'] === 'false')
-		);
 
-		$ret = Transaction::get_transactions($height, $block, $includeMiningRewards);
+		$ret = Transaction::get_transactions($height, $block);
 
 		if ($ret === false) {
 			api_err("Invalid block");

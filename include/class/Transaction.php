@@ -736,7 +736,7 @@ class Transaction
     }
 
     // return the transactions for a specific block id or height
-    public static function get_transactions($height = "", $id = "", $includeMiningRewards = false)
+    public static function get_transactions($height = "", $id = "")
     {
         global $db;
         $current = Block::current();
@@ -745,11 +745,10 @@ class Transaction
         if (empty($id) && empty($height)) {
             return false;
         }
-        $typeLimit = $includeMiningRewards ? TX_TYPE_REWARD : TX_TYPE_SEND;
         if (!empty($id)) {
-            $r = $db->run("SELECT * FROM transactions WHERE block=:id AND type >= :type", [":id" => $id, ":type" => $typeLimit]);
+            $r = $db->run("SELECT * FROM transactions WHERE block=:id", [":id" => $id]);
         } else {
-            $r = $db->run("SELECT * FROM transactions WHERE height=:height AND type >= :type", [":height" => $height, ":type" => $typeLimit]);
+            $r = $db->run("SELECT * FROM transactions WHERE height=:height", [":height" => $height]);
         }
         $res = [];
         foreach ($r as $x) {
@@ -797,7 +796,7 @@ class Transaction
     }
 
     static function getForBlock($height) {
-		return Transaction::get_transactions($height, "", true);
+		return Transaction::get_transactions($height, "");
     }
 
 	static function getById($id) {
@@ -846,12 +845,12 @@ class Transaction
 		    }
 
 		    $balance = $db->single("SELECT balance FROM accounts WHERE id=:id", [":id" => $this->src]);
-		    if ($balance < $this->val + $this->fee) {
+		    if (floatval($balance) < $this->val + $this->fee) {
 			    throw new Exception("Not enough funds, expected=".($this->val + $this->fee)  . " balance=$balance");
 		    }
 
 			$memspent = Mempool::getSourceMempoolBalance($this->src);
-		    if ($balance - $memspent < $this->val + $this->fee) {
+		    if (floatval($balance) - floatval($memspent) < $this->val + $this->fee) {
 			    throw new Exception("Not enough funds (mempool) expected=".($this->val + $this->fee). " balance=$balance mempool=$memspent");
 		    }
 
@@ -883,7 +882,8 @@ class Transaction
 			}
 			$hashp=escapeshellarg(san($hash));
 			$dir = dirname(dirname(__DIR__)) . "/cli";
-			system("php $dir/propagate.php transaction $hashp > /dev/null 2>&1  &");
+			$cmd = "php $dir/propagate.php transaction $hashp > /dev/null 2>&1  &";
+			system($cmd);
 			return $hash;
 
 		} catch (Exception $e) {

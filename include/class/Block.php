@@ -550,6 +550,11 @@ class Block
 	                }
 	            }
 
+				$res = Account::checkBalances();
+				if(!$res) {
+					throw new Exception("Account balances not valid");
+				}
+
 		        if(Masternode::isLocalMasternode()) {
 			        Masternode::processBlock();
 		        }
@@ -608,7 +613,6 @@ class Block
     // delete all blocks >= height
     public static function delete($height)
     {
-        global $_config;
         if ($height < 2) {
 	        _log("Genesis blosk is invalid. Must clean db");
 	        return false;
@@ -620,67 +624,48 @@ class Block
         if (count($r) == 0) {
             return true;
         }
+	    $db->lockTables();
         $db->beginTransaction();
-        $db->lockTables();
 
 	    $current = Block::current();
 
-        foreach ($r as $x) {
-            $res = Transaction::reverse($x['id']);
-            if ($res === false) {
-                _log("A transaction could not be reversed. Delete block failed.");
-                $db->rollback();
-                // the blockchain has some flaw, we should resync from scratch
-           
-                if (($current['date']<time()-(3600*48)) && $_config['auto_resync']!==false) {
-                    _log("Blockchain corrupted. Resyncing from scratch.");
-                    $db->fkCheck(false);
-                    $tables = ["accounts", "transactions", "mempool", "masternode","blocks"];
-                    foreach ($tables as $table) {
-                        $db->truncate($table);
-                    }
-                    $db->fkCheck(true);
-                    $db->unlockTables();
-                            
-              
-					Config::setSync(0);
-                    @rmdir(SYNC_LOCK_PATH);
-	                $dir = ROOT."/cli";
-                    system("php $dir/sync.php  > /dev/null 2>&1  &");
-                    exit;
-                }
-                $db->unlockTables();
-                return false;
-            }
+		try {
 
-            $res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $x['id']]);
-            if ($res != 1) {
-                _log("Delete block failed.");
-                $db->rollback();
-                $db->unlockTables();
-                return false;
-            } else {
-            	_log("Deleted block id=".$x['id']." height=".$x['height'],1);
-            }
+			foreach ($r as $x) {
+				$res = Transaction::reverse($x['id']);
+				if ($res === false) {
+					_log("A transaction could not be reversed. Delete block failed.");
+					throw new Exception("A transaction could not be reversed");
+				}
+			}
+
+			$res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $x['id']]);
+			if ($res != 1) {
+				throw new Exception("Delete block failed.");
+			} else {
+				_log("Deleted block id=".$x['id']." height=".$x['height'],1);
+			}
 
 
-	        $res = Masternode::reverseBlock($current);
-	        if(!$res) {
-		        _log("Reverse masternode winner failed");
-		        $db->rollback();
-		        $db->unlockTables();
-		        return false;
-	        }
+			$res = Masternode::reverseBlock($current);
+			if(!$res) {
+				_log("Reverse masternode winner failed");
+				throw new Exception("Reverse masternode winner failed");
+			}
 
+			if($db->inTransaction()) {
+				$db->commit();
+				$db->unlockTables();
+			}
+			return true;
+		} catch (Exception $e) {
+			if($db->inTransaction()) {
+				$db->rollback();
+				$db->unlockTables();
+			}
+			return false;
+		}
 
-//            $this->reverse_log($x['id']);
-        }
-
-      
-
-        $db->commit();
-        $db->unlockTables();
-        return true;
     }
 
     public function sign($key)
@@ -910,6 +895,10 @@ class Block
 
 			if(count($data)==0 && $height>1) {
 				throw new Exception("No transactions");
+			}
+
+			if(count($data) != $this->transactions) {
+				throw new Exception("Invalid number of transactions in block");
 			}
 
 			$version = $this->version;

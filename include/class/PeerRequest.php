@@ -147,8 +147,8 @@ class PeerRequest
 		}
 
 		// validate transaction data
-		if (!$tx->verify()) {
-			api_err("Invalid transaction");
+		if (!$tx->verify(0, $txerr)) {
+			api_err("Invalid transaction: $txerr");
 		}
 		$hash = $tx->id;
 		// make sure it's not already in mempool
@@ -297,11 +297,11 @@ class PeerRequest
 			_log('['.$ip."] Block rejected due to sync", 5);
 			api_err("sync");
 		}
-		$res = $block->add();
+		$res = $block->add(false, $error);
 
 		if (!$res) {
-			_log('['.$ip."] invalid block data - $data[height]",1);
-			api_err("invalid-block-data");
+			_log('['.$ip."] invalid block data - $data[height] Error:$error",1);
+			api_err("invalid-block-data $error");
 		}
 
 		$last_block = Block::export("", $data['height']);
