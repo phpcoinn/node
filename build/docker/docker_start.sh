@@ -15,9 +15,9 @@ chown -R www-data:www-data web/apps
 FILE=first-run
 if test -f "$FILE"; then
     echo "First run node"
-    php cli/util.php
     export IP=$(curl -s http://whatismyip.akamai.com/)
-    mysql -e "update config set val='http://$IP' where cfg ='hostname'" $DB_NAME
+    curl "http://$IP" > /dev/null 2>&1
+    sleep 5
 
     echo "PHPCoin: import blockchain"
     echo "==================================================================================================="
@@ -27,9 +27,7 @@ if test -f "$FILE"; then
     cd /var/www/phpcoin
     php cli/util.php importdb tmp/blockchain.sql
     rm first-run
-    > tmp/phpcoin.log
 fi
 
 php cli/util.php download-apps
-
-bash
+tail -f tmp/phpcoin.log
