@@ -5,6 +5,8 @@ ARG DB_NAME=phpcoin
 ARG DB_USER=phpcoin
 ARG DB_PASS=phpcoin
 
+EXPOSE 80
+
 RUN export DB_NAME=phpcoin \
 && export DB_USER=phpcoin \
 && export DB_PASS=phpcoin \
