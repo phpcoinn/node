@@ -233,19 +233,44 @@ class PeerRequest
 			api_err("block in the future");
 		}
 
+		//_log("DFSH: current_height=".$current['height']." data_height=".$data['height']." current_id=".$current['id']." data_id=".$data['id']);
+
 		if ($current['height'] == $data['height'] && $current['id'] != $data['id']) {
 			// different forks, same height
 			$accept_new = false;
-			_log("DIFFERENT FORKS SAME HEOGHT", 3);
+			//_log("DFSH: DIFFERENT FORKS SAME HEIGHT", 3);
 			_log("data ".json_encode($data),3);
 			_log("current ".json_encode($current),3);
 
 			//wins block with lowest elapsed time - highest difficulty
 			$difficulty1 = $current['difficulty'];
 			$difficulty2 = $data['difficulty'];
+			//_log("DFSH: compare difficulty: difficulty1=$difficulty1 difficulty2=$difficulty2");
 			if($difficulty1 > $difficulty2) {
 				$accept_new = true;
+			}  else if ($difficulty1 == $difficulty2) {
+				$date1 = $current['date'];
+				$date2 = $data['date'];
+				//_log("DFSH: compare date: date1=$date1 date2=$date2");
+				if($date1 > $date2) {
+					$accept_new = true;
+				} else if ($date1 == $date2) {
+					$miner1=$current['miner'];
+					$miner2=$data['miner'];
+					$generator1=$current['generator'];
+					$generator2=$data['generator'];
+					//_log("DFSH: compare miners: miner1=$miner1 miner2=$miner2");
+					//_log("DFSH: compare generator: generator1=$generator1 generator2=$generator2");
+					$id1=$current['id'];
+					$id2=$data['id'];
+					//_log("DFSH: compare ids: id1=$id1 id2=$id2");
+					if(strcmp($id1, $id2)) {
+						$accept_new = true;
+					}
+				}
 			}
+
+			//_log("DFSH: Accept new = ".$accept_new);
 
 			if ($accept_new) {
 				// if the new block is accepted, run a microsync to sync it
@@ -261,11 +286,13 @@ class PeerRequest
 		}
 		// if it's not the next block
 		if ($current['height'] != $data['height'] - 1) {
-			_log("block submitted is lower than our current height, send them our current block",1);
+			//_log("DFSH: if it's not the next block",1);
 			// if the height of the block submitted is lower than our current height, send them our current block
 			if ($data['height'] < $current['height']) {
+				//_log("DFSH: Our height is higher");
 				$pr = Peer::getByIp($ip);
 				if (!$pr) {
+					//_log("DFSH: No peer by IP $ip");
 					api_err("block-too-old");
 				}
 				$peer_host = escapeshellcmd(base58_encode($pr['hostname']));
@@ -273,16 +300,17 @@ class PeerRequest
 				$dir = ROOT."/cli";
 				system( "php $dir/propagate.php block current '$peer_host' '$pr[ip]'   > /dev/null 2>&1  &");
 				_log('['.$ip."] block too old, sending our current block - $current[height]",3);
-
+				//_log("DFSH: Send our block to peer ".$pr['hostname']);
 				api_err("block-too-old");
 			}
 			// if the block difference is bigger than 150, nothing should be done. They should sync
 			if ($data['height'] - $current['height'] > 150) {
 				_log('['.$ip."] block-out-of-sync - $data[height]",2);
+				//_log("DFSH: block difference higher than 150");
 				api_err("block-out-of-sync");
 			}
 			// request them to send us a microsync with the latest blocks
-			_log('['.$ip."] requesting microsync - $current[height] - $data[height]",2);
+			//_log('DFSH: ['.$ip."] requesting microsync - $current[height] - $data[height]",2);
 			api_echo(["request" => "microsync", "height" => $current['height'], "block" => $current['id']]);
 		}
 		// check block data
@@ -294,13 +322,15 @@ class PeerRequest
 		$block->prevBlockId = $current['id'];
 
 		if (Config::isSync()) {
-			_log('['.$ip."] Block rejected due to sync", 5);
+			//_log('DFSH: ['.$ip."] Block rejected due to sync", 5);
 			api_err("sync");
 		}
+
+		//_log("DFSH: ADD BLOCK ".$block->height);
 		$res = $block->add(false, $error);
 
 		if (!$res) {
-			_log('['.$ip."] invalid block data - $data[height] Error:$error",1);
+			//_log('DFSH: ['.$ip."] invalid block data - $data[height] Error:$error",1);
 			api_err("invalid-block-data $error");
 		}
 
@@ -309,11 +339,11 @@ class PeerRequest
 		$res = $bl->verifyBlock();
 
 		if (!$res) {
-			_log("Can not verify added block",1);
+			//_log("DFSH: Can not verify added block",1);
 			api_err("invalid-block-data");
 		}
 
-		_log('['.$ip."] block ok, repropagating - $data[height]",1);
+		//_log('DFSH: ['.$ip."] block ok, repropagating - $data[height]",1);
 
 		// send it to all our peers
 		$data['id']=escapeshellcmd(san($data['id']));
