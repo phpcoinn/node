@@ -50,7 +50,7 @@ class Peer
 
 	static function getPeersForMasternode() {
 		global $db;
-		$sql="select * from peers p WHERE p.blacklisted < ".DB::unixTimeStamp()." 
+		$sql="select * from peers p WHERE (p.blacklisted < ".DB::unixTimeStamp()." or p.generator = 1 or p.miner = 1 )
 			and ping > ".DB::unixTimeStamp()."- 60*2";
 		$rows = $db->run($sql);
 		return $rows;
