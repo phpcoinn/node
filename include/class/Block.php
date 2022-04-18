@@ -514,8 +514,8 @@ class Block
 		        foreach ($this->data as $x) {
 			        //validate the transaction
 			        $tx = Transaction::getFromArray($x);
-			        if (!$tx->check($this->height)) {
-				        throw new Exception("Transaction check failed - {$tx->id}");
+			        if (!$tx->check($this->height, false, $tx_err)) {
+				        throw new Exception("Transaction check failed - {$tx->id}: $tx_err");
 			        }
 
 			        // check if the transaction is already on the blockchain

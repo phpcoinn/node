@@ -326,6 +326,11 @@ class PeerRequest
 			api_err("sync");
 		}
 
+		$current = Block::current();
+		//_log("DFSH: check add BLOCK ".$block->height. " current=".$current['height']);
+		if($block->height == $current['height']) {
+			api_echo("block-ok");
+		}
 		//_log("DFSH: ADD BLOCK ".$block->height);
 		$res = $block->add(false, $error);
 

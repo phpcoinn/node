@@ -49,8 +49,11 @@ class NodeSync
 			$failed_block = 0;
 			$ok_block = 0;
 			$height = $current['height'];
+			$peers_count = 0;
+			$min_ok_blocks = 5;
+			$good_peers = [];
 			foreach ($this->peers as $host) {
-
+				$peers_count++;
 				$peer_block = $this->getPeerBlock($host, $height);
 				if ($peer_block) {
 					_log("peer_block=" . $peer_block['id'] . " current_id=" . $current['id'], 4);
@@ -60,13 +63,19 @@ class NodeSync
 						_log("We have wrong block $height failed_block=$failed_block");
 					} else {
 						$ok_block++;
+						$good_peers[]=$host;
 						_log("We have ok block $height ok_block=$ok_block", 4);
+						if($ok_block >= $min_ok_blocks) {
+							break;
+						}
 					}
 				} else {
 					$skipped_peer++;
 				}
 
 			}
+
+			_log("Check peers peers_count=$peers_count ok_block=$ok_block failed_peer=$failed_peer");
 
 			if ($failed_block > 0 && $failed_block > ($peers_count - $failed_peer) / 2) {
 				_log("Failed block on blockchain $failed_block - remove");
@@ -84,7 +93,7 @@ class NodeSync
 				$height++;
 
 				$min_elapsed = PHP_INT_MAX;
-				foreach ($this->peers as $host) {
+				foreach ($good_peers as $host) {
 					$next_block = $this->getPeerBlock($host, $height);
 					if (!$next_block) {
 						_log("Could not get block from $host - " . $height);
@@ -195,7 +204,7 @@ class NodeSync
 				$host = $peer['hostname'];
 				if(empty($peer['block_id'])) {
 					$url = $host . "/peer.php?q=";
-					$res = peer_post($url . "currentBlock", []);
+					$res = peer_post($url . "currentBlock", [], 5);
 					if ($res === false) {
 						$skipped_peer++;
 					} else{
@@ -250,7 +259,7 @@ class NodeSync
 			$limit = 10;
 			$url = $host."/peer.php?q=";
 			_log("Reading blocks from $height from peer $host", 3);
-			$peer_blocks = peer_post($url."getBlocks", ["height" => $height - $limit]);
+			$peer_blocks = peer_post($url."getBlocks", ["height" => $height - $limit], 5);
 			if ($peer_blocks === false) {
 				_log("Could not get block from $host - " . $height);
 			} else {

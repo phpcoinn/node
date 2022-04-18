@@ -353,7 +353,7 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null)
 
 
 //    $result = file_get_contents($url, false, $context);
-    _log("Peer response: ".$result, 5);
+    //_log("Peer response: ".$result, 5);
     $res = json_decode($result, true);
 
     // the function will return false if something goes wrong
