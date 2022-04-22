@@ -45,7 +45,6 @@ class NodeSync
 			}
 
 			$failed_peer = 0;
-			$skipped_peer = 0;
 			$failed_block = 0;
 			$ok_block = 0;
 			$height = $current['height'];
@@ -70,7 +69,7 @@ class NodeSync
 						}
 					}
 				} else {
-					$skipped_peer++;
+					$failed_block++;
 				}
 
 			}
@@ -199,8 +198,9 @@ class NodeSync
 		$peers = Peer::getPeersForSync();
 		$peers_count = count($peers);
 		$current = Block::current();
+		$t1=microtime(true);
 		if ($peers_count) {
-			foreach ($peers as $peer) {
+			foreach ($peers as $index => $peer) {
 				$host = $peer['hostname'];
 				if(empty($peer['block_id'])) {
 					$url = $host . "/peer.php?q=";
@@ -221,7 +221,7 @@ class NodeSync
 					$height_diff = $data['height']-$current['height'];
 					if(abs($height_diff)>1) {
 						$url = $host . "/peer.php?q=";
-							$res = peer_post($url . "currentBlock", []);
+							$res = peer_post($url . "currentBlock", [], 5);
 							if ($res !== false) {
 								$data = $res['block'];
 								$height_diff = $data['height']-$current['height'];
@@ -239,7 +239,7 @@ class NodeSync
 
 
 				$data['id']=$peer['block_id'];
-				_log("Node score: Checking peer $host block id=" . $data['id'] .  " height=" . $data['height'] . " current=" . $current['id'] . " height=".$current['height'], 5);
+				_log("Node score: Checking peer ".($index+1)." / $peers_count $host block id=" . $data['id'] .  " height=" . $data['height'] . " current=" . $current['id'] . " height=".$current['height'], 5);
 			}
 		}
 
@@ -248,7 +248,9 @@ class NodeSync
 		} else {
 			$node_score = ($ok_block / ($peers_count  - $skipped_peer))*100;
 		}
-		_log("Node score: ok_block=$ok_block peers_count=$peers_count failed_peer=$failed_block skipped_peer=$skipped_peer node_score=$node_score", 2);
+		$t2=microtime(true);
+		$diff = $t2 - $t1;
+		_log("Node score: time=$diff ok_block=$ok_block peers_count=$peers_count failed_peer=$failed_block skipped_peer=$skipped_peer node_score=$node_score", 2);
 		$db->setConfig('node_score', $node_score);
 	}
 
