@@ -480,6 +480,15 @@ class Api
 	 * @apiSuccess {number} data.height Current height of node.
 	 * @apiSuccess {number} data.block Current block id of node.
 	 * @apiSuccess {number} data.time Current time on node.
+	 * @apiSuccess {string} data.generator Node who added block to blockchain
+	 * @apiSuccess {string} data.miner Node who mined a block
+	 * @apiSuccess {string} data.masternode Masternode who received reward for block
+	 * @apiSuccess {string} data.totalSupply Total supply of coin
+	 * @apiSuccess {string} data.currentSupply Current coin value in circulation
+	 * @apiSuccess {string} data.avgBlockTime10 Average block time for last 10 blocks
+	 * @apiSuccess {string} data.hashRate10 Hash rate for last 10 blocks
+	 * @apiSuccess {string} data.hashRate100 Hash rate for last 100 blocks
+	 * @apiSuccess {string} data.lastBlockTime Date of last block
 	 */
 	static function nodeInfo($data) {
 		global $db, $_config;
