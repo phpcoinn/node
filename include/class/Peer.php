@@ -24,9 +24,9 @@ class Peer
 		return $row['cnt'];
 	}
 
-	static function getAll() {
+	static function getAll($sorting="") {
 		global $db;
-		$sql="select * from peers";
+		$sql="select * from peers $sorting";
 		$rows = $db->run($sql);
 		return $rows;
 	}
