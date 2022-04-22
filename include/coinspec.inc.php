@@ -31,6 +31,7 @@ const TX_TYPE_REWARD = 0;
 const TX_TYPE_SEND = 1;
 const TX_TYPE_MN_CREATE = 2;
 const TX_TYPE_MN_REMOVE = 3;
+const TX_TYPE_FEE = 4;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
