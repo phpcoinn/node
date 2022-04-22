@@ -147,6 +147,7 @@ class Api
 	 * @apiParam {string} [public_key] Public key
 	 * @apiParam {string} [address] Address
 	 * @apiParam {numeric} [limit] Number of confirmed transactions, max 100, min 1
+	 * @apiParam {numeric} [offset] Offset for paginating transactions
 	 *
 	 * @apiSuccess {string} block  Block ID
 	 * @apiSuccess {numeric} confirmation Number of confirmations
@@ -180,7 +181,11 @@ class Api
 			api_err("Invalid address");
 		}
 		$limit = intval($data['limit']);
-		$transactions = Transaction::getByAddress($address, $limit);
+		$offset = intval($data['offset']);
+		if(empty($offset)) {
+			$offset = 0;
+		}
+		$transactions = Transaction::getByAddress($address, $limit, $offset);
 		api_echo($transactions);
 	}
 

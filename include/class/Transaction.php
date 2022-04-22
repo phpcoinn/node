@@ -906,9 +906,9 @@ class Transaction
 		return Mempool::getSize();
     }
 
-    static function getByAddress($address, $limit) {
+    static function getByAddress($address, $limit, $offset) {
 	    $transactions = Account::getMempoolTransactions($address);
-	    $transactions = array_merge($transactions, Account::getTransactions($address, $limit));
+	    $transactions = array_merge($transactions, Account::getTransactions($address, $limit, $offset));
 	    return $transactions;
     }
 

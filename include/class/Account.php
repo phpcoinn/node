@@ -60,7 +60,7 @@ class Account
         return num($rez);
     }
 
-    static function getTransactions($id, $dm)
+    static function getTransactions($id, $dm, $offset = 0)
     {
         global $db;
 
@@ -73,7 +73,6 @@ class Account
 	        if ($limit > 100 || $limit < 1) {
 		        $limit = 100;
 	        }
-	        $offset = 0;
         }
 
         $current = Block::current();
