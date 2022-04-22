@@ -5,7 +5,7 @@ const NETWORK = "testnet";
 const VERSION = "0.0.1";
 const BUILD_VERSION = 23;
 const MIN_VERSION = "0.0.1";
-const DEVELOPMENT = false;
+const DEVELOPMENT = true;
 const XDEBUG = "XDEBUG_SESSION_START=PHPSTORM";
 //const XDEBUG_CLI = "-dxdebug.mode=debug -dxdebug.client_host=127.0.0.1 -dxdebug.client_port=9000 -dxdebug.start_with_request=yes";
 //const XDEBUG = "";
@@ -24,15 +24,19 @@ const BLOCK_TIME = 30;
 const BLOCK_TARGET_MUL = 1000;
 const BLOCK_START_DIFFICULTY = "30000";
 
-const TX_FEE = 0;
+const TX_FEE = 0.1;
 const TX_TYPE_REWARD = 0;
 const TX_TYPE_SEND = 1;
 const TX_TYPE_MN_CREATE = 2;
 const TX_TYPE_MN_REMOVE = 3;
 
+const TX_TYPE_FEE = 4;
+const TX_TYPE_SC_CREATE = 5;
+
 const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
-const REMOTE_PEERS_LIST_URL = "https://node1.testnet.phpcoin.net:8001/peers.php";
+//const REMOTE_PEERS_LIST_URL = "https://node1.testnet.phpcoin.net:8001/peers.php";
+const REMOTE_PEERS_LIST_URL = "http://spectre:8001/peers.php";
 
 const REWARD_SCHEME = [
 	'genesis' => [
@@ -64,6 +68,13 @@ const MIN_NODE_SCORE = 30;
 const FEATURE_MN = true;
 const MN_COLLATERAL = 1000;
 const MN_MIN_RUN_BLOCKS = 4;
+
+//Smart contracts feature
+const FEATURE_SC = true;
+const TX_SC_CREATE_FEE = 0;
+const SC_START_HEIGHT = 100;
+
+const FEE_START_HEIGHT = 10;
 
 const TOTAL_SUPPLY = 714990;
 const GIT_URL = "https://github.com/phpcoinn/node";
