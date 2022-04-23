@@ -645,12 +645,14 @@ class Block
 				}
 			}
 
+			Config::setSync(0);
 			if($db->inTransaction()) {
 				$db->commit();
 				$db->unlockTables();
 			}
 			return true;
 		} catch (Exception $e) {
+			Config::setSync(0);
 			if($db->inTransaction()) {
 				$db->rollback();
 				$db->unlockTables();
