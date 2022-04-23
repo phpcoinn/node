@@ -32,17 +32,18 @@ class Transaction
 
 
 	// reverse and remove all transactions from a block
-    public static function reverse($block)
+    public static function reverse($block, &$error = null)
     {
         global $db;
-        
-        $r = $db->run("SELECT * FROM transactions WHERE block=:block ORDER by `type` DESC", [":block" => $block]);
-        foreach ($r as $x) {
-        	$tx = Transaction::getFromDbRecord($x);
-            _log("Reversing transaction {$tx->id}", 3);
-            if (empty($tx->src)) {
-	            $tx->src = Account::getAddress($tx->publicKey);
-            }
+
+		try {
+			$r = $db->run("SELECT * FROM transactions WHERE block=:block ORDER by `type` DESC", [":block" => $block]);
+			foreach ($r as $x) {
+				$tx = Transaction::getFromDbRecord($x);
+				_log("Reversing transaction {$tx->id}", 3);
+				if (empty($tx->src)) {
+					$tx->src = Account::getAddress($tx->publicKey);
+				}
 
 	        $type = $tx->type;
 	        $res = true;
@@ -55,47 +56,50 @@ class Transaction
 		        $tx->add_mempool();
 	        }
 
-	        if ($type == TX_TYPE_MN_CREATE) {
-		        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
-		        $res = $res && Account::addBalance($tx->src, $tx->val);
-		        $tx->add_mempool();
-		        if($res === false) {
-			        _log("Update balance for reverse transaction failed");
-			        return false;
-		        }
-				$publicKey = Account::publicKey($tx->dst);
-				$res = Masternode::delete($publicKey);
-				if(!$res) {
-					_log("Error deleting masternode");
-					return false;
+				if ($type == TX_TYPE_MN_CREATE) {
+					$res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
+					$res = $res && Account::addBalance($tx->src, $tx->val);
+					$tx->add_mempool();
+					if($res === false) {
+						throw new Exception("Update balance for reverse transaction failed");
+					}
+					$publicKey = Account::publicKey($tx->dst);
+					$res = Masternode::delete($publicKey);
+					if(!$res) {
+						throw new Exception("Error deleting masternode");
+					}
 				}
-	        }
 
-	        if ($type == TX_TYPE_MN_REMOVE) {
-		        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
-		        $res = $res && Account::addBalance($tx->src, $tx->val);
-		        $tx->add_mempool();
-		        if($res === false) {
-			        _log("Update balance for reverse transaction failed");
-			        return false;
-		        }
-		        $height = Masternode::getMnCreateHeight($tx->publicKey);
-				if(!$height) {
-					_log("Can not find mn create tx height");
-					return false;
+				if ($type == TX_TYPE_MN_REMOVE) {
+					$res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
+					$res = $res && Account::addBalance($tx->src, $tx->val);
+					$tx->add_mempool();
+					if($res === false) {
+						throw new Exception("Update balance for reverse transaction failed");
+					}
+					$height = Masternode::getMnCreateHeight($tx->publicKey);
+					if(!$height) {
+						throw new Exception("Can not find mn create tx height");
+					}
+					$res = Masternode::create($tx->publicKey, $height);
+					if(!$res) {
+						throw new Exception("Can not reverse create masternode");
+					}
 				}
-				$res = Masternode::create($tx->publicKey, $height);
-				if(!$res) {
-					_log("Can not reverse create masternode");
-				}
-	        }
 
-            $res = $db->run("DELETE FROM transactions WHERE id=:id", [":id" => $tx->id]);
-            if ($res != 1) {
-                _log("Delete transaction failed");
-                return false;
-            }
-        }
+				$res = $db->run("DELETE FROM transactions WHERE id=:id", [":id" => $tx->id]);
+				if ($res != 1) {
+					throw new Exception("Delete transaction failed");
+				}
+			}
+			return true;
+		} catch (Exception $e) {
+			$err = $e->getMessage();
+			_log($err);
+			return false;
+		}
+        
+
     }
 
     // clears the mempool

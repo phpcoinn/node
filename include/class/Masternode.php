@@ -743,7 +743,7 @@ class Masternode
 		}
 	}
 
-	static function reverseBlock($block) {
+	static function reverseBlock($block, &$err = null) {
 		try {
 
 			$masternode = $block['masternode'];
@@ -757,7 +757,8 @@ class Masternode
 			}
 			return true;
 		} catch (Exception $e) {
-			_log("Masternode: Error reverting masternode height");
+			$err = "Masternode: Error reverting masternode. Error: ".$e->getMessage();
+			_log($err);
 			return false;
 		}
 

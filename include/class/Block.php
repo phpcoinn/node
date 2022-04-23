@@ -623,30 +623,26 @@ class Block
 	    $db->lockTables();
         $db->beginTransaction();
 
-	    $current = Block::current();
-
 		try {
 
 			foreach ($r as $x) {
-				$res = Transaction::reverse($x['id']);
+				$res = Transaction::reverse($x['id'], $err);
 				if ($res === false) {
 					_log("A transaction could not be reversed. Delete block failed.");
 					throw new Exception("A transaction could not be reversed");
 				}
-			}
 
-			$res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $x['id']]);
-			if ($res != 1) {
-				throw new Exception("Delete block failed.");
-			} else {
-				_log("Deleted block id=".$x['id']." height=".$x['height'],1);
-			}
+				$res = Masternode::reverseBlock($x, $merr);
+				if(!$res) {
+					throw new Exception("Reverse masternode winner failed. Error: $merr");
+				}
 
-
-			$res = Masternode::reverseBlock($current);
-			if(!$res) {
-				_log("Reverse masternode winner failed");
-				throw new Exception("Reverse masternode winner failed");
+				$res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $x['id']]);
+				if ($res != 1) {
+					throw new Exception("Delete block failed.");
+				} else {
+					_log("Deleted block id=".$x['id']." height=".$x['height'],1);
+				}
 			}
 
 			if($db->inTransaction()) {
