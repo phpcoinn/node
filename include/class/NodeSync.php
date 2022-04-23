@@ -69,7 +69,7 @@ class NodeSync
 						}
 					}
 				} else {
-					$failed_block++;
+					$failed_peer++;
 				}
 
 			}
