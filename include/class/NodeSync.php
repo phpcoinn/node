@@ -295,14 +295,22 @@ class NodeSync
 			for ($i = $start + 1; $i <= $max_height; $i++) {
 				$data = $blocks[$i];
 
-				$block = Block::getFromArray($data);
+				$block_ok = true;
+				if(empty($data)) {
+					$block_ok = false;
+				}
 
-				if (!$block->mine()) {
-					Config::setSync(1);
+				if($block_ok) {
+					$block = Block::getFromArray($data);
+					if (!$block->mine()) {
+						$block_ok = false;
+					}
+				}
+
+				if (!$block_ok) {
 					_log("Invalid block detected. Deleting block height ".$i);
 					$all_blocks_ok = false;
 					Block::delete($i);
-					Config::setSync(0);
 					break;
 				}
 			}
