@@ -623,10 +623,10 @@ class Transaction
 			} else if (substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING) {
 				$val_check = num($miner);
 			}
-			if(empty($val_check)) {
+			if(empty($val_check) && $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 				throw new Exception("Reward transaction no value id=".$this->id, 5);
 			}
-			if(num($this->val) != $val_check) {
+			if(!empty($val_check) && num($this->val) != $val_check) {
 				throw new Exception("Reward transaction id=".$this->id." not valid: val=".$this->val." val_check=$val_check");
 			}
 			if (substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING) {
