@@ -242,3 +242,11 @@ if($type == "appspeer") {
 if($type == "masternode") {
 	Masternode::propagate($id);
 }
+
+if($type == "message") {
+	$hash = $argv[2];
+	$data = $argv[3];
+	$hostname = base64_decode($hash);
+	$url = $hostname."/peer.php?q=propagateMsg";
+	$res = peer_post($url, ["data"=>$data], 30, $err);
+}
