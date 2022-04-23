@@ -133,19 +133,17 @@ if ($type == "block") {
         $current = Block::current();
         // maximum microsync is 10 blocks, for more, the peer should sync
         if ($current['height'] - $height > 10) {
-            echo "Height Differece too high\n";
-            _log("Height Differece too high");
+            _log("Height Differece too high", 1);
             exit;
         }
         $last_block = Block::get($height);
         // if their last block does not match our blockchain/fork, ignore the request
         if ($last_block['id'] != $bl) {
-            echo "Last block does not match\n";
-            _log("Last block does not match");
+            _log("Last block does not match", 1);
             exit;
         }
         echo "Sending the requested blocks\n";
-	    _log("Sending the requested blocks",1);
+	    _log("Sending the requested blocks",2);
         //start sending the requested block
         for ($i = $height + 1; $i <= $current['height']; $i++) {
             $data = Block::export("", $i);
@@ -155,8 +153,7 @@ if ($type == "block") {
                 _log("Block $i not accepted. Exiting", 5);
                 exit;
             }
-            _log("Block\t$i\t accepted");
-            echo "Block\t$i\t accepted\n";
+            _log("Block\t$i\t accepted", 3);
         }
     } elseif ($response == "reverse-microsync") {
         // the peer informe us that we should run a microsync

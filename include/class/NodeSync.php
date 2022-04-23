@@ -74,7 +74,7 @@ class NodeSync
 
 			}
 
-			_log("Check peers peers_count=$peers_count ok_block=$ok_block failed_peer=$failed_peer");
+			_log("Check peers peers_count=$peers_count ok_block=$ok_block failed_peer=$failed_peer", 2);
 
 			if ($failed_block > 0 && $failed_block > ($peers_count - $failed_peer) / 2) {
 				_log("Failed block on blockchain $failed_block - remove");
@@ -95,7 +95,7 @@ class NodeSync
 				foreach ($good_peers as $host) {
 					$next_block = $this->getPeerBlock($host, $height);
 					if (!$next_block) {
-						_log("Could not get block from $host - " . $height);
+						_log("Could not get block from $host - " . $height, 3);
 						$failed_next_peer++;
 						continue;
 					}
@@ -185,7 +185,7 @@ class NodeSync
 		$this->calculateNodeScore();
 
 		if($syncing) {
-			_log("Blockchain SYNCED");
+			_log("NodeSync finished", 3);
 		}
 
 	}
@@ -263,7 +263,7 @@ class NodeSync
 			_log("Reading blocks from $height from peer $host", 3);
 			$peer_blocks = peer_post($url."getBlocks", ["height" => $height - $limit], 5);
 			if ($peer_blocks === false) {
-				_log("Could not get block from $host - " . $height);
+				_log("Could not get block from $host - " . $height, 3);
 			} else {
 				if(is_array($peer_blocks)) {
 					foreach($peer_blocks as $peer_block) {
@@ -299,8 +299,7 @@ class NodeSync
 
 				if (!$block->mine()) {
 					Config::setSync(1);
-					_log("Invalid block detected. Deleting everything after height ".$i);
-					sleep(10);
+					_log("Invalid block detected. Deleting block height ".$i);
 					$all_blocks_ok = false;
 					Block::delete($i);
 					Config::setSync(0);

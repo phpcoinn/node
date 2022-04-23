@@ -210,6 +210,7 @@ if ($arg == "microsync" && !empty($arg2)) {
 
 
 $t = time();
+$t1 = microtime(true);
 //if($t-$_config['sync_last']<300) {@unlink("tmp/sync-lock");  die("The sync cron was already run recently"); }
 
 _log("Starting sync",3);
@@ -388,7 +389,7 @@ foreach ($peerData as $hostname => $data) {
 	if($current['height'] >= $data['height']) {
 		$block = Block::get($data['height']);
 		if(!empty($data['id']) && $block['id'] != $data['id']) {
-			_log("PeerSync: blacklist peer $hostname because of invalid block at height".$data['height']." my=".$block['id']." peer=".$data['id']);
+			_log("PeerSync: blacklist peer $hostname because of invalid block at height".$data['height']." my=".$block['id']." peer=".$data['id'],5);
 			Peer::blacklist($peer['id'], "Invalid block ".$data['height']);
 			continue;
 		}
@@ -396,7 +397,7 @@ foreach ($peerData as $hostname => $data) {
 
 
 	if ($current['height'] > 1 && $data['height'] >1 && $data['height'] < $current['height'] - 100) {
-		_log("PeerSync: blacklist peer $hostname because is 100 blocks behind, our height=".$current['height']." peer_height=".$data['height']);
+		_log("PeerSync: blacklist peer $hostname because is 100 blocks behind, our height=".$current['height']." peer_height=".$data['height'],2);
 		Peer::blacklistStuck($peer['id'],"100 blocks behind");
 		continue;
 	} else {
@@ -584,7 +585,7 @@ foreach ($r as $x) {
     $url = $x['hostname']."/peer.php?q=";
     $data = peer_post($url."ping", []);
     if ($data === false) {
-    	_log("blakclist peer ".$x['hostname']." because it is not answering");
+    	_log("blakclist peer ".$x['hostname']." because it is not answering", 4);
         Peer::blacklist($x['id'],"Not answer");
         _log("Random reserve peer test $x[hostname] -> FAILED");
     } else {
@@ -603,3 +604,7 @@ Minepool::deleteOldEntries();
 _log("Finishing sync",3);
 
 @rmdir(SYNC_LOCK_PATH);
+
+$t2 = microtime(true);
+
+_log("Sync process finished in time ".round($t2-$t1, 3));

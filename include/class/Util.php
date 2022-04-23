@@ -933,11 +933,9 @@ class Util
 			if ($data === false) {
 				_log("Peer $peer[hostname] unresponsive data=".json_encode($data), 2);
 				// if the peer is unresponsive, mark it as failed and blacklist it for a while
-				_log("blacklist peer $url because is unresponsive");
 				Peer::blacklist($peer['id'], "Unresponsive");
 			}
 			if(is_array($data) && count($data)==0) {
-				_log("blacklist peer $url because it has no peers");
 				Peer::blacklist($peer['id'], "No peers");
 				return;
 			}

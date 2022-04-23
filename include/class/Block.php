@@ -53,8 +53,6 @@ class Block
     {
         global $db;
 
-        _log("Block insert height=".$this->height, 3);
-
 		try {
 
 		    if (!$bootstrapping) {
@@ -122,8 +120,6 @@ class Block
 	            $db->rollback();
 	            $db->unlockTables();
 		        throw new Exception("Block DB insert failed");
-	        } else {
-	            _log("Inserted new block height={$this->height} id=$hash ",1);
 	        }
 
 	        // parse the block's transactions and insert them to db
@@ -132,7 +128,7 @@ class Block
 				throw new Exception("Parse block failed: $perr");
 			}
 
-            _log("Committing block height=".$this->height, 4);
+			_log("Inserted new block height={$this->height} id=$hash ");
             $db->commit();
 	        $db->unlockTables();
 	        return true;
@@ -520,7 +516,7 @@ class Block
 
 			        // check if the transaction is already on the blockchain
 			        if ($db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $tx->id]) > 0) {
-				        throw new Exception("Transaction already on the blockchain - {$tx->id}", 2);
+				        throw new Exception("Transaction already on the blockchain - {$tx->id}");
 			        }
 
 			        // prepare total balance

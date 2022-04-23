@@ -165,7 +165,8 @@ class Peer
 
 	static function blacklist($id, $reason = '') {
 		global $db;
-		_log("Blacklist peer $id reason=$reason");
+		$hostname = $db->single("select hostname from peers where id = :id", [":id"=>$id]);
+		_log("Blacklist peer $hostname reason=$reason");
 		$db->run(
 			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*5), 
 				blacklist_reason=:blacklist_reason WHERE id=:id",
@@ -175,7 +176,8 @@ class Peer
 
 	static function blacklistStuck($id, $reason = '') {
 		global $db;
-		_log("Blacklist peer stuck $id reason=$reason");
+		$hostname = $db->single("select hostname from peers where id = :id", [":id"=>$id]);
+		_log("Blacklist peer $hostname stuck reason=$reason");
 		$db->run(
 			"UPDATE peers SET stuckfail=stuckfail+1, blacklisted=".DB::unixTimeStamp()."+60*10,
 			    blacklist_reason=:reason WHERE id=:id",

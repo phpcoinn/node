@@ -623,7 +623,7 @@ class Transaction
 				throw new Exception("Reward transaction no value id=".$this->id, 5);
 			}
 			if(num($this->val) != $val_check) {
-				throw new Exception("Reward transaction not valid: val=".$this->val." val_check=$val_check");
+				throw new Exception("Reward transaction id=".$this->id." not valid: val=".$this->val." val_check=$val_check");
 			}
 			if (substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING) {
 				$arr = explode("|", $msg);
