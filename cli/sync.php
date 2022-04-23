@@ -347,8 +347,8 @@ foreach ($peerData as $hostname => $data) {
 	$peer = $data['peer'];
 	if($current['height'] >= $data['height']) {
 		$block = Block::get($data['height']);
-		if(!empty($data['id']) && $block['id'] != $data['id']) {
-			_log("PeerSync: blacklist peer $hostname because of invalid block at height".$data['height']." my=".$block['id']." peer=".$data['id'],5);
+		if(!empty($data['id']) && !empty($block['id']) && $block['id'] != $data['id']) {
+			_log("PeerSync: blacklist peer $hostname because of invalid block at height".$data['height']." my=".$block['id']." peer=".$data['id']);
 			Peer::blacklist($peer['id'], "Invalid block ".$data['height']);
 			continue;
 		}
