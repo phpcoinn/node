@@ -615,6 +615,8 @@ class Block
         }
         global $db;
 
+	    Config::setSync(1);
+
         $r = $db->run("SELECT * FROM blocks WHERE height>=:height ORDER by height DESC", [":height" => $height]);
 
         if (count($r) == 0) {
