@@ -240,6 +240,11 @@ if($dbversion == 9) {
 	$dbversion = 10;
 }
 
+if($dbversion == 10) {
+	$db->run("create index blocks_masternode_index on blocks (masternode)");
+	$dbversion = 11;
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
