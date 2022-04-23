@@ -92,49 +92,6 @@ ini_set('memory_limit', '2G');
 
 $current = Block::current();
 
-
-
-
-
-// bootstrapping the initial sync
-//TODO: implement bootstraping feature
-if ($current['height']==1 && BOOTSTRAPING) {
-    echo "Bootstrapping!\n";
-    $db_name=substr($_config['db_connect'], strrpos($_config['db_connect'], "dbname=")+7);
-    $db_host=substr($_config['db_connect'], strpos($_config['db_connect'], ":host=")+6);
-    $db_host=substr($db_host, 0, strpos($db_host, ";"));
-
-    echo "DB name: $db_name\n";
-    echo "DB host: $db_host\n";
-    echo "Downloading the blockchain dump from ".BOOTSTRAP_URL."\n";
-    $phpfile=ROOT . '/tmp/php.sql';
-    if (file_exists("/usr/bin/curl")) {
-        system("/usr/bin/curl -o $phpfile '".BOOTSTRAP_URL."'", $ret);
-    } elseif (file_exists("/usr/bin/wget")) {
-        system("/usr/bin/wget -O $phpfile '".BOOTSTRAP_URL."'", $ret);
-    } else {
-        die("/usr/bin/curl and /usr/bin/wget not installed or inaccessible. Please install either of them.");
-    }
-    
-
-    echo "Importing the blockchain dump\n";
-    system("mysql -h ".escapeshellarg($db_host)." -u ".escapeshellarg($_config['db_user'])." -p".escapeshellarg($_config['db_pass'])." ".escapeshellarg($db_name). " < ".$phpfile);
-    echo "Bootstrapping completed. Waiting 2mins for the tables to be unlocked.\n";
-    
-    while (1) {
-        sleep(120);
-  
-        $res=$db->run("SHOW OPEN TABLES WHERE In_use > 0");
-        if (count($res==0)) {
-            break;
-        }
-        echo "Tables still locked. Sleeping for another 2 min. \n";
-    }
-
-   
-
-    $current = Block::current();
-}
 //TODO check microsync feature
 // the microsync process is an anti-fork measure that will determine the best blockchain to choose for the last block
 $microsync = false;
@@ -318,6 +275,8 @@ if($run_get_more_peers) {
 		system($exec_cmd);
 	}
 }
+
+NodeSync::recheckLastBlocks();
 
 //First get active peers
 $peers = Peer::getPeersForSync();
@@ -522,27 +481,6 @@ if(is_array($peers)) {
 //	_log("Can not sync - not enough number of peers");
 //}
 
-$block_parse_failed=false;
-
-$failed_syncs=0;
-
-
-
-    $resyncing=false;
-    if ($block_parse_failed==true&&$current['date']<time()-(3600*24)) {
-        _log("Rechecking reward transactions",1);
-        $current = Block::current();
-        $rwpb=$db->single("SELECT COUNT(1) FROM transactions WHERE type=0 AND message=''");
-        if ($rwpb!=$current['height']) {
-            $failed=$db->single("SELECT blocks.height FROM blocks LEFT JOIN transactions ON transactions.block=blocks.id and transactions.type=0 and transactions.message='' WHERE transactions.height is NULL ORDER by blocks.height ASC LIMIT 1");
-            if ($failed>1) {
-                _log("Found failed block - $failed");
-                Block::delete($failed);
-                $block_parse_failed==false;
-            }
-        }
-    }
-   
 
 Mempool::deleteOldMempool();
 
@@ -594,8 +532,6 @@ foreach ($r as $x) {
     }
 }
 
-
-NodeSync::recheckLastBlocks();
 
 Nodeutil::cleanTmpFiles();
 
