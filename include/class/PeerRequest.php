@@ -331,8 +331,19 @@ class PeerRequest
 		if($block->height == $current['height']) {
 			api_echo("block-ok");
 		}
+
+		$lock_file = ROOT . "/tmp/lock-block-".$block->height;
+		_log("Check lock file $lock_file", 5);
+		if (!mkdir($lock_file, 0700)) {
+			_log("Lock file exists $lock_file", 3);
+			api_echo("sync");
+		}
+
 		//_log("DFSH: ADD BLOCK ".$block->height);
 		$res = $block->add(false, $error);
+
+		_log("Remove lock file $lock_file", 5);
+		@rmdir($lock_file);
 
 		if (!$res) {
 			//_log('DFSH: ['.$ip."] invalid block data - $data[height] Error:$error",1);
