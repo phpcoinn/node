@@ -950,5 +950,21 @@ class Transaction
 		return $res;
 	}
 
+	static function typeLabel($type) {
+		switch ($type) {
+			case TX_TYPE_REWARD:
+				return "Reward";
+			case TX_TYPE_SEND:
+				return "Transfer";
+			case TX_TYPE_MN_CREATE:
+				return "Create masternode";
+			case TX_TYPE_MN_REMOVE:
+				return "Remove masternode";
+			case TX_TYPE_FEE:
+				return "Fee";
+			case TX_TYPE_SC_CREATE:
+				return "Create smart contract";
+		}
+	}
 
 }
