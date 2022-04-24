@@ -34,6 +34,6 @@ PeerRequest::processRequest();
 if(method_exists(PeerRequest::class, $q)) {
 	call_user_func([PeerRequest::class, $q]);
 } else {
-	api_err("Invalid request");
+	api_err("Invalid request: $q");
 }
 
