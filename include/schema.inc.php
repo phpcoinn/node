@@ -111,6 +111,7 @@ if (empty($dbversion)) {
 			primary key,
 		block varchar(128) not null,
 		height int not null,
+		src varchar(128) null,
 		dst varchar(128) not null,
 		val decimal(20,8) not null,
 		fee decimal(20,8) not null,
@@ -148,6 +149,7 @@ if (empty($dbversion)) {
 	$db->run("create index stuckfail on peers (stuckfail);");
 
 	$db->run("create index dst on transactions (dst);");
+	$db->run("create index transactions_src_index on transactions (src)");
 	$db->run("create index height on transactions (height);");
 	$db->run("create index message on transactions (message);");
 	$db->run("create index public_key on transactions (public_key);");
@@ -243,6 +245,18 @@ if($dbversion == 9) {
 if($dbversion == 10) {
 	$db->run("create index blocks_masternode_index on blocks (masternode)");
 	$dbversion = 11;
+}
+
+if($dbversion == 11) {
+	if(!$was_empty) {
+		$db->run("alter table transactions add src varchar(128) null");
+		$db->run("create index transactions_src_index on transactions (src)");
+		$db->run("update transactions t set t.src = (
+		    select a.id from accounts a where a.public_key = t.public_key
+		    )
+		where t.type > 0 and t.src is null");
+	}
+	$dbversion = 12;
 }
 
 // update the db version to the latest one

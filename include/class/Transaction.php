@@ -338,6 +338,8 @@ class Transaction
 			}
 		}
 
+		$src = $this->type == TX_TYPE_REWARD ? null : Account::getAddress($this->publicKey);
+
 		$bind = [
 			":id"         => $this->id,
 			":public_key" => $this->publicKey,
@@ -350,6 +352,7 @@ class Transaction
 			":type"    => $this->type,
 			":date"       => $this->date,
 			":message"    => $this->msg,
+			":src"        => $src
 		];
 		$res = Transaction::insert($bind);
 		if ($res != 1) {
@@ -927,8 +930,8 @@ class Transaction
     	global $db;
 	    $res = $db->run(
 		    "INSERT into transactions 
-    			(id, public_key, block,  height, dst, val, fee, signature, type, message, `date`)
-    			values (:id, :public_key, :block, :height, :dst, :val, :fee, :signature, :type, :message, :date)
+    			(id, public_key, block,  height, dst, val, fee, signature, type, message, `date`, src)
+    			values (:id, :public_key, :block, :height, :dst, :val, :fee, :signature, :type, :message, :date, :src)
     			",
 		    $bind
 	    );
