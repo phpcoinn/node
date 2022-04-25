@@ -251,9 +251,9 @@ if($dbversion == 11) {
 	if(!$was_empty) {
 
 		$lock_file = ROOT . "/tmp/db-lock";
-		_log("DB Schema: Check lock file $lock_file", 5);
+		_log("DB Schema: Check lock file $lock_file");
 		if (!mkdir($lock_file, 0700)) {
-			_log("DB Schema: Lock file exists $lock_file", 3);
+			_log("DB Schema: Lock file exists $lock_file");
 			$db->rollBack();
 			return;
 		}
@@ -293,7 +293,7 @@ if($dbversion == 11) {
 		set a1.balance = wrong_balances.tx_balance
 		where a1.balance <> wrong_balances.tx_balance");
 
-		_log("DB Schema: Remove lock file $lock_file", 5);
+		_log("DB Schema: Remove lock file $lock_file");
 		@rmdir($lock_file);
 
 
