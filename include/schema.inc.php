@@ -249,6 +249,14 @@ if($dbversion == 10) {
 
 if($dbversion == 11) {
 	if(!$was_empty) {
+
+		$lock_file = ROOT . "/tmp/db-lock";
+		_log("Check lock file $lock_file", 5);
+		if (!mkdir($lock_file, 0700)) {
+			_log("Lock file exists $lock_file", 3);
+			return;
+		}
+
 		$db->run("alter table transactions add src varchar(128) null");
 		$db->run("create index transactions_src_index on transactions (src)");
 		$db->run("update transactions t set t.src = (
@@ -277,6 +285,11 @@ if($dbversion == 11) {
 		    on (wrong_balances.id = a1.id)
 		set a1.balance = wrong_balances.tx_balance
 		where a1.balance <> wrong_balances.tx_balance");
+
+		_log("Remove lock file $lock_file", 5);
+		@rmdir($lock_file);
+
+
 	}
 	$dbversion = 12;
 }
