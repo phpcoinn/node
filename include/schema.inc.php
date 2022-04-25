@@ -257,6 +257,8 @@ if($dbversion == 11) {
 			$db->rollBack();
 			return;
 		}
+		_log("DB Schema: Lock transactions table");
+		$db->run("lock tables transactions write");
 		_log("DB Schema: Add src column");
 		$db->run("alter table transactions add src varchar(128) null");
 		_log("DB Schema: Add index on src column");
@@ -266,6 +268,8 @@ if($dbversion == 11) {
 		    select a.id from accounts a where a.public_key = t.public_key
 		    )
 		where t.type > 0 and t.src is null");
+		_log("DB Schema: Unlock transactions table");
+		$db->run("unlock tables");
 		_log("DB Schema: Update wrong balances");
 		$db->run("update (
 		    select ac.id, sum(ac.total) as tx_balance, acc.balance
