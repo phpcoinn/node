@@ -255,6 +255,28 @@ if($dbversion == 11) {
 		    select a.id from accounts a where a.public_key = t.public_key
 		    )
 		where t.type > 0 and t.src is null");
+		//update wrong accounts
+		$db->run("update (
+		    select ac.id, sum(ac.total) as tx_balance, acc.balance
+		    from (
+		             select a.id, sum(t.val*(-1)) as total
+		             from accounts a
+		                      join transactions t
+		                           on (t.src = a.id)
+		             group by a.id
+		             union all
+		             select a.id, sum(t.val) as total
+		             from accounts a
+		                      join transactions t
+		                           on (t.dst = a.id)
+		             group by a.id) as ac
+		             left join accounts acc on (ac.id = acc.id)
+		    group by ac.id
+		    having tx_balance <> balance) as wrong_balances
+		    left join accounts a1
+		    on (wrong_balances.id = a1.id)
+		set a1.balance = wrong_balances.tx_balance
+		where a1.balance <> wrong_balances.tx_balance");
 	}
 	$dbversion = 12;
 }
