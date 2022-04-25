@@ -251,19 +251,22 @@ if($dbversion == 11) {
 	if(!$was_empty) {
 
 		$lock_file = ROOT . "/tmp/db-lock";
-		_log("Check lock file $lock_file", 5);
+		_log("DB Schema: Check lock file $lock_file", 5);
 		if (!mkdir($lock_file, 0700)) {
-			_log("Lock file exists $lock_file", 3);
+			_log("DB Schema: Lock file exists $lock_file", 3);
+			$db->rollBack();
 			return;
 		}
-
+		_log("DB Schema: Add src column");
 		$db->run("alter table transactions add src varchar(128) null");
+		_log("DB Schema: Add index on src column");
 		$db->run("create index transactions_src_index on transactions (src)");
+		_log("DB Schema: Update src column");
 		$db->run("update transactions t set t.src = (
 		    select a.id from accounts a where a.public_key = t.public_key
 		    )
 		where t.type > 0 and t.src is null");
-		//update wrong accounts
+		_log("DB Schema: Update wrong balances");
 		$db->run("update (
 		    select ac.id, sum(ac.total) as tx_balance, acc.balance
 		    from (
@@ -286,7 +289,7 @@ if($dbversion == 11) {
 		set a1.balance = wrong_balances.tx_balance
 		where a1.balance <> wrong_balances.tx_balance");
 
-		_log("Remove lock file $lock_file", 5);
+		_log("DB Schema: Remove lock file $lock_file", 5);
 		@rmdir($lock_file);
 
 
