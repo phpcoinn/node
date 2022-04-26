@@ -697,18 +697,15 @@ class Util
 			$file = getcwd() . "/blockchain.txt";
 		}
 		$height = Block::getHeight();
-		$list = [];
 		echo "Exporting blockchain to file: " . $file.PHP_EOL;
-		$fp = fopen($file, "w");
+		@file_put_contents($file,"");
 		for($i=1;$i<=$height;$i++) {
 			$block = Block::export("",$i);
-			$list[]=$block;
 			if($i % 100 == 0) {
 				echo "Exporting block $i".PHP_EOL;
 			}
-			fwrite($fp, json_encode($block).PHP_EOL);
+			@file_put_contents($file, json_encode($block).PHP_EOL, FILE_APPEND);
 		}
-		fclose($fp);
 		echo "Export finished. File: $file".PHP_EOL;
 	}
 
