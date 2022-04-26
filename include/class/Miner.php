@@ -94,12 +94,11 @@ class Miner {
 				continue;
 			}
 
-			//TODO: miner-ip-check
-//			if(!$this->checkAddress()) {
-//				_log("Miner is not allowed to mine to address from this ip");
-//				sleep(3);
-//				continue;
-//			}
+			if(!$this->checkAddress() && false) {
+				_log("Miner is not allowed to mine to address from this ip");
+				sleep(3);
+				continue;
+			}
 
 			$height = $info['data']['height']+1;
 			$block_date = $info['data']['date'];

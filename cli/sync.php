@@ -26,9 +26,6 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 global $_config;
-//TODO: implement bootstrap feature
-const BOOTSTRAPING = false;
-const BOOTSTRAP_URL = "https://blockchain.phpcoin.net/dump/phpcoin.sql";
 
 set_time_limit(0);
 error_reporting(0);
@@ -92,7 +89,6 @@ ini_set('memory_limit', '2G');
 
 $current = Block::current();
 
-//TODO check microsync feature
 // the microsync process is an anti-fork measure that will determine the best blockchain to choose for the last block
 $microsync = false;
 if ($arg == "microsync" && !empty($arg2)) {
@@ -125,20 +121,8 @@ if ($arg == "microsync" && !empty($arg2)) {
             break;
         }
 
-//	    $difficulty1 = $current['difficulty'];
-//	    $difficulty2 = $data['difficulty'];
-//
-//	    _log("Comparing difficulty my=$difficulty1 peer=$difficulty2",3);
-//
-//	    if($difficulty1 < $difficulty2) {
-//		    echo "Block difficulty lower than current\n";
-//		    _log("Block difficulty lower than current");
-//		    break;
-//	    }
-
         // delete the last block
         Block::pop(1);
-
 
         // add the new block
         echo "Starting to sync last block from $x[hostname]\n";

@@ -125,7 +125,6 @@ class NodeSync
 							_log("Invalid block mined at height " . $height);
 							$syncing = false;
 							_log("Blacklist node $host");
-							//TODO: blacklist all peers with invalid block and write height of invalid block
 							$peer = Peer::findByHostname($host);
 							Peer::blacklist($peer['id'], 'Invalid block '.$height);
 							break;

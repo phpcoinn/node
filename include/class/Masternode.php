@@ -205,7 +205,6 @@ class Masternode
 
 			if(!$verify) {
 				//source address can not be masternode
-				//TODO: test this case
 				$res = Masternode::existsPublicKey($transaction->publicKey);
 				if ($res) {
 					throw new Exception("Source public key {$transaction->publicKey} is already a masternode");
@@ -218,7 +217,6 @@ class Masternode
 					throw new Exception("Destination address $dst is not verified!");
 				}
 				//destionation address must not be masternode
-				//TODO: test this case
 				$res = Masternode::existsPublicKey($dstPublicKey);
 				if ($res) {
 					throw new Exception("Destination address $dst is already a masternode");
@@ -255,7 +253,6 @@ class Masternode
 					throw new Exception("Masternode must run at least ".MN_MIN_RUN_BLOCKS." blocks. Created at block ". $masternode['height']. " check block=".$height);
 				}
 				//destination address can not be masternode
-				//TODO: test this case
 				$dst = $transaction->dst;
 				$dstPublicKey = Account::publicKey($dst);
 				if($dstPublicKey) {
@@ -582,7 +579,6 @@ class Masternode
 				throw new Exception("Invalid transaction reward");
 			}
 
-			//TODO: other checks
 			return true;
 
 		} catch (Exception $e) {
