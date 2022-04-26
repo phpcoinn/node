@@ -68,31 +68,6 @@ function saveGeneratorStat($generator_stat) {
 }
 
 if ($q == "info") {
-//	$t1 = microtime(true);
-//	$cache_file = ROOT. "/tmp/mine-info.json";
-//	if(file_exists($cache_file)) {
-//		_log("MineInfo: Cache file exists");
-//		$content = file_get_contents($cache_file);
-//		$res = json_decode($content, true);
-//		$mtime = filemtime($cache_file);
-//		if(time() - $mtime > 5) {
-//			_log("MineInfo: Time expired - delete file");
-//			unlink($cache_file);
-//		}
-//		_log("MineInfo: Return response 1");
-//		api_echo($res);
-//	} else {
-//		_log("MineInfo: Read mine info ");
-//		$res = Blockchain::getMineInfo();
-//		file_put_contents($cache_file, json_encode($res));
-//		_log("MineInfo: Return response 2");
-//		api_echo($res);
-//	}
-	//TODO: prevent concurrent access from same ip - better mempool get
-//    $res = Blockchain::getMineInfo();
-//	$t2 = microtime(true);
-//	$diff = $t2 - $t1;
-//	_log("mine info time=".$diff, 5);
 	$res = Blockchain::getMineInfo();
     api_echo($res);
     exit;
