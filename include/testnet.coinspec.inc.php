@@ -24,7 +24,7 @@ const BLOCK_TIME = 30;
 const BLOCK_TARGET_MUL = 1000;
 const BLOCK_START_DIFFICULTY = "30000";
 
-const TX_FEE = 0.1;
+const TX_FEE = 0;
 const TX_TYPE_REWARD = 0;
 const TX_TYPE_SEND = 1;
 const TX_TYPE_MN_CREATE = 2;
