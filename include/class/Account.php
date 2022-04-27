@@ -172,8 +172,8 @@ class Account
 		global $db;
 	    $res = $db->single(
 		    "SELECT count(*) as cnt FROM transactions 
-				WHERE dst=:dst or (public_key=:src AND type != :rewardType)",
-		    [":src" => $public_key, ":dst" => $id, ":rewardType" => TX_TYPE_REWARD]
+				WHERE dst=:dst or src=:src",
+		    [":src" => $id, ":dst" => $id]
 	    );
 		return $res;
     }

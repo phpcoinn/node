@@ -941,14 +941,14 @@ class Transaction
 	static function getAddressStat($address) {
 		global $db;
 		$res = $db->row(
-			"select sum(if(t.public_key = a.public_key and t.type != :rewardType, t.val, 0)) as total_sent,
+			"select sum(if(t.src=a.id, t.val, 0)) as total_sent,
 			       sum(if(t.dst = a.id , t.val, 0)) as total_received,
-			       sum(if(t.public_key = a.public_key and t.type != 0, 1, 0)) as count_sent,
+			       sum(if(t.src= a.id, 1, 0)) as count_sent,
 			       sum(if(t.dst = a.id , 1, 0)) as count_received
 				from accounts a
 				left join transactions t on (a.public_key = t.public_key or a.id = t.dst)
 				where a.id = :address;",
-			[":address" => $address, ":rewardType"=>TX_TYPE_REWARD]
+			[":address" => $address]
 		);
 		return $res;
 	}
