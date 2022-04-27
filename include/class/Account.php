@@ -60,7 +60,7 @@ class Account
         return num($rez);
     }
 
-    static function getTransactions($id, $dm, $offset = 0)
+    static function getTransactions($id, $dm, $offset = 0, $filter = null)
     {
         global $db;
 
@@ -76,14 +76,36 @@ class Account
         }
 
         $current = Block::current();
-        $public_key = Account::publicKey($id);
+
+		$cond = '';
+		$params = [":src" => $id, ":dst" => $id,
+			":limit" => $limit, ":offset" => $offset];
+		if(isset($filter['address']) && !empty($filter['address'])) {
+			$cond .= ' and (t.src = :address_src or t.dst = :address_dst) ';
+			$params['address_src'] = $filter['address'];
+			$params['address_dst'] = $filter['address'];
+		}
+
+	    if(isset($filter['type']) && strlen($filter['type']) > 0) {
+			$cond .= ' and t.type = :type ';
+		    $params['type']=$filter['type'];
+	    }
+
+	    if(isset($filter['dir']) && !empty($filter['dir'])) {
+			if($filter['dir'] == 'send') {
+				$cond .= ' and t.src = :send ';
+				$params['send']=$id;
+			} else if ($filter['dir'] == 'receive') {
+				$cond .= ' and t.dst = :receive ';
+				$params['receive']=$id;
+			}
+	    }
 
         $res = $db->run(
-            "SELECT * FROM transactions 
-				WHERE dst=:dst or (public_key=:src AND type != :rewardType)
-				ORDER by height DESC LIMIT :offset, :limit",
-            [":src" => $public_key, ":dst" => $id, ":rewardType"=>TX_TYPE_REWARD,
-	            ":limit" => $limit, ":offset" => $offset]
+            "SELECT * FROM transactions t
+				WHERE (t.dst=:dst or t.src=:src)
+				$cond
+				ORDER by t.height DESC LIMIT :offset, :limit", $params
         );
 
         $transactions = [];

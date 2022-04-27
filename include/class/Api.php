@@ -148,6 +148,10 @@ class Api
 	 * @apiParam {string} [address] Address
 	 * @apiParam {numeric} [limit] Number of confirmed transactions, max 100, min 1
 	 * @apiParam {numeric} [offset] Offset for paginating transactions
+	 * @apiParam {object} [filter] Additional parameters to filter query
+	 * @apiParam {string} filter.address Filter transactions by address
+	 * @apiParam {numeric} filter.type Filter transactions by type
+	 * @apiParam {string} filter.dir Filter transactions by direction: send or receive
 	 *
 	 * @apiSuccess {string} block  Block ID
 	 * @apiSuccess {numeric} confirmation Number of confirmations
@@ -185,7 +189,7 @@ class Api
 		if(empty($offset)) {
 			$offset = 0;
 		}
-		$transactions = Transaction::getByAddress($address, $limit, $offset);
+		$transactions = Transaction::getByAddress($address, $limit, $offset, $data['filter']);
 		api_echo($transactions);
 	}
 
