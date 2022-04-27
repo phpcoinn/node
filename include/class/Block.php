@@ -591,9 +591,9 @@ class Block
 		$block = new Block($generator, $miner, $height, $date, $nonce, $data, $difficulty, Block::versionCode(), $argon, "");
 		$block->signature = $signature;
 		$block->publicKey = $public_key;
-		$res = $block->add();
+		$res = $block->add(false, $err);
 		if (!$res) {
-			api_err("Could not add the genesis block.");
+			api_err("Could not add the genesis block. Error: $err");
 		}
 
 	}
