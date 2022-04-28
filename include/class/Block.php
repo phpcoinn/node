@@ -408,66 +408,68 @@ class Block
 		return true;
 	}
 
-    public function mine()
+    public function mine(&$err=null)
     {
-        global $_config;
 
-        // invalid future blocks
-        if ($this->date>time()+30) {
-        	_log("Future block - invalid");
-            return false;
-        }
+		try {
 
-	    $prev = Block::get($this->height-1);
-	    if($this->height > 1 && $prev === false) {
-	    	_log("Can not get prev block for height {$this->height}");
-		    return false;
-	    }
-	    _log("Prev block ".json_encode($prev), 4);
-		$prev_date = $prev['date'];
-	    $elapsed = $this->date - $prev_date;
-	    _log("Current date = {$this->date} prev date = $prev_date elapsed = $elapsed", 4);
-        // get the current difficulty if empty
-        if (empty($this->difficulty)) {
-            $this->difficulty = Block::difficulty();
-        }
+			// invalid future blocks
+			if ($this->date>time()+30) {
+				throw new Exception("Future block - invalid");
+			}
 
-        if($elapsed <=0 && $this->height > UPDATE_1_BLOCK_ZERO_TIME) {
-	        _log("Block time zero");
-	        return false;
-        }
+			$prev = Block::get($this->height-1);
+			if($this->height > 1 && $prev === false) {
+				throw new Exception("Can not get prev block for height {$this->height}");
+			}
+			_log("Prev block ".json_encode($prev), 4);
+			$prev_date = $prev['date'];
+			$elapsed = $this->date - $prev_date;
+			_log("Current date = {$this->date} prev date = $prev_date elapsed = $elapsed", 4);
+			// get the current difficulty if empty
+			if (empty($this->difficulty)) {
+				$this->difficulty = Block::difficulty();
+			}
 
-	    //verify argon
-	    if(!$this->verifyArgon($prev_date, $elapsed)) {
-		    _log("Invalid argon={$this->argon}");
-		    return false;
-	    }
+			if($elapsed <=0 && $this->height > UPDATE_1_BLOCK_ZERO_TIME) {
+				throw new Exception("Block time zero");
+			}
+
+			//verify argon
+			if(!$this->verifyArgon($prev_date, $elapsed)) {
+				throw new Exception("Invalid argon={$this->argon}");
+			}
 
 	    $calcNonce = $this->calculateNonce($prev_date, $elapsed);
 
 //        $block_date = $time;
-	    if($calcNonce != $this->nonce && $this->height > UPDATE_3_ARGON_HARD) {
-		    _log("Invalid nonce {$this->nonce} - {$prev_date}-{$elapsed} calcNonce=$calcNonce");
-		    return false;
-	    }
+			if($calcNonce != $this->nonce && $this->height > UPDATE_3_ARGON_HARD) {
+				throw new Exception("Invalid nonce {$this->nonce} - {$prev_date}-{$elapsed} calcNonce=$calcNonce");
+			}
 
-	    if(strlen($this->nonce) != 64) {
-		    _log("Invalid nonce {$this->nonce}");
-		    return false;
-	    }
+			if(strlen($this->nonce) != 64) {
+				throw new Exception("Invalid nonce {$this->nonce}");
+			}
 
 
-	    $hit = $this->calculateHit();
-	    $target = $this->calculateTarget($elapsed);
-	    _log("Check hit= " . $hit. " target=" . $target . " current_height=".$this->height.
-		    " difficulty=".$this->difficulty." elapsed=".$elapsed, 5);
-	    $res = $this->checkHit($hit, $target, $this->height);
-	    if(!$res && $this->height > UPDATE_3_ARGON_HARD) {
-		    _log("invalid hit or target");
-		    return false;
-	    }
+			$hit = $this->calculateHit();
+			$target = $this->calculateTarget($elapsed);
+			_log("Check hit= " . $hit. " target=" . $target . " current_height=".$this->height.
+				" difficulty=".$this->difficulty." elapsed=".$elapsed, 5);
+			$res = $this->checkHit($hit, $target, $this->height);
+			if(!$res && $this->height > UPDATE_3_ARGON_HARD) {
+				throw new Exception("invalid hit or target");
+			}
 
 	    return true;
+
+		} catch (Exception $e) {
+			$err = $e->getMessage();
+			_log("Error mining block: $err");
+			return false;
+		}
+
+
 
     }
 

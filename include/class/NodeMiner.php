@@ -154,11 +154,11 @@ class NodeMiner {
 			$this->miningStat['submits']++;
 
 
-			$result = $bl->mine();
+			$result = $bl->mine($err);
 
 
 			if ($result) {
-				$res = $bl->add();
+				$res = $bl->add(false, $err);
 
 				if ($res) {
 					$current = Block::current();
@@ -170,9 +170,12 @@ class NodeMiner {
 					_log("Block confirmed", 1);
 					$this->miningStat['accepted']++;
 				} else {
-					_log("Block not confirmed: " . $res, 1);
+					_log("Block not confirmed: " . $err, 1);
 					$this->miningStat['rejected']++;
 				}
+			} else {
+				_log("Block not mined: " . $err, 1);
+				$this->miningStat['rejected']++;
 			}
 
 			sleep(3);
