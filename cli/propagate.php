@@ -192,22 +192,34 @@ if ($type == "transaction") {
     } else {
         $r = Peer::getActive(intval($_config['transaction_propagation_peers']));
     }
-    _log("Transaction propagate peers: ".print_r($r, 1),3);
+    _log("Transaction propagate peers: ".count($r),3);
     if(count($r)==0) {
     	_log("Transaction not propagated - no peers");
     }
+	$dir = ROOT . "/cli";
     foreach ($r as $x) {
-    	$url = $x['hostname']."/peer.php?q=submitTransaction";
-    	_log("Propagating to peer: ".$url,2);
-        $res = peer_post($url, $data, 30, $err);
-        if (!$res) {
-	        _log("Transaction not accepted: $err");
-            echo "Transaction not accepted: $err\n";
-        } else {
-	        _log("Transaction accepted",2);
-            echo "Transaction accepted\n";
-        }
+	    $hostname = base64_encode($x['hostname']);
+		$cmd = "php $dir/propagate.php transactionpeer $id $hostname";
+	    Nodeutil::runSingleProcess($cmd);
     }
+}
+
+if ($type == "transactionpeer") {
+	$id = $argv[2];
+	$hostname = $argv[3];
+	$hostname = base64_decode($hostname);
+	_log("Transaction $id propagate to peer $hostname",3);
+	$url = $hostname."/peer.php?q=submitTransaction";
+	$data = Transaction::export($id);
+	$res = peer_post($url, $data, 5, $err);
+    if (!$res) {
+        _log("Transaction $id to $hostname - Transaction not accepted: $err");
+        echo "Transaction not accepted: $err\n";
+    } else {
+        _log("Transaction $id to $hostname - Transaction accepted",2);
+        echo "Transaction accepted\n";
+    }
+
 }
 
 if($type == "apps") {
