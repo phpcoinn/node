@@ -48,6 +48,7 @@ class Blockchain
 			"generator"=>Account::getAddress($_config['generator_public_key']),
 			"ip"=>$_SERVER['REMOTE_ADDR'],
 			"hashingOptions"=>Block::hashingOptions($current['height']+1),
+			"fee"=>Blockchain::getFee()
 		];
 //		_log("getMineInfo: ".json_encode($res), 5);
 		return $res;
@@ -117,5 +118,33 @@ class Blockchain
 		}
 
 		return $rows2;
+	}
+
+	static function feeMultiplier($height = null) {
+		if(empty($height)) {
+			$height = Block::getHeight();
+		}
+		if($height < FEE_START_HEIGHT) {
+			return 0;
+		}
+		return 1 / FEE_DIVIDER;
+	}
+
+	static function getFee($block_height = null) {
+		if(empty($block_height)) {
+			$height = Block::getHeight();
+		} else {
+			$height = $block_height;
+		}
+		if($height < FEE_START_HEIGHT) {
+			return 0;
+		}
+		$block = Block::get($height);
+		$difficulty = $block['difficulty'];
+		$max = gmp_hexdec("ffffffff");
+		$fee_ratio = gmp_div(gmp_mul($difficulty, 100000000), $max);
+		$fee_multiplier = self::feeMultiplier($height);
+		$fee_ratio = round((intval($fee_ratio) / 100000000) * $fee_multiplier , 5);
+		return $fee_ratio;
 	}
 }

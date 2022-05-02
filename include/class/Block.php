@@ -536,6 +536,11 @@ class Block
 			        }
 		        }
 
+		        $res = $this->checkFees($err);
+		        if(!$res) {
+			        throw new Exception("Block parse fees failed: $err");
+		        }
+
 	        }
 
 	        // if the test argument is false, add the transactions to the blockchain
@@ -944,6 +949,11 @@ class Block
 				}
 			}
 
+			$res = $this->checkFees($err);
+			if(!$res) {
+				throw new Exception("Block verify fees failed: $err");
+			}
+
 			$data = json_encode($data);
 			$this->prevBlockId = $prev_block_id;
 			$signature_base = $this->getSignatureBase();
@@ -972,6 +982,42 @@ class Block
 		}
 
 		return true;
+	}
+
+	function checkFees(&$error = null) {
+
+		try {
+			$fee = 0;
+			$fee_txs = [];
+			foreach ($this->data as $transaction) {
+				$tx = Transaction::getFromArray($transaction);
+				$fee += $tx->fee;
+				if($tx->type == TX_TYPE_FEE) {
+					$fee_txs[]=$tx;
+				}
+			}
+			$fee = round($fee, 8);
+			if(count($fee_txs) == 0) {
+				if ($fee > 0) {
+					throw new Exception("Missing fee transaction");
+				}
+			} else if(count($fee_txs) == 1) {
+				if ($fee <= 0) {
+					throw new Exception("Invalid fee for transactions");
+				} else {
+					$fee_tx = $fee_txs[0];
+					if ($fee_tx->val != $fee) {
+						throw new Exception("Invalid value in fee transaction");
+					}
+				}
+			} else {
+				throw new Exception("Multiple fee transactions");
+			}
+			return true;
+		} catch (Exception $e) {
+			$error = $e->getMessage();
+			return false;
+		}
 	}
 
 	function checkHit($hit, $target, $height) {

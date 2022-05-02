@@ -259,13 +259,19 @@ if ($q == "info") {
 	$block = new Block($generator, $address, $height, $date, $nonce, $data, $difficulty, $version, $argon, $prev_block['id']);
 	$block->publicKey = $_config['generator_public_key'];
 
+	$fee_dst = $generator;
 	if($mn_reward_tx) {
 		if($mn_reward_tx['dst']!=$generator) {
 			$block->masternode = $mn_reward_tx['dst'];
 			$block->mn_signature = $mn_signature;
+			$fee_dst = $mn_reward_tx['dst'];
 		}
 	}
 
+	Transaction::processFee($data, $_config['generator_public_key'], $_config['generator_private_key'], $fee_dst, $new_block_date);
+	ksort($data);
+
+	$block->data = $data;
 	$signature = $block->sign($_config['generator_private_key']);
 	$result = $block->mine();
 
@@ -274,6 +280,7 @@ if ($q == "info") {
 	@$generator_stat['ips'][$ip][$address]=$address;
 
 	if ($result) {
+		$block->transactions = count($block->data);
 		$res = $block->add(false, $error);
 		$l .= " add=$res";
 		if ($res) {

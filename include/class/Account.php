@@ -156,6 +156,9 @@ class Account
 				        $trans['type_label'] = "debit";
 				        $sign="-";
 			        }
+		        } elseif ($x['type'] == TX_TYPE_FEE) {
+			        $sign="+";
+			        $trans['type_label'] = "fee";
 		        } else {
 			        $trans['type_label'] = "other";
 		        }

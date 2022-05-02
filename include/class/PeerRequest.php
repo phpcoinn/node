@@ -137,6 +137,7 @@ class PeerRequest
 		_log("data: ".json_encode($data),3);
 
 		$tx = Transaction::getFromArray($data);
+		$tx->mempool = true;
 		// receive a new transaction from a peer
 //    $current = $block->current();
 

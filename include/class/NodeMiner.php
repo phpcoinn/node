@@ -134,14 +134,17 @@ class NodeMiner {
 			$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $this->public_key, $this->private_key, $reward, "nodeminer");
 			$data[$reward_tx['id']]=$reward_tx;
 			$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $this->public_key, $this->private_key, $height, $mn_signature);
+			$fee_dst = $generator;
 			if($mn_reward_tx) {
 				$data[$mn_reward_tx['id']]=$mn_reward_tx;
 				if($mn_reward_tx['dst']!=$generator) {
 					$bl->masternode = $mn_reward_tx['dst'];
 					$bl->mn_signature = $mn_signature;
+					$fee_dst = $mn_reward_tx['dst'];
 				}
 			}
 
+			Transaction::processFee($data, $this->public_key, $this->private_key, $fee_dst, $new_block_date);
 			ksort($data);
 
 			$prev_block = Block::get($height-1);
@@ -150,7 +153,7 @@ class NodeMiner {
 			$bl->prevBlockId = $prev_block['id'];
 
 			$bl->sign($this->private_key);
-
+			$bl->transactions = count($bl->data);
 			$this->miningStat['submits']++;
 
 

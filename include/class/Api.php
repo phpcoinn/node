@@ -402,8 +402,9 @@ class Api
 			$date = time();
 		}
 		$message=$data['message'];
-		$val = $data['val'] + 0;
-		$transaction = new Transaction($public_key,$dst,$val,$type,$date,$message);
+		$val = $data['val'];
+		$fee = $data['fee'];
+		$transaction = new Transaction($public_key,$dst,$val,$type,$date,$message, $fee);
 		$transaction->signature = $signature;
 		$hash = $transaction->addToMemPool($error);
 
@@ -590,7 +591,7 @@ class Api
 		api_echo($peers);
 	}
 
-
+	//TODO: API update doc
 	static function getMasternodes($data) {
 		api_echo(Masternode::getAll());
 	}
@@ -602,5 +603,10 @@ class Api
 			api_err("Invalid address");
 		}
 		api_echo(Masternode::getMasternodesForPublicKey($public_key));
+	}
+
+	static function getFee($data) {
+		$fee = Blockchain::getFee($data['height']);
+		api_echo(number_format($fee, 5));
 	}
 }

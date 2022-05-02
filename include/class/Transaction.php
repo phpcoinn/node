@@ -18,16 +18,46 @@ class Transaction
 
 	public $src;
 
-	public function __construct($publicKey=null,$dst=null,$val=null,$type=null,$date = null,$msg = null)
+	public $mempool = false;
+
+	public function __construct($publicKey=null,$dst=null,$val=null,$type=null,$date = null,$msg = null, $fee=0)
 	{
 		$this->val = $val;
-		$this->fee = 0;
 		$this->dst = $dst;
 		$this->msg = $msg;
 		$this->type = $type;
 		$this->publicKey = $publicKey;
 		$this->date = empty($date) ? time() : $date;
 		$this->src = Account::getAddress($this->publicKey);
+		$this->fee = $fee;
+	}
+
+	function calculateFee($block_height) {
+		$fee = 0;
+		if($this->type == TX_TYPE_SEND) {
+			$fee_ratio = Blockchain::getFee($block_height);
+			$fee = round($fee_ratio * $this->val, 8);
+		} else if($this->type == TX_TYPE_SC_CREATE) {
+			$fee = TX_SC_CREATE_FEE;
+		}
+		return $fee;
+	}
+
+	function checkFee(&$err=null) {
+		//TODO: error handling
+		if ($this->fee < 0) {
+			$err = "{$this->fee} - Fee below 0";
+			return false;
+		}
+
+		if($this->mempool) {
+			$fee = $this->calculateFee($this->height);
+			if ($fee != $this->fee) {
+				$err = "Invalid fee fee={$this->fee} calc=$fee";
+				return false;
+			}
+		}
+		return true;
 	}
 
 
@@ -41,20 +71,21 @@ class Transaction
 			foreach ($r as $x) {
 				$tx = Transaction::getFromDbRecord($x);
 				_log("Reversing transaction {$tx->id}", 3);
-				if (empty($tx->src)) {
-					$tx->src = Account::getAddress($tx->publicKey);
-				}
 
-	        $type = $tx->type;
-	        $res = true;
-	        if($type == TX_TYPE_REWARD) {
-		        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
-	        }
-			if ($type == TX_TYPE_SEND) {
-		        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
-		        $res = $res && Account::addBalance($tx->src, $tx->val);
-		        $tx->add_mempool();
-	        }
+		        $type = $tx->type;
+		        $res = true;
+		        if($type == TX_TYPE_REWARD) {
+			        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
+		        }
+				if ($type == TX_TYPE_SEND) {
+			        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
+			        $res = $res && Account::addBalance($tx->src, $tx->val + $tx->fee);
+			        $tx->add_mempool();
+		        }
+
+		        if ($type == TX_TYPE_FEE) {
+			        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
+		        }
 
 				if ($type == TX_TYPE_MN_CREATE) {
 					$res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
@@ -134,6 +165,8 @@ class Transaction
 		$trans->src = $x['src'];
 		$trans->fee = floatval($x['fee']);
 		$trans->signature = $x['signature'];
+		//$trans->data = $x['data']; //TODO: SC
+		$trans->height = $x['height'];
 		return $trans;
 	}
 
@@ -173,6 +206,7 @@ class Transaction
             $balance = [];
             foreach ($r as $x) {
                 $trans = self::getFromDbRecord($x);
+	            $trans->mempool = true;
 
                 if ($i >= $max) {
                     break;
@@ -327,6 +361,7 @@ class Transaction
 		$address = Account::getAddress($public_key);
 		$res = Account::checkAccount($address, $public_key, $block);
 		if ($res === false) {
+			//TODO: error handling
 			_log("Error checking account address");
 			return false;
 		}
@@ -338,7 +373,7 @@ class Transaction
 			}
 		}
 
-		$src = $this->type == TX_TYPE_REWARD ? null : Account::getAddress($this->publicKey);
+		$src = $this->type == TX_TYPE_REWARD || $this->type == TX_TYPE_FEE ? null : Account::getAddress($this->publicKey);
 
 		$bind = [
 			":id"         => $this->id,
@@ -366,6 +401,11 @@ class Transaction
 		} else if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE) {
 			$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
 			$res = $res && Account::addBalance($this->dst, ($this->val));
+		} else if ($type == TX_TYPE_FEE) {
+			$res = $res && Account::addBalance($this->dst, $this->val);
+			//TODO: SC
+//		} else if ($type == TX_TYPE_SC_CREATE) {
+//			$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
 		}
 		if($res === false) {
 			_log("Error updating balance for transaction ".$this->id." type=$type");
@@ -427,13 +467,15 @@ class Transaction
 	}
 
     // check the transaction for validity
-    public function check($height = 0, $verify = false, &$error = null)
+    public function check($block_height = 0, $verify = false, &$error = null)
     {
         global $db, $_config;
         // if no specific block, use current
-        if ($height === 0) {
-	    $current = Block::current();
+        if ($block_height === 0) {
+	        $current = Block::current();
             $height = $current['height'];
+        } else {
+	        $height = $block_height;
         }
         $base = $this->getSignatureBase();
 
@@ -462,13 +504,10 @@ class Transaction
 			    throw new Exception("Genesis can not spend before locked height");
 		    }
 
-		    $fee = $this->val * TX_FEE;
-		    $fee = num($fee);
-
-	        // added fee does not match
-	        if ($fee != $this->fee) {
-		        throw new Exception("{$this->id} - Invalid fee ".json_encode($this));
-	        }
+			// added fee does not match
+			if (!$this->checkFee($err)) {
+				throw new Exception("{$this->id} - Check fee failed: $err");
+			}
 
 			//check types
 		    $type = $this->type;
@@ -477,6 +516,13 @@ class Transaction
 				$allowedTypes[]=TX_TYPE_MN_CREATE;
 				$allowedTypes[]=TX_TYPE_MN_REMOVE;
 			}
+			if($height >= FEE_START_HEIGHT) {
+				$allowedTypes[]=TX_TYPE_FEE;
+			}
+			//TODO: SC
+//			if($height >= SC_START_HEIGHT) {
+//				$allowedTypes[]=TX_TYPE_SC_CREATE;
+//			}
 			if(!in_array($type, $allowedTypes)) {
 				$error = "Invalid transaction type $type for height $height";
 				_log($error);
@@ -736,6 +782,8 @@ class Transaction
 		    $trans['type_label'] = "masternode create";
 	    } elseif ($x['type'] == TX_TYPE_MN_REMOVE) {
 		    $trans['type_label'] = "masternode remove";
+	    } elseif ($x['type'] == TX_TYPE_FEE) {
+		    $trans['type_label'] = "fee";
 	    } else {
 		    $trans['type_label'] = "other";
 	    }
@@ -820,6 +868,7 @@ class Transaction
 
     function addToMemPool(&$error) {
     	global $db;
+		$this->mempool = true;
 	    $hash = $this->hash();
 
 	    $max_txs = Block::max_transactions();
@@ -862,6 +911,9 @@ class Transaction
 		    }
 
 			if($this->type == TX_TYPE_REWARD) {
+				throw new Exception("Not allowed type in mempool");
+			}
+			if($this->type == TX_TYPE_FEE) {
 				throw new Exception("Not allowed type in mempool");
 			}
 
@@ -941,7 +993,7 @@ class Transaction
 	static function getAddressStat($address) {
 		global $db;
 		$res = $db->row(
-			"select sum(if(t.src=a.id, t.val, 0)) as total_sent,
+			"select sum(if(t.src=a.id, t.val + t.fee, 0)) as total_sent,
 			       sum(if(t.dst = a.id , t.val, 0)) as total_received,
 			       sum(if(t.src= a.id, 1, 0)) as count_sent,
 			       sum(if(t.dst = a.id , 1, 0)) as count_received
@@ -951,6 +1003,23 @@ class Transaction
 			[":address" => $address]
 		);
 		return $res;
+	}
+
+	static function processFee(&$transactions, $public_key, $private_key, $miner, $date) {
+		$fee = 0;
+		foreach($transactions as $tx_id => $transaction) {
+			$tx_fee = floatval($transaction['fee']);
+			if(!empty($tx_fee)) {
+				$fee += $tx_fee;
+			}
+		}
+		$fee = round($fee, 8);
+		if($fee > 0) {
+			$tx = new Transaction($public_key,$miner,$fee,TX_TYPE_FEE,$date,"fee");
+			$tx->sign($private_key);
+			$hash = $tx->hash();
+			$transactions[$hash] = $tx->toArray();
+		}
 	}
 
 	static function typeLabel($type) {

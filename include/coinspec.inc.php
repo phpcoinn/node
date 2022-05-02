@@ -68,6 +68,9 @@ const FEATURE_MN = true;
 const MN_COLLATERAL = 10000;
 const MN_MIN_RUN_BLOCKS = 1440*30;
 
+const FEE_START_HEIGHT = PHP_INT_MAX;
+const FEE_DIVIDER = 100;
+
 const TOTAL_SUPPLY = 103200000;
 const GIT_URL = "https://github.com/phpcoinn/node";
 const UPDATE_1_BLOCK_ZERO_TIME = 9000;
