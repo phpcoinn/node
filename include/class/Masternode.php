@@ -41,6 +41,13 @@ class Masternode
 		return $res;
 	}
 
+	function storeWinHeight() {
+		global $db;
+		$sql = "update masternode set win_height = :win_height where public_key = :public_key";
+		$res = $db->run($sql, [":win_height" => $this->win_height, ":public_key"=>$this->public_key]);
+		return $res;
+	}
+
 	static function fromDB($row) {
 		$masternode = new Masternode();
 		$masternode->public_key = $row['public_key'];
@@ -370,6 +377,13 @@ class Masternode
 			return;
 		}
 		$masternode = Masternode::fromDB($masternode);
+
+		$win_height = Masternode::getLastWinHeight($masternode->id, $height);
+		if($win_height <> $masternode->win_height) {
+			_log("Updated local masternode win_height={$masternode->win_height} calc=$win_height", 4);
+			$masternode->win_height = $win_height;
+			$masternode->storeWinHeight();
+		}
 
 		$sign = false;
 		if($masternode->signature) {
@@ -790,7 +804,7 @@ class Masternode
 
 			$win_height = Masternode::getLastWinHeight($this->id, $height);
 			if($win_height != $this->win_height) {
-				throw new Exception("Invalid masternode win_height saved={$this->win_height} calculated=$win_height");
+				throw new Exception("Invalid masternode {$this->id} {$this->ip} win_height saved={$this->win_height} calculated=$win_height");
 			}
 
 			return true;
