@@ -44,7 +44,7 @@ class NodeMiner {
 			}
 
 			$peersCount = Peer::getCount();
-			$minPeersCount = DEVELOPMENT ? 1 : 3;
+			$minPeersCount = DEVELOPMENT ? 0 : 3;
 			if($peersCount < $minPeersCount) {
 				_log("Not enough node peers $peersCount min=$minPeersCount");
 				return false;
@@ -57,7 +57,7 @@ class NodeMiner {
 			}
 
 			$nodeScore = $_config['node_score'];
-			if($nodeScore < MIN_NODE_SCORE) {
+			if($nodeScore < MIN_NODE_SCORE && !DEVELOPMENT) {
 				_log("Node score not ok");
 				return false;
 			}
@@ -121,7 +121,7 @@ class NodeMiner {
 			}
 
 			$nodeScore = $_config['node_score'];
-			if($nodeScore < MIN_NODE_SCORE) {
+			if($nodeScore < MIN_NODE_SCORE && !DEVELOPMENT) {
 				_log("Node score not ok - mining dropped");
 				$this->miningStat['dropped']++;
 				break;

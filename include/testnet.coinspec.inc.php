@@ -75,6 +75,7 @@ const TX_SC_CREATE_FEE = 0;
 const SC_START_HEIGHT = 100;
 
 const FEE_START_HEIGHT = 10;
+const FEE_DIVIDER = 1 / 1000;
 
 const TOTAL_SUPPLY = 714990;
 const GIT_URL = "https://github.com/phpcoinn/node";
