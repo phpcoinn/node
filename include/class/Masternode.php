@@ -141,7 +141,15 @@ class Masternode
 	}
 
 	static function getWinner($height) {
-		global $db;
+		global $db, $_config;
+
+		$local_id = null;
+		if(Masternode::isLocalMasternode()) {
+			$publicKey = $_config['masternode_public_key'];
+			$local_id = Account::getAddress($publicKey);
+		}
+
+
 		$sql = "select m.id, m.signature, m.public_key, max(b.height) as last_win_height from masternode m
 			left join blocks b on (b.masternode = m.id)
 			where m.height <= :height
@@ -150,6 +158,9 @@ class Masternode
 		$rows = $db->run($sql, [":height"=>$height]);
 		foreach($rows as $row) {
 			$mn = Masternode::fromDB($row);
+			if(!empty($local_id) && $local_id == $mn->id) {
+				continue;
+			}
 			if($mn->verify($height)) {
 				return $row;
 			}
