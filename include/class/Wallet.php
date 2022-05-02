@@ -256,28 +256,28 @@ class Wallet
 		$res=$this->wallet_peer_post("/api.php?q=getPendingBalance", array("address"=>$this->address));
 		$this->checkApiResponse($res);
 		$balance=$res['data'];
-		$fee=$amount*TX_FEE;
-//		if ($fee<TX_MIN_FEE) {
-//			$fee=TX_MIN_FEE;
-//		}
-//		if ($fee>TX_MAX_FEE) {
-//			$fee=TX_MAX_FEE;
-//		}
+
+		$res=$this->wallet_peer_post("/api.php?q=getFee");
+		$this->checkApiResponse($res);
+		$fee_ratio=floatval($res['data']);
+
+		$amount = floatval($amount);
+
+		$fee = round($fee_ratio * $amount, 8);
+
 		$total=$amount+$fee;
 
-		$val=num($amount);
-		$fee=num($fee);
 		if ($balance<$total) {
 			die("ERROR: Not enough funds in balance\n");
 		}
 		$date=time();
 		if(empty($msg)) $msg = "";
 
-		$transaction = new Transaction($this->public_key,$address,$val,TX_TYPE_SEND,$date,$msg);
+		$transaction = new Transaction($this->public_key,$address,$amount,TX_TYPE_SEND,$date,$msg,$fee);
 		$signature = $transaction->sign($this->private_key);
 
 		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
-			array("dst" => $address, "val" => $val, "signature" => $signature,
+			array("dst" => $address, "val" => $amount, "fee"=>$fee, "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_SEND,
 				"message" => $msg, "date" => $date));
 		$this->checkApiResponse($res);
