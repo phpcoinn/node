@@ -139,6 +139,10 @@ class Blockchain
 		if($height < FEE_START_HEIGHT) {
 			return 0;
 		}
+		return 0;
+	}
+
+	static function standardFee($height) {
 		$block = Block::get($height);
 		$difficulty = $block['difficulty'];
 		$max = gmp_hexdec("ffffffff");
