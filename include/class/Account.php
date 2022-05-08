@@ -304,7 +304,7 @@ class Account
 			"UPDATE accounts SET balance=balance+:val WHERE id=:id",
 			[":id" => $id, ":val" => $val]
 		);
-		return $res;
+		return $res !== false;
 	}
 
 	public static function getAddress($public_key) {

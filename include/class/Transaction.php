@@ -75,22 +75,22 @@ class Transaction
 		        $type = $tx->type;
 		        $res = true;
 		        if($type == TX_TYPE_REWARD) {
-			        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
+			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1));
 		        }
 				if ($type == TX_TYPE_SEND) {
-			        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
-			        $res = $res && Account::addBalance($tx->src, $tx->val + $tx->fee);
-			        $tx->add_mempool();
+			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1));
+			        $res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
+					$res = $res && $tx->add_mempool();
 		        }
 
 		        if ($type == TX_TYPE_FEE) {
-			        $res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
+			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1));
 		        }
 
 				if ($type == TX_TYPE_MN_CREATE) {
-					$res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
-					$res = $res && Account::addBalance($tx->src, $tx->val);
-					$tx->add_mempool();
+					$res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1));
+					$res = $res && Account::addBalance($tx->src, floatval($tx->val));
+					$res = $res && $tx->add_mempool();
 					if($res === false) {
 						throw new Exception("Update balance for reverse transaction failed");
 					}
@@ -102,9 +102,9 @@ class Transaction
 				}
 
 				if ($type == TX_TYPE_MN_REMOVE) {
-					$res = $res && Account::addBalance($tx->dst, $tx->val*(-1));
-					$res = $res && Account::addBalance($tx->src, $tx->val);
-					$tx->add_mempool();
+					$res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1));
+					$res = $res && Account::addBalance($tx->src, floatval($tx->val));
+					$res = $res && $tx->add_mempool();
 					if($res === false) {
 						throw new Exception("Update balance for reverse transaction failed");
 					}
@@ -116,6 +116,22 @@ class Transaction
 					if(!$res) {
 						throw new Exception("Can not reverse create masternode");
 					}
+				}
+
+//				if ($type == TX_TYPE_SC_CREATE) {
+//
+//					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1));
+//					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
+//					$res = $res && $tx->add_mempool();
+//
+//					$res = $res && SmartContract::reverse($tx, $error);
+//					if(!$res) {
+//						throw new Exception("Can not reverse create smart contract: $error");
+//					}
+//				}
+
+				if($res === false) {
+					throw new Exception("Update balance for reverse transaction failed");
 				}
 
 				$res = $db->run("DELETE FROM transactions WHERE id=:id", [":id" => $tx->id]);
