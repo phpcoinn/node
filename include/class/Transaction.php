@@ -487,7 +487,7 @@ class Transaction
     {
         global $db, $_config;
         // if no specific block, use current
-        if ($block_height === 0) {
+        if (empty($block_height)) {
 	        $current = Block::current();
             $height = $current['height'];
         } else {

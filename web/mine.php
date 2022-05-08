@@ -239,7 +239,7 @@ if ($q == "info") {
 	$minerReward = num($rewardInfo['miner']);
 	$reward_tx = Transaction::getRewardTransaction($address, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $minerReward, $msg);
 
-	$l .= " reward_tx=".json_encode($reward_tx);
+//	$l .= " reward_tx=".json_encode($reward_tx);
 
 	$data[$reward_tx['id']] = $reward_tx;
 
@@ -312,12 +312,13 @@ if ($q == "info") {
 		saveGeneratorStat($generator_stat);
 		api_err("rejected - mine");
 	}
+//TODO: remove checkAddress from wallet
 } else if ($q == "checkAddress") {
 	$address = $_POST['address'];
 	if(empty($address)) {
 		api_err("address-not-specified");
 	}
-	_log("Check mine access to ip: $ip address=$address");
+	_log("Check mine access to ip: $ip address=$address", 4);
 	$res = Minepool::checkIp($address, $ip);
 	if($res) {
 		api_echo($address);

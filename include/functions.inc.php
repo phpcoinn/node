@@ -461,3 +461,14 @@ function hashimg($hash, $title=null) {
 	$s.='</div>';
 	return $s;
 }
+
+function try_catch($callback, &$error = null) {
+	try {
+		return call_user_func($callback);
+	} catch (Exception $e) {
+		$stack = debug_backtrace();
+		$error = $stack[1]['class'].$stack[1]['type'].$stack[1]['function'].":".$stack[1]['line'].": " . $e->getMessage();
+		_log($error);
+		return false;
+	}
+}
