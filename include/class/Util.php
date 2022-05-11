@@ -979,6 +979,13 @@ class Util
 		}
 	}
 
+	static function setConfig($argv) {
+		$config_name = $argv[2];
+		$config_value = $argv[3];
+		global $db;
+		$db->setConfig($config_name, $config_value);
+	}
+
 	static function propagate($argv) {
 		global $_config;
 		$message = trim($argv[2]);

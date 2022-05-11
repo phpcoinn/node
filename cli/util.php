@@ -97,6 +97,7 @@ import-private-key <private_key>                        - Recreate wallet from p
 masternode-sign <message>                               - Sign message with masternode private key
 verify <message> <signature> <public_key|address>       - Verify message signature with public key or address
 get-more-peers                                          - Get more peers from connected peeers
+set-config <config_name> <config_value>					- set config value for node	
 
 ";
 	}
