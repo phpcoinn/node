@@ -884,7 +884,11 @@ class Transaction
 	static function getById($id) {
 		global $db;
 		$x = $db->row("SELECT * FROM transactions WHERE id=:id", [":id" => $id]);
-		return Transaction::getFromDbRecord($x);
+		if($x) {
+			return Transaction::getFromDbRecord($x);
+		} else {
+			return null;
+		}
 	}
 
 
