@@ -23,6 +23,9 @@ mysql -e "create database $DB_NAME;"
 mysql -e "create user '$DB_USER'@'localhost' identified by '$DB_PASS';"
 mysql -e "grant all privileges on $DB_NAME.* to '$DB_USER'@'localhost';"
 
+echo "disable_log_bin" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+service mysql restart
+
 echo "PHPCoin: download node"
 echo "==================================================================================================="
 mkdir /var/www/phpcoin
@@ -36,7 +39,6 @@ cat << EOF > /etc/apache2/sites-available/phpcoin.conf
         ServerAdmin webmaster@localhost
         DocumentRoot /var/www/phpcoin/web
         ErrorLog ${APACHE_LOG_DIR}/error.log
-        CustomLog ${APACHE_LOG_DIR}/access.log combined
 </VirtualHost>
 EOF
 a2dissite 000-default
