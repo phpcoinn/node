@@ -7,6 +7,7 @@ class NodeMiner {
 	public $private_key;
 	public $miningStat;
 	public $cnt = 0;
+	public $blocks = 0;
 
 	private $running = true;
 
@@ -23,7 +24,7 @@ class NodeMiner {
 		return $info;
 	}
 
-	function start($mine_blocks = -1) {
+	function start($mine_blocks = null) {
 		$this->miningStat = [
 			'started'=>time(),
 			'hashes'=>0,
@@ -190,7 +191,7 @@ class NodeMiner {
 			file_put_contents($minerStatFile, json_encode($this->miningStat));
 
 			$this->blocks++;
-			if($this->blocks >= $mine_blocks) {
+			if(!empty($mine_blocks) && $this->blocks >= $mine_blocks) {
 				$this->running = false;
 			}
 
