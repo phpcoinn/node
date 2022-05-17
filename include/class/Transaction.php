@@ -320,7 +320,7 @@ class Transaction
 					$tx_arr['error']=$tx_error;
 				}
 				if(!$as_mine_data) {
-					$tx_arr['height']=$trans->height;
+					$tx_arr['height']=$x['height'];
 					$tx_arr['peer']=$trans->peer;
 				}
                 $transactions[$x['id']] = $tx_arr;
