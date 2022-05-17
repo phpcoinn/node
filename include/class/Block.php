@@ -773,6 +773,9 @@ class Block
 		if($target == 0 && $_config['testnet']) {
 			$target = 1;
 		}
+		if($target > 100 && $_config['testnet']) {
+			$target = 100;
+		}
 		return $target;
 	}
 
