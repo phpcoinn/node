@@ -369,103 +369,114 @@ class Transaction
 	}
 
 	// add a new transaction to the blockchain
-	public function add($block, $height)
+	public function add($block, $height, &$error = null)
 	{
-		global $db;
 
-		$public_key = $this->publicKey;
-		$address = Account::getAddress($public_key);
-		$res = Account::checkAccount($address, $public_key, $block);
-		if ($res === false) {
-			//TODO: error handling
-			_log("Error checking account address");
-			return false;
-		}
-		if ($this->type == TX_TYPE_SEND) {
-			$res = Account::checkAccount($this->dst, "", $block);
+		return try_catch(function () use ($block, $height, &$error) {
+			$public_key = $this->publicKey;
+			$address = Account::getAddress($public_key);
+			$res = Account::checkAccount($address, $public_key, $block);
 			if ($res === false) {
-				_log("Error checking account address for send");
-				return false;
+				throw new Exception("Error checking account address");
 			}
-		}
+			if ($this->type == TX_TYPE_SEND) {
+				$res = Account::checkAccount($this->dst, "", $block);
+				if ($res === false) {
+					throw new Exception("Error checking account address for send");
+				}
+			}
 
 		$src = $this->type == TX_TYPE_REWARD || $this->type == TX_TYPE_FEE ? null : Account::getAddress($this->publicKey);
 
-		$bind = [
-			":id"         => $this->id,
-			":public_key" => $this->publicKey,
-			":height"     => $height,
-			":block"      => $block,
-			":dst"        => $this->dst,
-			":val"        => $this->val,
-			":fee"        => $this->fee,
-			":signature"  => $this->signature,
-			":type"    => $this->type,
-			":date"       => $this->date,
-			":message"    => $this->msg,
-			":src"        => $src
-		];
-		$res = Transaction::insert($bind);
-		if ($res != 1) {
-			return false;
-		}
-
-		$type = $this->type;
-		$res = true;
-		if($type == TX_TYPE_REWARD && $this->val > 0) {
-			$res = $res && Account::addBalance($this->dst, $this->val);
-		} else if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE) {
-			$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
-			$res = $res && Account::addBalance($this->dst, ($this->val));
-		} else if ($type == TX_TYPE_FEE) {
-			$res = $res && Account::addBalance($this->dst, $this->val);
-			//TODO: SC
-//		} else if ($type == TX_TYPE_SC_CREATE) {
-//			$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
-		}
-		if($res === false) {
-			_log("Error updating balance for transaction ".$this->id." type=$type");
-			return false;
-		}
-
-		if ($type == TX_TYPE_MN_CREATE) {
-			$dstPublicKey = Account::publicKey($this->dst);
-			$res = Masternode::create($dstPublicKey, $height);
-			if(!$res) {
-				_log("Can not create masternode");
-				return false;
+			$bind = [
+				":id"         => $this->id,
+				":public_key" => $this->publicKey,
+				":height"     => $height,
+				":block"      => $block,
+				":dst"        => $this->dst,
+				":val"        => $this->val,
+				":fee"        => $this->fee,
+				":signature"  => $this->signature,
+				":type"    => $this->type,
+				":date"       => $this->date,
+				":message"    => $this->msg,
+				":src"        => $src,
+//				":data"    => $this->data,
+			];
+			$res = Transaction::insert($bind);
+			if ($res != 1) {
+				throw new Exception("Can not insert transaction");
 			}
-		}
 
-		if ($type == TX_TYPE_MN_REMOVE) {
+			$type = $this->type;
 			$res = true;
-			$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
-			$res = $res && Account::addBalance($this->dst, ($this->val));
+			if($type == TX_TYPE_REWARD && $this->val > 0) {
+				$res = $res && Account::addBalance($this->dst, $this->val);
+			} else if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE) {
+				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
+				$res = $res && Account::addBalance($this->dst, ($this->val));
+			} else if ($type == TX_TYPE_FEE) {
+				$res = $res && Account::addBalance($this->dst, $this->val);
+//			} else if ($type == TX_TYPE_SC_CREATE) {
+//				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
+//			} else if ($type == TX_TYPE_SC_EXEC) {
+//				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
+			}
 			if($res === false) {
-				_log("Error updating balance for transaction ".$this->id);
-				return false;
+				throw new Exception("Error updating balance for transaction ".$this->id." type=$type");
 			}
-			$mn = Masternode::get($this->publicKey);
-			if(!$mn) {
-				_log("Masternode with public key {$this->publicKey} does not exists");
-				return false;
-			}
-			$res = Masternode::delete($this->publicKey);
-			if(!$res) {
-				_log("Can not delete masternode with public key: ".$this->publicKey);
-				return false;
-			}
-		}
 
-		if ($type == TX_TYPE_REWARD) {
-			$res = Masternode::processRewardTx($this, $error);
-			if(!$res) {
-				return false;
+			if ($type == TX_TYPE_MN_CREATE) {
+				$dstPublicKey = Account::publicKey($this->dst);
+				$res = Masternode::create($dstPublicKey, $height);
+				if(!$res) {
+					throw new Exception("Can not create masternode");
+				}
 			}
-		}
 
-		Mempool::delete($this->id);
-		return true;
+			if ($type == TX_TYPE_MN_REMOVE) {
+				$res = true;
+				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
+				$res = $res && Account::addBalance($this->dst, ($this->val));
+				if($res === false) {
+					throw new Exception("Error updating balance for transaction ".$this->id);
+				}
+				$mn = Masternode::get($this->publicKey);
+				if(!$mn) {
+					throw new Exception("Masternode with public key {$this->publicKey} does not exists");
+				}
+				$res = Masternode::delete($this->publicKey);
+				if(!$res) {
+					throw new Exception("Can not delete masternode with public key: ".$this->publicKey);
+				}
+			}
+
+			if ($type == TX_TYPE_REWARD) {
+				$res = Masternode::processRewardTx($this, $error);
+				if(!$res) {
+					throw new Exception("Can not process masternode reward:$error");
+				}
+			}
+
+//			if ($type == TX_TYPE_SC_CREATE) {
+//				$res = SmartContract::createSmartContract($this, $height, $error);
+//				if(!$res) {
+//					throw new Exception("Can not process create smart contract: $error");
+//				}
+//			}
+//
+//			if ($type == TX_TYPE_SC_EXEC) {
+//				$res = SmartContract::execSmartContract($this, $height, $error);
+//				if(!$res) {
+//					throw new Exception("Can not process exec smart contract: $error");
+//				}
+//			}
+
+			Mempool::delete($this->id);
+			return true;
+		}, $error);
+
+
 	}
 
     // hash the transaction's most important fields and create the transaction ID

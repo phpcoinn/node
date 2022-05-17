@@ -341,7 +341,7 @@ class PeerRequest
 		}
 
 		//_log("DFSH: ADD BLOCK ".$block->height);
-		$res = $block->add(false, $error);
+		$res = $block->add($error);
 
 		_log("Remove lock file $lock_file", 5);
 		@rmdir($lock_file);

@@ -161,7 +161,7 @@ class NodeMiner {
 
 
 			if ($result) {
-				$res = $bl->add(false, $err);
+				$res = $bl->add($err);
 
 				if ($res) {
 					$current = Block::current();

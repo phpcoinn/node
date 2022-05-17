@@ -796,7 +796,7 @@ class Util
 					$prev_block_id = $prev_block['id'];
 					$block = Block::getFromArray($bl);
 					$block->prevBlockId = $prev_block_id;
-					$res = $block->add(!$verify, $error);
+					$res = $block->add($error);
 					if(!$res) {
 						@unlink($lockFile);
 						die("Failed importing block at height {$prev_block['height']}: $error".PHP_EOL);

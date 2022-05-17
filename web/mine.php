@@ -281,7 +281,7 @@ if ($q == "info") {
 
 	if ($result) {
 		$block->transactions = count($block->data);
-		$res = $block->add(false, $error);
+		$res = $block->add($error);
 		$l .= " add=$res";
 		if ($res) {
 			$current = Block::current();
