@@ -19,6 +19,7 @@ class Wallet
 			$this->wallet = getcwd() . DIRECTORY_SEPARATOR . $this->wallet;
 		}
 		if(!empty($argv) && count($argv)>1) {
+			$this->argv = $argv;
 			for($i=1; $i<count($argv); $i++) {
 				$val = trim($argv[$i]);
 				$argName = "arg{$i}";
