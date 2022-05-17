@@ -23,7 +23,7 @@ class NodeMiner {
 		return $info;
 	}
 
-	function start() {
+	function start($mine_blocks = -1) {
 		$this->miningStat = [
 			'started'=>time(),
 			'hashes'=>0,
@@ -181,11 +181,18 @@ class NodeMiner {
 				$this->miningStat['rejected']++;
 			}
 
-			sleep(3);
+			if(!$_config['testnet']) {
+				sleep(3);
+			}
 
 			_log("Mining stats: ".json_encode($this->miningStat), 3);
 			$minerStatFile = self::getStatFile();
 			file_put_contents($minerStatFile, json_encode($this->miningStat));
+
+			$this->blocks++;
+			if($this->blocks >= $mine_blocks) {
+				$this->running = false;
+			}
 
 		}
 
