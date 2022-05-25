@@ -32,6 +32,8 @@ const TX_TYPE_SEND = 1;
 const TX_TYPE_MN_CREATE = 2;
 const TX_TYPE_MN_REMOVE = 3;
 const TX_TYPE_FEE = 4;
+const TX_TYPE_SC_CREATE = 5;
+const TX_TYPE_SC_EXEC = 6;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
@@ -70,6 +72,14 @@ const MN_MIN_RUN_BLOCKS = 1440*30;
 
 const FEE_START_HEIGHT = PHP_INT_MAX;
 const FEE_DIVIDER = 100;
+
+# Smart contracts
+const TX_SC_CREATE_FEE = 100;
+const TX_SC_EXEC_FEE = 0.01;
+const SC_START_HEIGHT = PHP_INT_MAX;
+
+const SC_MAX_EXEC_TIME = 30;
+const SC_MEMORY_LIMIT = "256M";
 
 const TOTAL_SUPPLY = 103200000;
 const GIT_URL = "https://github.com/phpcoinn/node";

@@ -155,6 +155,8 @@ if (empty($dbversion)) {
 	$db->run("create index public_key on transactions (public_key);");
 	$db->run("create index version on transactions (type);");
 
+
+
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('hostname', '');");
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('dbversion', '1');");
 
@@ -299,6 +301,41 @@ if($dbversion == 11) {
 
 	}
 	$dbversion = 12;
+}
+
+if ($dbversion == 12) {
+	$db->run("create table smart_contract_state
+	(
+	sc_address varchar(128) not null,
+	variable varchar(100) not null,
+	var_key varchar(128) null,
+	var_value varchar(1000) null,
+	height int not null
+	)");
+
+	$db->run("create table smart_contracts
+	(
+	address varchar(128) not null,
+	height int not null,
+	code text not null,
+	signature varchar(255) not null
+	)");
+
+	$db->run("alter table transactions add data text null");
+	$db->run("alter table mempool add data text null");
+
+	$db->run("alter table smart_contract_state
+	add constraint smart_contract_state_smart_contracts_address_fk
+		foreign key (sc_address) references smart_contracts (address)
+			on update cascade on delete cascade");
+
+	$db->run("create unique index smart_contracts_address_uindex
+	on smart_contracts (address)");
+
+	$db->run("create unique index smart_contract_state_sc_address_variable_var_key_height_uindex 
+    on smart_contract_state (sc_address, variable, var_key, height);");
+
+	$dbversion = 13;
 }
 
 // update the db version to the latest one

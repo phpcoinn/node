@@ -46,7 +46,7 @@ class Nodeutil
 		}
 		@touch($lockFile);
 		$db->fkCheck(false);
-		$tables = ["accounts", "transactions", "mempool", "masternode","blocks"];
+		$tables = ["accounts", "transactions", "mempool", "masternode","blocks","smart_contracts","smart_contract_state"];
 		foreach ($tables as $table) {
 			$db->truncate($table);
 		}

@@ -32,6 +32,7 @@ const TX_TYPE_MN_REMOVE = 3;
 
 const TX_TYPE_FEE = 4;
 const TX_TYPE_SC_CREATE = 5;
+const TX_TYPE_SC_EXEC = 6;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
@@ -69,13 +70,16 @@ const FEATURE_MN = true;
 const MN_COLLATERAL = 1000;
 const MN_MIN_RUN_BLOCKS = 4;
 
-//Smart contracts feature
-const FEATURE_SC = true;
-const TX_SC_CREATE_FEE = 0;
-const SC_START_HEIGHT = 100;
-
-const FEE_START_HEIGHT = 10;
+const FEE_START_HEIGHT = PHP_INT_MAX;
 const FEE_DIVIDER = 1 / 1000;
+
+# Smart contracts
+const TX_SC_CREATE_FEE = 10;
+const TX_SC_EXEC_FEE = 0.001;
+const SC_START_HEIGHT = 20;
+
+const SC_MAX_EXEC_TIME = 5;
+const SC_MEMORY_LIMIT = "128M";
 
 const TOTAL_SUPPLY = 714990;
 const GIT_URL = "https://github.com/phpcoinn/node";

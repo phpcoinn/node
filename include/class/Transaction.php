@@ -15,6 +15,7 @@ class Transaction
 	public $height;
 	public $peer;
 	public $id;
+	public $data;
 
 	public $src;
 
@@ -39,6 +40,8 @@ class Transaction
 			$fee = round($fee_ratio * $this->val, 8);
 		} else if($this->type == TX_TYPE_SC_CREATE) {
 			$fee = TX_SC_CREATE_FEE;
+		} else if($this->type == TX_TYPE_SC_EXEC) {
+			$fee = TX_SC_EXEC_FEE;
 		}
 		return $fee;
 	}
@@ -118,17 +121,29 @@ class Transaction
 					}
 				}
 
-//				if ($type == TX_TYPE_SC_CREATE) {
-//
-//					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1));
-//					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
-//					$res = $res && $tx->add_mempool();
-//
-//					$res = $res && SmartContract::reverse($tx, $error);
-//					if(!$res) {
-//						throw new Exception("Can not reverse create smart contract: $error");
-//					}
-//				}
+				if ($type == TX_TYPE_SC_CREATE) {
+
+					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1));
+					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
+					$res = $res && $tx->add_mempool();
+
+					$res = $res && SmartContract::reverse($tx, $err);
+					if(!$res) {
+						throw new Exception("Can not reverse create smart contract: $err");
+					}
+				}
+
+				if ($type == TX_TYPE_SC_EXEC) {
+					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1));
+					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
+					$res = $res && $tx->add_mempool();
+
+					$height = $tx->height;
+					$res = $res && SmartContract::reverseState($tx, $height, $err);
+					if(!$res) {
+						throw new Exception("Can not reverse exec smart contract: $err");
+					}
+				}
 
 				if($res === false) {
 					throw new Exception("Update balance for reverse transaction failed");
@@ -172,6 +187,7 @@ class Transaction
 	    $trans->signature = $x['signature'];
 	    $trans->height = $x['height'];
 	    $trans->peer = $x['peer'];
+	    $trans->data = $x['data'];
 	    return $trans;
     }
 
@@ -181,7 +197,7 @@ class Transaction
 		$trans->src = $x['src'];
 		$trans->fee = floatval($x['fee']);
 		$trans->signature = $x['signature'];
-		//$trans->data = $x['data']; //TODO: SC
+		$trans->data = $x['data'];
 		$trans->height = $x['height'];
 		return $trans;
 	}
@@ -199,6 +215,9 @@ class Transaction
 		    "date"       => intval($this->date),
 		    "public_key" => $this->publicKey,
 	    ];
+		if(!empty($this->data)) {
+			$trans['data']=$this->data;
+		}
 	    ksort($trans);
 	    return $trans;
     }
@@ -221,6 +240,7 @@ class Transaction
             $i = 0;
             $balance = [];
             foreach ($r as $x) {
+
                 $trans = self::getFromDbRecord($x);
 	            $trans->mempool = true;
 
@@ -353,13 +373,14 @@ class Transaction
 			":type"   => $this->type,
 			":date"      => $this->date,
 			":message"   => $this->msg,
+			":data"   => $this->data,
 		];
 
 
 		$res = $db->run(
 			"INSERT into mempool  
-			    (peer, id, public_key, height, src, dst, val, fee, signature, type, message, `date`)
-			    values (:peer, :id, :public_key, :height, :src, :dst, :val, :fee, :signature, :type, :message, :date)",
+			    (peer, id, public_key, height, src, dst, val, fee, signature, type, message, `date`, data)
+			    values (:peer, :id, :public_key, :height, :src, :dst, :val, :fee, :signature, :type, :message, :date, :data)",
 			$bind
 		);
 		if($res === false) {
@@ -379,14 +400,15 @@ class Transaction
 			if ($res === false) {
 				throw new Exception("Error checking account address");
 			}
-			if ($this->type == TX_TYPE_SEND) {
+			//allow receive on unverified address
+			if ($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_SC_EXEC) {
 				$res = Account::checkAccount($this->dst, "", $block);
 				if ($res === false) {
 					throw new Exception("Error checking account address for send");
 				}
 			}
 
-		$src = $this->type == TX_TYPE_REWARD || $this->type == TX_TYPE_FEE ? null : Account::getAddress($this->publicKey);
+			$src = $this->type == TX_TYPE_REWARD || $this->type == TX_TYPE_FEE ? null : Account::getAddress($this->publicKey);
 
 			$bind = [
 				":id"         => $this->id,
@@ -401,7 +423,7 @@ class Transaction
 				":date"       => $this->date,
 				":message"    => $this->msg,
 				":src"        => $src,
-//				":data"    => $this->data,
+				":data"    => $this->data,
 			];
 			$res = Transaction::insert($bind);
 			if ($res != 1) {
@@ -417,10 +439,11 @@ class Transaction
 				$res = $res && Account::addBalance($this->dst, ($this->val));
 			} else if ($type == TX_TYPE_FEE) {
 				$res = $res && Account::addBalance($this->dst, $this->val);
-//			} else if ($type == TX_TYPE_SC_CREATE) {
-//				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
-//			} else if ($type == TX_TYPE_SC_EXEC) {
-//				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
+			} else if ($type == TX_TYPE_SC_CREATE) {
+				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
+			} else if ($type == TX_TYPE_SC_EXEC) {
+				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
+				$res = $res && Account::addBalance($this->dst, ($this->val));
 			}
 			if($res === false) {
 				throw new Exception("Error updating balance for transaction ".$this->id." type=$type");
@@ -458,19 +481,19 @@ class Transaction
 				}
 			}
 
-//			if ($type == TX_TYPE_SC_CREATE) {
-//				$res = SmartContract::createSmartContract($this, $height, $error);
-//				if(!$res) {
-//					throw new Exception("Can not process create smart contract: $error");
-//				}
-//			}
-//
-//			if ($type == TX_TYPE_SC_EXEC) {
-//				$res = SmartContract::execSmartContract($this, $height, $error);
-//				if(!$res) {
-//					throw new Exception("Can not process exec smart contract: $error");
-//				}
-//			}
+			if ($type == TX_TYPE_SC_CREATE) {
+				$res = SmartContract::createSmartContract($this, $height, $error);
+				if(!$res) {
+					throw new Exception("Can not process create smart contract: $error");
+				}
+			}
+
+			if ($type == TX_TYPE_SC_EXEC) {
+				$res = SmartContract::execSmartContract($this, $height, $error);
+				if(!$res) {
+					throw new Exception("Can not process exec smart contract: $error");
+				}
+			}
 
 			Mempool::delete($this->id);
 			return true;
@@ -517,12 +540,9 @@ class Transaction
 
 	        // the value must be >=0
 	        if ($this->val <= 0 && in_array($phase, ["genesis","launch","mining"])) {
-	            throw new Exception("{$this->val} - Value <= 0", 3);
-	        }
-
-	        // the fee must be >=0
-	        if ($this->fee < 0) {
-		        throw new Exception("{$this->fee} - Fee below 0", 3);
+				if($this->type != TX_TYPE_SC_CREATE && $this->type != TX_TYPE_SC_EXEC) {
+		            throw new Exception("Transaction type {$this->val} - Value <= 0", 3);
+		        }
 	        }
 
 		    //genesis transaction
@@ -546,10 +566,10 @@ class Transaction
 			if($height >= FEE_START_HEIGHT) {
 				$allowedTypes[]=TX_TYPE_FEE;
 			}
-			//TODO: SC
-//			if($height >= SC_START_HEIGHT) {
-//				$allowedTypes[]=TX_TYPE_SC_CREATE;
-//			}
+			if($height >= SC_START_HEIGHT) {
+				$allowedTypes[]=TX_TYPE_SC_CREATE;
+				$allowedTypes[]=TX_TYPE_SC_EXEC;
+			}
 			if(!in_array($type, $allowedTypes)) {
 				$error = "Invalid transaction type $type for height $height";
 				_log($error);
@@ -644,6 +664,20 @@ class Transaction
 				$res = Masternode::checkRemoveMasternodeTransaction($height, $this, $error, $verify);
 				if(!$res) {
 					throw new Exception("Invalid transaction for masternde remove: $error");
+				}
+			}
+
+			if($this->type==TX_TYPE_SC_CREATE) {
+				$res = SmartContract::checkCreateSmartContractTransaction($height, $this, $error, $verify);
+				if(!$res) {
+					throw new Exception("Invalid transaction for create smart contract: $error");
+				}
+			}
+
+			if($this->type==TX_TYPE_SC_EXEC) {
+				$res = SmartContract::checkExecSmartContractTransaction($height, $this, $error, $verify);
+				if(!$res) {
+					throw new Exception("Invalid transaction for exec smart contract: $error");
 				}
 			}
 
@@ -762,6 +796,15 @@ class Transaction
 	    return $base;
     }
 
+//	private function get_check_height() {
+//		if(empty($this->height) || $this->mempool) {
+//			$height = Block::getHeight()+1;
+//		} else {
+//			$height = $this->height;
+//		}
+//		return $height;
+//	}
+
 	public static function export($id)
 	{
 		global $db;
@@ -798,6 +841,7 @@ class Transaction
 		    "type"    => $x['type'],
 		    "date"       => $x['date'],
 		    "public_key" => $x['public_key'],
+		    "data" => $x['data'],
 	    ];
 	    $trans['confirmations'] = $height - $x['height'];
 
@@ -863,6 +907,9 @@ class Transaction
             "public_key" => $x['public_key'],
         ];
         $trans['src'] = $x['src'];
+		if(!empty($x['data'])) {
+			$trans['data']=$x['data'];
+		}
 
         $trans['type_label'] = "mempool";
         $trans['confirmations'] = -1;
@@ -917,7 +964,6 @@ class Transaction
 		    if($mempool_size + 1 > $max_txs) {
 			    throw new Exception("Not added transaction to mempool because is full: max_txs=$max_txs mempool_size=$mempool_size");
 		    }
-
 		    if (!$this->check(0, false, $err)) {
 			    throw new Exception("Transaction check failed. Error: $err");
 		    }
@@ -961,6 +1007,24 @@ class Transaction
 				    throw new Exception("Similar transaction already in mempool: remove masternode ".$this->src);
 			    }
 		    }
+
+			if($this->type == TX_TYPE_SC_CREATE) {
+				$cnt = Mempool::getByDstAndType($this->dst, $this->type);
+				if($cnt > 0) {
+					throw new Exception("Similar transaction already in mempool: smart-contract-create ".$this->dst);
+				}
+				$res = SmartContract::createSmartContract($this, Block::getHeight()+1, $error, true);
+				if(!$res) {
+					throw new Exception("Create smart contract transaction failed: ".$error);
+				}
+			}
+
+			if($this->type == TX_TYPE_SC_EXEC) {
+				$res = SmartContract::execSmartContract($this, Block::getHeight()+1, $error, true);
+				if(!$res) {
+					throw new Exception("Execute smart contract transaction failed: ".$error);
+				}
+			}
 
 			if($this->type == TX_TYPE_SEND) {
 				Masternode::checkSend($this);
@@ -1013,8 +1077,8 @@ class Transaction
     	global $db;
 	    $res = $db->run(
 		    "INSERT into transactions 
-    			(id, public_key, block,  height, dst, val, fee, signature, type, message, `date`, src)
-    			values (:id, :public_key, :block, :height, :dst, :val, :fee, :signature, :type, :message, :date, :src)
+    			(id, public_key, block,  height, dst, val, fee, signature, type, message, `date`, src, data)
+    			values (:id, :public_key, :block, :height, :dst, :val, :fee, :signature, :type, :message, :date, :src, :data)
     			",
 		    $bind
 	    );
@@ -1067,7 +1131,18 @@ class Transaction
 				return "Fee";
 			case TX_TYPE_SC_CREATE:
 				return "Create smart contract";
+			case TX_TYPE_SC_EXEC:
+				return "Execute smart contract";
 		}
 	}
+
+	public static function getSmartContractCreateTransaction($scAddress)
+	{
+		global $db;
+		$sql="select * from transactions t where t.dst = :dst and t.type = :type";
+		$row = $db->row($sql, [":dst"=>$scAddress, ":type"=>TX_TYPE_SC_CREATE]);
+		return $row;
+	}
+
 
 }

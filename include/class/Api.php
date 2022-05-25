@@ -406,6 +406,11 @@ class Api
 		$fee = $data['fee'];
 		$transaction = new Transaction($public_key,$dst,$val,$type,$date,$message, $fee);
 		$transaction->signature = $signature;
+
+		if(isset($data['data'])) {
+			$transaction->data = $data['data'];
+		}
+
 		$hash = $transaction->addToMemPool($error);
 
 		if($hash === false) {
@@ -608,5 +613,41 @@ class Api
 	static function getFee($data) {
 		$fee = Blockchain::getFee($data['height']);
 		api_echo(number_format($fee, 5));
+	}
+
+	static function getSmartContract($data) {
+		$sc_address = $data['address'];
+		$smartContract = SmartContract::getById($sc_address);
+		api_echo($smartContract);
+	}
+
+	static function getSmartContractProperty($data) {
+		$sc_address = $data['address'];
+		$property = $data['property'];
+		$key = $data['key'];
+		if(empty($sc_address)) api_err("Smart contract address not specified");
+		if(empty($property)) api_err("Smart contract property not specified");
+		$res = SmartContractEngine::SCGet($sc_address, $property, $key, $error);
+		if(!$res) {
+			api_err("Error getting Smart contract property: $error");
+		}
+		api_echo($res);
+	}
+
+	static function getSmartContractInterface($data) {
+		$sc_address = $data['address'];
+		$interface = SmartContractEngine::getInterface($sc_address);
+		api_echo($interface);
+	}
+
+	static function getSmartContractView($data) {
+		$sc_address = $data['address'];
+		$method = $data['method'];
+		$params = null;
+		if(isset($data['params'])) {
+			$params = json_decode(base64_decode($data['params']));
+		}
+		$res = SmartContractEngine::call($sc_address, $method, $params, $err);
+		api_echo($res);
 	}
 }

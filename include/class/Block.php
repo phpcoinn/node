@@ -720,6 +720,9 @@ class Block
                 "public_key" => $x['public_key'],
                 "src" => Account::getAddress($x['public_key'])
             ];
+			if(!empty($x['data'])) {
+				$trans['data']=$x['data'];
+			}
             ksort($trans);
             $transactions[$x['id']] = $trans;
         }
