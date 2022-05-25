@@ -49,7 +49,13 @@ fclose($lock);
 
 $miner = new NodeMiner();
 
-$res = $miner->start();
+$mine_blocks = null;
+if(isset($argv[1])) {
+	$mine_blocks = $argv[1];
+}
+
+
+$res = $miner->start($mine_blocks);
 if($res === false) {
 	_log("Miner failed to start");
 	@unlink(MINER_LOCK_PATH);
