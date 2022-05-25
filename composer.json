@@ -6,7 +6,8 @@
       "ext-pcntl": "*",
         "ext-json": "*",
       "ext-openssl": "*",
-      "ext-gd": "*"
+      "ext-gd": "*",
+      "ext-curl": "*"
     },
     "autoload": {
         "classmap": ["include/class"],
