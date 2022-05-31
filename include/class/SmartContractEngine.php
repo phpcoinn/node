@@ -187,15 +187,17 @@ class SmartContractEngine
 		$exec_cmd.= " -f $cmd 2>&1";
 		$output = shell_exec ($exec_cmd);
 		$lines2 = [];
-		if(strpos($output, 'PHP Startup:')) {
-			$lines = explode(PHP_EOL, $output);
-			foreach($lines as $line) {
-				if(!strpos($line, 'PHP Startup:')) {
-					$lines2[]=$line;
-				}
+		$lines = explode(PHP_EOL, $output);
+		foreach($lines as $line) {
+			if(strpos($line, 'PHP Startup:')===0) {
+				continue;
 			}
-			$output = implode(PHP_EOL, $lines2);
+			if(strpos($line, 'PHP Warning:')===0) {
+				continue;
+			}
+			$lines2[]=$line;
 		}
+		$output = implode(PHP_EOL, $lines2);
 		$output = trim($output);
 		return $output;
 	}

@@ -40,8 +40,7 @@ function sortTx (tx) {
     return jsonKeySort.sort(tx)
 }
 
-function sign (message, private_key) {
-    // console.log(private_key)
+function private_key_to_pem(private_key) {
     let private_key_bin = Base58.decode(private_key)
     // console.log(private_key_bin)
     let private_key_base64 = Buffer.from(private_key_bin).toString('base64');
@@ -50,7 +49,12 @@ function sign (message, private_key) {
         + str_split(private_key_base64, 64)
             .join('\n')
         + '\n-----END EC PRIVATE KEY-----\n'
-    // console.log(private_key_pem)
+    return private_key_pem
+}
+
+function sign (message, private_key) {
+    // console.log(private_key)
+    let private_key_pem = private_key_to_pem(private_key)
 
     let privateKey = PrivateKey.fromPem(private_key_pem)
     // console.log(privateKey)
@@ -63,6 +67,26 @@ function sign (message, private_key) {
     let signature_b58 = Base58.encode(signature_bin)
     // console.log(signature_b58)
     return signature_b58
+}
+
+let pem2coin = (pem) => {
+    let pemB58 = pem.replace('-----BEGIN EC PRIVATE KEY-----','')
+    pemB58 = pemB58.replace('-----END EC PRIVATE KEY-----','')
+    pemB58 = pemB58.replace('-----BEGIN PUBLIC KEY-----','')
+    pemB58 = pemB58.replace('-----END PUBLIC KEY-----','')
+    pemB58 = pemB58.replace(/\n/g,'')
+    pemB58 = Buffer.from(pemB58, 'base64')
+    pemB58 = Base58.encode(pemB58)
+    return pemB58
+}
+
+function get_public_key(private_key) {
+    let private_key_pem = private_key_to_pem(private_key)
+    let privateKey = PrivateKey.fromPem(private_key_pem)
+    let publicKey = privateKey.publicKey();
+    let publicKeyPem = publicKey.toPem()
+    let publicKeyB58 = pem2coin(publicKeyPem)
+    return publicKeyB58;
 }
 
 class WebMiner {
@@ -424,6 +448,7 @@ class WebMiner {
 if(typeof window !== 'undefined')  {
     window.WebMiner = WebMiner
     window.sign = sign
+    window.get_public_key = get_public_key
 }
 
 global.WebMiner = WebMiner

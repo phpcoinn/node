@@ -585,6 +585,10 @@ class Transaction
 		        }
 	        }
 
+			if(empty($this->publicKey)) {
+				throw new Exception("Empty public key");
+			}
+
 			if (!Account::validKey($this->publicKey)) {
 				throw new Exception("Invalid public key");
 			}

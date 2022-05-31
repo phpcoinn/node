@@ -70,7 +70,7 @@ const FEATURE_MN = true;
 const MN_COLLATERAL = 1000;
 const MN_MIN_RUN_BLOCKS = 4;
 
-const FEE_START_HEIGHT = PHP_INT_MAX;
+const FEE_START_HEIGHT = 20;
 const FEE_DIVIDER = 1 / 1000;
 
 # Smart contracts

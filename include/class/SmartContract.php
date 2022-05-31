@@ -21,10 +21,6 @@ class SmartContract
 			}
 
 			$dst = $transaction->dst;
-			$dstPublicKey = Account::publicKey($dst);
-			if ($dstPublicKey) {
-				throw new Exception("Smart contract address $dst must be not verified!");
-			}
 
 			if(!$verify) {
 				$smartContract = self::getSmartContract($dst);
@@ -205,7 +201,7 @@ class SmartContract
 				throw new Exception("File or folder for deploy $file does not exists");
 			}
 
-			$cmd = "php --define phar.readonly=0 ".ROOT."/utils/sc_compile.php $file $phar_file";
+			$cmd = "php --define phar.readonly=0 ".ROOT."/utils/sc_compile.php $file $phar_file 2>/dev/null";
 
 			$output = shell_exec($cmd);
 
