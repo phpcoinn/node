@@ -380,4 +380,10 @@ class Account
 		return $res == 0;
 	}
 
+	static function getByPublicKey($public_key) {
+		global $db;
+		$sql="select * from accounts a where a.public_key = :public_key";
+		return $db->row($sql,[":public_key" => $public_key]);
+	}
+
 }

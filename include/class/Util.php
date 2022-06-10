@@ -1090,4 +1090,13 @@ class Util
 		echo $res . PHP_EOL;
 	}
 
+	static function propagateDapps() {
+		Dapps::process(true);
+	}
+
+	static function downloadDapps($argv) {
+		$dapps_id = $argv[2];
+		Dapps::downloadDapps($dapps_id);
+	}
+
 }

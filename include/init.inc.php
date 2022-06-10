@@ -162,3 +162,5 @@ if(!defined("MINER_RUN")) {
 if(!defined("SKIP_MASTERNODE_THREAD")) {
 	Masternode::runThread();
 }
+
+require_once __DIR__ . "/daemons.inc.php";

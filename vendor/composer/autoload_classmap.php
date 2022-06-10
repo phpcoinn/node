@@ -13,6 +13,8 @@ return array(
     'Blockchain' => $baseDir . '/include/class/Blockchain.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
     'Config' => $baseDir . '/include/class/Config.php',
+    'Daemon' => $baseDir . '/include/class/Daemon.php',
+    'Dapps' => $baseDir . '/include/class/Dapps.php',
     'Masternode' => $baseDir . '/include/class/Masternode.php',
     'Mempool' => $baseDir . '/include/class/Mempool.php',
     'Minepool' => $baseDir . '/include/class/Minepool.php',

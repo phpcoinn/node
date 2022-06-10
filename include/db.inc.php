@@ -152,14 +152,19 @@ class DB extends PDO
 
     public function setConfig($name, $value) {
 	    $sql="select val from config where cfg = :cfg";
-	    $row = $this->row($sql,['cfg'=>$name]);
+	    $row = $this->row($sql,[':cfg'=>$name]);
 	    if($row) {
 		    $sql="update config set val = :val where cfg = :cfg";
 	    } else {
 		    $sql="insert into config (val, cfg) values (:val, :cfg)";
 	    }
-	    $this->run($sql, ['val'=>$value, 'cfg'=>$name]);
+	    $this->run($sql, [':val'=>$value, ':cfg'=>$name]);
     }
+
+	public function getConfig($name) {
+		$sql="select val from config where cfg = :cfg";
+		return $this->single($sql,[':cfg'=>$name]);
+	}
 
     public function isSqlite() {
     	global $_config;

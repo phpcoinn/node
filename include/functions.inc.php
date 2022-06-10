@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . "/common.functions.php";
+
 // simple santization function to accept only alphanumeric characters
 function san($a, $b = "")
 {
@@ -115,93 +117,6 @@ function hex2pem($data, $is_private_key = false)
 }
 
 
-// Base58 encoding/decoding functions - all credits go to https://github.com/stephen-hill/base58php
-function base58_encode($string)
-{
-    $alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-    $base = strlen($alphabet);
-    // Type validation
-    if (is_string($string) === false) {
-        return false;
-    }
-    // If the string is empty, then the encoded string is obviously empty
-    if (strlen($string) === 0) {
-        return '';
-    }
-    // Now we need to convert the byte array into an arbitrary-precision decimal
-    // We basically do this by performing a base256 to base10 conversion
-    $hex = unpack('H*', $string);
-    $hex = reset($hex);
-    $decimal = gmp_init($hex, 16);
-    // This loop now performs base 10 to base 58 conversion
-    // The remainder or modulo on each loop becomes a base 58 character
-    $output = '';
-    while (gmp_cmp($decimal, $base) >= 0) {
-        list($decimal, $mod) = gmp_div_qr($decimal, $base);
-        $output .= $alphabet[gmp_intval($mod)];
-    }
-    // If there's still a remainder, append it
-    if (gmp_cmp($decimal, 0) > 0) {
-        $output .= $alphabet[gmp_intval($decimal)];
-    }
-    // Now we need to reverse the encoded data
-    $output = strrev($output);
-    // Now we need to add leading zeros
-    $bytes = str_split($string);
-    foreach ($bytes as $byte) {
-        if ($byte === "\x00") {
-            $output = $alphabet[0].$output;
-            continue;
-        }
-        break;
-    }
-    return (string)$output;
-}
-
-function base58_decode($base58)
-{
-    $alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-    $base = strlen($alphabet);
-
-    // Type Validation
-    if (is_string($base58) === false) {
-        return false;
-    }
-    // If the string is empty, then the decoded string is obviously empty
-    if (strlen($base58) === 0) {
-        return '';
-    }
-    $indexes = array_flip(str_split($alphabet));
-    $chars = str_split($base58);
-    // Check for invalid characters in the supplied base58 string
-    foreach ($chars as $char) {
-        if (isset($indexes[$char]) === false) {
-            return false;
-        }
-    }
-    // Convert from base58 to base10
-    $decimal = gmp_init($indexes[$chars[0]], 10);
-    for ($i = 1, $l = count($chars); $i < $l; $i++) {
-        $decimal = gmp_mul($decimal, $base);
-        $decimal = gmp_add($decimal, $indexes[$chars[$i]]);
-    }
-    // Convert from base10 to base256 (8-bit byte array)
-    $output = '';
-    while (gmp_cmp($decimal, 0) > 0) {
-        list($decimal, $byte) = gmp_div_qr($decimal, 256);
-        $output = pack('C', gmp_intval($byte)).$output;
-    }
-    // Now we need to add leading zeros
-    foreach ($chars as $char) {
-        if ($indexes[$char] === 0) {
-            $output = "\x00".$output;
-            continue;
-        }
-        break;
-    }
-    return $output;
-}
-
 // converts PEM key to the base58 version used by PHP
 function pem2coin($data)
 {
@@ -216,21 +131,6 @@ function pem2coin($data)
     return base58_encode($data);
 }
 
-// converts the key in base58 to PEM
-function coin2pem($data, $is_private_key = false)
-{
-    $data = base58_decode($data);
-    $data = base64_encode($data);
-
-    $dat = str_split($data, 64);
-    $data = implode("\n", $dat);
-
-    if ($is_private_key) {
-        return "-----BEGIN EC PRIVATE KEY-----\n".$data."\n-----END EC PRIVATE KEY-----\n";
-    }
-    return "-----BEGIN PUBLIC KEY-----\n".$data."\n-----END PUBLIC KEY-----\n";
-}
-
 function priv2pub($private_key) {
 	$pk = coin2pem($private_key, true);
 	$pkey = openssl_pkey_get_private($pk);
@@ -238,25 +138,6 @@ function priv2pub($private_key) {
 	$public_key = pem2coin($pub['key']);
 	return $public_key;
 }
-
-// sign data with private key
-function ec_sign($data, $key)
-{
-    // transform the base58 key format to PEM
-    $private_key = coin2pem($key, true);
-
-
-    $pkey = openssl_pkey_get_private($private_key);
-
-    $k = openssl_pkey_get_details($pkey);
-
-
-    openssl_sign($data, $signature, $pkey, OPENSSL_ALGO_SHA256);
-
-    // the signature will be base58 encoded
-    return base58_encode($signature);
-}
-
 
 function ec_verify($data, $signature, $key)
 {
@@ -413,13 +294,6 @@ function url_post($url, $postdata) {
 	return $result;
 }
 
-// convers hex to base58
-function hex2coin($hex)
-{
-    $data = hex2bin($hex);
-    return base58_encode($data);
-}
-
 // converts base58 to hex
 function coin2hex($data)
 {
@@ -442,10 +316,6 @@ function display_date($ts) {
 		$s = '<span class="text-nowrap" title="'.$ts.'">' . date("Y-m-d H:i:s", $ts) .'</span>';
 	}
 	return $s;
-}
-
-function num($val) {
-	return number_format($val, COIN_DECIMALS, '.', '');
 }
 
 function hashimg($hash, $title=null) {

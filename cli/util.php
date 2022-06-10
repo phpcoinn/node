@@ -101,7 +101,8 @@ smart-contract-compile <file|folder> <phar_file>		- compile smart contract to ph
 smart-contract-call <sc_address> <method> [<...params>] - call view method on smart contract
 smart-contract-get <sc_address> <property> [<key>] 		- get property from smart contract
 set-config <config_name> <config_value>					- set config value for node	
-
+propagate-dapps                                         - propagate local dapps to peers
+download-dapps <dapps_id>                               - request download dapps from network
 ";
 	}
 }

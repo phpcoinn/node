@@ -528,6 +528,13 @@ class PeerRequest
 			}
 		}
 	}
+	static function updateDapps() {
+		Dapps::updateDapps(self::$data, self::$ip);
+	}
+
+	static function checkDapps() {
+		Dapps::checkDapps(self::$data['dapps_id'], self::$ip);
+	}
 
 	static function updateMasternode() {
 		$masternode = self::$data;

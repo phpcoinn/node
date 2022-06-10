@@ -262,3 +262,13 @@ if($type == "message") {
 	$url = $hostname."/peer.php?q=propagateMsg";
 	$res = peer_post($url, ["data"=>$data], 30, $err);
 }
+
+if($type == "dapps") {
+	Dapps::propagate($id);
+}
+
+if($type == "dappsupdate") {
+	$hash = $argv[2];
+	$id = $argv[3];
+	Dapps::propagateDappsUpdate($hash, $id);
+}
