@@ -34,11 +34,11 @@ git clone https://github.com/phpcoinn/node .
 
 echo "PHPCoin: Configure apache"
 echo "==================================================================================================="
-cat << EOF > /etc/apache2/sites-available/phpcoin.conf
+cat << "EOF" > /etc/apache2/sites-available/phpcoin.conf
 <VirtualHost *:80>
         ServerAdmin webmaster@localhost
         DocumentRoot /var/www/phpcoin/web
-        ErrorLog /var/log/apache2/phpcoin.error.log
+        ErrorLog ${APACHE_LOG_DIR}/phpcoin.error.log
         RewriteEngine on
         RewriteRule ^/dapps/(.*)$ /dapps.php?url=$1
 </VirtualHost>
