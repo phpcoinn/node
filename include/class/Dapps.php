@@ -5,7 +5,7 @@ class Dapps extends Daemon
 
 	// Daemon config
 	static $name = "dapps";
-	static $max_locked_time = 60 * 60;
+	static $max_locked_time = 5 * 60;
 	static $max_run_time_min = (DEVELOPMENT ? 10 : 60) * 60;
 	static $run_interval = 30;
 
@@ -15,7 +15,6 @@ class Dapps extends Daemon
 	}
 
 	static function calcDappsHash($dapps_id) {
-		_log("Dapps: calcFolderHash $dapps_id");
 		$cmd = "cd ".self::getDappsDir()." && tar -cf - $dapps_id --owner=0 --group=0 --sort=name --mode=744 --mtime='2020-01-01 00:00:00 UTC' | sha256sum";
 		$res = shell_exec($cmd);
 		$arr = explode(" ", $res);
@@ -48,20 +47,41 @@ class Dapps extends Daemon
 
 	static function process($force = false) {
 		global $_config, $db;
-		_log("Dapps: start process");
+		_log("Dapps: start process" , 5);
 		$dapps_public_key = $_config['dapps_public_key'];
 		$dapps_id = Account::getAddress($dapps_public_key);
+		$dapps_root_dir = self::getDappsDir();
+		if(!file_exists($dapps_root_dir)) {
+			_log("Dapps: dapps root folder $dapps_root_dir does not exists");
+			if (php_sapi_name() == 'cli') {
+				_log("Dapps: create root folder $dapps_root_dir and set permissions");
+				@mkdir($dapps_root_dir);
+				@chown($dapps_root_dir, "www-data");
+				@chgrp($dapps_root_dir, "www-data");
+			}
+			return;
+		}
+
 		$dapps_folder = self::getDappsDir() . "/$dapps_id";
 		if(!file_exists($dapps_folder)) {
 			_log("Dapps: dapps folder $dapps_folder does not exists");
+			if (php_sapi_name() == 'cli') {
+				@mkdir($dapps_folder, 0777, true);
+			}
 			return;
 		}
+
+		$public_key = Account::publicKey($dapps_id);
+		if(!$public_key) {
+			_log("Dapps: Dapps $dapps_id - public key not found");
+			return;
+		}
+
 		$saved_dapps_hash = $db->getConfig('dapps_hash');
-		_log("Dapps: hash from db = $saved_dapps_hash");
+		_log("Dapps: hash from db = $saved_dapps_hash", 5);
 		$dapps_hash = self::calcDappsHash($dapps_id);
-		_log("Dapps: hash from folder $dapps_hash");
 		$archive_built = file_exists(ROOT  . "/tmp/dapps.tar.gz");
-		_log("Dapps: exists archive file = $archive_built");
+		_log("Dapps: exists archive file = $archive_built", 5);
 		if($saved_dapps_hash != $dapps_hash || $force || !$archive_built) {
 			$db->setConfig("dapps_hash", $dapps_hash);
 			_log("Dapps: trigger propagate");
@@ -77,13 +97,13 @@ class Dapps extends Daemon
 				system($cmd);
 			}
 		} else {
-			_log("Dapps: not changed dapps");
+			_log("Dapps: not changed dapps", 5);
 		}
 	}
 
 	static function propagate($id) {
 		global $_config, $db;
-		_log("Dapps: called propagate");
+		_log("Dapps: called propagate for $id", 5);
 		$dapps_public_key = $_config['dapps_public_key'];
 		$dapps_private_key = $_config['dapps_private_key'];
 		$dapps_id = Account::getAddress($dapps_public_key);
@@ -111,17 +131,18 @@ class Dapps extends Daemon
 				"dapps_signature"=>$dapps_signature,
 			];
 			$res = peer_post($url, $data, 30, $err);
-			_log("Dapps: Propagating to peer: ".$peer." data=".http_build_query($data)." res=".json_encode($res). " err=$err",5);
+			_log("Dapps: Propagating to peer: ".$peer." data=".http_build_query($data)." res=".json_encode($res). " err=$err", $err ? 0 : 5);
 		}
 	}
 
 	private static function propagateToPeer($peer) {
-		$peer = base64_encode($peer['hostname']);
+		$hostname = $peer['hostname'];
+		$peer = base64_encode($hostname);
 		$dir = ROOT."/cli";
 		$res = shell_exec("ps uax | grep '$dir/propagate.php dapps $peer' | grep -v grep");
 		if(!$res) {
 			$cmd = "php $dir/propagate.php dapps $peer > /dev/null 2>&1  &";
-			_log("Dapps: exec propagate cmd: $cmd");
+			_log("Dapps: exec propagate to $hostname cmd: $cmd", 5);
 			system($cmd);
 		}
 	}

@@ -165,3 +165,11 @@ $_config['wallet_private_key']="";
 $_config['masternode']=false;
 $_config['masternode_public_key']="";
 $_config['masternode_private_key']="";
+
+/**
+ * Configuration for decentralized apps
+ */
+$_config['dapps']=false;
+$_config['dapps_public_key']="";
+$_config['dapps_private_key']="";
+

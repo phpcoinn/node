@@ -19,20 +19,20 @@ class Daemon
 
 	static function checkDaemon() {
 		$name = static::$name;
-		_log("Daemon: $name: check");
+		_log("Daemon: $name: check", 5);
 
 		if(!static::isEnabled()) {
-			_log("Daemon: $name: not enabled");
+			_log("Daemon: $name: not enabled", 5);
 			return;
 		}
 		if(defined(strtoupper($name)."_DAEMON_SKIP")) {
-			_log("Daemon: $name: skipped");
+			_log("Daemon: $name: skipped", 5);
 			return;
 		}
 		$lock_file = self::getLockFile();
-		_log("Daemon: $name: check lock file $lock_file");
+		_log("Daemon: $name: check lock file $lock_file", 5);
 		if (!file_exists($lock_file)) {
-			_log("Daemon: $name: lock file not exists - check process");
+			_log("Daemon: $name: lock file not exists - check process", 5);
 			$cmd = "ps uax | grep '".ROOT."/cli/$name.php' | grep -v grep";
 			$res = shell_exec($cmd);
 			if(empty($res)) {
@@ -42,10 +42,10 @@ class Daemon
 				_log("Dapps: Start $name daemon: $cmd");
 				system($cmd);
 			} else {
-				_log("Daemon: $name: process exists without lock!");
+				_log("Daemon: $name: process exists without lock!", 3);
 			}
 		} else {
-			_log("Daemon: $name: lock file exists - check process");
+			_log("Daemon: $name: lock file exists - check process", 5);
 			$cmd = "ps uax | grep '".ROOT."/cli/$name.php' | grep -v grep";
 			$res = shell_exec($cmd);
 			if(empty($res)) {
@@ -62,7 +62,7 @@ class Daemon
 					_log("Daemon: $name: process stucked but not elapsed stuck check elapsed=$elapsed max_stuck_time=$max_stuck_time");
 				}
 			} else {
-				_log("Daemon: $name: process exists - OK");
+				_log("Daemon: $name: process exists - OK", 5);
 			}
 		}
 	}
@@ -114,12 +114,12 @@ class Daemon
 		$run_interval = static::$run_interval;
 
 		while($running) {
-			_log("Daemon: $name - process started");
+			_log("Daemon: $name - process started", 5);
 			$t1 = microtime(true);
 			static::process();
 			$t2 = microtime(true);
 			$diff = $t2 - $t1;
-			_log("Daemon: $name - process finished in $diff sec");
+			_log("Daemon: $name - process finished in $diff sec", 5);
 			$running = file_exists($lock_file);
 			sleep($run_interval);
 			if(time() - $started_time > $max_run_time_min) {
@@ -137,7 +137,7 @@ class Daemon
 		global $argv;
 		$name = static::$name;
 		if(!isset($argv[1])) {
-			_log("Daemon: $name - no args to process");
+			_log("Daemon: $name - no args to process", 5);
 		} else {
 			$cmd = $argv[1];
 			_log("Daemon: $name - process command $cmd");
