@@ -23,10 +23,10 @@ function san_host($a)
 }
 
 // api  error and exit
-function api_err($data)
+function api_err($data, $verbosity = 4)
 {
     global $_config;
-    _log("api_err: ".json_encode($data),4);
+    _log("api_err: ".json_encode($data),$verbosity);
 
     if (!headers_sent()) {
         header('Content-Type: application/json');
@@ -38,7 +38,7 @@ function api_err($data)
 }
 
 // api print ok and exit
-function api_echo($data)
+function api_echo($data, $verbosity=5)
 {
     global $_config;
 
@@ -46,7 +46,7 @@ function api_echo($data)
         header('Content-Type: application/json');
 	    header('Access-Control-Allow-Origin: *');
     }
-    _log("api_echo: " . json_encode($data), 5);
+    _log("api_echo: " . json_encode($data), $verbosity);
     echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK]);
 	//Nodeutil::measure();
     exit;

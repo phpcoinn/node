@@ -38,7 +38,9 @@ cat << EOF > /etc/apache2/sites-available/phpcoin.conf
 <VirtualHost *:80>
         ServerAdmin webmaster@localhost
         DocumentRoot /var/www/phpcoin/web
-        ErrorLog ${APACHE_LOG_DIR}/error.log
+        ErrorLog /var/log/apache2/phpcoin.error.log
+        RewriteEngine on
+        RewriteRule ^/dapps/(.*)$ /dapps.php?url=$1
 </VirtualHost>
 EOF
 a2dissite 000-default
@@ -58,6 +60,8 @@ mkdir tmp
 mkdir web/apps
 chown -R www-data:www-data tmp
 chown -R www-data:www-data web/apps
+mkdir dapps
+chown -R www-data:www-data dapps
 
 export IP=$(curl -s http://whatismyip.akamai.com/)
 echo "PHPCoin: open start page"

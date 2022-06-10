@@ -167,7 +167,7 @@ class Dapps extends Daemon
 			return;
 		}
 
-		_log("Dapps: Start render dapps page $dapps_id");
+		_log("Dapps: Start render dapps page $dapps_id", 5);
 
 		$url_info = parse_url($url);
 		$file = $url_info['path'];
@@ -180,7 +180,7 @@ class Dapps extends Daemon
 			return;
 		}
 
-		_log("Dapps: Starting session");
+		_log("Dapps: Starting session", 5);
 		$tmp_dir = ROOT."/tmp/dapps";
 		@mkdir($tmp_dir);
 		$sessions_dir = $tmp_dir."/sessions";
@@ -189,7 +189,7 @@ class Dapps extends Daemon
 		session_start();
 		ob_start();
 		$session_id = session_id();
-		_log("Dapps: Getting session_id=$session_id");
+		_log("Dapps: Getting session_id=$session_id", 5);
 
 		$query = $url_info['query'];
 		$server_args = "";
@@ -210,27 +210,27 @@ class Dapps extends Daemon
 			" -d open_basedir=" . $dapps_dir . "/$dapps_id:".$tmp_dir.":".$functions_file .
 			" -d max_execution_time=5 -d memory_limit=128M " .
 			" -d auto_prepend_file=$functions_file $file 2>&1";
-		_log("Executing dapps file cmd=$cmd");
+		_log("Executing dapps file cmd=$cmd", 5);
 
 		session_write_close();
 
 		$res = exec ($cmd, $output2);
-		_log("Dapps: Parsing output ". print_r($output2, 1));
+		_log("Dapps: Parsing output ". print_r($output2, 1), 5);
 
 		ob_end_clean();
 		ob_start();
 		header("X-Dapps-Id: $dapps_id");
 
 		$out = implode(PHP_EOL, $output2);
-		_log("Dapps: Parsing output $out");
+		_log("Dapps: Parsing output $out", 5);
 
 		if(strpos($out, "location:")===0) {
-			_log("Dapps: Redirecting $out");
+			_log("Dapps: Redirecting $out",3);
 			header($out);
 			exit;
 		}
 
-		_log("Dapps: Writing out");
+		_log("Dapps: Writing out", 5);
 		echo $out;
 		exit;
 
@@ -247,11 +247,9 @@ class Dapps extends Daemon
 		$dapps_signature = $data['dapps_signature'];
 		_log("Dapps: received update dapps dapps_id=$dapps_id dapps_hash=$dapps_hash dapps_signature=$dapps_signature");
 
-		$calc_dapps_hash = Dapps::calcDappsHash($dapps_id);
-		_log("Dapps: calc_dapps_hash=$calc_dapps_hash");
-
-		if($calc_dapps_hash == $dapps_hash) {
-			api_echo("Dapps: No need to update dapps $dapps_id");
+		$dapps_root_dir = self::getDappsDir();
+		if(!file_exists($dapps_root_dir)) {
+			api_err("Dapps: Root dapps folder $dapps_root_dir does not exists",0);
 		}
 
 		$public_key = Account::publicKey($dapps_id);
@@ -259,18 +257,24 @@ class Dapps extends Daemon
 			api_err("Dapps: Dapps $dapps_id - public key not found");
 		}
 
-		_log("Dapps: check signature with public_key = $public_key");
+		$calc_dapps_hash = Dapps::calcDappsHash($dapps_id);
+
+		if($calc_dapps_hash == $dapps_hash) {
+			api_echo("Dapps: No need to update dapps $dapps_id",0);
+		}
+
+		_log("Dapps: check signature with public_key = $public_key",5);
 		$res = Account::checkSignature($dapps_hash, $dapps_signature, $public_key);
 
 		if(!$res) {
-			api_err("Dapps: Dapps node signature not valid");
+			api_err("Dapps: Dapps node signature not valid",0);
 		}
 
 		$peer = Peer::findByIp($ip);
 		if(!$peer) {
-			api_err("Dapps: Remote peer not found");
+			api_err("Dapps: Remote peer not found", 0);
 		}
-		_log("Dapps: Request from ip=$ip peer=".$peer['hostname']);
+		_log("Dapps: Request from ip=$ip peer=".$peer['hostname'], 5);
 
 		$link = $peer['hostname']."/dapps.php?download";
 		_log("Dapps: Download dapps from $link");
@@ -284,34 +288,34 @@ class Dapps extends Daemon
 		$local_file = ROOT . "/tmp/dapps.$dapps_id.tar.gz";
 		$res = file_put_contents($local_file, fopen($link, "r", false,  stream_context_create($arrContextOptions)));
 		if($res === false) {
-			api_err("Dapps: Error downloading apps from remote server");
+			api_err("Dapps: Error downloading apps from remote server", 0);
 		} else {
 			$size = filesize($local_file);
 			if(!$size) {
-				api_err("Dapps: Downloaded empty file from remote server");
+				api_err("Dapps: Downloaded empty file from remote server", 0);
 			} else {
-				_log("Dapps: Downloaded size $size file=$local_file");
+				_log("Dapps: Downloaded size $size file=$local_file", 5);
 				$cmd = "cd ".self::getDappsDir()." && rm -rf $dapps_id";
-				_log("Dapps: cmd=$cmd");
+//				_log("Dapps: cmd=$cmd");
 				shell_exec($cmd);
 				$cmd = "cd ".ROOT." && tar -xzf tmp/dapps.$dapps_id.tar.gz -C . --owner=0 --group=0 --mode=744 --mtime='2020-01-01 00:00:00 UTC'";
-				_log("Dapps: cmd=$cmd");
+//				_log("Dapps: cmd=$cmd");
 				shell_exec($cmd);
 				$cmd = "cd ".self::getDappsDir()." && find $dapps_id -type f -exec touch {} +";
-				_log("Dapps: cmd=$cmd");
+//				_log("Dapps: cmd=$cmd");
 				shell_exec($cmd);
 				$cmd = "cd ".self::getDappsDir()." && find $dapps_id -type d -exec touch {} +";
-				_log("Dapps: cmd=$cmd");
+//				_log("Dapps: cmd=$cmd");
 				shell_exec($cmd);
 				if (php_sapi_name() == 'cli') {
 					$cmd = "cd ".self::getDappsDir()." && chown -R www-data:www-data $dapps_id";
-					_log("Dapps: cmd=$cmd");
+//					_log("Dapps: cmd=$cmd");
 					shell_exec($cmd);
 				}
 				$new_dapps_hash = Dapps::calcDappsHash($dapps_id);
-				_log("Dapps: new_dapps_hash=$new_dapps_hash");
+				_log("Dapps: new_dapps_hash=$new_dapps_hash", 5);
 				if($new_dapps_hash != $dapps_hash) {
-					api_err("Dapps: Error updating dapps $dapps_id new_dapps_hash=$new_dapps_hash dapps_hash=$dapps_hash");
+					api_err("Dapps: Error updating dapps $dapps_id new_dapps_hash=$new_dapps_hash dapps_hash=$dapps_hash", 0);
 				} else {
 					api_echo("Dapps: OK");
 				}
