@@ -45,6 +45,7 @@ cat << EOF > /etc/apache2/sites-available/phpcoin.conf
 EOF
 a2dissite 000-default
 a2ensite phpcoin
+a2enmode rewrite
 service apache2 restart
 
 echo "PHPCoin: setup config file"
