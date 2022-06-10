@@ -17,7 +17,7 @@ echo "install php with apache server"
 apt install apache2 php libapache2-mod-php php-mysql php-gmp php-bcmath php-curl unzip -y
 apt install mysql-server -y
 
-echo "PHPCoin: create database and set use"
+echo "PHPCoin: create database and set user"
 echo "==================================================================================================="
 mysql -e "create database $DB_NAME;"
 mysql -e "create user '$DB_USER'@'localhost' identified by '$DB_PASS';"
@@ -50,11 +50,13 @@ service apache2 restart
 
 echo "PHPCoin: setup config file"
 echo "==================================================================================================="
-cp config/config-sample.inc.php config/config.inc.php
-sed -i "s/ENTER-DB-NAME/$DB_NAME/g" config/config.inc.php
-sed -i "s/ENTER-DB-USER/$DB_USER/g" config/config.inc.php
-sed -i "s/ENTER-DB-PASS/$DB_PASS/g" config/config.inc.php
-
+CONFIG_FILE=config/config.inc.php
+if [ ! -f "$CONFIGFILE" ]; then
+  cp config/config-sample.inc.php config/config.inc.php
+  sed -i "s/ENTER-DB-NAME/$DB_NAME/g" config/config.inc.php
+  sed -i "s/ENTER-DB-USER/$DB_USER/g" config/config.inc.php
+  sed -i "s/ENTER-DB-PASS/$DB_PASS/g" config/config.inc.php
+fi
 echo "PHPCoin: configure node"
 echo "==================================================================================================="
 mkdir tmp
@@ -74,8 +76,8 @@ sleep 5
 echo "PHPCoin: import blockchain"
 echo "==================================================================================================="
 cd /var/www/phpcoin/tmp
-wget https://phpcoin.net/download/blockchain.sql.zip
-unzip blockchain.sql.zip
+wget https://phpcoin.net/download/blockchain.sql.zip -O blockchain.sql.zip
+unzip -o blockchain.sql.zip
 cd /var/www/phpcoin
 php cli/util.php importdb tmp/blockchain.sql
 
