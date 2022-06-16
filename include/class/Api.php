@@ -650,4 +650,31 @@ class Api
 		$res = SmartContractEngine::call($sc_address, $method, $params, $err);
 		api_echo($res);
 	}
+
+	static function authenticate($data) {
+		$public_key = $data['public_key'];
+		if(empty($public_key)) {
+			api_err("Empty public key");
+		}
+		$signature = $data['signature'];
+		if(empty($signature)) {
+			api_err("Empty signature");
+		}
+		$nonce = $data['nonce'];
+		if(empty($nonce)) {
+			api_err("Empty nonce");
+		}
+		$account = Account::getByPublicKey($public_key);
+		if(!$account) {
+			if(Account::checkSignature($nonce, $signature, $public_key)) {
+				$address = Account::getAddress($public_key);
+				$account = ["address"=>$address, "public_key"=>$public_key];
+			} else {
+				api_err("Login failed");
+			}
+		} else {
+			$account = ["address"=>$account['id'], "public_key"=>$account['public_key']];
+		}
+		api_echo($account);
+	}
 }
