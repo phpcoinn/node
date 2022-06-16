@@ -26,6 +26,17 @@ class Account
         // exports the private key encoded as PEM
         openssl_pkey_export($key1, $pvkey);
 
+		if(PHP_VERSION_ID > 80000) {
+			$in = ROOT . "/tmp/in.pem";
+			$out = ROOT . "/tmp/out.pem";
+			file_put_contents($in, $pvkey);
+			$cmd = "openssl ec -in $in -out $out >/dev/null 2>&1";
+			shell_exec($cmd);
+			$pvkey = file_get_contents($out);
+			unlink($in);
+			unlink($out);
+		}
+
         // converts the PEM to a base58 format
         $private_key = pem2coin($pvkey);
 
@@ -194,6 +205,7 @@ class Account
                 "height"     => $x['height'],
                 "id"         => $x['id'],
                 "dst"        => $x['dst'],
+                "src"        => $x['src'],
                 "val"        => $x['val'],
                 "fee"        => $x['fee'],
                 "signature"  => $x['signature'],
