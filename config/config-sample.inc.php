@@ -172,4 +172,5 @@ $_config['masternode_private_key']="";
 $_config['dapps']=false;
 $_config['dapps_public_key']="";
 $_config['dapps_private_key']="";
+$_config['dapps_anonymous']=false;
 

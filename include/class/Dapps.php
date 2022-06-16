@@ -14,6 +14,11 @@ class Dapps extends Daemon
 		return isset($_config['dapps']) && $_config['dapps'];
 	}
 
+	static function isLocal($dapps_id) {
+		global $_config;
+		return self::isEnabled() && Account::getAddress($_config['dapps_public_key'])==$dapps_id;
+	}
+
 	static function calcDappsHash($dapps_id) {
 		$cmd = "cd ".self::getDappsDir()." && tar -cf - $dapps_id --owner=0 --group=0 --sort=name --mode=744 --mtime='2020-01-01 00:00:00 UTC' | sha256sum";
 		$res = shell_exec($cmd);
@@ -194,6 +199,17 @@ class Dapps extends Daemon
 		$query = $url_info['query'];
 		$server_args = "";
 		$_SERVER['PHP_SELF_BASE']=$url_info['path'];
+
+		$request_uri = $_SERVER['REQUEST_URI'];
+		if(substr($request_uri, 0, strlen("/dapps/")) == "/dapps/") {
+			$_SERVER['REWRITE_URL'] = 1;
+			$url = substr($request_uri, strlen("/dapps/" . $dapps_id));
+		} else {
+			$_SERVER['REWRITE_URL'] = 0;
+			$url = substr($request_uri, strlen("/dapps.php?url=" . $dapps_id));
+		}
+		$_SERVER['DAPPS_URL']=$url;
+
 		foreach ($_SERVER as $key=>$val) {
 			$server_args.=" $key='$val' ";
 		}
@@ -201,13 +217,24 @@ class Dapps extends Daemon
 		$session_data = base64_encode(json_encode($_SESSION));
 
 		parse_str($query, $parsed);
+		foreach ($_GET as $key=>$val) {
+			$parsed[$key]=$val;
+		}
 		$get_data = base64_encode(json_encode($parsed));
 
 		$functions_file = ROOT . "/include/dapps.functions.php";
 
-		$cmd = "$server_args GET_DATA=$get_data POST_DATA=$post_data SESSION_ID=$session_id SESSION_DATA=$session_data DAPPS_ID=$dapps_id php -d " .
-			"disable_functions=exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,set_time_limit,ini_set" .
-			" -d open_basedir=" . $dapps_dir . "/$dapps_id:".$tmp_dir.":".$functions_file .
+		$dapps_config_file = "";
+		$dapps_local = 0;
+		if(self::isLocal($dapps_id)) {
+			$dapps_config_file = ROOT . "/config/dapps.config.inc.php";
+			$dapps_local = 1;
+		}
+
+		$cmd = "$server_args GET_DATA=$get_data POST_DATA=$post_data SESSION_ID=$session_id SESSION_DATA=$session_data " .
+			" DAPPS_ID=$dapps_id DAPPS_LOCAL=$dapps_local " .
+			" php -d disable_functions=exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,set_time_limit,ini_set" .
+			" -d open_basedir=" . $dapps_dir . "/$dapps_id:".$tmp_dir.":".$functions_file.":".$dapps_config_file .
 			" -d max_execution_time=5 -d memory_limit=128M " .
 			" -d auto_prepend_file=$functions_file $file 2>&1";
 		_log("Executing dapps file cmd=$cmd", 5);
@@ -224,17 +251,41 @@ class Dapps extends Daemon
 		$out = implode(PHP_EOL, $output2);
 		_log("Dapps: Parsing output $out", 5);
 
-		if(strpos($out, "location:")===0) {
-			_log("Dapps: Redirecting $out",3);
-			header($out);
-			exit;
+		if(strpos($out, "action:")===0) {
+			self::processAction($out, $dapps_id);
 		}
 
 		_log("Dapps: Writing out", 5);
 		echo $out;
 		exit;
 
+	}
 
+	static function processAction($out, $dapps_id) {
+		global $_config;
+		$str = str_replace("action:", "", $out);
+		$actionObj = json_decode($str, true);
+		if($actionObj['type']=="redirect") {
+			header("location: " . $actionObj['url']);
+			exit;
+		}
+		if($actionObj['type']=="dapps_request") {
+			$dapps_id = $actionObj['dapps_id'];
+			$url = $actionObj['url'];
+			if(substr($url, 0, 1) != "/") {
+				$url = "/" . $url;
+			}
+			//TODO: check my dapps
+			$peer = Peer::findByDappsId($dapps_id);
+			$url = $peer['hostname']."/dapps.php?url=" . $dapps_id . $url;
+			header("location: $url");
+			exit;
+		}
+		if($actionObj['type']=="dapps_exec" && self::isLocal($dapps_id)) {
+			$code = $actionObj['code'];
+			eval($code);
+			exit;
+		}
 	}
 
 	static function getDappsDir() {
@@ -242,6 +293,7 @@ class Dapps extends Daemon
 	}
 
 	static function updateDapps($data, $ip) {
+		global $_config;
 		$dapps_hash = $data['dapps_hash'];
 		$dapps_id = $data['dapps_id'];
 		$dapps_signature = $data['dapps_signature'];
@@ -272,8 +324,13 @@ class Dapps extends Daemon
 
 		$peer = Peer::findByIp($ip);
 		if(!$peer) {
-			api_err("Dapps: Remote peer not found", 0);
+			api_err("Dapps: Remote peer ip=$ip not found", 0);
 		}
+
+		if(!isset($_config['dapps_anonymous']) || !$_config['dapps_anonymous']) {
+			Peer::updateDappsId($ip, $dapps_id);
+		}
+
 		_log("Dapps: Request from ip=$ip peer=".$peer['hostname'], 5);
 
 		$link = $peer['hostname']."/dapps.php?download";
@@ -296,20 +353,15 @@ class Dapps extends Daemon
 			} else {
 				_log("Dapps: Downloaded size $size file=$local_file", 5);
 				$cmd = "cd ".self::getDappsDir()." && rm -rf $dapps_id";
-//				_log("Dapps: cmd=$cmd");
 				shell_exec($cmd);
 				$cmd = "cd ".ROOT." && tar -xzf tmp/dapps.$dapps_id.tar.gz -C . --owner=0 --group=0 --mode=744 --mtime='2020-01-01 00:00:00 UTC'";
-//				_log("Dapps: cmd=$cmd");
 				shell_exec($cmd);
 				$cmd = "cd ".self::getDappsDir()." && find $dapps_id -type f -exec touch {} +";
-//				_log("Dapps: cmd=$cmd");
 				shell_exec($cmd);
 				$cmd = "cd ".self::getDappsDir()." && find $dapps_id -type d -exec touch {} +";
-//				_log("Dapps: cmd=$cmd");
 				shell_exec($cmd);
 				if (php_sapi_name() == 'cli') {
 					$cmd = "cd ".self::getDappsDir()." && chown -R www-data:www-data $dapps_id";
-//					_log("Dapps: cmd=$cmd");
 					shell_exec($cmd);
 				}
 				$new_dapps_hash = Dapps::calcDappsHash($dapps_id);

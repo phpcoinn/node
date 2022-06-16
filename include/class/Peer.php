@@ -331,4 +331,18 @@ class Peer
 		return $res;
 	}
 
+	public static function findByDappsId($dapps_id)
+	{
+		global $db;
+		$sql = "select * from peers p where p.dapps_id = :dapps_id";
+		return $db->row($sql, [":dapps_id"=>$dapps_id]);
+	}
+
+	public static function updateDappsId($ip, $dapps_id)
+	{
+		global $db;
+		$sql = "update peers p set p.dapps_id = :dapps_id where p.ip = :ip";
+		return $db->run($sql, [":dapps_id"=>$dapps_id, ":ip"=>$ip]);
+	}
+
 }
