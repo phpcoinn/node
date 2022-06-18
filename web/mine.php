@@ -247,6 +247,13 @@ if ($q == "info") {
 	$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $generatorReward, "generator");
 
 	$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $height, $mn_signature);
+	if($mn_reward_tx['dst']==$generator && $height > 280000) {
+		$l .= " rejected - Not found masternode winner";
+		_log($l);
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['Not found masternode winner']++;
+		api_err("Not found masternode winner");
+	}
 	if($mn_reward_tx) {
 		$data[$mn_reward_tx['id']]=$mn_reward_tx;
 	}

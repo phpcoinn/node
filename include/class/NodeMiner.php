@@ -135,6 +135,11 @@ class NodeMiner {
 			$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $this->public_key, $this->private_key, $reward, "nodeminer");
 			$data[$reward_tx['id']]=$reward_tx;
 			$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $this->public_key, $this->private_key, $height, $mn_signature);
+			if($mn_reward_tx['dst']==$generator && $height > 280000) {
+				_log("Node score not ok - mining dropped");
+				$this->miningStat['rejected']++;
+				break;
+			}
 			$fee_dst = $generator;
 			if($mn_reward_tx) {
 				$data[$mn_reward_tx['id']]=$mn_reward_tx;
