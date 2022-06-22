@@ -247,16 +247,14 @@ if ($q == "info") {
 	$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $generatorReward, "generator");
 
 	$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $height, $mn_signature);
-	if($mn_reward_tx['dst']==$generator && $height > 280000) {
+	if(!$mn_reward_tx) {
 		$l .= " rejected - Not found masternode winner";
 		_log($l);
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['Not found masternode winner']++;
 		api_err("Not found masternode winner");
 	}
-	if($mn_reward_tx) {
-		$data[$mn_reward_tx['id']]=$mn_reward_tx;
-	}
+	$data[$mn_reward_tx['id']]=$mn_reward_tx;
 
 	$data[$reward_tx['id']] = $reward_tx;
 
@@ -266,14 +264,9 @@ if ($q == "info") {
 	$block = new Block($generator, $address, $height, $date, $nonce, $data, $difficulty, $version, $argon, $prev_block['id']);
 	$block->publicKey = $_config['generator_public_key'];
 
-	$fee_dst = $generator;
-	if($mn_reward_tx) {
-		if($mn_reward_tx['dst']!=$generator) {
-			$block->masternode = $mn_reward_tx['dst'];
-			$block->mn_signature = $mn_signature;
-			$fee_dst = $mn_reward_tx['dst'];
-		}
-	}
+	$block->masternode = $mn_reward_tx['dst'];
+	$block->mn_signature = $mn_signature;
+	$fee_dst = $mn_reward_tx['dst'];
 
 	Transaction::processFee($data, $_config['generator_public_key'], $_config['generator_private_key'], $fee_dst, $new_block_date);
 	ksort($data);
