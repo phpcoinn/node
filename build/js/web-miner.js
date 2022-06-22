@@ -1,36 +1,9 @@
 const crypto = require('crypto')
 const axios = require('axios')
-const ellipticcurve = require("starkbank-ecdsa")
-const Ecdsa = ellipticcurve.Ecdsa
-const PrivateKey = ellipticcurve.PrivateKey
 const Base58 = require("base-58")
 const jsonKeySort = require("json-keys-sort")
+const phpcoinCrypto = require("phpcoin-crypto")
 
-function str_split (string, splitLength) { // eslint-disable-line camelcase
-    //  discuss at: https://locutus.io/php/str_split/
-    // original by: Martijn Wieringa
-    // improved by: Brett Zamir (https://brett-zamir.me)
-    // bugfixed by: Onno Marsman (https://twitter.com/onnomarsman)
-    //  revised by: Theriault (https://github.com/Theriault)
-    //  revised by: Rafał Kukawski (https://blog.kukawski.pl)
-    //    input by: Bjorn Roesbeke (https://www.bjornroesbeke.be/)
-    //   example 1: str_split('Hello Friend', 3)
-    //   returns 1: ['Hel', 'lo ', 'Fri', 'end']
-    if (splitLength === null) {
-        splitLength = 1
-    }
-    if (string === null || splitLength < 1) {
-        return false
-    }
-    string += ''
-    const chunks = []
-    let pos = 0
-    const len = string.length
-    while (pos < len) {
-        chunks.push(string.slice(pos, pos += splitLength))
-    }
-    return chunks
-}
 
 function hex2coin(hash) {
     return Base58.encode(Buffer.from(hash, 'hex'))
@@ -38,55 +11,6 @@ function hex2coin(hash) {
 
 function sortTx (tx) {
     return jsonKeySort.sort(tx)
-}
-
-function private_key_to_pem(private_key) {
-    let private_key_bin = Base58.decode(private_key)
-    // console.log(private_key_bin)
-    let private_key_base64 = Buffer.from(private_key_bin).toString('base64');
-    // console.log(private_key_base64)
-    let private_key_pem = '-----BEGIN EC PRIVATE KEY-----\n'
-        + str_split(private_key_base64, 64)
-            .join('\n')
-        + '\n-----END EC PRIVATE KEY-----\n'
-    return private_key_pem
-}
-
-function sign (message, private_key) {
-    // console.log(private_key)
-    let private_key_pem = private_key_to_pem(private_key)
-
-    let privateKey = PrivateKey.fromPem(private_key_pem)
-    // console.log(privateKey)
-
-    let signature = Ecdsa.sign(message, privateKey);
-    let signature_b64 = signature.toBase64()
-    // console.log(signature_b64)
-    let signature_bin = Buffer.from(signature_b64, 'base64');
-    // console.log(signature_bin)
-    let signature_b58 = Base58.encode(signature_bin)
-    // console.log(signature_b58)
-    return signature_b58
-}
-
-let pem2coin = (pem) => {
-    let pemB58 = pem.replace('-----BEGIN EC PRIVATE KEY-----','')
-    pemB58 = pemB58.replace('-----END EC PRIVATE KEY-----','')
-    pemB58 = pemB58.replace('-----BEGIN PUBLIC KEY-----','')
-    pemB58 = pemB58.replace('-----END PUBLIC KEY-----','')
-    pemB58 = pemB58.replace(/\n/g,'')
-    pemB58 = Buffer.from(pemB58, 'base64')
-    pemB58 = Base58.encode(pemB58)
-    return pemB58
-}
-
-function get_public_key(private_key) {
-    let private_key_pem = private_key_to_pem(private_key)
-    let privateKey = PrivateKey.fromPem(private_key_pem)
-    let publicKey = privateKey.publicKey();
-    let publicKeyPem = publicKey.toPem()
-    let publicKeyB58 = pem2coin(publicKeyPem)
-    return publicKeyB58;
 }
 
 class WebMiner {
@@ -425,7 +349,7 @@ class WebMiner {
     signTx(tx) {
         let data = `${tx.val}-${tx.fee}-${tx.dst}-${tx.message}-${tx.type}-${tx.public_key}-${tx.date}`
         // console.log("sign data", data)
-        let sig = sign(data, this.privateKey)
+        let sig = phpcoinCrypto.sign(data, this.privateKey)
         // console.log("sig", sig)
         return sig
     }
@@ -447,8 +371,7 @@ class WebMiner {
 
 if(typeof window !== 'undefined')  {
     window.WebMiner = WebMiner
-    window.sign = sign
-    window.get_public_key = get_public_key
+    window.sign = phpcoinCrypto.sign
 }
 
 global.WebMiner = WebMiner
