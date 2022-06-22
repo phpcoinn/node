@@ -6,9 +6,9 @@ if(file_exists(dirname(__DIR__)."/testnet")) {
 
 // mainnet specification
 const NETWORK = "mainnet-alpha";
-const VERSION = "1.0.4";
-const BUILD_VERSION = 74;
-const MIN_VERSION = "1.0.3";
+const VERSION = "1.0.5";
+const BUILD_VERSION = 75;
+const MIN_VERSION = "1.0.4";
 const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
@@ -87,3 +87,4 @@ const UPDATE_1_BLOCK_ZERO_TIME = 9000;
 const UPDATE_2_BLOCK_CHECK_IMPROVED = 25000;
 const UPDATE_3_ARGON_HARD = 45000;
 const UPDATE_4_NO_POOL_MINING = 45400;
+const UPDATE_5_NO_MASTERNODE = 280000;

@@ -363,4 +363,16 @@ class Nodeutil
 		}
 	}
 
+	static function getTableRowsCount() {
+		global $db;
+		$db_name = $db->single('select database()');
+		$sql = "select * from information_schema.TABLES where TABLE_SCHEMA = :dbname";
+		$rows = $db->run($sql, [":dbname"=>$db_name]);
+		$rowCounts = [];
+		foreach($rows as $row) {
+			$rowCounts[$row['TABLE_NAME']]=$row['TABLE_ROWS'];
+		}
+		return $rowCounts;
+	}
+
 }

@@ -552,9 +552,12 @@ class Masternode
 		$winner = Masternode::getWinner($height);
 		if(!$winner) {
 			_log("Masternode: not found winner");
-			//$mns = Masternode::getAll();
-			//_log("Masternodes ".json_encode($mns));
-			$dst = $generator;
+			$mn_count = Masternode::getCount();
+			if($mn_count > 0 && $height > UPDATE_5_NO_MASTERNODE) {
+				return false;
+			} else {
+				$dst = $generator;
+			}
 		} else {
 			$dst = $winner['id'];
 			$mn_signature = $winner['signature'];
@@ -664,6 +667,13 @@ class Masternode
 
 			if(!Masternode::allowedMasternodes($block->height)) {
 				return true;
+			}
+
+			if(empty($block->masternode) && $block->height > UPDATE_5_NO_MASTERNODE) {
+				$mn_count = Masternode::getCount();
+				if($mn_count > 0) {
+					throw new Exception("Masternode: not found winner for block");
+				}
 			}
 
 			if(!empty($block->masternode)) {

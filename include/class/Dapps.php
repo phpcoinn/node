@@ -209,6 +209,7 @@ class Dapps extends Daemon
 			$url = substr($request_uri, strlen("/dapps.php?url=" . $dapps_id));
 		}
 		$_SERVER['DAPPS_URL']=$url;
+		$_SERVER['DAPPS_NETWORK']=NETWORK;
 
 		foreach ($_SERVER as $key=>$val) {
 			$server_args.=" $key='$val' ";

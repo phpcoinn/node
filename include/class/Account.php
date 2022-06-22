@@ -330,7 +330,6 @@ class Account
 		$checksum=substr($checksumCalc3, 0, 8);
 		$addressHex = $baseAddress.$checksum;
 		$address = base58_encode(hex2bin($addressHex));
-//    	_log("get_address: $public_key=$public_key address=$address");
 		return $address;
 	}
 
