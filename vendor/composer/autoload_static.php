@@ -34,6 +34,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         'SmartContract' => __DIR__ . '/../..' . '/include/class/SmartContract.php',
         'SmartContractEngine' => __DIR__ . '/../..' . '/include/class/SmartContractEngine.php',
         'SmartContractWrapper' => __DIR__ . '/../..' . '/include/class/SmartContractWrapper.php',
+        'Sync' => __DIR__ . '/../..' . '/include/class/Sync.php',
         'Transaction' => __DIR__ . '/../..' . '/include/class/Transaction.php',
         'Util' => __DIR__ . '/../..' . '/include/class/Util.php',
         'Wallet' => __DIR__ . '/../..' . '/include/class/Wallet.php',
