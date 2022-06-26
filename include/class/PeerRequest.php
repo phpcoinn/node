@@ -278,7 +278,7 @@ class PeerRequest
 				_log('['.$ip."] Starting microsync - $data[height]",1);
 				$ip=escapeshellarg($ip);
 				$dir = ROOT."/cli";
-				system(  "php $dir/sync.php microsync '$ip'  > /dev/null 2>&1  &");
+				system(  "php $dir/microsync.php '$ip'  > /dev/null 2>&1  &");
 				api_echo("microsync");
 			} else {
 				_log('['.$ip."] suggesting reverse-microsync - $data[height]",1);

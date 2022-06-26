@@ -5,14 +5,10 @@ class Dapps extends Daemon
 
 	// Daemon config
 	static $name = "dapps";
-	static $max_locked_time = 5 * 60;
-	static $max_run_time_min = (DEVELOPMENT ? 10 : 60) * 60;
-	static $run_interval = 30;
+	static $title = "Dapps";
 
-	static function isEnabled() {
-		global $_config;
-		return isset($_config['dapps']) && $_config['dapps'];
-	}
+	static $max_run_time = (DEVELOPMENT ? 10 : 60) * 60;
+	static $run_interval = 30;
 
 	static function isLocal($dapps_id) {
 		global $_config;

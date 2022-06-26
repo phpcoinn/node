@@ -1,7 +1,12 @@
 <?php
 
-class NodeMiner {
+class NodeMiner extends Daemon {
 
+	static $name = "miner";
+	static $title = "Miner";
+
+	static $max_run_time = 60 * 60;
+	static $run_interval = 5;
 
 	public $public_key;
 	public $private_key;
@@ -80,9 +85,15 @@ class NodeMiner {
 			$cpu = isset($_config['miner_cpu']) ? $_config['miner_cpu'] : 0;
 			while (!$blockFound) {
 				$attempt++;
+
+				if($attempt % 100 == 0) {
+					$this->saveMiningStats();
+				}
+
 				usleep((100-$cpu) * 5 * 1000);
 				$this->checkRunning();
 				if(!$this->running) {
+					_log("Stop miner because missing lock file");
 					break;
 				}
 				$now = time();
@@ -185,11 +196,11 @@ class NodeMiner {
 
 			if(!$_config['testnet']) {
 				sleep(3);
+			} else {
+				sleep(30);
 			}
 
-			_log("Mining stats: ".json_encode($this->miningStat), 3);
-			$minerStatFile = self::getStatFile();
-			file_put_contents($minerStatFile, json_encode($this->miningStat));
+			$this->saveMiningStats();
 
 			$this->blocks++;
 			if(!empty($mine_blocks) && $this->blocks >= $mine_blocks) {
@@ -201,13 +212,60 @@ class NodeMiner {
 		_log("Miner stopped");
 	}
 
+	function saveMiningStats() {
+		_log("Mining stats: ".json_encode($this->miningStat), 3);
+		$minerStatFile = self::getStatFile();
+		file_put_contents($minerStatFile, json_encode($this->miningStat));
+	}
+
 	function checkRunning() {
-		$this->running = file_exists(MINER_LOCK_PATH);
+		$this->running = file_exists(static::getLockFile());
 	}
 
 	static function getStatFile() {
 		$file = ROOT . "/tmp/miner_stat.json";
 		return $file;
+	}
+
+	static function process() {
+		global $_config;
+		$peers = Peer::getCount(true);
+		$force = static::hasArg("force");
+		if(empty($peers) && !$force) {
+			_log("No peers for miner");
+			return;
+		}
+		if(!$_config['miner']&& !$force) {
+			_log("Miner not enabled");
+			return;
+		}
+		if(!$_config['miner_public_key']) {
+			_log("Miner public key not defined");
+			return;
+		}
+		if(!$_config['miner_private_key']) {
+			_log("Miner private key not defined");
+			return;
+		}
+		_log("Starting miner", 5);
+		$miner = new NodeMiner();
+		$mine_blocks = static::getArg("blocks", null);
+		$res = $miner->start($mine_blocks);
+		if($res === false) {
+			_log("Miner failed to start");
+			return;
+		}
+	}
+
+	static function getStatus() {
+		global $_config;
+		$minerStatFile = NodeMiner::getStatFile();
+		if(file_exists($minerStatFile)) {
+			$minerStat = file_get_contents($minerStatFile);
+			$minerStat = json_decode($minerStat, true);
+		}
+		$minerStat['address']=Account::getAddress($_config['miner_public_key']);
+		return $minerStat;
 	}
 
 }

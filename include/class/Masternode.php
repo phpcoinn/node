@@ -1,7 +1,13 @@
 <?php
 
-class Masternode
+class Masternode extends Daemon
 {
+
+	static $name = "masternode";
+	static $title = "Masternode";
+
+	static $max_run_time = 60 * 60;
+	static $run_interval = 30;
 
 	public $id;
 	public $public_key;
@@ -336,7 +342,7 @@ class Masternode
 		$publicKey = $_config['masternode_public_key'];
 		$localMasternode = Masternode::get($publicKey);
 		if($localMasternode) {
-			_log("Masternode: Local masternode already exists");
+			_log("Masternode: Local masternode already exists", 4);
 			return;
 		}
 
@@ -895,6 +901,18 @@ class Masternode
 			and m.id is not null
 			group by m.id";
 		return $db->run($sql, [":mn_create" => TX_TYPE_MN_CREATE, ":public_key" => $public_key]);
+	}
+
+	static function process() {
+		_log("Masternode: start process",5);
+		$height = Block::getHeight();
+		if(!Masternode::allowedMasternodes($height)) {
+			_log("Masternode feature not enabled");
+			return;
+		}
+		Masternode::checkLocalMasternode();
+		Masternode::processBlock();
+
 	}
 
 }

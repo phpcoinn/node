@@ -76,7 +76,7 @@ function _log($data, $verbosity = 0)
     $res .= " $data \n";
     if ($_config && $_config['enable_logging'] == true && $_config['log_verbosity'] >= $verbosity) {
 	    if (php_sapi_name() === 'cli') {
-	    	if(!defined("CLI_UTIL")) {
+	    	if(!defined("CLI_UTIL") || CLI_UTIL == 0) {
 	            echo $res;
 		    }
 	    } else {

@@ -314,7 +314,7 @@ class NodeSync
 				}
 			}
 			if ($all_blocks_ok) {
-				echo "All checked blocks are ok\n";
+				_log("All checked blocks are ok", 3);
 			}
 		}
 	}

@@ -27,8 +27,6 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 set_time_limit(360);
 global $db, $_config;
 
-define("SKIP_MASTERNODE_THREAD", true);
-
 require_once dirname(__DIR__).'/include/init.inc.php';
 
 $type = san($argv[1]);
@@ -168,8 +166,8 @@ if ($type == "block") {
         }
         // fork a microsync in a new process
 	    $dir = ROOT . "/cli";
-        _log("caliing propagate: php $dir/sync.php microsync '$ip'  > /dev/null 2>&1  &",3);
-        system("php $dir/sync.php microsync '$ip'  > /dev/null 2>&1  &");
+        _log("caliing propagate: php $dir/microsync.php '$ip'  > /dev/null 2>&1  &",3);
+        system("php $dir/microsync.php '$ip'  > /dev/null 2>&1  &");
     } else {
     	_log("Block not accepted ".$response." err=".$err, 5);
         echo "Block not accepted!\n";
