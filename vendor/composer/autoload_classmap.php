@@ -27,6 +27,7 @@ return array(
     'SmartContract' => $baseDir . '/include/class/SmartContract.php',
     'SmartContractEngine' => $baseDir . '/include/class/SmartContractEngine.php',
     'SmartContractWrapper' => $baseDir . '/include/class/SmartContractWrapper.php',
+    'Sync' => $baseDir . '/include/class/Sync.php',
     'Transaction' => $baseDir . '/include/class/Transaction.php',
     'Util' => $baseDir . '/include/class/Util.php',
     'Wallet' => $baseDir . '/include/class/Wallet.php',

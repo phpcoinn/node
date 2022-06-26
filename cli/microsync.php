@@ -6,8 +6,6 @@ $ip = trim($argv[1]);
 //TODO: prevent if sync is running
 require_once dirname(__DIR__).'/include/init.inc.php';
 
-_log("Call microsync args = ".json_encode($argv));
-
 if (!empty($ip)) {
 	do {
 		_log("Microsync: Find peer by ip = $ip", 3);
