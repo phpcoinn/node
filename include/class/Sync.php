@@ -11,7 +11,7 @@ class Sync extends Daemon
 
 	static function isEnabled() {
 		global $_config;
-		return !isset($_config["sync_disabled"]) && !$_config["sync_disabled"];
+		return !isset($_config["sync_disabled"]) || $_config["sync_disabled"]==0;
 	}
 
 	static function enable() {
