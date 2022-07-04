@@ -30,14 +30,9 @@ class NodeMiner extends Daemon {
 	}
 
 	function start($mine_blocks = null) {
-		$this->miningStat = [
-			'started'=>time(),
-			'hashes'=>0,
-			'submits'=>0,
-			'accepted'=>0,
-			'rejected'=>0,
-			'dropped'=>0,
-		];
+
+		$this->loadMiningStats();
+
 		while($this->running) {
 			$this->cnt++;
 //			_log("Mining cnt: ".$this->cnt);
@@ -86,9 +81,7 @@ class NodeMiner extends Daemon {
 			while (!$blockFound) {
 				$attempt++;
 
-				if($attempt % 100 == 0) {
-					$this->saveMiningStats();
-				}
+				$this->saveMiningStats();
 
 				usleep((100-$cpu) * 5 * 1000);
 				$this->checkRunning();
@@ -213,9 +206,11 @@ class NodeMiner extends Daemon {
 	}
 
 	function saveMiningStats() {
-		_log("Mining stats: ".json_encode($this->miningStat), 3);
-		$minerStatFile = self::getStatFile();
-		file_put_contents($minerStatFile, json_encode($this->miningStat));
+		if($this->miningStat['hashes'] % 100 === 0) {
+			_log("Mining stats: ".json_encode($this->miningStat), 3);
+			$minerStatFile = self::getStatFile();
+			file_put_contents($minerStatFile, json_encode($this->miningStat));
+		}
 	}
 
 	function checkRunning() {
@@ -254,6 +249,23 @@ class NodeMiner extends Daemon {
 		if($res === false) {
 			_log("Miner failed to start");
 			return;
+		}
+	}
+
+	function loadMiningStats() {
+		$minerStatFile = NodeMiner::getStatFile();
+		if(file_exists($minerStatFile)) {
+			$minerStat = file_get_contents($minerStatFile);
+			$this->miningStat = json_decode($minerStat, true);
+		} else {
+			$this->miningStat = [
+				'started'=>time(),
+				'hashes'=>0,
+				'submits'=>0,
+				'accepted'=>0,
+				'rejected'=>0,
+				'dropped'=>0,
+			];
 		}
 	}
 
