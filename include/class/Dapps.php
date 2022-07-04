@@ -177,9 +177,47 @@ class Dapps extends Daemon
 
 		if(!file_exists($file)) {
 			_log("Dapps: File $file not exists");
-			Dapps::downloadDapps($dapps_id);
+			if(!Dapps::isLocal($dapps_id)) {
+				Dapps::downloadDapps($dapps_id);
+			}
 			return;
 		}
+
+		if(is_dir($file)) {
+			_log("Dapps: File $file is dir", 5);
+			$files = scandir($file);
+			_log("Dapps: Files in dir ".json_encode($files), 5);
+			foreach ($files as $dir_file) {
+				if($dir_file == "index.html") {
+					$file = $file . "/" . $dir_file;
+					break;
+				}
+				if($dir_file == "index.php") {
+					$file = $file . "/" . $dir_file;
+					break;
+				}
+			}
+		}
+
+		if(!is_file($file)) {
+			_log("Dapps: Entry $file does not exists", 5);
+			return;
+		}
+
+		$file_type = mime_content_type($file);
+		$file_info = pathinfo($file);
+		$ext = $file_info['extension'];
+		_log("Dapps: Resolve file $file content-type:" . $file_type." ext=$ext", 5);
+
+
+		if($file_type != 'text/x-php' && $ext!="php") {
+			_log("Dapps: file is not php: render it directly", 5);
+			ob_end_clean();
+			header("Content-Type: ".$file_type);
+			readfile($file);
+			exit;
+		}
+
 
 		_log("Dapps: Starting session", 5);
 		$tmp_dir = ROOT."/tmp/dapps";
@@ -234,19 +272,19 @@ class Dapps extends Daemon
 			" -d open_basedir=" . $dapps_dir . "/$dapps_id:".$tmp_dir.":".$functions_file.":".$dapps_config_file .
 			" -d max_execution_time=5 -d memory_limit=128M " .
 			" -d auto_prepend_file=$functions_file $file 2>&1";
-		_log("Executing dapps file cmd=$cmd", 5);
+		_log("Dapps: Executing dapps file cmd=$cmd", 5);
 
 		session_write_close();
 
 		$res = exec ($cmd, $output2);
-		_log("Dapps: Parsing output ". print_r($output2, 1), 5);
+//		_log("Dapps: Parsing output ". json_encode($output2), 5);
 
 		ob_end_clean();
 		ob_start();
 		header("X-Dapps-Id: $dapps_id");
 
 		$out = implode(PHP_EOL, $output2);
-		_log("Dapps: Parsing output $out", 5);
+//		_log("Dapps: Parsing output $out", 5);
 
 		if(strpos($out, "action:")===0) {
 			self::processAction($out, $dapps_id);

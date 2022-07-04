@@ -5,24 +5,39 @@ if(!defined("ROOT")) {
 
 }
 
+/**
+ * Function call all common functions for app work: dapps_get, dapps_post, dapps_get_session
+ */
 function dapps_init() {
 	dapps_get();
 	dapps_post();
 	dapps_get_session();
 }
 
+/**
+ * Reads data from query string and populate it in $_GET variable
+ * @return array
+ */
 function dapps_get() {
 	$get_data = $_SERVER['GET_DATA'];
 	$_GET = json_decode(base64_decode($get_data), true);
 	return $_GET;
 }
 
+/**
+ * Reads data from POST request and populate $_POST variable
+ * @return array
+ */
 function dapps_post() {
 	$post_data = $_SERVER['POST_DATA'];
 	$_POST = json_decode(base64_decode($post_data), true);
 	return $_POST;
 }
 
+/**
+ * Reads session from request and populate $_SESSION variable
+ * @return string id of session
+ */
 function dapps_get_session() {
 
 	$session_id = $_SERVER['SESSION_ID'];
@@ -50,6 +65,10 @@ if(!function_exists('_log')) {
 	}
 }
 
+/**
+ * Redirect application to different url
+ * @param null $location - location to redirect to. If empty it will redirect to current url
+ */
 function dapps_redirect($location = null) {
 	if(empty($location)) {
 		$location = dapps_get_url();
@@ -62,6 +81,9 @@ function dapps_redirect($location = null) {
 	exit;
 }
 
+/**
+ * Destroys session
+ */
 function dapps_session_destroy() {
 	$session_id = $_SERVER['SESSION_ID'];
 	$sessions_dir = ROOT."/tmp/dapps/sessions";
@@ -70,14 +92,33 @@ function dapps_session_destroy() {
 	unlink($file);
 }
 
+/**
+ * Retrieves address of currently running dapp
+ * @return mixed
+ */
 function dapps_get_id() {
 	return $_SERVER['DAPPS_ID'];
 }
 
-function dapps_get_url() {
-	return "/dapps.php?url=" . $_SERVER['PHP_SELF_BASE'];
+/**
+ * Retreives base url of currently running dapp
+ * @param string $url - url to append to dapps base url. If not specified current url is returned
+ * @return string
+ */
+function dapps_get_url($url = null) {
+	if(empty($url)) {
+		$url = $_SERVER['PHP_SELF_BASE'];
+	} else {
+		$url = dapps_get_id() . $url;
+	}
+	return "/dapps.php?url=" . $url;
 }
 
+/**
+ * Perform request to other dapp
+ * @param $dapps_id - address of other dapp to call
+ * @param $url - url on other app to call
+ */
 function dapps_request($dapps_id, $url) {
 	$request_code = uniqid();
 	$_SESSION[$dapps_id.'_request_code']=$request_code;
@@ -91,10 +132,19 @@ function dapps_request($dapps_id, $url) {
 	exit;
 }
 
+/**
+ * Function check if running dapp is local, i.e. if it is called on node who is its owner
+ * @return bool
+ */
 function dapps_is_local() {
 	return !empty($_SERVER['DAPPS_LOCAL']);
 }
 
+/**
+ * Reads dapp configuration file. Only works for local dapp.
+ * Config file is stored on node in file: config/dapps.config.inc.php
+ * @return array
+ */
 function dapps_config() {
 	$config_file = ROOT . "/config/dapps.config.inc.php";
 	global $dapps_config;
@@ -102,6 +152,10 @@ function dapps_config() {
 	return $dapps_config;
 }
 
+/**
+ * Instructs dapp to execute some code in node environment. Only works for local calls
+ * @param $code - code to execute
+ */
 function dapps_exec($code) {
 	if(!dapps_is_local()) {
 		exit;
@@ -114,6 +168,11 @@ function dapps_exec($code) {
 	exit;
 }
 
+/**
+ * Retrieves random peer from network
+ * @return string - url of random peer
+ * @throws Exception
+ */
 function dapps_get_random_peer() {
 	$main_node = $_SERVER['REQUEST_SCHEME']."://".$_SERVER['HTTP_HOST'];
 	$res = @file_get_contents($main_node."/peers.php");
@@ -136,17 +195,25 @@ function dapps_get_random_peer() {
 	return $rand_peer;
 }
 
+/**
+ * Calls API function on network node
+ * @param null $api - API string to call
+ * @param null $node - URL of node to call. If empty node will be random
+ * @return mixed - response from API
+ * @throws Exception
+ */
 function dapps_api($api=null, $node=null) {
 	if(empty($node)) {
 		$node = dapps_get_random_peer();
 	}
-	$res = file_get_contents($node. "/api.php?q=".$api);
+	$url = $node. "/api.php?q=".$api;
+	$res = file_get_contents($url);
 	$res = json_decode($res, true);
-	if($res['status']=="ok") {
+	if($res !== false && $res['status']=="ok") {
 		$data = $res['data'];
 		return $data;
 	} else {
-		throw new Exception("Error response from API: ".$res['data']);
+		throw new Exception("Error response from API: ".json_encode($res));
 	}
 
 }
