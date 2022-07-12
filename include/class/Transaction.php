@@ -1097,7 +1097,7 @@ class Transaction
 			       sum(if(t.src= a.id, 1, 0)) as count_sent,
 			       sum(if(t.dst = a.id , 1, 0)) as count_received
 				from accounts a
-				left join transactions t on (a.public_key = t.public_key or a.id = t.dst)
+				left join transactions t on (a.id = t.src or a.id = t.dst)
 				where a.id = :address;",
 			[":address" => $address]
 		);

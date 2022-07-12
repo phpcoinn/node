@@ -343,6 +343,15 @@ if($dbversion == 13) {
 	$dbversion = 14;
 }
 
+if($dbversion == 14) {
+	$db->run("create index blocks_masternode_height_index on blocks (masternode, height);");
+	$db->run("create index mix on masternode(height, signature, id, public_key);");
+	$db->run("drop index version on transactions;");
+	$db->run("create index transactions_type_index on transactions (type);");
+	$db->run("create index transactions_src_dst_val_fee_index on transactions (src, dst, val, fee);");
+	$dbversion = 15;
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);

@@ -1,5 +1,19 @@
 <?php
 $GLOBALS['start_time']=microtime(true);
+
+$blocked_agents = ["DataForSeoBot","BLEXBot"];
+if (php_sapi_name() !== 'cli') {
+	if(isset($_SERVER['HTTP_USER_AGENT'])) {
+		$user_agent = $_SERVER['HTTP_USER_AGENT'];
+		foreach($blocked_agents as $agent) {
+			if(strpos($user_agent, $agent)!== false) {
+				header('HTTP/1.0 403 Forbidden');
+				exit;
+			}
+		}
+	}
+}
+
 // UTC timezone by default
 date_default_timezone_set("UTC");
 require_once dirname(__DIR__).'/vendor/autoload.php';

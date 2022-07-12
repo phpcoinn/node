@@ -347,12 +347,23 @@ class Nodeutil
 			$GLOBALS['end_time']=microtime(true);
 			$time = $GLOBALS['end_time'] - $GLOBALS['start_time'];
 			if($time > 1) {
-				_log("Time: url=".$_SERVER['REQUEST_URI']." time=$time");
+				_log("Time: url=".$_SERVER['REQUEST_URI']." time=$time HTTP_USER_AGENT=".$_SERVER['HTTP_USER_AGENT']);
+				$prev_time = $GLOBALS['start_time'];
 				foreach($GLOBALS['measure'] as $section => $t) {
-					_log("Time: url=".$_SERVER['REQUEST_URI']." section=$section time=$t");
+					$diff = $t - $prev_time;
+					_log("Time: url=".$_SERVER['REQUEST_URI']." section=$section time=$t diff=$diff");
+					$prev_time = $t;
 				}
 			}
 		}
+	}
+
+	static function addMeasurePoint($name = null) {
+		if($name == null) {
+			$bt =  debug_backtrace();
+			$name = $bt[0]['file'].":".$bt[0]['line'];
+		}
+		$GLOBALS['measure'][$name]=microtime(true);
 	}
 
 	static function runSingleProcess($cmd) {

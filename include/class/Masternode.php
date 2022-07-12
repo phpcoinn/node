@@ -163,11 +163,17 @@ class Masternode extends Daemon
 		}
 
 
-		$sql = "select m.id, m.signature, m.public_key, max(b.height) as last_win_height from masternode m
-			left join blocks b on (b.masternode = m.id)
+		$sql = "select m.id, m.signature, m.public_key, masternode_height.last_win_height
+			from masternode m
+			left join (
+			    select b.masternode, max(b.height) as last_win_height
+			                             from blocks b
+			where b.masternode is not null
+			group by b.masternode
+			    ) as masternode_height on (masternode_height.masternode = m.id)
 			where m.height <= :height
-			group by m.id, m.signature, m.public_key
-			order by last_win_height, md5(m.signature)";
+			group by m.id, m.signature, m.public_key, masternode_height.last_win_height
+			order by masternode_height.last_win_height, md5(m.signature), m.height";
 		$rows = $db->run($sql, [":height"=>$height]);
 		foreach($rows as $row) {
 			$mn = Masternode::fromDB($row);
