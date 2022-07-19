@@ -102,8 +102,8 @@ class Nodeutil
 	}
 
 	static function deleteLatestBlocks($no) {
-		$syncFile = Nodeutil::getSyncFile();
-		if (file_exists($syncFile)) {
+		$sync = Config::isSync();
+		if ($sync) {
 			$_SESSION['msg'] = [['icon' => 'warning', 'text' => 'Sync running. Wait for it to finish']];
 			_log("Sync running. Wait for it to finish", 3);
 			return;
