@@ -677,4 +677,17 @@ class Api
 		}
 		api_echo($account);
 	}
+
+	static function sendTransaction($data) {
+		$transactionData = $data['tx'];
+		$transactionData = json_decode(base64_decode($transactionData), true);
+		$transaction = Transaction::getFromArray($transactionData);
+
+		$hash = $transaction->addToMemPool($error);
+
+		if($hash === false) {
+			api_err($error);
+		}
+		api_echo($hash);
+	}
 }
