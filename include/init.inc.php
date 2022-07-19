@@ -1,7 +1,7 @@
 <?php
 $GLOBALS['start_time']=microtime(true);
 
-$blocked_agents = ["DataForSeoBot","BLEXBot"];
+$blocked_agents = ["DataForSeoBot","BLEXBot","SemrushBot","YandexBot","AhrefsBot"];
 if (php_sapi_name() !== 'cli') {
 	if(isset($_SERVER['HTTP_USER_AGENT'])) {
 		$user_agent = $_SERVER['HTTP_USER_AGENT'];
@@ -40,6 +40,14 @@ $config_file = ROOT.'/config/config.inc.php';
 require_once $config_file;
 require_once __DIR__.'/db.inc.php';
 global $_config;
+
+if(false && strlen($_SERVER['HTTP_USER_AGENT'])>0) {
+	$log_agent_file = ROOT . "/tmp/agent.log";
+	$date = date("[Y-m-d H:i:s]");
+	$s = $date . "\t" . $_SERVER['REQUEST_URI'] . "\t" . $_SERVER['HTTP_USER_AGENT'].PHP_EOL;
+	@file_put_contents($log_agent_file, $s, FILE_APPEND);
+	//check: cut -f 3 tmp/agent.log | uniq | sort | grep bot
+}
 
 @include_once ROOT.'/web/apps/apps.functions.php';
 
