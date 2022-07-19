@@ -146,7 +146,7 @@ class NodeMiner extends Daemon {
 			}
 
 			$data[$mn_reward_tx['id']]=$mn_reward_tx;
-			$bl->masternode = $mn_reward_tx['dst'];
+			$bl->masternode = $mn_signature ? $mn_reward_tx['dst'] : null;
 			$bl->mn_signature = $mn_signature;
 			$fee_dst = $mn_reward_tx['dst'];
 
@@ -187,11 +187,7 @@ class NodeMiner extends Daemon {
 				$this->miningStat['rejected']++;
 			}
 
-			if(!$_config['testnet']) {
-				sleep(3);
-			} else {
-				sleep(30);
-			}
+			sleep(3);
 
 			$this->saveMiningStats();
 

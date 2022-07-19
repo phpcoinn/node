@@ -264,7 +264,7 @@ if ($q == "info") {
 	$block = new Block($generator, $address, $height, $date, $nonce, $data, $difficulty, $version, $argon, $prev_block['id']);
 	$block->publicKey = $_config['generator_public_key'];
 
-	$block->masternode = $mn_reward_tx['dst'];
+	$block->masternode = $mn_signature ? $mn_reward_tx['dst'] : null;
 	$block->mn_signature = $mn_signature;
 	$fee_dst = $mn_reward_tx['dst'];
 
