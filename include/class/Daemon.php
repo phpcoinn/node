@@ -205,7 +205,7 @@ class Daemon
 					$lock_file = self::getLockFile();
 					$locked = file_exists($lock_file);
 
-					$scmd = "ps -e -o pid,pcpu,pmem,lstart,user,cmd | grep $name.php | grep -v grep | grep -v status";
+					$scmd = "ps -e -o pid,pcpu,pmem,lstart,user,cmd | grep ".ROOT."/cli/$name.php | grep -v grep | grep -v status";
 					$res = shell_exec($scmd);
 					$data = [];
 					$data['name'] = static::$title;
@@ -247,7 +247,7 @@ class Daemon
 					self::unlock();
 					exit;
 				} else if ($cmd == "kill") {
-					$cmd = "ps uax | grep $name.php | grep -v grep";
+					$cmd = "ps uax | grep ".ROOT."/cli/$name.php | grep -v grep";
 					$res = shell_exec($cmd);
 					$arr = preg_split("/\s+/", $res);
 					$pid = $arr[1];
