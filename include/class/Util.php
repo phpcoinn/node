@@ -761,21 +761,16 @@ class Util
 		if(!file_exists($file)) {
 			die("Can not found file: $file".PHP_EOL);
 		}
-		$lockFile = Nodeutil::getSyncFile();
-		if (file_exists($lockFile)) {
+		$sync = Config::isSync();
+		if ($sync) {
 			die("Sync running. Wait for it to finish");
 		}
 		$handle = fopen($file, "r") or die("Couldn't open file $file".PHP_EOL);
 
 		declare(ticks = 1);
-		pcntl_signal(SIGINT, function () use ($lockFile) {
-			@unlink($lockFile);
-			exit;
-		});
 		if ($handle) {
 			$i = 0;
 			$imported = 0;
-			@touch($lockFile);
 			$prev_block = Block::current();
 			$start_height = $prev_block['height'];
 			while (!feof($handle)) {
@@ -789,7 +784,6 @@ class Util
 				}
 				$bl = json_decode($line, true);
 				if(!$bl) {
-					@unlink($lockFile);
 					die("Failed decoding block at height ".$bl['height'].PHP_EOL);
 				}
 				if($bl['height'] == $prev_block['height']+1) {
@@ -798,7 +792,6 @@ class Util
 					$block->prevBlockId = $prev_block_id;
 					$res = $block->add($error);
 					if(!$res) {
-						@unlink($lockFile);
 						die("Failed importing block at height {$prev_block['height']}: $error".PHP_EOL);
 					}
 					$prev_block = Block::current();
@@ -806,7 +799,6 @@ class Util
 				}
 			}
 			fclose($handle);
-			@unlink($lockFile);
 			echo "Successfully imported $imported blocks from height $start_height".PHP_EOL;
 		}
 	}

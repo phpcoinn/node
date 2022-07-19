@@ -39,12 +39,11 @@ class Nodeutil
 	 */
 	static function clean() {
 		global $db;
-		$lockFile = Nodeutil::getSyncFile();
-		if (file_exists($lockFile)) {
+		$sync = Config::isSync();
+		if ($sync) {
 			_log("Sync running. Wait for it to finish");
 			return;
 		}
-		@touch($lockFile);
 		$db->fkCheck(false);
 		$tables = ["accounts", "transactions", "mempool", "masternode","blocks","smart_contracts","smart_contract_state"];
 		foreach ($tables as $table) {
@@ -53,7 +52,6 @@ class Nodeutil
 		$db->fkCheck(true);
 
 		_log("The database has been cleared");
-		@unlink($lockFile);
 	}
 
 	static function relativePath($from, $to, $ps = DIRECTORY_SEPARATOR)
@@ -110,10 +108,8 @@ class Nodeutil
 			_log("Sync running. Wait for it to finish", 3);
 			return;
 		}
-		touch($syncFile);
 		$no = intval($no);
 		Block::pop($no);
-		unlink($syncFile);
 	}
 
 	static function deleteFromHeight($height) {

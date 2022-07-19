@@ -465,7 +465,7 @@ class Api
 	 */
 	static function sync($data) {
 		global $db;
-		$syncRunning = file_exists(Nodeutil::getSyncFile());
+		$syncRunning = Config::isSync();
 		$lastSync = (int)$db->single("SELECT val FROM config WHERE cfg='sync_last'");
 		$sync = (bool)$db->single("SELECT val FROM config WHERE cfg='sync'");
 		api_echo(['sync_running' => $syncRunning, 'last_sync' => $lastSync, 'sync' => $sync]);

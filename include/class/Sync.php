@@ -106,7 +106,6 @@ class Sync extends Daemon
 			$total_peers = Peer::getCountAll();
 			if ($total_peers == 0) {
 				// something went wrong, could not add any peers -> exit
-				@rmdir(SYNC_LOCK_PATH);
 				_log("There are no active peers");
 				$db->setConfig('node_score', 0);
 				_log("There are no active peers!\n");
