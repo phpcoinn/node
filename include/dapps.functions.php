@@ -5,6 +5,9 @@ if(!defined("ROOT")) {
 
 }
 
+require_once ROOT . "/include/coinspec.inc.php";
+require_once ROOT . "/include/common.functions.php";
+
 /**
  * Function call all common functions for app work: dapps_get, dapps_post, dapps_get_session
  */
