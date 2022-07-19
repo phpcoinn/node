@@ -956,6 +956,8 @@ class Transaction
 	    $max_txs = Block::max_transactions();
 	    $mempool_size = Transaction::getMempoolCount();
 
+		$db->beginTransaction();
+
 		try {
 
 			if ($this->date < time() - (3600 * 24 * 48)) {
@@ -1038,6 +1040,9 @@ class Transaction
 			if(!$res) {
 				throw new Exception("Error adding tansaction to mempool");
 			}
+
+			$db->commit();
+
 			$hashp=escapeshellarg(san($hash));
 			$dir = dirname(dirname(__DIR__)) . "/cli";
 			$cmd = "php $dir/propagate.php transaction $hashp > /dev/null 2>&1  &";
@@ -1046,6 +1051,7 @@ class Transaction
 
 		} catch (Exception $e) {
 			$error = $e->getMessage();
+			$db->rollBack();
 			_log($error);
 			return false;
 		}
