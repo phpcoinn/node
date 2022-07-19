@@ -83,7 +83,8 @@ class Daemon
 		$name = static::$name;
 
 		$lock_file = ROOT."/tmp/$name-lock";
-		if (!mkdir($lock_file, 0700)) {
+		$ignore_lock = isset(self::$options['ignore-lock']);
+		if (!mkdir($lock_file, 0700) && !$ignore_lock) {
 			_log("Daemon: $name - lock file in place - exit", 3);
 			exit;
 		}
