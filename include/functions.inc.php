@@ -65,7 +65,19 @@ function _log($data, $verbosity = 0)
 
 	$pid = getmypid();
 
-    $res = "$date [$verbosity] [$pid] $log_prefix ".$file.":".$trace[$loc]['line'];
+	$dev_part = '';
+	if(DEVELOPMENT) {
+		if(!empty(PeerRequest::$ip)) {
+			$dev_part .= "[".PeerRequest::$ip."]";
+		}
+		if(!empty(PeerRequest::$requestId)) {
+			$dev_part .= "[".PeerRequest::$requestId."]";
+		}
+		$ua = $_SERVER['HTTP_USER_AGENT'];
+		$dev_part .= " $ua";
+	}
+
+    $res = "$date [$verbosity] [$pid] $dev_part $log_prefix ".$file.":".$trace[$loc]['line'];
 
     if (!empty($trace[$loc]['class'])) {
         $res .= "---".$trace[$loc]['class'];
