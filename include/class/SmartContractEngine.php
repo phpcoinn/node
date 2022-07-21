@@ -136,11 +136,7 @@ class SmartContractEngine
 
 			$output = self::isolateCmd($cmd);
 
-			$out = json_decode($output, true);
-			if(empty($out)) {
-				throw new Exception("Error executing smart contract $sc_address method $method: $output");
-			}
-
+			$out = self::processOutput($output);
 			$state = $out['state'];
 
 			SmartContractEngine::storeState($sc_address, $height, $state);
@@ -168,12 +164,7 @@ class SmartContractEngine
 			$cmd = "$sc_exec_file $method $params";
 
 			$output = self::isolateCmd($cmd);
-
-			$out = json_decode($output, true);
-			if(empty($out)) {
-				throw new Exception("Error executing smart contract $sc_address method $method: $output");
-			}
-
+			$out = self::processOutput($output);
 			$response = $out['response'];
 			return $response;
 
@@ -181,10 +172,11 @@ class SmartContractEngine
 	}
 
 	static function isolateCmd($cmd) {
-		$exec_cmd = "php -d disable_functions=exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,ini_set ";
+		$exec_cmd = "php ".XDEBUG_CLI." -d disable_functions=exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,ini_set ";
 		$exec_cmd.= " -d memory_limit=".SC_MEMORY_LIMIT;
 		$exec_cmd.= " -d open_basedir=".self::getRunFolder();
-		$exec_cmd.= " -f $cmd 2>&1";
+		$exec_cmd.= " -f $cmd ";
+		$exec_cmd.= " 2>&1";
 		$output = shell_exec ($exec_cmd);
 		$lines2 = [];
 		$lines = explode(PHP_EOL, $output);
@@ -211,31 +203,38 @@ class SmartContractEngine
 		$sc_dir = self::getRunFolder();
 		if(!file_exists($sc_dir)) {
 			@mkdir($sc_dir);
-			@chmod($sc_dir, 0777);
 		}
 
 		$phar_file = $sc_dir . "/$sc_address.phar";
-		file_put_contents($phar_file, $code);
-		@chmod($phar_file, 0770);
-		
-		copy(ROOT . "/include/class/SmartContractWrapper.php", self::getRunFolder() . "/SmartContractWrapper.php");
+		if(!file_exists($phar_file)) {
+			file_put_contents($phar_file, $code);
+			@chmod($phar_file, 0777);
+		}
+
+		self::copyRequiredFiles(
+			[
+				"/include/class/SmartContractWrapper.php" => "/SmartContractWrapper.php",
+				"/include/class/SmartContractBase.php" => "/SmartContractBase.php",
+				"/include/common.functions.php" => "/common.functions.php"
+			]
+		);
 
 		$run_code = "<?php
 
 		set_time_limit(".SC_MAX_EXEC_TIME.");
 		
 		error_reporting(E_ALL^E_NOTICE);
-		define(\"ROOT\", dirname(__DIR__));
+		define(\"ROOT\", __DIR__);
 		define(\"SC_ADDRESS\", \"$sc_address\");
 		
+		require_once 'common.functions.php';
 		require_once 'SmartContractWrapper.php';
-		require_once \"$phar_file\";
+		require_once \"phar://$phar_file\";
 		
 		ob_start();
 
-		\$smartContract = new SmartContract();
 		\$smartContractWrapper = new SmartContractWrapper();
-		\$smartContractWrapper->run(\$smartContract,'$type');
+		\$smartContractWrapper->run('$type');
 		
 		";
 
@@ -243,6 +242,20 @@ class SmartContractEngine
 		file_put_contents($sc_run_file, $run_code);
 
 		return $sc_run_file;
+	}
+
+	static function copyRequiredFiles($files) {
+		foreach($files as $src=>$dst) {
+			$file_src = ROOT . $src;
+			$file_dst = self::getRunFolder() . $dst;
+			if(!file_exists($file_dst) ) {
+				copy($file_src, $file_dst);
+			} else {
+				if(md5_file($file_src) != md5_file($file_dst)) {
+					copy($file_src, $file_dst);
+				}
+			}
+		}
 	}
 
 	static function buildState($sc_address) {
@@ -293,22 +306,26 @@ class SmartContractEngine
 
 			file_put_contents($phar_file, $code);
 
-			if(!file_exists(self::getRunFolder() . "/SmartContractWrapper.php")) {
-				copy(ROOT . "/include/class/SmartContractWrapper.php", self::getRunFolder() . "/SmartContractWrapper.php");
-			}
+			self::copyRequiredFiles(
+				[
+					"/include/class/SmartContractWrapper.php" => "/SmartContractWrapper.php",
+					"/include/class/SmartContractBase.php" => "/SmartContractBase.php",
+					"/include/common.functions.php" => "/common.functions.php"
+				]
+			);
 
 			$sc_test_file = self::getRunFolder() . "/{$name}_verify.php";
 			$sc_test_content="<?php
 
 			set_time_limit(".SC_MAX_EXEC_TIME.");
 
+			require_once 'common.functions.php';
 			require_once 'SmartContractWrapper.php';
 
 			ob_start();
 			require_once '$phar_file';
-			\$smartContract = new SmartContract();
 			\$smartContractWrapper = new SmartContractWrapper();
-			echo \$smartContractWrapper->verify(\$smartContract);
+			\$smartContractWrapper->verify();
 			";
 
 			file_put_contents($sc_test_file, $sc_test_content);
@@ -316,9 +333,7 @@ class SmartContractEngine
 			$cmd = "$sc_test_file";
 			$output = self::isolateCmd($cmd);
 
-			if($output != "OK") {
-				throw new Exception("Smart contract verify failed: $output");
-			}
+			self::processOutput($output);
 
 			unlink($sc_test_file);
 
@@ -327,15 +342,29 @@ class SmartContractEngine
 		}, $error);
 	}
 
+	static function processOutput($output) {
+		$output_decoded = json_decode($output , true);
+
+		if(!is_array($output_decoded)) {
+			throw new Exception("Smart contract failed: $output");
+		} else {
+			if($output_decoded['status']=='error') {
+				throw new Exception("Smart contract failed: ".$output_decoded['error']);
+			}
+		}
+		return $output_decoded['data'];
+	}
+
 	static function getInterface($sc_address, &$error = null) {
 		return try_catch(function () use ($sc_address) {
 			$sc_exec_file = SmartContractEngine::buildRunCode($sc_address,"interface");
 			$cmd = "$sc_exec_file";
 			$output = self::isolateCmd($cmd);
+			$out = self::processOutput($output);
 			if(!self::$virtual) {
 //				unlink($sc_exec_file);
 			}
-			return $output;
+			return $out['interface'];
 		}, $error);
 	}
 
@@ -359,10 +388,7 @@ class SmartContractEngine
 
 			$cmd = "$sc_exec_file $tx_sender $tx_value";
 			$output = self::isolateCmd($cmd);
-			$out = json_decode($output, true);
-			if(empty($out)) {
-				throw new Exception("Error deploying smart contract $sc_address: $output");
-			}
+			$out = self::processOutput($output);
 			$state = $out['state'];
 			SmartContractEngine::storeState($sc_address, $height, $state);
 			if(!self::$virtual) {

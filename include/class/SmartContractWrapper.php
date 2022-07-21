@@ -1,101 +1,120 @@
 <?php
 
+require_once __DIR__ . "/SmartContractBase.php";
+
 class SmartContractWrapper
 {
 
-	private $store = [];
+	public $store = [];
 	private $response;
+	private $smartContract;
 
-	public function __construct()
+	public $internal = false;
+
+	public function __construct($name = null)
 	{
-
+		$this->smartContract = $this->getSmartContract($name);
+		if(!$this->smartContract) {
+			throw new Exception("Smart contract class not found");
+		}
 	}
 
-	public function store($obj) {
-		$reflect = new ReflectionClass($obj);
+	public function store() {
+		$reflect = new ReflectionClass($this->smartContract);
 		$props = $reflect->getProperties(ReflectionProperty::IS_PUBLIC);
 		foreach($props as $prop) {
 			$name = $prop->getName();
-			$this->store[$name]=$prop->getValue($obj);
+			$val = $prop->getValue($this->smartContract);
+			$this->smartContract->log("Store state for property $name val=".json_encode($val));
+			$this->store[$name]=$val;
 		}
-		$this->outState();
+		$this->smartContract->log("End store internal=".$this->internal);
+		if(!$this->internal) {
+			$this->outState();
+		}
 	}
 
-	public function load($obj) {
+	public function load() {
 		$this->loadState();
-		$reflect = new ReflectionClass($obj);
+		$reflect = new ReflectionClass($this->smartContract);
 		$props = $reflect->getProperties(ReflectionProperty::IS_PUBLIC);
 		foreach($props as $prop) {
 			$name = $prop->getName();
 			if(isset($this->store[$name])) {
-				$prop->setValue($obj,$this->store[$name]);
+				$prop->setValue($this->smartContract,$this->store[$name]);
 			}
 		}
 	}
 
-	public function run($obj, $method) {
-		if($method == "exec") {
-			$this->exec_method($obj);
-		} elseif ($method == "call") {
-			$this->call_method($obj);
-		} elseif ($method == "interface") {
-			echo $this->getInterface($obj);
-		} elseif ($method == "deploy") {
-			$this->deploy($obj);
+	public function run($method) {
+		global $argv;
+		$this->smartContract->log("RUN $method");
+		try {
+			if($method == "exec") {
+				$methodName = $argv[1];
+				$params = $argv[2];
+				$tx_sender = $argv[3];
+				$tx_value = $argv[4];
+				$params = base64_decode($params);
+				$params = json_decode($params, true);
+				$this->exec_method($methodName, $params, $tx_sender, $tx_value);
+			} elseif ($method == "call") {
+				$this->call_method();
+			} elseif ($method == "interface") {
+				$this->getInterface();
+			} elseif ($method == "deploy") {
+				$this->deploy();
+			}
+		} catch (Exception $e) {
+			$this->error("Error running Smart contract: ".$e->getMessage());
 		}
 	}
 
-	public function call_method($obj) {
+	public function call_method() {
 		global $argv;
 		$methodName = $argv[1];
 		$params = $argv[2];
-		$this->load($obj);
-		$reflect = new ReflectionClass($obj);
+		$this->load();
+		$reflect = new ReflectionClass($this->smartContract);
 		$method = $reflect->getMethod($methodName);
 		if(!$this->hasAnnotation($method, "SmartContractView")) {
 			throw new Exception("Method $methodName is not callable");
 		}
 		$params = base64_decode($params);
 		$params = json_decode($params, true);
-		$this->invoke($obj, $method, $params);
+		$this->invoke($method, $params);
 		$this->outResponse();
 	}
 
-	private function invoke($obj, $method, $params) {
+	private function invoke($method, $params) {
 		if(empty($params)) {
-			$this->response = $method->invoke($obj);
+			$this->response = $method->invoke($this->smartContract);
 		} else {
-			$this->response = $method->invoke($obj, ...$params);
+			$this->response = $method->invoke($this->smartContract, ...$params);
 		}
 	}
 
-	private function exec_method($obj) {
-		global $argv;
-		$methodName = $argv[1];
-		$params = $argv[2];
-		$tx_sender = $argv[3];
-		$tx_value = $argv[4];
-		define("TX_SENDER", $tx_sender);
-		define("TX_VALUE", $tx_value);
-		$this->load($obj);
-		$reflect = new ReflectionClass($obj);
+	public function exec_method($methodName, $params, $tx_sender, $tx_value) {
+		$this->smartContract->setFields($tx_sender,$tx_value);
+		$this->load();
+		$reflect = new ReflectionClass($this->smartContract);
 		$method = $reflect->getMethod($methodName);
 		if(!$this->hasAnnotation($method, "SmartContractTransact")) {
 			throw new Exception("Method $methodName is not executable");
 		}
-		$params = base64_decode($params);
-		$params = json_decode($params, true);
-		$this->invoke($obj, $method, $params);
-		$this->store($obj);
+		$this->smartContract->log("Invoke method $methodName params=".json_encode($params));
+		$this->invoke($method, $params);
+		$this->store();
 	}
 
 	private function outState() {
 		@ob_end_clean();
 		ob_start();
 		$out = [
-			"state" => $this->store
+			"state" => $this->store,
+			"response" => $this->response
 		];
-		echo(json_encode($out));
+		$this->out($out);
 	}
 
 	private function outResponse() {
@@ -104,7 +123,7 @@ class SmartContractWrapper
 		$out = [
 			"response" => $this->response
 		];
-		echo(json_encode($out));
+		$this->out($out);
 	}
 
 	private function loadState() {
@@ -120,8 +139,8 @@ class SmartContractWrapper
 		return $value;
 	}
 
-	public function verify($obj) {
-		$reflect = new ReflectionClass($obj);
+	public function verify() {
+		$reflect = new ReflectionClass($this->smartContract);
 		$methods = $reflect->getMethods(ReflectionProperty::IS_PUBLIC);
 		$deploy_method = false;
 		foreach ($methods as $method) {
@@ -130,14 +149,14 @@ class SmartContractWrapper
 			}
 		}
 		if(!$deploy_method) {
-			throw new Exception("Deploy method not found");
+			$this->error("Deploy method not found");
 		}
-		return "OK";
+		$this->out("OK");
 	}
 
-	public function getInterface($obj) {
+	public function getInterface() {
 		$interface = [];
-		$reflect = new ReflectionClass($obj);
+		$reflect = new ReflectionClass($this->smartContract);
 
 		$version = "1.0.0";
 
@@ -157,6 +176,9 @@ class SmartContractWrapper
 		$props = $reflect->getProperties(ReflectionProperty::IS_PUBLIC);
 		foreach($props as $prop) {
 			$name = $prop->getName();
+			if($prop->class == 'SmartContractBase') {
+				continue;
+			}
 			if($this->hasAnnotation($prop, "SmartContractIgnore")) {
 				continue;
 			}
@@ -201,7 +223,8 @@ class SmartContractWrapper
 				];
 			}
 		}
-		return json_encode($interface);
+
+		$this->out(["interface"=>$interface]);
 	}
 
 	private function getAnnotations($obj) {
@@ -227,9 +250,9 @@ class SmartContractWrapper
 		return in_array($annotation, $annotations);
 	}
 
-	public function deploy($obj) {
+	public function deploy() {
 		global $argv;
-		$reflect = new ReflectionClass($obj);
+		$reflect = new ReflectionClass($this->smartContract);
 		$methods = $reflect->getMethods(ReflectionProperty::IS_PUBLIC);
 		$deploy_method = false;
 		foreach ($methods as $method) {
@@ -244,15 +267,38 @@ class SmartContractWrapper
 
 		$tx_sender = $argv[1];
 		$tx_value = $argv[2];
-		define("TX_SENDER", $tx_sender);
-		define("TX_VALUE", $tx_value);
+		$this->smartContract->setFields($tx_sender,$tx_value);
 
-		$deploy_method->invoke($obj);
-		$this->store($obj);
+		$deploy_method->invoke($this->smartContract);
+		$this->store();
 	}
 
-	static function call_ext($contract, $method, $params) {
-		$cmd = "$sc_exec_file $method $params";
+	private function getSmartContract($className = null) {
+		if(empty($className)) {
+			if(defined("SC_CLASS_NAME")) {
+				$className = SC_CLASS_NAME;
+			} else if (class_exists('SmartContract')) {
+				$className = 'SmartContract';
+			}
+		}
+		if(!empty($className)) {
+			$class = new $className();
+			return $class;
+		}
+	}
+
+	public function out($data) {
+		echo json_encode(["status" => "ok", "data" => $data]);
+		exit;
+	}
+
+	public function error($error) {
+		echo json_encode(["status" => "error", "error" => $error]);
+		exit;
+	}
+
+	private function log($s) {
+		$this->smartContract->log($s);
 	}
 
 
