@@ -88,7 +88,7 @@ exportchain [<file>]                                    - Export blockchain to f
 importchain <file> [<verify>]                           - Import and verify blocks from file
 clear-peers                                             - Clear peers database
 empty-mempool                                           - Empty mempool
-update                                                  - Check node for newest version and update
+update [<branch>]                                       - Check node for newest version and update
 exportdb                                                - Export database as backup
 importdb <file>                                         - Restore blockchain database from backup
 check-masternode                                        - Check local masternode

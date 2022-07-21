@@ -813,10 +813,14 @@ class Util
 		SmartContract::cleanState(Block::getHeight()+1);
 	}
 
-	static function update() {
+	static function update($argv) {
+		$branch = trim($argv[2]);
+		if(empty($branch)) {
+			$branch = "main";
+		}
 		$currentVersion = BUILD_VERSION;
 		echo "Checking node update current version = ".BUILD_VERSION.PHP_EOL;
-		$cmd= "curl -H 'Cache-Control: no-cache, no-store' -s https://raw.githubusercontent.com/phpcoinn/node/main/include/coinspec.inc.php | grep BUILD_VERSION";
+		$cmd= "curl -H 'Cache-Control: no-cache, no-store' -s https://raw.githubusercontent.com/phpcoinn/node/$branch/include/coinspec.inc.php | grep BUILD_VERSION";
 		$res = shell_exec($cmd);
 		$arr= explode(" ", $res);
 		$version = $arr[3];
@@ -824,7 +828,7 @@ class Util
 		$version = intval($version);
 		if($version > $currentVersion) {
 			echo "There is new version: $version - updating node".PHP_EOL;
-			$cmd="cd ".ROOT." && git pull origin main";
+			$cmd="cd ".ROOT." && git pull origin $branch";
 			$res = shell_exec($cmd);
 			$cmd="cd ".ROOT." && php cli/util.php download-apps";
 			$res = shell_exec($cmd);
