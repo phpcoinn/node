@@ -164,6 +164,9 @@ class Wallet
 			case "smart-contract-exec":
 				$this->execSmartContract(@$this->arg2, @$this->arg3, array_slice($this->argv, 4));
 				break;
+			case "smart-contract-send":
+				$this->sendSmartContract(@$this->arg2, @$this->arg3, array_slice($this->argv, 4));
+				break;
 			default:
 				echo !$this->create ? "Invalid command\n" : "";
 		}
@@ -521,6 +524,39 @@ class Wallet
 
 	}
 
+
+	function sendSmartContract($dst_address, $method, $params, $amount = 0) {
+		if(empty($dst_address)) {
+			echo "Destination address not specified".PHP_EOL;
+			exit;
+		}
+		if(!Account::valid($dst_address)) {
+			echo "Smart contract Address not valid".PHP_EOL;
+			exit;
+		}
+		if(empty($method)) {
+			echo "Smart contract method not specified".PHP_EOL;
+			exit;
+		}
+		$date=time();
+		$msg = base64_encode(json_encode([
+			"method"=>$method,
+			"params"=>$params
+		]));
+		$tx = new Transaction($this->public_key, $dst_address, $amount, TX_TYPE_SC_SEND, $date, $msg);
+		$tx->fee = TX_SC_EXEC_FEE;
+		$signature = $tx->sign($this->private_key);
+
+		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
+			array("dst" => $dst_address, "val" => $amount, "signature" => $signature,
+				"public_key" => $this->public_key, "type" => TX_TYPE_SC_SEND,
+				"message" => $msg, "date" => $date, "fee" => $tx->fee));
+		$this->checkApiResponse($res);
+		echo "Transaction created: ".$res['data'].PHP_EOL;
+
+	}
+
+
 	function help() {
 		die("wallet <command> <options>
 
@@ -541,6 +577,8 @@ masternode-remove <payoutaddress>    remove masternode with address
 sign <message>                  sign message with wallet private key
 smart-contract-create <address> <file> 	create smart contract
 smart-contract-exec <address> <method> <params> <amount> execute smart contract method
+smart-contract-send <address> <method> <params> <amount> transfer coins from smart contract
+
 ");
 	}
 

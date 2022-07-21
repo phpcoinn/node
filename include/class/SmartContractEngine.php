@@ -171,6 +171,44 @@ class SmartContractEngine
 		}, $error);
 	}
 
+	static function send($transaction, $method, $height=0, $params=[], &$error=null) {
+		$sc_address = $transaction->src;
+		return try_catch(function () use ($sc_address, $transaction, $method, $params, $height, $error) {
+
+			$sc_exec_file = SmartContractEngine::buildRunCode($sc_address,"exec");
+
+			SmartContractEngine::buildState($sc_address, $height);
+
+			if(!empty($params) && !is_array($params)) {
+				$params = [$params];
+			}
+
+			$params = json_encode($params);
+			$params = base64_encode($params);
+
+			$tx_sender = "";
+			$tx_value = 0;
+			if(!empty($transaction)) {
+				$tx_sender = $transaction->src;
+				$tx_value = $transaction->val;
+			}
+
+			$cmd = "$sc_exec_file $method $params $tx_sender $tx_value";
+
+			$output = self::isolateCmd($cmd);
+
+			$out = self::processOutput($output);
+
+			$state = $out['state'];
+
+			SmartContractEngine::storeState($sc_address, $height, $state);
+
+			return true;
+
+		}, $error);
+
+	}
+
 	static function isolateCmd($cmd) {
 		$exec_cmd = "php ".XDEBUG_CLI." -d disable_functions=exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,ini_set ";
 		$exec_cmd.= " -d memory_limit=".SC_MEMORY_LIMIT;

@@ -77,12 +77,28 @@ class SmartContract
 		}, $error);
 	}
 
+	public static function checkSendSmartContractTransaction($height, Transaction $transaction, &$error, $verify) {
+		return try_catch(function () use ($height, $transaction, $error) {
+			if(!($height >= SC_START_HEIGHT)) {
+				throw new Exception("Not allowed transaction type {$transaction->type} for height $height");
+			}
+			$dst = $transaction->dst;
+			$src = $transaction->src;
+			$smartContract = self::getSmartContract($src);
+			if(!$smartContract) {
+				throw new Exception("Smart contract with address $src does not exists");
+			}
+			$fee = $transaction->fee;
+			if($fee != TX_SC_EXEC_FEE) {
+				throw new Exception("Invalid fee for transaction");
+			}
+			return true;
+		}, $error);
+	}
+
 	public static function createSmartContract(Transaction &$transaction, $height, &$error = null, $test = false) {
 		try {
 			global $db;
-			if($test) {
-				$db->beginTransaction();
-			}
 			$sql="insert into smart_contracts (address, height, code, signature)
 				values (:address, :height, :code, :signature)";
 
@@ -104,10 +120,6 @@ class SmartContract
 				throw new Exception("Error calling deploy method of smart contract: $err");
 			}
 
-			if($test) {
-				$db->rollback();
-			}
-
 			return true;
 		} catch (Exception $e) {
 			$error = $e->getMessage();
@@ -119,9 +131,6 @@ class SmartContract
 	public static function execSmartContract(Transaction $transaction, $height, &$error = null, $test=false) {
 		return try_catch(function () use ($error, $transaction, $height, $test) {
 			global $db;
-			if($test) {
-				$db->beginTransaction();
-			}
 			$message = $transaction->msg;
 			$exec_params = json_decode(base64_decode($message), true);
 			$method = $exec_params['method'];
@@ -131,9 +140,21 @@ class SmartContract
 			if(!$res) {
 				throw new Exception("Error calling method $method of smart contract: $err");
 			}
+			return true;
+		}, $error);
+	}
 
-			if($test) {
-				$db->rollback();
+	public static function sendSmartContract(Transaction $transaction, $height, &$error = null) {
+		return try_catch(function () use ($error, $transaction, $height) {
+			global $db;
+			$message = $transaction->msg;
+			$exec_params = json_decode(base64_decode($message), true);
+			$method = $exec_params['method'];
+			$params = $exec_params['params'];
+
+			$res = SmartContractEngine::send($transaction, $method, $height, $params, $err);
+			if(!$res) {
+				throw new Exception("Error calling method $method of smart contract: $err");
 			}
 
 			return true;
@@ -185,6 +206,21 @@ class SmartContract
 			global $db;
 			$sql="delete from smart_contract_state where sc_address = :address and height >= :height";
 			$res = $db->run($sql, [":address" => $tx->dst, ":height"=>$height]);
+			if($res === false) {
+				$error = $db->errorInfo()[2];
+				return false;
+			}
+
+			return true;
+		}, $error);
+	}
+
+	static function cleanState($height, &$error = null) {
+		return try_catch(function () use ($height, $error) {
+
+			global $db;
+			$sql="delete from smart_contract_state where height >= :height";
+			$res = $db->run($sql, [":height"=>$height]);
 			if($res === false) {
 				$error = $db->errorInfo()[2];
 				return false;

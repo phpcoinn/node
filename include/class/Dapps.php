@@ -333,6 +333,12 @@ class Dapps extends Daemon
 			eval($code);
 			exit;
 		}
+		if($actionObj['type']=="json_response") {
+			header('Content-Type: application/json');
+			$data = $actionObj['data'];
+			echo json_encode($data);
+			exit;
+		}
 	}
 
 	static function getDappsDir() {
