@@ -154,6 +154,7 @@ if (empty($dbversion)) {
 	$db->run("create index message on transactions (message);");
 	$db->run("create index public_key on transactions (public_key);");
 	$db->run("create index version on transactions (type);");
+	$db->run("create unique index masternode_ip_uindex on masternode (ip)");
 
 
 
@@ -350,6 +351,26 @@ if($dbversion == 14) {
 	$db->run("create index transactions_type_index on transactions (type);");
 	$db->run("create index transactions_src_dst_val_fee_index on transactions (src, dst, val, fee);");
 	$dbversion = 15;
+}
+
+if($dbversion == 15) {
+	if(!$was_empty) {
+		$db->run("delete from masternode
+        where id in (
+        select dupl.id from (
+	            select m.id, m.ip,
+	                   row_number() over (partition by m.ip order by m.id) as rn
+	            from masternode m
+	            where m.ip is not null
+	            order by m.ip, m.id
+	        ) as dupl
+        where dupl.rn > 1
+        )");
+		$db->run("create unique index masternode_ip_uindex
+            on masternode (ip)");
+	}
+	$dbversion = 16;
+
 }
 
 // update the db version to the latest one
