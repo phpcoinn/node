@@ -370,7 +370,17 @@ if($dbversion == 15) {
             on masternode (ip)");
 	}
 	$dbversion = 16;
+}
 
+if($dbversion == 16) {
+	if(!$was_empty) {
+		$rows = $db->run("show index from masternode where key_name='masternode_ip_uindex'");
+		if (count($rows) !== 1) {
+			$db->run("truncate table masternode");
+			$res = $db->run("create unique index masternode_ip_uindex on masternode (ip)");
+		}
+	}
+	$dbversion = 17;
 }
 
 // update the db version to the latest one
