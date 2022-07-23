@@ -372,6 +372,24 @@ class Masternode extends Daemon
 		Masternode::create($publicKey, $create_height);
 	}
 
+	static function checkExistsMasternode($id, $height = null) {
+		global $db;
+		if(empty($height)) {
+			$height = Block::getHeight();
+		}
+		$sql="select max(t.height) as create_height, count(t.id) as created
+			from transactions t
+			where t.type = :create and t.dst = :id and t.height <= :height";
+		$res = $db->row($sql, [":create"=>TX_TYPE_MN_CREATE, ":id"=>$id, ":height"=>$height]);
+		$created = $res['created'];
+
+		$sql="select max(t.height), count(t.id) as removed
+		from transactions t where t.src = :count and t.type = :remove and t.height <=:height";
+		$res = $db->row($sql, [":remove"=>TX_TYPE_MN_REMOVE, ":count"=>$id,  ":height"=>$height]);
+		$removed = $res['removed'];
+		return ($created>0 && $created != $removed);
+	}
+
 	static function processBlock() {
 		global $_config;
 		$height = Block::getHeight();
@@ -600,7 +618,9 @@ class Masternode extends Daemon
 				}
 				$masternode = Masternode::get($mnPublicKey);
 				if(!$masternode) {
-					throw new Exception("Masternode not found in list");
+					if(!Masternode::checkExistsMasternode($block['masternode'], $height))  {
+						throw new Exception("Masternode not found in list");
+					}
 				}
 				$signatureBase = Masternode::getSignatureBase($mnPublicKey, $height);
 				$res = ec_verify($signatureBase, $block['mn_signature'], $mnPublicKey);
