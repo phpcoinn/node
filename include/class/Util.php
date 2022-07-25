@@ -1095,4 +1095,21 @@ class Util
 		Dapps::downloadDapps($dapps_id);
 	}
 
+	static function recalculateMasternodes() {
+		global $db;
+		$db->exec("lock tables masternode write, transactions t write, transactions tr write, blocks b write, accounts a write;");
+		$db->exec("delete from masternode;");
+		$db->exec("insert into masternode (public_key,height,win_height, id)
+        	select public_key,height,win_height, id from (
+             select t.dst as id, min(t.height) as height, count(t.id) as created,
+                    (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
+                    (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
+                    (select a.public_key from accounts a where a.id = t.dst) as public_key
+             from transactions t where t.type = 2
+             group by t.dst
+             having created - removed > 0
+             ) as calc_mn");
+		$db->exec("unlock tables;");
+	}
+
 }

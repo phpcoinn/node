@@ -103,6 +103,7 @@ smart-contract-get <sc_address> <property> [<key>] 		- get property from smart c
 set-config <config_name> <config_value>					- set config value for node	
 propagate-dapps                                         - propagate local dapps to peers
 download-dapps <dapps_id>                               - request download dapps from network
+recalculate-masternodes                                 - recalculate masternodes from blockchain
 ";
 	}
 }
