@@ -386,10 +386,12 @@ if($dbversion == 16) {
 
 if($dbversion == 17) {
 	if(!$was_empty) {
-		$db->exec("lock tables masternode write, transactions t write, transactions tr write, blocks b write, accounts a write;");
-		$db->exec("delete from masternode;");
-		$db->exec("insert into masternode (public_key,height,win_height, id)
-        select public_key,height,win_height, id from (
+		$lock_dir = ROOT . "/tmp/db-migrate";
+		if (mkdir($lock_dir, 0700)) {
+			$db->exec("lock tables masternode write, transactions t write, transactions tr write, blocks b write, accounts a write;");
+			$db->exec("delete from masternode;");
+			$db->exec("insert into masternode (public_key,height,win_height, id)
+        	select public_key,height,win_height, id from (
              select t.dst as id, min(t.height) as height, count(t.id) as created,
                     (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
                     (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
@@ -398,10 +400,13 @@ if($dbversion == 17) {
              group by t.dst
              having created - removed > 0
              ) as calc_mn");
-		$db->exec("unlock tables;");
+			$db->exec("unlock tables;");
+			@rmdir($lock_dir);
+			$dbversion = 18;
+		}
+	} else {
+		$dbversion = 18;
 	}
-	$dbversion = 18;
-
 }
 
 // update the db version to the latest one
