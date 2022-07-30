@@ -215,6 +215,7 @@ class Account
                 "public_key" => $x['public_key'],
             ];
             $trans['type'] = "mempool";
+	        $trans['type_value'] = $x['type'];
             $trans['type_label'] = "mempool";
             // they are unconfirmed, so they will have -1 confirmations.
             $trans['confirmations'] = -1;
