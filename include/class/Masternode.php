@@ -120,6 +120,12 @@ class Masternode extends Daemon
 		return $db->single($sql);
 	}
 
+	static function getActiveCount() {
+		global $db;
+		$sql="select count(1) from masternode m where m.signature is not null";
+		return $db->single($sql);
+	}
+
 	static function delete($publicKey) {
 		global $db;
 		$sql="delete from masternode where public_key=:public_key";
