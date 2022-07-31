@@ -129,7 +129,7 @@ class Util
 	 *
 	 */
 	static function current() {
-		var_dump(Block::current());
+		echo json_encode(Block::current(), JSON_PRETTY_PRINT) . PHP_EOL;
 	}
 
 	/**
