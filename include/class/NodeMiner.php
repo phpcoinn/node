@@ -29,7 +29,7 @@ class NodeMiner extends Daemon {
 		return $info;
 	}
 
-	function start($mine_blocks = null) {
+	function start($mine_blocks = null, $sleep = 3) {
 
 		$this->loadMiningStats();
 
@@ -187,7 +187,7 @@ class NodeMiner extends Daemon {
 				$this->miningStat['rejected']++;
 			}
 
-			sleep(3);
+			sleep($sleep);
 
 			$this->saveMiningStats();
 
