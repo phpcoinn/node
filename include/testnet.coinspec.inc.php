@@ -70,7 +70,7 @@ const FEATURE_MN = true;
 const MN_COLLATERAL = 1000;
 const MN_MIN_RUN_BLOCKS = 4;
 
-const FEE_START_HEIGHT = 20;
+const FEE_START_HEIGHT = 10;
 const FEE_DIVIDER = 1 / 1000;
 
 # Smart contracts
@@ -87,3 +87,4 @@ const UPDATE_1_BLOCK_ZERO_TIME = 5;
 const UPDATE_2_BLOCK_CHECK_IMPROVED = 10;
 const UPDATE_3_ARGON_HARD = 15;
 const UPDATE_4_NO_POOL_MINING = 20;
+const UPDATE_5_NO_MASTERNODE = 10;
