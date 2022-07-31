@@ -138,17 +138,21 @@ class NodeMiner extends Daemon {
 			$reward = num($reward);
 			$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $this->public_key, $this->private_key, $reward, "nodeminer");
 			$data[$reward_tx['id']]=$reward_tx;
-			$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $this->public_key, $this->private_key, $height, $mn_signature);
-			if(!$mn_reward_tx) {
-				_log("Node score not ok - mining dropped");
-				$this->miningStat['rejected']++;
-				break;
+			if(Masternode::allowedMasternodes($height)) {
+				$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $this->public_key, $this->private_key, $height, $mn_signature);
+				if (!$mn_reward_tx) {
+					_log("Node score not ok - mining dropped");
+					$this->miningStat['rejected']++;
+					break;
+				}
+				$data[$mn_reward_tx['id']]=$mn_reward_tx;
+				$bl->masternode = $mn_signature ? $mn_reward_tx['dst'] : null;
+				$bl->mn_signature = $mn_signature;
+				$fee_dst = $mn_reward_tx['dst'];
+			} else{
+				$fee_dst = $generator;
 			}
 
-			$data[$mn_reward_tx['id']]=$mn_reward_tx;
-			$bl->masternode = $mn_signature ? $mn_reward_tx['dst'] : null;
-			$bl->mn_signature = $mn_signature;
-			$fee_dst = $mn_reward_tx['dst'];
 
 			Transaction::processFee($data, $this->public_key, $this->private_key, $fee_dst, $new_block_date);
 			ksort($data);
