@@ -48,7 +48,8 @@ class Blockchain
 			"generator"=>Account::getAddress($_config['generator_public_key']),
 			"ip"=>$_SERVER['REMOTE_ADDR'],
 			"hashingOptions"=>Block::hashingOptions($current['height']+1),
-			"fee"=>Blockchain::getFee()
+			"fee"=>Blockchain::getFee(),
+			"network"=>NETWORK
 		];
 //		_log("getMineInfo: ".json_encode($res), 5);
 		return $res;
