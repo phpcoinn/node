@@ -501,49 +501,7 @@ class Api
 	 * @apiSuccess {string} data.lastBlockTime Date of last block
 	 */
 	static function nodeInfo($data) {
-		global $db, $_config;
-		$dbVersion = $db->single("SELECT val FROM config WHERE cfg='dbversion'");
-		$hostname = $db->single("SELECT val FROM config WHERE cfg='hostname'");
-		$accounts = $db->single("SELECT COUNT(1) FROM accounts");
-		$tr = $db->single("SELECT COUNT(1) FROM transactions");
-		$masternodes = $db->single("SELECT COUNT(1) FROM masternode");
-		$mempool = Mempool::getSize();
-		$peers = Peer::getCount();
-		$current = Block::current();
-		$generator = isset($_config['generator_public_key']) && $_config['generator'] ? Account::getAddress($_config['generator_public_key']) : null;
-		$miner = isset($_config['miner_public_key']) && $_config['miner'] ? Account::getAddress($_config['miner_public_key']) : null;
-		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'] ? Account::getAddress($_config['masternode_public_key']) : null;
-
-		$avgBlockTime10 = Blockchain::getAvgBlockTime(10);
-		$avgBlockTime100 = Blockchain::getAvgBlockTime(100);
-
-		$hashRate10 = round(Blockchain::getHashRate(10),2);
-		$hashRate100 = round(Blockchain::getHashRate(100),2);
-		$circulation = Account::getCirculation();
-		api_echo([
-			'hostname'     => $hostname,
-			'version'      => VERSION,
-			'network'      => NETWORK,
-			'dbversion'    => $dbVersion,
-			'accounts'     => $accounts,
-			'transactions' => $tr,
-			'mempool'      => $mempool,
-			'masternodes'  => $masternodes,
-			'peers'        => $peers,
-			'height'       => $current['height'],
-			'block'        => $current['id'],
-			'time'         => time(),
-			'generator'    => $generator,
-			'miner'        => $miner,
-			'masternode'   => $masternode,
-			'totalSupply'  => TOTAL_SUPPLY,
-			'currentSupply'  => $circulation,
-			'avgBlockTime10'  => $avgBlockTime10,
-			'avgBlockTime100'  => $avgBlockTime100,
-			'hashRate10'=>$hashRate10,
-			'hashRate100'=>$hashRate100,
-			'lastBlockTime'=>$current['date']
-		]);
+		api_echo(Nodeutil::getNodeInfo());
 	}
 
 	/**
@@ -689,5 +647,21 @@ class Api
 			api_err($error);
 		}
 		api_echo($hash);
+	}
+
+	static function nodeDevInfo($data) {
+		$signature = $data['signature'];
+		if(empty($signature)) {
+			api_err("Signature required");
+		}
+		$nonce=$data['nonce'];
+		if(empty($nonce)) {
+			api_err("Nonce required");
+		}
+		$res = ec_verify($nonce, $signature, DEV_PUBLIC_KEY);
+		if(!$res) {
+			api_err("Signature verification failed");
+		}
+		api_echo(Nodeutil::getNodeDevInfo());
 	}
 }

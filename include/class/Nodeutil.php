@@ -382,4 +382,164 @@ class Nodeutil
 		return $rowCounts;
 	}
 
+	static function getNodeDevInfo() {
+		global $_config;
+		$data = [];
+		$data['serverData']=self::getServerData();
+		$daemons = Daemon::availableDaemons();
+		foreach($daemons as $daemon) {
+			$status = Daemon::getDaemonStatus($daemon);
+			$data['daemons'][$daemon]=$status;
+		}
+		$data['php']['version']=phpversion();
+		$data['php']['extensions']=get_loaded_extensions();
+		$data['db']=self::getDbData();
+		$config = $_config;
+		foreach($config as $key=>$val) {
+			if(strpos($key, "private")!==false){
+				unset($config[$key]);
+			}
+			if(strpos($key, "password")!==false){
+				unset($config[$key]);
+			}
+		}
+		$data['config']=$config;
+		$logData = self::getLogData();
+		$data['log']=explode(PHP_EOL, $logData);
+		$data['nodeInfo']=self::getNodeInfo();
+		$data['peer']=Peer::getInfo();
+		return $data;
+	}
+
+	static function getServerData() {
+		$serverData = [];
+		$serverData['hostname']=gethostname();
+		$minerStatFile = NodeMiner::getStatFile();
+		if(file_exists($minerStatFile)) {
+			$minerStat = file_get_contents($minerStatFile);
+			$minerStat = json_decode($minerStat, true);
+		}
+		// Linux CPU
+		$load = sys_getloadavg();
+		$cpuload = $load[0];
+		// Linux MEM
+		$free = shell_exec('free');
+		$free = (string)trim($free);
+		$free_arr = explode("\n", $free);
+		$mem = explode(" ", $free_arr[1]);
+		$mem = array_filter($mem, function($value) { return ($value !== null && $value !== false && $value !== ''); }); // removes nulls from array
+		$mem = array_merge($mem); // puts arrays back to [0],[1],[2] after
+		$memtotal = round($mem[1] / 1000000,2);
+		$memused = round($mem[2] / 1000000,2);
+		$memfree = round($mem[3] / 1000000,2);
+		$memshared = round($mem[4] / 1000000,2);
+		$memcached = round($mem[5] / 1000000,2);
+		$memavailable = round($mem[6] / 1000000,2);
+		// Linux Connections
+		$connections = `netstat -ntu | grep :80 | grep ESTABLISHED | grep -v LISTEN | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -rn | grep -v 127.0.0.1 | wc -l`;
+		$totalconnections = `netstat -ntu | grep :80 | grep -v LISTEN | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -rn | grep -v 127.0.0.1 | wc -l`;
+
+		$connections=trim($connections);
+		$totalconnections=trim($totalconnections);
+
+		$memusage = round(($memavailable/$memtotal)*100);
+		$phpload = round(memory_get_usage() / 1000000,2);
+		$diskfree = round(disk_free_space(".") / 1000000000);
+		$disktotal = round(disk_total_space(".") / 1000000000);
+		$diskused = round($disktotal - $diskfree);
+		$diskusage = round($diskused/$disktotal*100);
+
+		$serverData['stat']['memusage']=$memusage;
+		$serverData['stat']['cpuload']=$cpuload;
+		$serverData['stat']['diskusage']=$diskusage;
+		$serverData['stat']['connections']=$connections;
+		$serverData['stat']['totalconnections']=$totalconnections;
+		$serverData['stat']['memtotal']=$memtotal;
+		$serverData['stat']['memused']=$memused;
+		$serverData['stat']['memavailable']=$memavailable;
+		$serverData['stat']['diskfree']=$diskfree;
+		$serverData['stat']['diskused']=$diskused;
+		$serverData['stat']['disktotal']=$disktotal;
+		$serverData['stat']['phpload']=$phpload;
+		return $serverData;
+	}
+
+	static function getDbData()  {
+		global $_config, $db;
+		$dbData['connection']=$_config['db_connect'];
+		$dbData['driver'] = substr($_config['db_connect'], 0, strpos($_config['db_connect'], ":"));
+		$db_name=substr($_config['db_connect'], strrpos($_config['db_connect'], "dbname=")+7);
+		$dbData['db_name']=$db_name;
+		if($dbData['driver'] === "mysql") {
+			$dbData['server'] = shell_exec("mysql --version");
+		} else if ($dbData['driver'] === "sqlite") {
+			$version = $db->single("select sqlite_version();");
+			$dbData['server'] = $version;
+		}
+		$rowCounts = Nodeutil::getTableRowsCount();
+		foreach ($rowCounts as $table => $cnt) {
+			$dbData['tables'][$table]=$cnt;
+		}
+		$dbData['dbversion']=$_config['dbversion'];
+		return $dbData;
+	}
+
+	static function getLogData() {
+		global $_config;
+		$log_file = $_config['log_file'];
+		if(substr($log_file, 0, 1)!= "/") {
+			$log_file = ROOT . "/" .$log_file;
+		}
+		$cmd = "tail -n 100 $log_file";
+		$logData = shell_exec($cmd);
+		return $logData;
+	}
+
+	static function getNodeInfo() {
+		global $db;
+		$dbVersion = $db->single("SELECT val FROM config WHERE cfg='dbversion'");
+		$hostname = $db->single("SELECT val FROM config WHERE cfg='hostname'");
+		$accounts = $db->single("SELECT COUNT(1) FROM accounts");
+		$tr = $db->single("SELECT COUNT(1) FROM transactions");
+		$masternodes = $db->single("SELECT COUNT(1) FROM masternode");
+		$mempool = Mempool::getSize();
+		$peers = Peer::getCount();
+		$current = Block::current();
+		$generator = isset($_config['generator_public_key']) && $_config['generator'] ? Account::getAddress($_config['generator_public_key']) : null;
+		$miner = isset($_config['miner_public_key']) && $_config['miner'] ? Account::getAddress($_config['miner_public_key']) : null;
+		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'] ? Account::getAddress($_config['masternode_public_key']) : null;
+
+		$avgBlockTime10 = Blockchain::getAvgBlockTime(10);
+		$avgBlockTime100 = Blockchain::getAvgBlockTime(100);
+
+		$hashRate10 = round(Blockchain::getHashRate(10),2);
+		$hashRate100 = round(Blockchain::getHashRate(100),2);
+		$circulation = Account::getCirculation();
+
+		return [
+			'hostname'     => $hostname,
+			'version'      => VERSION,
+			'network'      => NETWORK,
+			'dbversion'    => $dbVersion,
+			'accounts'     => $accounts,
+			'transactions' => $tr,
+			'mempool'      => $mempool,
+			'masternodes'  => $masternodes,
+			'peers'        => $peers,
+			'height'       => $current['height'],
+			'block'        => $current['id'],
+			'time'         => time(),
+			'generator'    => $generator,
+			'miner'        => $miner,
+			'masternode'   => $masternode,
+			'totalSupply'  => TOTAL_SUPPLY,
+			'currentSupply'  => $circulation,
+			'avgBlockTime10'  => $avgBlockTime10,
+			'avgBlockTime100'  => $avgBlockTime100,
+			'hashRate10'=>$hashRate10,
+			'hashRate100'=>$hashRate100,
+			'lastBlockTime'=>$current['date']
+		];
+	}
+
 }

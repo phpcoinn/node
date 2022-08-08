@@ -340,4 +340,15 @@ class Daemon
 		return json_decode($res, true);
 	}
 
+	static function availableDaemons() {
+		$daemons = ["dapps", "miner", "sync","masternode"];
+		return $daemons;
+	}
+
+	static function getDaemonStatus($daemon) {
+		$cmd = "php ".ROOT."/cli/$daemon.php --daemon status";
+		$res = shell_exec($cmd);
+		return json_decode($res, true);
+	}
+
 }
