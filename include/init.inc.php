@@ -85,12 +85,7 @@ if (floatval(phpversion()) < 7.2) {
 }
 
 // Getting extra configs from the database
-$query = $db->run("SELECT cfg, val FROM config");
-if(is_array($query)) {
-	foreach ($query as $res) {
-	    $_config[$res['cfg']] = trim($res['val']);
-	}
-}
+$_config = load_db_config();
 
 //check db update
 _log("checking schema update", 5);

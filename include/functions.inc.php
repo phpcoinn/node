@@ -354,3 +354,14 @@ function try_catch($callback, &$error = null) {
 		return false;
 	}
 }
+
+function load_db_config() {
+	global $_config, $db;
+	$query = $db->run("SELECT cfg, val FROM config");
+	if(is_array($query)) {
+		foreach ($query as $res) {
+			$_config[$res['cfg']] = trim($res['val']);
+		}
+	}
+	return $_config;
+}

@@ -120,6 +120,10 @@ class Daemon
 		while($running) {
 			_log("Daemon: $name - running loop", 5);
 			$t1 = microtime(true);
+
+			global $_config;
+			$_config = load_db_config();
+
 			try {
 				static::process();
 				self::clearError();
