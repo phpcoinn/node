@@ -76,6 +76,9 @@ class Daemon
 	}
 
 	static function runDaemon() {
+
+		global $_config;
+
 		set_time_limit(0);
 		error_reporting(0);
 		self::processArgs();
@@ -116,6 +119,14 @@ class Daemon
 
 		$rune_once = self::hasArg("once");
 
+		$control_file = ROOT . "/include/coinspec.inc.php";
+		if($_config['testnet']) {
+			$control_file = ROOT . "/include/testnet.coinspec.inc.php";
+		}
+		$control_file_md5 = md5_file($control_file);
+		$control_file_time = filemtime($control_file);
+		_log("Daemon: control_file=$control_file md5=$control_file_md5 time=$control_file_time", 5);
+
 		_log("Daemon: $name - process started", 5);
 		while($running) {
 			_log("Daemon: $name - running loop", 5);
@@ -138,6 +149,20 @@ class Daemon
 				_log("Daemon: $name - Run only once - exit" , 3);
 				break;
 			}
+
+			$control_file_md5_check = md5_file($control_file);
+			$control_file_time_check = filemtime($control_file);
+			_log("Daemon: control_file=$control_file start md5=$control_file_md5 time=$control_file_time", 5);
+			_log("Daemon: control_file=$control_file check md5=$control_file_md5_check time=$control_file_time_check", 5);
+
+			if($control_file_md5 != $control_file_md5_check) {
+				_log("Daemon: Control file md5 check - unlock", 5);
+				self::unlock();
+			} else if($control_file_time != $control_file_time_check) {
+				_log("Daemon: Control file time check - unlock", 5);
+				self::unlock();
+			}
+
 			$running = file_exists($lock_file);
 			if(!$running) {
 				_log("Daemon: $name - Not exists lock file - exit" , 3);
