@@ -25,10 +25,14 @@ class PeerRequest
 				api_err("Invalid network ".$_POST['network']);
 			}
 		}
-		if(version_compare($_POST['version'], MIN_VERSION) < 0) {
-			api_err("Invalid version ".print_r($_REQUEST, 1));
-		}
 		$ip = Nodeutil::getRemoteAddr();
+		if(version_compare($_POST['version'], MIN_VERSION) < 0) {
+			$peer = Peer::findByIp($ip);
+			if($peer) {
+				Peer::blacklist($peer['id'], "Invalid version ".$_POST['version']);
+			}
+			api_err("Invalid version ".$_POST['version']);
+		}
 		$requestId = $_POST['requestId'];
 		_log("Peer request from IP = $ip requestId=$requestId",4);
 
