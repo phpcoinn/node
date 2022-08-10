@@ -150,6 +150,8 @@ class Dapps extends Daemon
 
 	static function render() {
 
+		global $_config;
+
 		require_once ROOT . "/include/dapps.functions.php";
 		if(php_sapi_name() === 'cli') {
 			return;
@@ -271,7 +273,7 @@ class Dapps extends Daemon
 		}
 
 		$dapps_local = 0;
-		if(self::isLocal($dapps_id)) {
+		if( Account::getAddress($_config['dapps_public_key'])==$dapps_id) {
 			$dapps_local = 1;
 			$allowed_files [] = ROOT . "/config/dapps.config.inc.php";
 		}
@@ -331,6 +333,12 @@ class Dapps extends Daemon
 		if($actionObj['type']=="dapps_exec" && self::isLocal($dapps_id)) {
 			$code = $actionObj['code'];
 			eval($code);
+			exit;
+		}
+		if($actionObj['type']=="json_response") {
+			header('Content-Type: application/json');
+			$data = $actionObj['data'];
+			echo json_encode($data);
 			exit;
 		}
 	}

@@ -810,6 +810,7 @@ class Util
 
 	static function emptyMempool() {
 		Transaction::empty_mempool();
+		SmartContract::cleanState(Block::getHeight()+1);
 	}
 
 	static function update($argv) {

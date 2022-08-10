@@ -42,6 +42,8 @@ class Transaction
 			$fee = TX_SC_CREATE_FEE;
 		} else if($this->type == TX_TYPE_SC_EXEC) {
 			$fee = TX_SC_EXEC_FEE;
+		} else if($this->type == TX_TYPE_SC_SEND) {
+			$fee = TX_SC_EXEC_FEE;
 		}
 		return $fee;
 	}
@@ -134,6 +136,18 @@ class Transaction
 				}
 
 				if ($type == TX_TYPE_SC_EXEC) {
+					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1));
+					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
+					$res = $res && $tx->add_mempool();
+
+					$height = $tx->height;
+					$res = $res && SmartContract::reverseState($tx, $height, $err);
+					if(!$res) {
+						throw new Exception("Can not reverse exec smart contract: $err");
+					}
+				}
+
+				if ($type == TX_TYPE_SC_SEND) {
 					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1));
 					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
 					$res = $res && $tx->add_mempool();
@@ -401,7 +415,7 @@ class Transaction
 				throw new Exception("Error checking account address");
 			}
 			//allow receive on unverified address
-			if ($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_SC_EXEC) {
+			if ($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_SEND) {
 				$res = Account::checkAccount($this->dst, "", $block);
 				if ($res === false) {
 					throw new Exception("Error checking account address for send");
@@ -441,7 +455,11 @@ class Transaction
 				$res = $res && Account::addBalance($this->dst, $this->val);
 			} else if ($type == TX_TYPE_SC_CREATE) {
 				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
+				$res = $res && Account::addBalance($this->dst, ($this->val));
 			} else if ($type == TX_TYPE_SC_EXEC) {
+				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
+				$res = $res && Account::addBalance($this->dst, ($this->val));
+			} else if ($type == TX_TYPE_SC_SEND) {
 				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
 				$res = $res && Account::addBalance($this->dst, ($this->val));
 			}
@@ -492,6 +510,13 @@ class Transaction
 				$res = SmartContract::execSmartContract($this, $height, $error);
 				if(!$res) {
 					throw new Exception("Can not process exec smart contract: $error");
+				}
+			}
+
+			if ($type == TX_TYPE_SC_SEND) {
+				$res = SmartContract::sendSmartContract($this, $height, $error);
+				if(!$res) {
+					throw new Exception("Can not process send smart contract: $error");
 				}
 			}
 
@@ -569,6 +594,7 @@ class Transaction
 			if($height >= SC_START_HEIGHT) {
 				$allowedTypes[]=TX_TYPE_SC_CREATE;
 				$allowedTypes[]=TX_TYPE_SC_EXEC;
+				$allowedTypes[]=TX_TYPE_SC_SEND;
 			}
 			if(!in_array($type, $allowedTypes)) {
 				$error = "Invalid transaction type $type for height $height";
@@ -682,6 +708,13 @@ class Transaction
 				$res = SmartContract::checkExecSmartContractTransaction($height, $this, $error, $verify);
 				if(!$res) {
 					throw new Exception("Invalid transaction for exec smart contract: $error");
+				}
+			}
+
+			if($this->type==TX_TYPE_SC_SEND) {
+				$res = SmartContract::checkSendSmartContractTransaction($height, $this, $error, $verify);
+				if(!$res) {
+					throw new Exception("Invalid transaction for send smart contract: $error");
 				}
 			}
 
@@ -1032,6 +1065,13 @@ class Transaction
 				}
 			}
 
+			if($this->type == TX_TYPE_SC_SEND) {
+				$res = SmartContract::sendSmartContract($this, Block::getHeight()+1, $error, true);
+				if(!$res) {
+					throw new Exception("Execute smart contract transaction failed: ".$error);
+				}
+			}
+
 			if($this->type == TX_TYPE_SEND) {
 				Masternode::checkSend($this);
 			}
@@ -1143,6 +1183,8 @@ class Transaction
 				return "Create smart contract";
 			case TX_TYPE_SC_EXEC:
 				return "Execute smart contract";
+			case TX_TYPE_SC_SEND:
+				return "Send smart contract";
 		}
 	}
 
