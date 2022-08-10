@@ -13,6 +13,9 @@ class Nodeutil
 			if (strlen($x) < 5 && substr($x, 0, 1) == ".") {
 				continue;
 			}
+			if(in_array($x, ['apps.hash'])) {
+				continue;
+			}
 			$pid_time = filemtime($tmpDir . $x);
 			if ($time - $pid_time > 7200) {
 				@unlink($tmpDir . $x);
