@@ -216,7 +216,16 @@ function dapps_api($api=null, $node=null) {
 		$data = $res['data'];
 		return $data;
 	} else {
-		throw new Exception("Error response from API: ".json_encode($res));
+		throw new Exception(json_encode($res));
 	}
 
+}
+
+function dapps_json_response($data) {
+	$action = [
+		"type"=>"json_response",
+		"data"=>$data
+	];
+	echo "action:" . json_encode($action);
+	exit;
 }
