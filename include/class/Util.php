@@ -1112,4 +1112,24 @@ class Util
 		$db->exec("unlock tables;");
 	}
 
+	static function propagateApps($argv) {
+		require_once ROOT."/web/apps/apps.inc.php";
+		$peer = $argv[2];
+		if(empty($peer)) {
+			echo "Peer not specified".PHP_EOL;
+			exit;
+		}
+		if(!isRepoServer()) {
+			echo "Only repo server can propagate apps".PHP_EOL;
+			exit;
+		}
+		$appsHashFile = Nodeutil::getAppsHashFile();
+		$appsHash = file_get_contents($appsHashFile);
+		$hostname = base64_encode($peer);
+		$dir = ROOT . "/cli";
+		$cmd = "php $dir/propagate.php appspeer $appsHash $hostname";
+		_log($cmd);
+		Nodeutil::runSingleProcess($cmd);
+	}
+
 }
