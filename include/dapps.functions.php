@@ -108,28 +108,39 @@ function dapps_get_id() {
  * @param string $url - url to append to dapps base url. If not specified current url is returned
  * @return string
  */
-function dapps_get_url($url = null) {
-	if(empty($url)) {
-		$url = $_SERVER['PHP_SELF_BASE'];
+function dapps_get_url($url = null, $full=false) {
+	if($full) {
+		$url = $_SERVER['REQUEST_SCHEME']."://".$_SERVER['HTTP_HOST']."/dapps.php?url=".dapps_get_id().$url;
 	} else {
-		$url = dapps_get_id() . $url;
+		if(empty($url)) {
+			$url = $_SERVER['PHP_SELF_BASE'];
+		} else {
+			$url = dapps_get_id() . $url;
+		}
+		$url = "/dapps.php?url=" . $url;
 	}
-	return "/dapps.php?url=" . $url;
+	return $url;
+}
+
+function dapps_get_full_url() {
+	return $_SERVER['DAPPS_FULL_URL'];
 }
 
 /**
  * Perform request to other dapp
  * @param $dapps_id - address of other dapp to call
  * @param $url - url on other app to call
+ * @param $remote - contact only remote owner of dapps
  */
-function dapps_request($dapps_id, $url) {
+function dapps_request($dapps_id, $url, $remote=false) {
 	$request_code = uniqid();
 	$_SESSION[$dapps_id.'_request_code']=$request_code;
 	$action = [
 		"type"=>"dapps_request",
 		"request_code"=>"$request_code",
 		"dapps_id"=>$dapps_id,
-		"url"=>$url
+		"url"=>$url,
+		"remote"=>$remote
 	];
 	echo "action:" . json_encode($action);
 	exit;
@@ -205,7 +216,7 @@ function dapps_get_random_peer() {
  * @return mixed - response from API
  * @throws Exception
  */
-function dapps_api($api=null, $node=null) {
+function dapps_api($api=null, $node=null, &$error = null) {
 	if(empty($node)) {
 		$node = dapps_get_random_peer();
 	}
@@ -216,14 +227,25 @@ function dapps_api($api=null, $node=null) {
 		$data = $res['data'];
 		return $data;
 	} else {
-		throw new Exception(json_encode($res));
+		$error = $res;
+		return false;
 	}
 
 }
 
 function dapps_json_response($data) {
 	$action = [
-		"type"=>"json_response",
+		"type"=>"dapps_json_response",
+		"data"=>$data
+	];
+	echo "action:" . json_encode($action);
+	exit;
+}
+
+function dapps_response($content_type, $data) {
+	$action = [
+		"type"=>"dapps_response",
+		"content_type"=>$content_type,
 		"data"=>$data
 	];
 	echo "action:" . json_encode($action);
