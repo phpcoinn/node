@@ -246,6 +246,7 @@ class Dapps extends Daemon
 		}
 		$_SERVER['DAPPS_URL']=$url;
 		$_SERVER['DAPPS_NETWORK']=NETWORK;
+		$_SERVER['DAPPS_FULL_URL']=$_SERVER['REQUEST_SCHEME']."://".$_SERVER['HTTP_HOST'].$_SERVER["REQUEST_URI"];
 
 		foreach ($_SERVER as $key=>$val) {
 			$server_args.=" $key='$val' ";
@@ -320,13 +321,17 @@ class Dapps extends Daemon
 		}
 		if($actionObj['type']=="dapps_request") {
 			$dapps_id = $actionObj['dapps_id'];
+			$remote = $actionObj['remote'];
 			$url = $actionObj['url'];
 			if(substr($url, 0, 1) != "/") {
 				$url = "/" . $url;
 			}
-			//TODO: check my dapps
-			$peer = Peer::findByDappsId($dapps_id);
-			$url = $peer['hostname']."/dapps.php?url=" . $dapps_id . $url;
+			$host= "";
+			if($remote) {
+				$peer = Peer::findByDappsId($dapps_id);
+				$host = $peer['hostname'];
+			}
+			$url = $host."/dapps.php?url=" . $dapps_id . $url;
 			header("location: $url");
 			exit;
 		}
@@ -335,10 +340,18 @@ class Dapps extends Daemon
 			eval($code);
 			exit;
 		}
-		if($actionObj['type']=="json_response") {
+		if($actionObj['type']=="dapps_json_response") {
 			header('Content-Type: application/json');
 			$data = $actionObj['data'];
 			echo json_encode($data);
+			exit;
+		}
+		if($actionObj['type']=="dapps_response") {
+			$data = $actionObj['data'];
+			$data = base64_decode($data);
+			ob_end_clean();
+			header('Content-Type: '.$actionObj['content_type']);
+			echo $data;
 			exit;
 		}
 	}
