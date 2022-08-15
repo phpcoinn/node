@@ -429,6 +429,8 @@ class Nodeutil
 		$data['apps']['apps_archive']['exists']=file_exists($appsArchive);
 		$data['apps']['apps_archive']['owner']=shell_exec("stat -c '%U' $appsArchive");
 		$data['apps']['apps_archive']['perms']=shell_exec("stat -c '%a' $appsArchive");
+		$propagate_file = ROOT . "/tmp/propagate_info.txt";
+		$data['propagate_info']=json_decode(file_get_contents($propagate_file), true);
 		return $data;
 	}
 
