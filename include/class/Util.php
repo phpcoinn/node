@@ -996,10 +996,10 @@ class Util
 			echo "No repository private key".PHP_EOL;
 			exit;
 		}
-		if(!isset($_config['propagate_msg-enable'])) {
-			_log("Msg propagate: Not enabled. Stop");
-			return;
-		}
+//		if(!isset($_config['propagate_msg-enable'])) {
+//			_log("Msg propagate: Not enabled. Stop");
+//			return;
+//		}
 		$signature = ec_sign($message, $private_key);
 		$data = [
 			"source" => [
@@ -1012,7 +1012,7 @@ class Util
 		];
 		_log("Msg propagate: start data=".json_encode($data));
 		$msg = base64_encode(json_encode($data));
-		$peers = Peer::getPeersForSync();
+		$peers = Peer::getPeersForSync(10);
 		$dir = ROOT."/cli";
 		foreach($peers  as $peer) {
 			$hostname = $peer['hostname'];

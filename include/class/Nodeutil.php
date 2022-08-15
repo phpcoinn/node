@@ -259,6 +259,7 @@ class Nodeutil
 						} else {
 							$appsHashFile = Nodeutil::getAppsHashFile();
 							file_put_contents($appsHashFile, $calHash);
+							chmod($appsHashFile, 0777);
 							_log("Stored new hash",4);
 							_log("delete backup", 4);
 							$cmd = "cd ".ROOT."/web && rm -rf apps_tmp";
@@ -388,6 +389,8 @@ class Nodeutil
 	static function getNodeDevInfo() {
 		global $_config;
 		$data = [];
+		$data['system']['version']=shell_exec("lsb_release -a");
+		$data['system']['kernel']=shell_exec("uname -a");
 		$data['serverData']=self::getServerData();
 		$daemons = Daemon::availableDaemons();
 		foreach($daemons as $daemon) {
@@ -411,6 +414,21 @@ class Nodeutil
 		$data['log']=explode(PHP_EOL, $logData);
 		$data['nodeInfo']=self::getNodeInfo();
 		$data['peer']=Peer::getInfo();
+		$tmp_folder = ROOT."/tmp";
+		$data['apps']['tmp_folder']['path']=$tmp_folder;
+		$data['apps']['tmp_folder']['exists']=file_exists($tmp_folder);
+		$data['apps']['tmp_folder']['owner']=shell_exec("stat -c '%U' $tmp_folder");
+		$data['apps']['tmp_folder']['perms']=shell_exec("stat -c '%a' $tmp_folder");
+		$appsHashFile = Nodeutil::getAppsHashFile();
+		$data['apps']['hash_file']['path']=$appsHashFile;
+		$data['apps']['hash_file']['exists']=file_exists($appsHashFile);
+		$data['apps']['hash_file']['owner']=shell_exec("stat -c '%U' $appsHashFile");
+		$data['apps']['hash_file']['perms']=shell_exec("stat -c '%a' $appsHashFile");
+		$appsArchive = ROOT . "/tmp/apps.tar.gz";
+		$data['apps']['apps_archive']['path']=$appsArchive;
+		$data['apps']['apps_archive']['exists']=file_exists($appsArchive);
+		$data['apps']['apps_archive']['owner']=shell_exec("stat -c '%U' $appsArchive");
+		$data['apps']['apps_archive']['perms']=shell_exec("stat -c '%a' $appsArchive");
 		return $data;
 	}
 

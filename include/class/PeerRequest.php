@@ -475,6 +475,7 @@ class PeerRequest
 			if ($buildArchive) {
 				_log("AppsHash: build archive", 2);
 				file_put_contents($appsHashFile, $appsHashCalc);
+				chmod($appsHashFile, 0777);
 				buildAppsArchive();
 				$dir = ROOT . "/cli";
 				_log("AppsHash: Propagating apps",3);
@@ -565,10 +566,10 @@ class PeerRequest
 		$data = base64_decode($data);
 		$data = json_decode($data, true);
 
-		if(!isset($_config['propagate_msg-enable'])) {
-			_log("Msg propagate: Not enabled. Stop");
-			return;
-		}
+//		if(!isset($_config['propagate_msg-enable'])) {
+//			_log("Msg propagate: Not enabled. Stop");
+//			return;
+//		}
 
 		if(count($data['hops'])>10) {
 			_log("Msg propagate: max hops exceed. Stop");
@@ -600,7 +601,7 @@ class PeerRequest
 			"time"=>microtime(true)
 		];
 		$data['hops'][]=$hop;
-		$peers = Peer::getPeersForSync();
+		$peers = Peer::getPeersForSync(10);
 		$dir = ROOT."/cli";
 		$msg = base64_encode(json_encode($data));
 		foreach($peers  as $peer) {
