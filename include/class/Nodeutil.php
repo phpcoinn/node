@@ -259,6 +259,7 @@ class Nodeutil
 						} else {
 							$appsHashFile = Nodeutil::getAppsHashFile();
 							file_put_contents($appsHashFile, $calHash);
+							chmod($appsHashFile, 0777);
 							_log("Stored new hash",4);
 							_log("delete backup", 4);
 							$cmd = "cd ".ROOT."/web && rm -rf apps_tmp";

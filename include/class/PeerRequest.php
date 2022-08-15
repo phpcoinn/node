@@ -475,6 +475,7 @@ class PeerRequest
 			if ($buildArchive) {
 				_log("AppsHash: build archive", 2);
 				file_put_contents($appsHashFile, $appsHashCalc);
+				chmod($appsHashFile, 0777);
 				buildAppsArchive();
 				$dir = ROOT . "/cli";
 				_log("AppsHash: Propagating apps",3);
