@@ -559,59 +559,52 @@ class PeerRequest
 		api_echo($masternode);
 	}
 
-	static function propagateMsg() {
-		global $_config;
-
-		return;
+	static function propagateMsg()
+	{
+		global $_config, $db;
 
 		$data = self::$data;
 		$data = $data['data'];
 		$data = base64_decode($data);
 		$data = json_decode($data, true);
 
-//		if(!isset($_config['propagate_msg-enable'])) {
-//			_log("Msg propagate: Not enabled. Stop");
-//			return;
-//		}
+		$message = $data['source']['message'];
+		_log("Msg propagate: Checking propagate msg: $message");
+		$val = $db->getConfig('propagate_msg');
 
-		if(count($data['hops'])>10) {
+		if ($val == $message) {
+			_log("Msg propagate: This node already receive message $message - do not propagate");
+			$propagate = false;
+		} else {
+			_log("Msg propagate: This node not receive message $message - store and propagate further");
+			$db->setConfig('propagate_msg', $message);
+			$propagate_file = ROOT . "/tmp/propagate_info.txt";
+			file_put_contents($propagate_file, json_encode($data));
+			$propagate = true;
+		}
+
+		$hops = $data['hops'];
+		$hops_cnt = count($data['hops']);
+		if ($hops_cnt > 10) {
 			_log("Msg propagate: max hops exceed. Stop");
 			return;
 		}
 
-		$hops = $data['hops'];
-		foreach($hops as $hop) {
-			if($hop['node'] == $_config['hostname']) {
-				_log("Msg propagate: already added this host to hop. Stop");
-				return;
+		if ($propagate) {
+			$hop = [
+				"node" => $_config['hostname'],
+				"time" => microtime(true)
+			];
+			$data['hops'][] = $hop;
+			$peers = Peer::getPeersForSync(10);
+			$dir = ROOT . "/cli";
+			$msg = base64_encode(json_encode($data));
+			foreach ($peers as $peer) {
+				$hostname = $peer['hostname'];
+				$peer = base64_encode($hostname);
+				$cmd = "php $dir/propagate.php message $peer $msg > /dev/null 2>&1  &";
+				system($cmd);
 			}
-		}
-
-		$address = $data['source']['address'];
-		$public_key = $_config['repository_public_key'];
-		if(!empty($public_key) && Account::getAddress($public_key)==$address) {
-			$hops_cnt = count($data['hops']);
-			$elapsed = microtime(true) - $data['source']['time'];
-			_log("Msg propagate: Hop Hostname Time");
-			foreach($hops as $index=> $hop) {
-				_log("Msg propagate: ".($index+1)." ".$hop['node']." ".($hop['time']-$data['source']['time']));
-			}
-			_log("Msg propagate: Total elapsed $elapsed");
-			return;
-		}
-		$hop = [
-			"node"=>$_config['hostname'],
-			"time"=>microtime(true)
-		];
-		$data['hops'][]=$hop;
-		$peers = Peer::getPeersForSync(10);
-		$dir = ROOT."/cli";
-		$msg = base64_encode(json_encode($data));
-		foreach($peers  as $peer) {
-			$hostname = $peer['hostname'];
-			$peer = base64_encode($hostname);
-			$cmd = "php $dir/propagate.php message $peer $msg > /dev/null 2>&1  &";
-			system($cmd);
 		}
 	}
 
