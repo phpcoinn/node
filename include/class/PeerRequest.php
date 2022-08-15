@@ -561,6 +561,9 @@ class PeerRequest
 
 	static function propagateMsg() {
 		global $_config;
+
+		return;
+
 		$data = self::$data;
 		$data = $data['data'];
 		$data = base64_decode($data);
