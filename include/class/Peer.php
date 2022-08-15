@@ -277,7 +277,7 @@ class Peer
 
 	static function updatePeerInfo($ip, $info) {
 		global $db;
-		_log("PeerSync: Peer request: update info from $ip ".json_encode($info));
+		_log("PeerSync: Peer request: update info from $ip ".json_encode($info), 3);
 		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, block_id=:block_id, appshash=:appshash, score=:score, version=:version,  
 				miner=:miner, generator=:generator, masternode=:masternode
 				WHERE ip=:ip",
