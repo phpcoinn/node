@@ -579,6 +579,13 @@ class PeerRequest
 			_log("Msg propagate: This node not receive message $message - store and propagate further");
 			$db->setConfig('propagate_msg', $message);
 			$propagate_file = ROOT . "/tmp/propagate_info.txt";
+			$t = microtime(true);
+			$elapsed = $t - $data['source']['time'];
+			$data['target']=[
+				'hostname'=>$_config['hostname'],
+				'time'=>$t,
+				'elapsed'=>$elapsed
+			];
 			file_put_contents($propagate_file, json_encode($data));
 			$propagate = true;
 		}
