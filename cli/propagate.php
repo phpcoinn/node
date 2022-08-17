@@ -259,6 +259,7 @@ if($type == "message") {
 	$hostname = base64_decode($hash);
 	$url = $hostname."/peer.php?q=propagateMsg";
 	$res = peer_post($url, ["data"=>$data], 30, $err);
+	_log("Propagate message: propagate to peer $url res=".json_encode($res). " err=".json_encode($err), 5);
 }
 
 if($type == "dapps") {

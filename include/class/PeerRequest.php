@@ -562,6 +562,12 @@ class PeerRequest
 	static function propagateMsg()
 	{
 		global $_config, $db;
+		
+		$info = $_POST['info'];
+
+		if($info['version'] != VERSION.".".BUILD_VERSION) {
+			api_err("Only latest version allowed");
+		}
 
 		$data = self::$data;
 		$data = $data['data'];
@@ -570,6 +576,21 @@ class PeerRequest
 
 		$message = $data['source']['message'];
 		_log("Msg propagate: Checking propagate msg: $message");
+
+		$signature = $data['source']['signature'];
+		$nonce = $data['source']['nonce'];
+
+		$hops = $data['hops'];
+		$hops_cnt = count($hops);
+		if ($hops_cnt > 10) {
+			api_err("Msg propagate: max hops exceed. Stop");
+		}
+
+		$res = ec_verify($nonce, $signature, DEV_PUBLIC_KEY);
+		if(!$res) {
+			api_err("Signature failed");
+		}
+
 		$val = $db->getConfig('propagate_msg');
 
 		if ($val == $message) {
@@ -590,13 +611,6 @@ class PeerRequest
 			$propagate = true;
 		}
 
-		$hops = $data['hops'];
-		$hops_cnt = count($data['hops']);
-		if ($hops_cnt > 10) {
-			_log("Msg propagate: max hops exceed. Stop");
-			return;
-		}
-
 		if ($propagate) {
 			$hop = [
 				"node" => $_config['hostname'],
@@ -612,7 +626,17 @@ class PeerRequest
 				$cmd = "php $dir/propagate.php message $peer $msg > /dev/null 2>&1  &";
 				system($cmd);
 			}
+			peer_post("https://node1.phpcoin.net/peer.php?q=logPropagate", $msg);
 		}
+		api_echo("Propagate=$propagate");
+	}
+
+	static function logPropagate() {
+		$data = self::$data;
+		$data = base64_decode($data);
+		$data = json_decode($data, true);
+		_log("logPropagate: ".json_encode($data, true));
+		api_echo("OK");
 	}
 
 }

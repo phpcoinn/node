@@ -664,4 +664,70 @@ class Api
 		}
 		api_echo(Nodeutil::getNodeDevInfo());
 	}
+
+	static function startPropagate($data) {
+		$signature = $data['signature'];
+		if(empty($signature)) {
+			api_err("Empty signature");
+		}
+		$nonce = $data['nonce'];
+		if(empty($nonce)) {
+			api_err("Empty nonce(time)");
+		}
+		$arr = explode(";", $nonce);
+		$time = $arr[0];
+		if($time < time() - 60*5) {
+			api_err("Invalid time");
+		}
+		$res = ec_verify($nonce, $signature, DEV_PUBLIC_KEY);
+		if(!$res) {
+			api_err("Signature failed");
+		}
+		$msg = $data['msg'];
+		if(empty($msg)) {
+			api_err("Empty msg");
+		}
+		$data = [
+			"source" => [
+				"address" => Account::getAddress(DEV_PUBLIC_KEY),
+				"message" => $msg,
+				"nonce" => $nonce,
+				"signature" => $signature,
+				"time"=>microtime(true)
+			],
+			"hops" => []
+		];
+		$msg = base64_encode(json_encode($data));
+		$peers = Peer::getPeersForSync(10);
+		$dir = ROOT."/cli";
+		foreach($peers  as $peer) {
+			$hostname = $peer['hostname'];
+			$peer = base64_encode($hostname);
+			$cmd = "php $dir/propagate.php message $peer $msg > /dev/null 2>&1  &";
+			api_echo($cmd);
+			system($cmd);
+		}
+		api_echo("Propagate started");
+	}
+
+	static function getPropagateInfo($data) {
+		$signature = $data['signature'];
+		if(empty($signature)) {
+			api_err("Empty signature");
+		}
+		$nonce = $data['nonce'];
+		if(empty($nonce)) {
+			api_err("Empty nonce(time)");
+		}
+		if($nonce < time() - 60*5) {
+			api_err("Invalid nonce");
+		}
+		$res = ec_verify($nonce, $signature, DEV_PUBLIC_KEY);
+		if(!$res) {
+			api_err("Signature failed");
+		}
+		$propagate_file = ROOT . "/tmp/propagate_info.txt";
+		$data=json_decode(file_get_contents($propagate_file), true);
+		api_echo($data);
+	}
 }
