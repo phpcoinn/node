@@ -617,16 +617,22 @@ class PeerRequest
 				"time" => microtime(true)
 			];
 			$data['hops'][] = $hop;
-			$peers = Peer::getPeersForSync(10);
-			$dir = ROOT . "/cli";
-			$msg = base64_encode(json_encode($data));
-			foreach ($peers as $peer) {
-				$hostname = $peer['hostname'];
-				$peer = base64_encode($hostname);
-				$cmd = "php $dir/propagate.php message $peer $msg > /dev/null 2>&1  &";
-				system($cmd);
+
+			$type = $data['source']['type'];
+			$limit = $data['source']['limit'];
+
+			if($type == "nearest") {
+				$peers = Peer::getPeersForSync($limit);
+				$dir = ROOT . "/cli";
+				$msg = base64_encode(json_encode($data));
+				foreach ($peers as $peer) {
+					$hostname = $peer['hostname'];
+					$peer = base64_encode($hostname);
+					$cmd = "php $dir/propagate.php message $peer $msg > /dev/null 2>&1  &";
+					system($cmd);
+				}
+				peer_post("https://node1.phpcoin.net/peer.php?q=logPropagate", $msg);
 			}
-			peer_post("https://node1.phpcoin.net/peer.php?q=logPropagate", $msg);
 		}
 		api_echo("Propagate=$propagate");
 	}
