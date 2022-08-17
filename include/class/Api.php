@@ -666,6 +666,7 @@ class Api
 	}
 
 	static function startPropagate($data) {
+		global $_config;
 		$signature = $data['signature'];
 		if(empty($signature)) {
 			api_err("Empty signature");
@@ -687,24 +688,38 @@ class Api
 		if(empty($msg)) {
 			api_err("Empty msg");
 		}
+		$type = $data['type'];//nearest|all
+		if(empty($type)) {
+			$type="nearest";
+		}
+		$limit = $data['limit'];
+		if(empty($limit)) {
+			$limit = 5;
+		}
 		$data = [
 			"source" => [
+				"node"=>$_config['hostname'],
 				"address" => Account::getAddress(DEV_PUBLIC_KEY),
 				"message" => $msg,
 				"nonce" => $nonce,
 				"signature" => $signature,
-				"time"=>microtime(true)
+				"time"=>microtime(true),
+				"type"=>$type,
+				"limit"=>$limit
 			],
 			"hops" => []
 		];
 		$msg = base64_encode(json_encode($data));
-		$peers = Peer::getPeersForSync(10);
+		if($type == "nearest") {
+			$peers = Peer::getPeersForSync($limit);
+		} else {
+			$peers = Peer::getPeersForPropagate();
+		}
 		$dir = ROOT."/cli";
 		foreach($peers  as $peer) {
 			$hostname = $peer['hostname'];
 			$peer = base64_encode($hostname);
 			$cmd = "php $dir/propagate.php message $peer $msg > /dev/null 2>&1  &";
-			api_echo($cmd);
 			system($cmd);
 		}
 		api_echo("Propagate started");
