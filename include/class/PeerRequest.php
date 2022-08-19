@@ -452,9 +452,13 @@ class PeerRequest
 			_log("AppsHash: Received request getApps", 3);
 			$appsHashFile = Nodeutil::getAppsHashFile();
 			$buildArchive = false;
+			$archiveFile = ROOT . "/tmp/apps.tar.gz";
 			if (!file_exists($appsHashFile)) {
 				$buildArchive = true;
 				$appsHashCalc = calcAppsHash();
+			} else if (!file_exists($archiveFile)) {
+				_log("AppsHash: Archive file not exists", 3);
+				$buildArchive = true;
 			} else {
 				$appsHash = file_get_contents($appsHashFile);
 				_log("AppsHash: Read apps hash from file = ".$appsHash, 3);
