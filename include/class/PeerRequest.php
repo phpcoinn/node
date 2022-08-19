@@ -627,7 +627,7 @@ class PeerRequest
 
 			$msg = base64_encode(json_encode($data));
 			if($type == "nearest") {
-				$peers = Peer::getPeersForSync($limit);
+				$peers = Peer::getPeersForSync($limit, true);
 				$dir = ROOT . "/cli";
 				foreach ($peers as $peer) {
 					$hostname = $peer['hostname'];

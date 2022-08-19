@@ -712,7 +712,7 @@ class Api
 		$db->setConfig('propagate_msg', $msg);
 		$msg = base64_encode(json_encode($data));
 		if($type == "nearest") {
-			$peers = Peer::getPeersForSync($limit);
+			$peers = Peer::getPeersForSync($limit, true);
 		} else {
 			$peers = Peer::getPeersForPropagate();
 		}
