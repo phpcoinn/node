@@ -38,12 +38,17 @@ class Peer
 		return $rows;
 	}
 
-	static function getPeersForSync($limit = null) {
+	static function getPeersForSync($limit = null, $random=false) {
 		global $db;
 		$sql="select * from peers 
 			where blacklisted < ".DB::unixTimeStamp()."
 			  and ping > ".DB::unixTimeStamp()."- 60*2
-			  and response_cnt>0 order by response_time/response_cnt";
+			  and response_cnt>0 ";
+		if($random) {
+			$sql.=" order by ".DB::random();
+		} else {
+			$sql.=" order by response_time/response_cnt";
+		}
 		if(!empty($limit)) {
 			$sql.=" limit $limit";
 		}
