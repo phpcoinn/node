@@ -1,5 +1,5 @@
 <?php
-if(file_exists(dirname(__DIR__)."/testnet")) {
+if(@file_exists(dirname(__DIR__)."/testnet")) {
 	require_once __DIR__ . "/testnet.coinspec.inc.php";
 	return;
 }
