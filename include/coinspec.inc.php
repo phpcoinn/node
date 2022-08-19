@@ -1,5 +1,5 @@
 <?php
-if(file_exists(dirname(__DIR__)."/testnet")) {
+if(@file_exists(dirname(__DIR__)."/testnet")) {
 	require_once __DIR__ . "/testnet.coinspec.inc.php";
 	return;
 }
@@ -7,7 +7,7 @@ if(file_exists(dirname(__DIR__)."/testnet")) {
 // mainnet specification
 const NETWORK = "mainnet-alpha";
 const VERSION = "1.0.6";
-const BUILD_VERSION = 93;
+const BUILD_VERSION = 95;
 const MIN_VERSION = "1.0.5";
 const DEVELOPMENT = false;
 const XDEBUG = "";

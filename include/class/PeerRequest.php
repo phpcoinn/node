@@ -452,9 +452,13 @@ class PeerRequest
 			_log("AppsHash: Received request getApps", 3);
 			$appsHashFile = Nodeutil::getAppsHashFile();
 			$buildArchive = false;
+			$archiveFile = ROOT . "/tmp/apps.tar.gz";
 			if (!file_exists($appsHashFile)) {
 				$buildArchive = true;
 				$appsHashCalc = calcAppsHash();
+			} else if (!file_exists($archiveFile)) {
+				_log("AppsHash: Archive file not exists", 3);
+				$buildArchive = true;
 			} else {
 				$appsHash = file_get_contents($appsHashFile);
 				_log("AppsHash: Read apps hash from file = ".$appsHash, 3);
@@ -621,27 +625,31 @@ class PeerRequest
 			$type = $data['source']['type'];
 			$limit = $data['source']['limit'];
 
+			$msg = base64_encode(json_encode($data));
 			if($type == "nearest") {
 				$peers = Peer::getPeersForSync($limit);
 				$dir = ROOT . "/cli";
-				$msg = base64_encode(json_encode($data));
 				foreach ($peers as $peer) {
 					$hostname = $peer['hostname'];
 					$peer = base64_encode($hostname);
 					$cmd = "php $dir/propagate.php message $peer $msg > /dev/null 2>&1  &";
 					system($cmd);
 				}
-				peer_post("https://node1.phpcoin.net/peer.php?q=logPropagate", $msg);
 			}
+			peer_post("https://node1.phpcoin.net/peer.php?q=logPropagate", $msg);
 		}
 		api_echo("Propagate=$propagate");
 	}
 
 	static function logPropagate() {
+		global $db;
 		$data = self::$data;
 		$data = base64_decode($data);
 		$data = json_decode($data, true);
 		_log("logPropagate: ".json_encode($data, true));
+		$ip = self::$ip;
+		$db->run("update peers set propagate_info =:propagate_info where ip=:ip",
+			[":propagate_info"=>json_encode($data), ":ip"=>$ip]);
 		api_echo("OK");
 	}
 

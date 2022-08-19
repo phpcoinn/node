@@ -666,7 +666,7 @@ class Api
 	}
 
 	static function startPropagate($data) {
-		global $_config;
+		global $_config, $db;
 		$signature = $data['signature'];
 		if(empty($signature)) {
 			api_err("Empty signature");
@@ -709,6 +709,7 @@ class Api
 			],
 			"hops" => []
 		];
+		$db->setConfig('propagate_msg', $msg);
 		$msg = base64_encode(json_encode($data));
 		if($type == "nearest") {
 			$peers = Peer::getPeersForSync($limit);
