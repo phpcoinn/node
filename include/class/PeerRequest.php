@@ -615,8 +615,6 @@ class PeerRequest
 			$propagate = true;
 		}
 
-		$msg = base64_encode(json_encode($data));
-
 		if ($propagate) {
 			$hop = [
 				"node" => $_config['hostname'],
@@ -627,6 +625,7 @@ class PeerRequest
 			$type = $data['source']['type'];
 			$limit = $data['source']['limit'];
 
+			$msg = base64_encode(json_encode($data));
 			if($type == "nearest") {
 				$peers = Peer::getPeersForSync($limit);
 				$dir = ROOT . "/cli";
@@ -637,8 +636,8 @@ class PeerRequest
 					system($cmd);
 				}
 			}
+			peer_post("https://node1.phpcoin.net/peer.php?q=logPropagate", $msg);
 		}
-		peer_post("https://node1.phpcoin.net/peer.php?q=logPropagate", $msg);
 		api_echo("Propagate=$propagate");
 	}
 
