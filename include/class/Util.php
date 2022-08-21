@@ -1133,4 +1133,25 @@ class Util
 		Nodeutil::runSingleProcess($cmd);
 	}
 
+	static function peerCall($argv) {
+		$peer = $argv[2];
+		if(empty($peer)) {
+			echo "Empty peer".PHP_EOL;
+			exit;
+		}
+		$method = $argv[3];
+		if(empty($method)) {
+			echo "Empty method".PHP_EOL;
+			exit;
+		}
+		$data = json_decode($argv[4], true);
+		$url = $peer . "/peer.php?q=$method";
+		$res = peer_post($url, $data, 30, $err);
+		if($res) {
+			api_echo($res);
+		} else {
+			api_err($err);
+		}
+	}
+	
 }
