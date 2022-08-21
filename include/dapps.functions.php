@@ -182,6 +182,19 @@ function dapps_exec($code) {
 	exit;
 }
 
+function dapps_exec_fn($name, ...$params) {
+	if(!dapps_is_local()) {
+		exit;
+	}
+	$action = [
+		"type"=>"dapps_exec_fn",
+		"fn_name"=>$name,
+		"params"=>$params
+	];
+	echo "action:" . json_encode($action);
+	exit;
+}
+
 /**
  * Retrieves random peer from network
  * @return string - url of random peer

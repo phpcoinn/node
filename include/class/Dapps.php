@@ -340,6 +340,20 @@ class Dapps extends Daemon
 			eval($code);
 			exit;
 		}
+		if($actionObj['type']=="dapps_exec_fn" && self::isLocal($dapps_id)) {
+			$fn_name = $actionObj['fn_name'];
+			$params = $actionObj['params'];
+			$dapps_fn_file = ROOT . "/include/dapps.local.inc.php";
+			if(!file_exists($dapps_fn_file)) {
+				die("Dapps local functions file not exists");
+			}
+			require_once $dapps_fn_file;
+			if(!function_exists($fn_name)) {
+				die("Called function $fn_name not exists");
+			}
+			call_user_func($fn_name, ...$params);
+			exit;
+		}
 		if($actionObj['type']=="dapps_json_response") {
 			header('Content-Type: application/json');
 			$data = $actionObj['data'];
