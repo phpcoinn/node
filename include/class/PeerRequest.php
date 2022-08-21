@@ -569,8 +569,6 @@ class PeerRequest
 		
 		$info = $_POST['info'];
 
-		api_echo("DISABLED");
-
 		if($info['version'] != VERSION.".".BUILD_VERSION) {
 			api_err("Only latest version allowed");
 		}
@@ -585,6 +583,16 @@ class PeerRequest
 
 		$signature = $data['source']['signature'];
 		$nonce = $data['source']['nonce'];
+
+		$time = $data['source']['time'];
+		if(empty($time)) {
+			api_err("Missing time in request");
+		}
+
+		$now = microtime(true);
+		if($now - $time > 60) {
+			api_err("Expired propagation request");
+		}
 
 		$hops = $data['hops'];
 		$hops_cnt = count($hops);
@@ -649,9 +657,7 @@ class PeerRequest
 		$data = base64_decode($data);
 		$data = json_decode($data, true);
 		_log("logPropagate: ".json_encode($data, true));
-		$ip = self::$ip;
-		$db->run("update peers set propagate_info =:propagate_info where ip=:ip",
-			[":propagate_info"=>json_encode($data), ":ip"=>$ip]);
+		$res = peer_post("http://node1.phpcoin.net:3000/emit", $data);
 		api_echo("OK");
 	}
 
