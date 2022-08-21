@@ -231,7 +231,7 @@ function dapps_get_random_peer() {
  */
 function dapps_api($api=null, $node=null, &$error = null) {
 	if(empty($node)) {
-		$node = dapps_get_random_peer();
+		$node = $_SERVER['DAPPS_HOSTNAME'];
 	}
 	$url = $node. "/api.php?q=".$api;
 	$res = file_get_contents($url);

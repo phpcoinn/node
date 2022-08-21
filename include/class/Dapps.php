@@ -247,6 +247,7 @@ class Dapps extends Daemon
 		$_SERVER['DAPPS_URL']=$url;
 		$_SERVER['DAPPS_NETWORK']=NETWORK;
 		$_SERVER['DAPPS_FULL_URL']=$_SERVER['REQUEST_SCHEME']."://".$_SERVER['HTTP_HOST'].$_SERVER["REQUEST_URI"];
+		$_SERVER['DAPPS_HOSTNAME']=$_config['hostname'];
 
 		foreach ($_SERVER as $key=>$val) {
 			$server_args.=" $key='$val' ";
@@ -263,10 +264,10 @@ class Dapps extends Daemon
 		$functions_file = ROOT . "/include/dapps.functions.php";
 
 		$allowed_files = [
+			ROOT . "/testnet",
 			ROOT . "/include/dapps.functions.php",
 			ROOT . "/include/common.functions.php",
 			ROOT . "/include/coinspec.inc.php",
-			ROOT . "/testnet",
 		];
 
 		if(file_exists(ROOT."/testnet")) {
