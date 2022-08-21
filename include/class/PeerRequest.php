@@ -18,7 +18,7 @@ class PeerRequest
 		}
 		global $_config;
 		if ($_POST['coin'] != COIN) {
-			api_err("Invalid coin ".print_r($_REQUEST, 1));
+			api_err("Invalid coin ".json_encode($_REQUEST), 3);
 		}
 		if(isset($_POST['network'])) {
 			if($_POST['network'] != NETWORK) {
