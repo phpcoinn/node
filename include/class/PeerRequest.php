@@ -569,6 +569,8 @@ class PeerRequest
 		
 		$info = $_POST['info'];
 
+		api_echo("DISABLED");
+
 		if($info['version'] != VERSION.".".BUILD_VERSION) {
 			api_err("Only latest version allowed");
 		}
