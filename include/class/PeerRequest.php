@@ -219,6 +219,13 @@ class PeerRequest
 
 		// receive a  new block from a peer
 		_log("Sync: Receive new block from a peer $ip : id=".$data['id']." height=".$data['height']." current=".$current['height'], 5);
+		$logData = [
+			"height"=>$data['height'],
+			"id"=>$data['id'],
+			"ip"=>self::$ip,
+			"dst"=>$_config['hostname']
+		];
+		peer_post("https://node1.phpcoin.net/peer.php?q=logSubmitBlock", base64_encode(json_encode($logData)));
 
 //		Peer::updateHeight($ip, $data);
 
@@ -652,12 +659,22 @@ class PeerRequest
 	}
 
 	static function logPropagate() {
-		global $db;
 		$data = self::$data;
 		$data = base64_decode($data);
 		$data = json_decode($data, true);
-		_log("logPropagate: ".json_encode($data, true));
-		$res = peer_post("http://node1.phpcoin.net:3000/emit", $data);
+		self::emitToScoket("logPropagate", $data);
+	}
+
+	static function logSubmitBlock() {
+		$data = self::$data;
+		$data = base64_decode($data);
+		$data = json_decode($data, true);
+		self::emitToScoket("logSubmitBlock", $data);
+	}
+
+	static function emitToScoket($type, $data) {
+		$log = ["type"=>$type, "data"=>$data];
+		$res = peer_post("http://node1.phpcoin.net:3000/emit", $log);
 		api_echo("OK");
 	}
 
