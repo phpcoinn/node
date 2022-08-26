@@ -219,13 +219,13 @@ class PeerRequest
 
 		// receive a  new block from a peer
 		_log("Sync: Receive new block from a peer $ip : id=".$data['id']." height=".$data['height']." current=".$current['height'], 5);
-		$logData = [
-			"height"=>$data['height'],
-			"id"=>$data['id'],
-			"ip"=>self::$ip,
-			"dst"=>$_config['hostname']
-		];
-		peer_post("https://node1.phpcoin.net/peer.php?q=logSubmitBlock", base64_encode(json_encode($logData)));
+//		$logData = [
+//			"height"=>$data['height'],
+//			"id"=>$data['id'],
+//			"ip"=>self::$ip,
+//			"dst"=>$_config['hostname']
+//		];
+//		peer_post("https://node1.phpcoin.net/peer.php?q=logSubmitBlock", base64_encode(json_encode($logData)));
 
 //		Peer::updateHeight($ip, $data);
 
