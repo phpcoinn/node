@@ -18,6 +18,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         'Blacklist' => __DIR__ . '/../..' . '/include/class/Blacklist.php',
         'Block' => __DIR__ . '/../..' . '/include/class/Block.php',
         'Blockchain' => __DIR__ . '/../..' . '/include/class/Blockchain.php',
+        'Cache' => __DIR__ . '/../..' . '/include/class/Cache.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Config' => __DIR__ . '/../..' . '/include/class/Config.php',
         'Daemon' => __DIR__ . '/../..' . '/include/class/Daemon.php',

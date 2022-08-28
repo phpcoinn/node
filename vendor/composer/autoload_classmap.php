@@ -11,6 +11,7 @@ return array(
     'Blacklist' => $baseDir . '/include/class/Blacklist.php',
     'Block' => $baseDir . '/include/class/Block.php',
     'Blockchain' => $baseDir . '/include/class/Blockchain.php',
+    'Cache' => $baseDir . '/include/class/Cache.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
     'Config' => $baseDir . '/include/class/Config.php',
     'Daemon' => $baseDir . '/include/class/Daemon.php',
