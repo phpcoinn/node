@@ -219,6 +219,13 @@ class PeerRequest
 
 		// receive a  new block from a peer
 		_log("Sync: Receive new block from a peer $ip : id=".$data['id']." height=".$data['height']." current=".$current['height'], 5);
+//		$logData = [
+//			"height"=>$data['height'],
+//			"id"=>$data['id'],
+//			"ip"=>self::$ip,
+//			"dst"=>$_config['hostname']
+//		];
+//		peer_post("https://node1.phpcoin.net/peer.php?q=logSubmitBlock", base64_encode(json_encode($logData)));
 
 //		Peer::updateHeight($ip, $data);
 
@@ -563,8 +570,6 @@ class PeerRequest
 		
 		$info = $_POST['info'];
 
-		api_echo("DISABLED");
-
 		if($info['version'] != VERSION.".".BUILD_VERSION) {
 			api_err("Only latest version allowed");
 		}
@@ -579,6 +584,16 @@ class PeerRequest
 
 		$signature = $data['source']['signature'];
 		$nonce = $data['source']['nonce'];
+
+		$time = $data['source']['time'];
+		if(empty($time)) {
+			api_err("Missing time in request");
+		}
+
+		$now = microtime(true);
+		if($now - $time > 60) {
+			api_err("Expired propagation request");
+		}
 
 		$hops = $data['hops'];
 		$hops_cnt = count($hops);
