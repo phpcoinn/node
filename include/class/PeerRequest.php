@@ -635,10 +635,7 @@ class PeerRequest
 				$peers = Peer::getPeersForSync($limit, true);
 				$dir = ROOT . "/cli";
 				foreach ($peers as $peer) {
-					$hostname = $peer['hostname'];
-					$peer = base64_encode($hostname);
-					$cmd = "php $dir/propagate.php message $peer $msg > /dev/null 2>&1  &";
-					system($cmd);
+					Propagate::messageToPeer($peer['hostname'], $msg);
 				}
 			}
 			peer_post("https://node1.phpcoin.net/peer.php?q=logPropagate", $msg);

@@ -718,10 +718,7 @@ class Api
 		}
 		$dir = ROOT."/cli";
 		foreach($peers  as $peer) {
-			$hostname = $peer['hostname'];
-			$peer = base64_encode($hostname);
-			$cmd = "php $dir/propagate.php message $peer $msg > /dev/null 2>&1  &";
-			system($cmd);
+			Propagate::messageToPeer($peer['hostname'], $msg);
 		}
 		api_echo("Propagate started");
 	}
