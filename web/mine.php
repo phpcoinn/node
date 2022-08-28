@@ -285,12 +285,8 @@ if ($q == "info") {
 		$res = $block->add($error);
 		$l .= " add=$res";
 		if ($res) {
-			$current = Block::current();
-			$dir = ROOT . "/cli";
-			$cmd = "php " . XDEBUG_CLI . " $dir/propagate.php block {$current['id']}  > /dev/null 2>&1  &";
-			_log("Call propagate " . $cmd, 5);
-			shell_exec($cmd);
-			_log("Accepted block from miner $ip address=$address block_height=$height elapsed=$elapsed block_id=" . $current['id'], 3);
+			Propagate::blockToAll("current");
+			_log("Accepted block from miner $ip address=$address block_height=$height elapsed=$elapsed block_id=" . $block->id, 3);
 			$l .= " ACCEPTED";
 			_log($l);
 			$generator_stat['accepted']++;

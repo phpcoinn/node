@@ -31,15 +31,6 @@ require_once dirname(__DIR__).'/include/init.inc.php';
 
 $type = san($argv[1]);
 $id = san($argv[2]);
-$debug = false;
-$linear = false;
-// if debug mode, all data is printed to console, no background processes
-if (trim($argv[5]) == 'debug') {
-    $debug = true;
-}
-if (trim($argv[5]) == 'linear') {
-    $linear = true;
-}
 $peer = san(trim($argv[3]));
 
 _log("Calling propagate.php",5);
@@ -56,36 +47,11 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
     	_log("Could not export block");
         die("Could not export block");
     }
-    $data = json_encode($data);
-    // cache it to reduce the load
-	$file = ROOT."/tmp/$id";
-    $res = file_put_contents($file, $data);
-    if ($res === false) {
-	    _log("Could not write the cache file");
-        die("Could not write the cache file");
-    }
+	Cache::set("block_export_$id", $data);
     $r = Peer::getPeersForPropagate();
     foreach ($r as $x) {
         if($x['hostname']==$_config['hostname']) continue;
-        // encode the hostname in base58 and sanitize the IP to avoid any second order shell injections
-        $host = escapeshellcmd(base58_encode($x['hostname']));
-        $ip = Peer::validateIp($x['ip']);
-        $ip = escapeshellcmd($ip);
-        // fork a new process to send the blocks async
-        $type=escapeshellcmd(san($type));
-        $id=escapeshellcmd(san($id));
-       
-
-        $dir = ROOT . "/cli";
-        if ($debug) {
-            $cmd = "php $dir/propagate.php '$type' '$id' '$host' '$ip' debug";
-        } elseif ($linear) {
-	        $cmd = "php $dir/propagate.php '$type' '$id' '$host' '$ip' linear";
-        } else {
-	        $cmd = "php $dir/propagate.php '$type' '$id' '$host' '$ip'  > /dev/null 2>&1  &";
-        }
-        _log("Propagate cmd: $cmd",3);
-        system( $cmd);
+		Propagate::blockToPeer($x['hostname'], $x['ip'], $id);
     }
     exit;
 }
@@ -96,22 +62,24 @@ if ($type == "block") {
 	_log("Propagate block $id", 5);
     // current block or read cache
     if ($id == "current") {
-        $current = Block::current();
-        $data = Block::export($current['id']);
+		$data = Cache::get("current_export", function () {
+			$current = Block::current();
+			return Block::export($current['id']);
+		});
         if (!$data) {
 	        _log("Invalid Block data $id", 5);
             echo "Invalid Block data";
             exit;
         }
     } else {
-    	$file = ROOT."/tmp/$id";
-        $data = file_get_contents($file);
+	    $data = Cache::get("block_export_$id", function() use ($id) {
+			return Block::export($id);
+	    });
         if (empty($data)) {
 	        _log("Invalid Block data $id", 5);
             echo "Invalid Block data";
             exit;
         }
-        $data = json_decode($data, true);
     }
     $hostname = base58_decode($peer);
     // send the block as POST to the peer

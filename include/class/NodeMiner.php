@@ -175,11 +175,7 @@ class NodeMiner extends Daemon {
 
 				if ($res) {
 					$current = Block::current();
-					$current['id']=escapeshellarg(san($current['id']));
-					$dir = ROOT."/cli";
-					$cmd = "php ".XDEBUG_CLI." $dir/propagate.php block {$current['id']}  > /dev/null 2>&1  &";
-					_log("Call propagate " . $cmd, 4);
-					shell_exec($cmd);
+					Propagate::blockToAll($current['id']);
 					_log("Block confirmed", 1);
 					$this->miningStat['accepted']++;
 				} else {

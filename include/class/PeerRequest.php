@@ -300,10 +300,7 @@ class PeerRequest
 					//_log("DFSH: No peer by IP $ip");
 					api_err("block-too-old");
 				}
-				$peer_host = escapeshellcmd(base58_encode($pr['hostname']));
-				$pr['ip'] = escapeshellcmd(san_ip($pr['ip']));
-				$dir = ROOT."/cli";
-				system( "php $dir/propagate.php block current '$peer_host' '$pr[ip]'   > /dev/null 2>&1  &");
+				Propagate::blockToPeer($pr['hostname'], $pr['ip'], "current");
 				_log('['.$ip."] block too old, sending our current block - $current[height]",3);
 				//_log("DFSH: Send our block to peer ".$pr['hostname']);
 				api_err("block-too-old");
@@ -366,10 +363,7 @@ class PeerRequest
 
 		//_log('DFSH: ['.$ip."] block ok, repropagating - $data[height]",1);
 
-		// send it to all our peers
-		$data['id']=escapeshellcmd(san($data['id']));
-		$dir = ROOT."/cli";
-		system("php $dir/propagate.php block '$data[id]' all all linear > /dev/null 2>&1  &");
+		Propagate::blockToAll($data['id']);
 		api_echo("block-ok");
 	}
 
