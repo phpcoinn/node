@@ -448,13 +448,7 @@ class Masternode extends Daemon
 		}
 
 		_log("Masternode: Call propagate local mastenode win_height={$masternode->win_height} blockchain height=$height", 5);
-
-		$dir = ROOT."/cli";
-		$res = shell_exec("ps uax | grep '$dir/propagate.php masternode local' | grep -v grep");
-		if(!$res) {
-			$cmd = "php $dir/propagate.php masternode local > /dev/null 2>&1  &";
-			system($cmd);
-		}
+		Propagate::masternode();
 
 	}
 
@@ -475,17 +469,10 @@ class Masternode extends Daemon
 			//start propagate to each peer
 			$peers = Peer::getPeersForMasternode();
 			if(count($peers)==0) {
-				_log("Masternode: No peers to propagate", 5);
+				_log("Masternode: No peers to propagate");
 			} else {
 				foreach ($peers as $peer) {
-					$peer = base64_encode($peer['hostname']);
-					$dir = ROOT."/cli";
-					$res = shell_exec("ps uax | grep '$dir/propagate.php masternode $peer' | grep -v grep");
-					if(!$res) {
-						$cmd = "php $dir/propagate.php masternode $peer > /dev/null 2>&1  &";
-						system($cmd);
-					}
-
+					Propagate::masternodeToPeer($peer['hostname']);
 				}
 			}
 		} else {
