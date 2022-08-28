@@ -158,7 +158,10 @@ class Peer
 		$generator = isset($_config['generator_public_key']) && $_config['generator'];
 		$miner = isset($_config['miner_public_key']) && $_config['miner'];
 		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'];
-		$current = Block::current();
+		$current = Cache::get("current", function() {
+			return Block::current();
+		});
+		_log("Cache: current = ".json_encode($current), 5);
 		return [
 			"height" => $current['height'],
 			"appshash" => $appsHash,
