@@ -86,7 +86,7 @@ function _log($data, $verbosity = 0)
         $res .= '->'.$trace[$loc]['function'].'()';
     }
     $res .= " $data \n";
-    if ($_config && $_config['enable_logging'] == true && $_config['log_verbosity'] >= $verbosity) {
+    if (($_config && $_config['enable_logging'] == true && $_config['log_verbosity'] >= $verbosity) || !empty(getenv('LOG_DEBUG'))) {
 	    if (php_sapi_name() === 'cli') {
 	    	if(!defined("CLI_UTIL") || CLI_UTIL == 0) {
 	            echo $res;
