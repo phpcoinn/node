@@ -196,12 +196,7 @@ if($type == "apps") {
 		_log("PropagateApps: No peers to propagate", 5);
 	} else {
 		foreach ($peers as $peer) {
-			$url = $peer['hostname']."/peer.php?q=updateApps";
-			$hostname = base64_encode($peer['hostname']);
-			$dir = ROOT . "/cli";
-			$cmd = "php $dir/propagate.php appspeer $hash $hostname";
-			_log("PropagateApps: Propagating to peer: ".$url. " cmd=$cmd",5);
-			Nodeutil::runSingleProcess($cmd);
+			Propagate::appsToPeer($peer['hostname'], $hash);
 		}
 	}
 }

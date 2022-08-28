@@ -1126,11 +1126,7 @@ class Util
 		}
 		$appsHashFile = Nodeutil::getAppsHashFile();
 		$appsHash = file_get_contents($appsHashFile);
-		$hostname = base64_encode($peer);
-		$dir = ROOT . "/cli";
-		$cmd = "php $dir/propagate.php appspeer $appsHash $hostname";
-		_log($cmd);
-		Nodeutil::runSingleProcess($cmd);
+		Propagate::appsToPeer($peer, $appsHash);
 	}
 
 	static function peerCall($argv) {

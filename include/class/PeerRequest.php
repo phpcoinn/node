@@ -482,9 +482,8 @@ class PeerRequest
 				file_put_contents($appsHashFile, $appsHashCalc);
 				chmod($appsHashFile, 0777);
 				buildAppsArchive();
-				$dir = ROOT . "/cli";
 				_log("AppsHash: Propagating apps",3);
-				system("php $dir/propagate.php apps $appsHashCalc > /dev/null 2>&1  &");
+				Propagate::appsToAll($appsHashCalc);
 			} else {
 				_log("AppsHash: No need to build archive",2);
 			}
