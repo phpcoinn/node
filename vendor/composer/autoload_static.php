@@ -32,6 +32,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         'Nodeutil' => __DIR__ . '/../..' . '/include/class/Nodeutil.php',
         'Peer' => __DIR__ . '/../..' . '/include/class/Peer.php',
         'PeerRequest' => __DIR__ . '/../..' . '/include/class/PeerRequest.php',
+        'Propagate' => __DIR__ . '/../..' . '/include/class/Propagate.php',
         'SmartContract' => __DIR__ . '/../..' . '/include/class/SmartContract.php',
         'SmartContractBase' => __DIR__ . '/../..' . '/include/class/SmartContractBase.php',
         'SmartContractEngine' => __DIR__ . '/../..' . '/include/class/SmartContractEngine.php',

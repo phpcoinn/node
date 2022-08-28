@@ -25,6 +25,7 @@ return array(
     'Nodeutil' => $baseDir . '/include/class/Nodeutil.php',
     'Peer' => $baseDir . '/include/class/Peer.php',
     'PeerRequest' => $baseDir . '/include/class/PeerRequest.php',
+    'Propagate' => $baseDir . '/include/class/Propagate.php',
     'SmartContract' => $baseDir . '/include/class/SmartContract.php',
     'SmartContractBase' => $baseDir . '/include/class/SmartContractBase.php',
     'SmartContractEngine' => $baseDir . '/include/class/SmartContractEngine.php',
