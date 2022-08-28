@@ -87,16 +87,8 @@ class Dapps extends Daemon
 			$db->setConfig("dapps_hash", $dapps_hash);
 			_log("Dapps: trigger propagate");
 			self::buildDappsArchive($dapps_id);
-			$dir = ROOT . "/cli";
 			_log("Dapps: Propagating dapps",5);
-			$res = shell_exec("ps uax | grep '$dir/propagate.php dapps local' | grep -v grep");
-			if($res) {
-				_log("Dapps: propagate dapps running",5);
-			} else {
-				$cmd = "php $dir/propagate.php dapps local > /dev/null 2>&1  &";
-				_log("Dapps: propagate dapps start process $cmd",5);
-				system($cmd);
-			}
+			Propagate::dappsLocal();
 		} else {
 			_log("Dapps: not changed dapps", 5);
 		}
@@ -138,14 +130,7 @@ class Dapps extends Daemon
 
 	private static function propagateToPeer($peer) {
 		$hostname = $peer['hostname'];
-		$peer = base64_encode($hostname);
-		$dir = ROOT."/cli";
-		$res = shell_exec("ps uax | grep '$dir/propagate.php dapps $peer' | grep -v grep");
-		if(!$res) {
-			$cmd = "php $dir/propagate.php dapps $peer > /dev/null 2>&1  &";
-			_log("Dapps: exec propagate to $hostname cmd: $cmd", 5);
-			system($cmd);
-		}
+		Propagate::dappsToPeer($hostname);
 	}
 
 	static function render() {
@@ -488,15 +473,7 @@ class Dapps extends Daemon
 		} else {
 			_log("Dapps: Found ".count($peers)." to ask for update dapps $dapps_id", 5);
 			foreach ($peers as $peer) {
-				$peer = base64_encode($peer['hostname']);
-				$dir = ROOT."/cli";
-				$res = shell_exec("ps uax | grep '$dir/propagate.php dapps-update $peer $dapps_id' | grep -v grep");
-				if(!$res) {
-					$cmd = "php $dir/propagate.php dapps-update $peer $dapps_id > /dev/null 2>&1  &";
-					_log("Dapps: exec propagate cmd: $cmd");
-					system($cmd);
-				}
-
+				Propagate::dappsUpdateToPeer($peer['hostname'], $dapps_id);
 			}
 		}
 
