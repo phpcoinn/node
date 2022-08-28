@@ -638,14 +638,22 @@ class PeerRequest
 	}
 
 	static function logPropagate() {
-		global $db;
 		$data = self::$data;
 		$data = base64_decode($data);
 		$data = json_decode($data, true);
-		_log("logPropagate: ".json_encode($data, true));
-		$ip = self::$ip;
-		$db->run("update peers set propagate_info =:propagate_info where ip=:ip",
-			[":propagate_info"=>json_encode($data), ":ip"=>$ip]);
+		self::emitToScoket("logPropagate", $data);
+	}
+
+	static function logSubmitBlock() {
+		$data = self::$data;
+		$data = base64_decode($data);
+		$data = json_decode($data, true);
+		self::emitToScoket("logSubmitBlock", $data);
+	}
+
+	static function emitToScoket($type, $data) {
+		$log = ["type"=>$type, "data"=>$data];
+		$res = peer_post("http://node1.phpcoin.net:3000/emit", $log);
 		api_echo("OK");
 	}
 
