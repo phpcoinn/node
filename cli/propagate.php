@@ -164,9 +164,7 @@ if ($type == "transaction") {
     }
 	$dir = ROOT . "/cli";
     foreach ($r as $x) {
-	    $hostname = base64_encode($x['hostname']);
-		$cmd = "php $dir/propagate.php transactionpeer $id $hostname";
-	    Nodeutil::runSingleProcess($cmd);
+		Propagate::transactionToPeer($id, $x['hostname']);
     }
 }
 

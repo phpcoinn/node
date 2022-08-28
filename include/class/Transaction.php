@@ -1084,9 +1084,7 @@ class Transaction
 			$db->commit();
 
 			$hashp=escapeshellarg(san($hash));
-			$dir = dirname(dirname(__DIR__)) . "/cli";
-			$cmd = "php $dir/propagate.php transaction $hashp > /dev/null 2>&1  &";
-			system($cmd);
+			Propagate::transactionToAll($hashp);
 			return $hash;
 
 		} catch (Exception $e) {

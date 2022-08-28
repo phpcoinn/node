@@ -201,12 +201,7 @@ class PeerRequest
 		// add to mempool
 		$tx->add_mempool(self::$ip);
 
-		// rebroadcast the transaction to some peers unless the transaction is smaller than the average size of transactions in mempool - protect against garbage data flooding
-//		$res = $db->row("SELECT COUNT(1) as c, sum(val) as v FROM  mempool ", [":src" => $tx->src]);
-//		if ($res['c'] < $_config['max_mempool_rebroadcast'] && $res['v'] / $res['c'] < $tx->val) {
-		$dir = ROOT."/cli";
-		system( "php $dir/propagate.php transaction '{$tx->id}'  > /dev/null 2>&1  &");
-//		}
+		Propagate::transactionToAll($tx->id);
 		api_echo("transaction-ok");
 	}
 
