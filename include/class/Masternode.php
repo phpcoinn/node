@@ -685,20 +685,6 @@ class Masternode extends Daemon
 		}
 	}
 
-	static function broadcast() {
-		$height = Block::getHeight();
-		_log("Masternode: check broadcast masternodes hight $height");
-		if($height % 10 == 0) {
-			$masternodes = Masternode::getForBroadcast();
-			foreach ($masternodes as $masternode) {
-				$public_key = $masternode['public_key'];
-				$dir = ROOT."/cli";
-				$cmd = "php $dir/propagate.php masternode $public_key > /dev/null 2>&1  &";
-				system($cmd);
-			}
-		}
-	}
-
 	static function verifyBlock(Block  $block, &$error) {
 
 		try {
