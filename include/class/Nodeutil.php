@@ -565,4 +565,19 @@ class Nodeutil
 		];
 	}
 
+	static function isRepoServer() {
+		global $_config;
+		$repoServer = false;
+		if($_config['repository'] && $_config['repository_private_key']) {
+			$private_key = coin2pem($_config['repository_private_key'], true);
+			$pkey = openssl_pkey_get_private($private_key);
+			$k = openssl_pkey_get_details($pkey);
+			$public_key = pem2coin($k['key']);
+			if ($public_key == APPS_REPO_SERVER_PUBLIC_KEY) {
+				$repoServer = true;
+			}
+		}
+		return $repoServer;
+	}
+
 }

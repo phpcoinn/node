@@ -200,6 +200,10 @@ if ($type == "transactionpeer") {
 }
 
 if($type == "apps") {
+	if(!Nodeutil::isRepoServer()) {
+		_log("Not repo server");
+		exit;
+	}
 	$hash = $argv[2];
 	_log("PropagateApps: Propagating apps change",5);
 	$peers = Peer::getAll();
@@ -214,8 +218,12 @@ if($type == "apps") {
 
 
 if($type == "appspeer") {
-	$hash = $argv[2];
-	$hostname = $argv[3];
+	if(!Nodeutil::isRepoServer()) {
+		_log("Not repo server");
+		exit;
+	}
+	$hash = $argv[1];
+	$hostname = $argv[2];
 	$hostname = base64_decode($hostname);
 	$url = $hostname."/peer.php?q=updateApps";
 	$res = peer_post($url, ["hash"=>$hash]);
