@@ -98,6 +98,10 @@ class Dapps extends Daemon
 		global $_config, $db;
 		_log("Dapps: called propagate for $id", 5);
 		$dapps_public_key = $_config['dapps_public_key'];
+		if(empty($dapps_public_key)) {
+			_log("Dapps: not configured");
+			return;
+		}
 		$dapps_private_key = $_config['dapps_private_key'];
 		$dapps_id = Account::getAddress($dapps_public_key);
 		$dapps_hash = self::calcDappsHash($dapps_id);
