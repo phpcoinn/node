@@ -48,7 +48,11 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
         die("Could not export block");
     }
 	Cache::set("block_export_$id", $data);
-    $r = Peer::getPeersForPropagate();
+	$peers_limit = $_config['peers_limit'];
+	if(empty($peers_limit)) {
+		$peers_limit = 30;
+	}
+    $r = Peer::getPeersForSync($peers_limit);
     foreach ($r as $x) {
         if($x['hostname']==$_config['hostname']) continue;
 		Propagate::blockToPeer($x['hostname'], $x['ip'], $id);
@@ -152,12 +156,13 @@ if ($type == "transaction") {
         echo "Invalid transaction id\n";
         exit;
     }
-    // if the transaction was first sent locally, we will send it to all our peers, otherwise to just a few
-    if ($data['peer'] == "local") {
-        $r = Peer::getPeers();
-    } else {
-        $r = Peer::getActive(intval($_config['transaction_propagation_peers']));
-    }
+	Cache::set("tx_$id", $data);
+
+	$peers_limit = $_config['peers_limit'];
+	if(empty($peers_limit)) {
+		$peers_limit = 30;
+	}
+	$r = Peer::getPeersForSync($peers_limit);
     _log("Transaction propagate peers: ".count($r),3);
     if(count($r)==0) {
     	_log("Transaction not propagated - no peers");
@@ -174,7 +179,15 @@ if ($type == "transactionpeer") {
 	$hostname = base64_decode($hostname);
 	_log("Transaction $id propagate to peer $hostname",3);
 	$url = $hostname."/peer.php?q=submitTransaction";
-	$data = Transaction::export($id);
+	$data = Cache::get("tx_$id", function () use ($id) {
+		return Transaction::export($id);
+	});
+	if (!$data) {
+		_log("Invalid transaction id");
+		echo "Invalid transaction id\n";
+		exit;
+	}
+	_log("PEER POST data=".json_encode($data));
 	$res = peer_post($url, $data, 5, $err);
     if (!$res) {
         _log("Transaction $id to $hostname - Transaction not accepted: $err");

@@ -56,10 +56,14 @@ class Peer
 		return $rows;
 	}
 
-	static function getPeersForMasternode() {
+	static function getPeersForMasternode($limit = null) {
 		global $db;
 		$sql="select * from peers p WHERE (p.blacklisted < ".DB::unixTimeStamp()." or p.generator = 1 or p.miner = 1 )
-			and ping > ".DB::unixTimeStamp()."- 60*2";
+			and ping > ".DB::unixTimeStamp()."- 60*2
+			order by ".DB::random();
+		if(!empty($limit)) {
+			$sql.= " limit $limit";
+		}
 		$rows = $db->run($sql);
 		return $rows;
 	}

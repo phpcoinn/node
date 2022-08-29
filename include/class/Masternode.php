@@ -465,9 +465,13 @@ class Masternode extends Daemon
 		$public_key = $_config['masternode_public_key'];
 		$masternode = Masternode::get($public_key);
 
+		$peers_limit = $_config['peers_limit'];
+		if(empty($peers_limit)) {
+			$peers_limit = 30;
+		}
 		if($id === "local") {
 			//start propagate to each peer
-			$peers = Peer::getPeersForMasternode();
+			$peers = Peer::getPeersForMasternode($peers_limit);
 			if(count($peers)==0) {
 				_log("Masternode: No peers to propagate");
 			} else {
