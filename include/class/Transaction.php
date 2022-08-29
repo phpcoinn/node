@@ -846,6 +846,9 @@ class Transaction
 	{
 		global $db;
 		$r = Mempool::getById($id);
+		if(empty($r)) {
+			return null;
+		}
 		$r['date']=intval($r['date']);
 		return $r;
 	}

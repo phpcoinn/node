@@ -46,10 +46,10 @@ class Propagate
 	}
 
 	static function transactionToPeer($id, $hostname) {
-		_log("Propagate: transaction $id to peer $hostname", 4);
-		$hostname = base64_encode($hostname);
+		$hostnameb64 = base64_encode($hostname);
 		$dir = ROOT."/cli";
-		$cmd = "php $dir/propagate.php transactionpeer $id $hostname";
+		$cmd = "php $dir/propagate.php transactionpeer $id $hostnameb64";
+		_log("Propagate: transaction $id to peer $hostname cmd=$cmd", 4);
 		Nodeutil::runSingleProcess($cmd);
 	}
 
