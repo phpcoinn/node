@@ -836,6 +836,7 @@ class Util
 		} else {
 			echo "There is no new version".PHP_EOL;
 		}
+		Nodeutil::downloadApps();
 		echo "Finished".PHP_EOL;
 	}
 
