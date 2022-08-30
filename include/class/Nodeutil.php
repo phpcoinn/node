@@ -207,6 +207,11 @@ class Nodeutil
 			return false;
 		} else {
 			$hash = $res['hash'];
+			$appsHashCalc = Nodeutil::calcAppsHash();
+			if($appsHashCalc == $hash) {
+				_log("Apps are up to date");
+				return true;
+			}
 			$signature = $res['signature'];
 			$verify = Account::checkSignature($hash, $signature, APPS_REPO_SERVER_PUBLIC_KEY);
 			_log("Verify repo response hash=$hash signature=$signature verify=$verify",3);
