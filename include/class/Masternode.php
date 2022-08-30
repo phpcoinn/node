@@ -552,6 +552,19 @@ class Masternode extends Daemon
 			if(!$res) {
 				throw new Exception("Masternode: check failed: $err");
 			}
+			
+			_log("Masternode: check if synced height=".$mn_height . " public_key=".$masternode['public_key']);
+			$mn_synced = Masternode::checkSynced($mn_height, $masternode['public_key']);
+			if($mn_synced) {
+				_log("Masternode: already synced");
+				return true;
+			}
+
+			$mn_ip = Masternode::getByIp($ip);
+			if($mn_ip && $mn_ip['public_key']!=$masternode['public_key']) {
+				_log("Masternode: invalid IP address $ip for public_key ".$masternode['public_key']);
+				return true;
+			}
 
 //		    _log("Masternode: synced ".$masternode['public_key']." win_height=".$masternode['win_height']);
 			$masternode['ip']=$ip;
@@ -922,6 +935,21 @@ class Masternode extends Daemon
 		Masternode::checkLocalMasternode();
 		Masternode::processBlock();
 
+	}
+
+	static function checkSynced($height, $public_key) {
+		global $db;
+		$sql = "select 1 from masternode m where m.height = :height and m.public_key = :public_key";
+		$res = $db->single($sql, [":height"=>$height, ":public_key"=>$public_key]);
+		_log("Masternode checkSynced=$res");
+		return $res == 1;
+	}
+
+	static function getByIp($ip) {
+		global $db;
+		$sql = "select * from masternode m where m.ip = :ip";
+		$row = $db->row($sql, [":ip"=>$ip]);
+		return $row;
 	}
 
 }
