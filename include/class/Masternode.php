@@ -549,7 +549,7 @@ class Masternode extends Daemon
 				throw new Exception("Masternode: check failed: $err");
 			}
 			
-			_log("Masternode: check if synced height=".$mn_height . " public_key=".$masternode['public_key']);
+			_log("Masternode: check if synced height=".$mn_height . " public_key=".$masternode['public_key'], 5);
 			$mn_synced = Masternode::checkSynced($mn_height, $masternode['public_key']);
 			if($mn_synced) {
 				_log("Masternode: already synced");

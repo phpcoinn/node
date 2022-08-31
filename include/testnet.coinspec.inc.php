@@ -34,6 +34,7 @@ const TX_TYPE_FEE = 4;
 const TX_TYPE_SC_CREATE = 5;
 const TX_TYPE_SC_EXEC = 6;
 const TX_TYPE_SC_SEND = 7;
+const TX_TYPE_BURN = 8;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
@@ -78,6 +79,7 @@ const FEE_DIVIDER = 1 / 1000;
 const TX_SC_CREATE_FEE = 10;
 const TX_SC_EXEC_FEE = 0.001;
 const SC_START_HEIGHT = 20;
+const TX_TYPE_BURN_START_HEIGHT = 150;
 
 const SC_MAX_EXEC_TIME = 5;
 const SC_MEMORY_LIMIT = "128M";

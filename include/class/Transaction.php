@@ -44,6 +44,8 @@ class Transaction
 			$fee = TX_SC_EXEC_FEE;
 		} else if($this->type == TX_TYPE_SC_SEND) {
 			$fee = TX_SC_EXEC_FEE;
+		} else if($this->type == TX_TYPE_BURN) {
+			$fee = 0;
 		}
 		return $fee;
 	}
@@ -87,6 +89,11 @@ class Transaction
 			        $res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
 					$res = $res && $tx->add_mempool();
 		        }
+
+				if ($type == TX_TYPE_BURN) {
+					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
+					$res = $res && $tx->add_mempool();
+				}
 
 		        if ($type == TX_TYPE_FEE) {
 			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1));
@@ -462,6 +469,8 @@ class Transaction
 			} else if ($type == TX_TYPE_SC_SEND) {
 				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
 				$res = $res && Account::addBalance($this->dst, ($this->val));
+			} else if ($type == TX_TYPE_BURN) {
+				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
 			}
 			if($res === false) {
 				throw new Exception("Error updating balance for transaction ".$this->id." type=$type");
@@ -596,6 +605,9 @@ class Transaction
 				$allowedTypes[]=TX_TYPE_SC_EXEC;
 				$allowedTypes[]=TX_TYPE_SC_SEND;
 			}
+			if($height >= TX_TYPE_BURN_START_HEIGHT) {
+				$allowedTypes[]=TX_TYPE_BURN;
+			}
 			if(!in_array($type, $allowedTypes)) {
 				$error = "Invalid transaction type $type for height $height";
 				_log($error);
@@ -651,6 +663,11 @@ class Transaction
 	            }
 	        }
 
+			if($this->type == TX_TYPE_BURN) {
+				if(!empty($this->dst)) {
+					throw new Exception("{$this->id} - Destination address must be empty");
+				}
+			}
 
 	        // public key must be at least 15 chars / probably should be replaced with the validator function
 	        if (strlen($this->publicKey) < 15) {
@@ -676,7 +693,7 @@ class Transaction
 		        throw new Exception("{$this->id} - Invalid signature - $base");
 	        }
 
-			if($this->type==TX_TYPE_SEND) {
+			if($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_BURN) {
 				$res = Masternode::checkIsSendFromMasternode($height, $this, $error, $verify);
 				if(!$res) {
 					throw new Exception("Invalid transaction for send: $error");
@@ -889,6 +906,8 @@ class Transaction
 		    $trans['type_label'] = "mining";
 	    } elseif ($x['type'] == TX_TYPE_SEND) {
 		    $trans['type_label'] = "transfer";
+	    } elseif ($x['type'] == TX_TYPE_BURN) {
+		    $trans['type_label'] = "burn";
 	    } elseif ($x['type'] == TX_TYPE_MN_CREATE) {
 		    $trans['type_label'] = "masternode create";
 	    } elseif ($x['type'] == TX_TYPE_MN_REMOVE) {
@@ -1075,7 +1094,7 @@ class Transaction
 				}
 			}
 
-			if($this->type == TX_TYPE_SEND) {
+			if($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_BURN) {
 				Masternode::checkSend($this);
 			}
 
@@ -1174,6 +1193,8 @@ class Transaction
 				return "Reward";
 			case TX_TYPE_SEND:
 				return "Transfer";
+			case TX_TYPE_BURN:
+				return "Burn";
 			case TX_TYPE_MN_CREATE:
 				return "Create masternode";
 			case TX_TYPE_MN_REMOVE:
