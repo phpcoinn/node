@@ -327,9 +327,7 @@ class Sync extends Daemon
 			$r = Mempool::getForRebroadcast($current['height']);
 			_log("Rebroadcasting local transactions - ".count($r), 1);
 			foreach ($r as $x) {
-				$x['id'] = escapeshellarg(san($x['id'])); // i know it's redundant due to san(), but some people are too scared of any exec
-				$dir = __DIR__;
-				system("php $dir/propagate.php transaction $x[id]  > /dev/null 2>&1  &");
+				Propagate::transactionToAll($x['id']);
 				Mempool::updateMempool($x['id'], $current['height']);
 			}
 		}
@@ -342,9 +340,7 @@ class Sync extends Daemon
 			_log("Rebroadcasting external transactions - ".count($r),1);
 
 			foreach ($r as $x) {
-				$x['id'] = escapeshellarg(san($x['id'])); // i know it's redundant due to san(), but some people are too scared of any exec
-				$dir = __DIR__;
-				system("php $dir/propagate.php transaction $x[id]  > /dev/null 2>&1  &");
+				Propagate::transactionToAll($x['id']);
 				Mempool::updateMempool($x['id'], $current['height']);
 			}
 		}

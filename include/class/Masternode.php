@@ -448,13 +448,7 @@ class Masternode extends Daemon
 		}
 
 		_log("Masternode: Call propagate local mastenode win_height={$masternode->win_height} blockchain height=$height", 5);
-
-		$dir = ROOT."/cli";
-		$res = shell_exec("ps uax | grep '$dir/propagate.php masternode local' | grep -v grep");
-		if(!$res) {
-			$cmd = "php $dir/propagate.php masternode local > /dev/null 2>&1  &";
-			system($cmd);
-		}
+		Propagate::masternode();
 
 	}
 
@@ -475,17 +469,10 @@ class Masternode extends Daemon
 			//start propagate to each peer
 			$peers = Peer::getPeersForMasternode();
 			if(count($peers)==0) {
-				_log("Masternode: No peers to propagate", 5);
+				_log("Masternode: No peers to propagate");
 			} else {
 				foreach ($peers as $peer) {
-					$peer = base64_encode($peer['hostname']);
-					$dir = ROOT."/cli";
-					$res = shell_exec("ps uax | grep '$dir/propagate.php masternode $peer' | grep -v grep");
-					if(!$res) {
-						$cmd = "php $dir/propagate.php masternode $peer > /dev/null 2>&1  &";
-						system($cmd);
-					}
-
+					Propagate::masternodeToPeer($peer['hostname']);
 				}
 			}
 		} else {
@@ -560,6 +547,19 @@ class Masternode extends Daemon
 			$res = Masternode::fromDB($masternode)->check($height, $err);
 			if(!$res) {
 				throw new Exception("Masternode: check failed: $err");
+			}
+			
+			_log("Masternode: check if synced height=".$mn_height . " public_key=".$masternode['public_key']);
+			$mn_synced = Masternode::checkSynced($mn_height, $masternode['public_key']);
+			if($mn_synced) {
+				_log("Masternode: already synced");
+				return true;
+			}
+
+			$mn_ip = Masternode::getByIp($ip);
+			if($mn_ip && $mn_ip['public_key']!=$masternode['public_key']) {
+				_log("Masternode: invalid IP address $ip for public_key ".$masternode['public_key']);
+				return true;
 			}
 
 //		    _log("Masternode: synced ".$masternode['public_key']." win_height=".$masternode['win_height']);
@@ -682,20 +682,6 @@ class Masternode extends Daemon
 			$error = $e->getMessage();
 			_log($error);
 			return false;
-		}
-	}
-
-	static function broadcast() {
-		$height = Block::getHeight();
-		_log("Masternode: check broadcast masternodes hight $height");
-		if($height % 10 == 0) {
-			$masternodes = Masternode::getForBroadcast();
-			foreach ($masternodes as $masternode) {
-				$public_key = $masternode['public_key'];
-				$dir = ROOT."/cli";
-				$cmd = "php $dir/propagate.php masternode $public_key > /dev/null 2>&1  &";
-				system($cmd);
-			}
 		}
 	}
 
@@ -945,6 +931,21 @@ class Masternode extends Daemon
 		Masternode::checkLocalMasternode();
 		Masternode::processBlock();
 
+	}
+
+	static function checkSynced($height, $public_key) {
+		global $db;
+		$sql = "select 1 from masternode m where m.height = :height and m.public_key = :public_key";
+		$res = $db->single($sql, [":height"=>$height, ":public_key"=>$public_key]);
+		_log("Masternode checkSynced=$res");
+		return $res == 1;
+	}
+
+	static function getByIp($ip) {
+		global $db;
+		$sql = "select * from masternode m where m.ip = :ip";
+		$row = $db->row($sql, [":ip"=>$ip]);
+		return $row;
 	}
 
 }

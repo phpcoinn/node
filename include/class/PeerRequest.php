@@ -18,7 +18,7 @@ class PeerRequest
 		}
 		global $_config;
 		if ($_POST['coin'] != COIN) {
-			api_err("Invalid coin ".print_r($_REQUEST, 1));
+			api_err("Invalid coin ".json_encode($_REQUEST), 3);
 		}
 		if(isset($_POST['network'])) {
 			if($_POST['network'] != NETWORK) {
@@ -201,12 +201,7 @@ class PeerRequest
 		// add to mempool
 		$tx->add_mempool(self::$ip);
 
-		// rebroadcast the transaction to some peers unless the transaction is smaller than the average size of transactions in mempool - protect against garbage data flooding
-//		$res = $db->row("SELECT COUNT(1) as c, sum(val) as v FROM  mempool ", [":src" => $tx->src]);
-//		if ($res['c'] < $_config['max_mempool_rebroadcast'] && $res['v'] / $res['c'] < $tx->val) {
-		$dir = ROOT."/cli";
-		system( "php $dir/propagate.php transaction '{$tx->id}'  > /dev/null 2>&1  &");
-//		}
+		Propagate::transactionToAll($tx->id);
 		api_echo("transaction-ok");
 	}
 
@@ -307,10 +302,7 @@ class PeerRequest
 					//_log("DFSH: No peer by IP $ip");
 					api_err("block-too-old");
 				}
-				$peer_host = escapeshellcmd(base58_encode($pr['hostname']));
-				$pr['ip'] = escapeshellcmd(san_ip($pr['ip']));
-				$dir = ROOT."/cli";
-				system( "php $dir/propagate.php block current '$peer_host' '$pr[ip]'   > /dev/null 2>&1  &");
+				Propagate::blockToPeer($pr['hostname'], $pr['ip'], "current");
 				_log('['.$ip."] block too old, sending our current block - $current[height]",3);
 				//_log("DFSH: Send our block to peer ".$pr['hostname']);
 				api_err("block-too-old");
@@ -373,10 +365,7 @@ class PeerRequest
 
 		//_log('DFSH: ['.$ip."] block ok, repropagating - $data[height]",1);
 
-		// send it to all our peers
-		$data['id']=escapeshellcmd(san($data['id']));
-		$dir = ROOT."/cli";
-		system("php $dir/propagate.php block '$data[id]' all all linear > /dev/null 2>&1  &");
+		Propagate::blockToAll($data['id']);
 		api_echo("block-ok");
 	}
 
@@ -488,9 +477,8 @@ class PeerRequest
 				file_put_contents($appsHashFile, $appsHashCalc);
 				chmod($appsHashFile, 0777);
 				buildAppsArchive();
-				$dir = ROOT . "/cli";
 				_log("AppsHash: Propagating apps",3);
-				system("php $dir/propagate.php apps $appsHashCalc > /dev/null 2>&1  &");
+				Propagate::appsToAll($appsHashCalc);
 			} else {
 				_log("AppsHash: No need to build archive",2);
 			}
@@ -647,10 +635,7 @@ class PeerRequest
 				$peers = Peer::getPeersForSync($limit, true);
 				$dir = ROOT . "/cli";
 				foreach ($peers as $peer) {
-					$hostname = $peer['hostname'];
-					$peer = base64_encode($hostname);
-					$cmd = "php $dir/propagate.php message $peer $msg > /dev/null 2>&1  &";
-					system($cmd);
+					Propagate::messageToPeer($peer['hostname'], $msg);
 				}
 			}
 			peer_post("https://node1.phpcoin.net/peer.php?q=logPropagate", $msg);

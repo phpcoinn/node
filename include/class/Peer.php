@@ -56,10 +56,14 @@ class Peer
 		return $rows;
 	}
 
-	static function getPeersForMasternode() {
+	static function getPeersForMasternode($limit = null) {
 		global $db;
 		$sql="select * from peers p WHERE (p.blacklisted < ".DB::unixTimeStamp()." or p.generator = 1 or p.miner = 1 )
-			and ping > ".DB::unixTimeStamp()."- 60*2";
+			and ping > ".DB::unixTimeStamp()."- 60*2
+			order by ".DB::random();
+		if(!empty($limit)) {
+			$sql.= " limit $limit";
+		}
 		$rows = $db->run($sql);
 		return $rows;
 	}
@@ -158,7 +162,10 @@ class Peer
 		$generator = isset($_config['generator_public_key']) && $_config['generator'];
 		$miner = isset($_config['miner_public_key']) && $_config['miner'];
 		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'];
-		$current = Block::current();
+		$current = Cache::get("current", function() {
+			return Block::current();
+		});
+		_log("Cache: current = ".json_encode($current), 5);
 		return [
 			"height" => $current['height'],
 			"appshash" => $appsHash,

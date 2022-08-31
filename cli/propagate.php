@@ -24,22 +24,13 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 OR OTHER DEALINGS IN THE SOFTWARE.
 */
-set_time_limit(360);
+set_time_limit(30);
 global $db, $_config;
 
 require_once dirname(__DIR__).'/include/init.inc.php';
 
 $type = san($argv[1]);
 $id = san($argv[2]);
-$debug = false;
-$linear = false;
-// if debug mode, all data is printed to console, no background processes
-if (trim($argv[5]) == 'debug') {
-    $debug = true;
-}
-if (trim($argv[5]) == 'linear') {
-    $linear = true;
-}
 $peer = san(trim($argv[3]));
 
 _log("Calling propagate.php",5);
@@ -56,36 +47,15 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
     	_log("Could not export block");
         die("Could not export block");
     }
-    $data = json_encode($data);
-    // cache it to reduce the load
-	$file = ROOT."/tmp/$id";
-    $res = file_put_contents($file, $data);
-    if ($res === false) {
-	    _log("Could not write the cache file");
-        die("Could not write the cache file");
-    }
-    $r = Peer::getPeersForPropagate();
+	Cache::set("block_export_$id", $data);
+	$peers_limit = $_config['peers_limit'];
+	if(empty($peers_limit)) {
+		$peers_limit = 30;
+	}
+    $r = Peer::getPeersForSync($peers_limit);
     foreach ($r as $x) {
         if($x['hostname']==$_config['hostname']) continue;
-        // encode the hostname in base58 and sanitize the IP to avoid any second order shell injections
-        $host = escapeshellcmd(base58_encode($x['hostname']));
-        $ip = Peer::validateIp($x['ip']);
-        $ip = escapeshellcmd($ip);
-        // fork a new process to send the blocks async
-        $type=escapeshellcmd(san($type));
-        $id=escapeshellcmd(san($id));
-       
-
-        $dir = ROOT . "/cli";
-        if ($debug) {
-            $cmd = "php $dir/propagate.php '$type' '$id' '$host' '$ip' debug";
-        } elseif ($linear) {
-	        $cmd = "php $dir/propagate.php '$type' '$id' '$host' '$ip' linear";
-        } else {
-	        $cmd = "php $dir/propagate.php '$type' '$id' '$host' '$ip'  > /dev/null 2>&1  &";
-        }
-        _log("Propagate cmd: $cmd",3);
-        system( $cmd);
+		Propagate::blockToPeer($x['hostname'], $x['ip'], $id);
     }
     exit;
 }
@@ -96,22 +66,24 @@ if ($type == "block") {
 	_log("Propagate block $id", 5);
     // current block or read cache
     if ($id == "current") {
-        $current = Block::current();
-        $data = Block::export($current['id']);
+		$data = Cache::get("current_export", function () {
+			$current = Block::current();
+			return Block::export($current['id']);
+		});
         if (!$data) {
 	        _log("Invalid Block data $id", 5);
             echo "Invalid Block data";
             exit;
         }
     } else {
-    	$file = ROOT."/tmp/$id";
-        $data = file_get_contents($file);
+	    $data = Cache::get("block_export_$id", function() use ($id) {
+			return Block::export($id);
+	    });
         if (empty($data)) {
 	        _log("Invalid Block data $id", 5);
             echo "Invalid Block data";
             exit;
         }
-        $data = json_decode($data, true);
     }
     $hostname = base58_decode($peer);
     // send the block as POST to the peer
@@ -184,21 +156,20 @@ if ($type == "transaction") {
         echo "Invalid transaction id\n";
         exit;
     }
-    // if the transaction was first sent locally, we will send it to all our peers, otherwise to just a few
-    if ($data['peer'] == "local") {
-        $r = Peer::getPeers();
-    } else {
-        $r = Peer::getActive(intval($_config['transaction_propagation_peers']));
-    }
+	Cache::set("tx_$id", $data);
+
+	$peers_limit = $_config['peers_limit'];
+	if(empty($peers_limit)) {
+		$peers_limit = 30;
+	}
+	$r = Peer::getPeersForSync($peers_limit);
     _log("Transaction propagate peers: ".count($r),3);
     if(count($r)==0) {
     	_log("Transaction not propagated - no peers");
     }
 	$dir = ROOT . "/cli";
     foreach ($r as $x) {
-	    $hostname = base64_encode($x['hostname']);
-		$cmd = "php $dir/propagate.php transactionpeer $id $hostname";
-	    Nodeutil::runSingleProcess($cmd);
+		Propagate::transactionToPeer($id, $x['hostname']);
     }
 }
 
@@ -208,7 +179,15 @@ if ($type == "transactionpeer") {
 	$hostname = base64_decode($hostname);
 	_log("Transaction $id propagate to peer $hostname",3);
 	$url = $hostname."/peer.php?q=submitTransaction";
-	$data = Transaction::export($id);
+	$data = Cache::get("tx_$id", function () use ($id) {
+		return Transaction::export($id);
+	});
+	if (!$data) {
+		_log("Invalid transaction id");
+		echo "Invalid transaction id\n";
+		exit;
+	}
+	_log("PEER POST data=".json_encode($data));
 	$res = peer_post($url, $data, 5, $err);
     if (!$res) {
         _log("Transaction $id to $hostname - Transaction not accepted: $err");
@@ -221,6 +200,10 @@ if ($type == "transactionpeer") {
 }
 
 if($type == "apps") {
+	if(!Nodeutil::isRepoServer()) {
+		_log("Not repo server");
+		exit;
+	}
 	$hash = $argv[2];
 	_log("PropagateApps: Propagating apps change",5);
 	$peers = Peer::getAll();
@@ -228,20 +211,19 @@ if($type == "apps") {
 		_log("PropagateApps: No peers to propagate", 5);
 	} else {
 		foreach ($peers as $peer) {
-			$url = $peer['hostname']."/peer.php?q=updateApps";
-			$hostname = base64_encode($peer['hostname']);
-			$dir = ROOT . "/cli";
-			$cmd = "php $dir/propagate.php appspeer $hash $hostname";
-			_log("PropagateApps: Propagating to peer: ".$url. " cmd=$cmd",5);
-			Nodeutil::runSingleProcess($cmd);
+			Propagate::appsToPeer($peer['hostname'], $hash);
 		}
 	}
 }
 
 
 if($type == "appspeer") {
-	$hash = $argv[2];
-	$hostname = $argv[3];
+	if(!Nodeutil::isRepoServer()) {
+		_log("Not repo server");
+		exit;
+	}
+	$hash = $argv[1];
+	$hostname = $argv[2];
 	$hostname = base64_decode($hostname);
 	$url = $hostname."/peer.php?q=updateApps";
 	$res = peer_post($url, ["hash"=>$hash]);

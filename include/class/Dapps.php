@@ -87,16 +87,8 @@ class Dapps extends Daemon
 			$db->setConfig("dapps_hash", $dapps_hash);
 			_log("Dapps: trigger propagate");
 			self::buildDappsArchive($dapps_id);
-			$dir = ROOT . "/cli";
 			_log("Dapps: Propagating dapps",5);
-			$res = shell_exec("ps uax | grep '$dir/propagate.php dapps local' | grep -v grep");
-			if($res) {
-				_log("Dapps: propagate dapps running",5);
-			} else {
-				$cmd = "php $dir/propagate.php dapps local > /dev/null 2>&1  &";
-				_log("Dapps: propagate dapps start process $cmd",5);
-				system($cmd);
-			}
+			Propagate::dappsLocal();
 		} else {
 			_log("Dapps: not changed dapps", 5);
 		}
@@ -106,6 +98,10 @@ class Dapps extends Daemon
 		global $_config, $db;
 		_log("Dapps: called propagate for $id", 5);
 		$dapps_public_key = $_config['dapps_public_key'];
+		if(empty($dapps_public_key)) {
+			_log("Dapps: not configured");
+			return;
+		}
 		$dapps_private_key = $_config['dapps_private_key'];
 		$dapps_id = Account::getAddress($dapps_public_key);
 		$dapps_hash = self::calcDappsHash($dapps_id);
@@ -138,14 +134,7 @@ class Dapps extends Daemon
 
 	private static function propagateToPeer($peer) {
 		$hostname = $peer['hostname'];
-		$peer = base64_encode($hostname);
-		$dir = ROOT."/cli";
-		$res = shell_exec("ps uax | grep '$dir/propagate.php dapps $peer' | grep -v grep");
-		if(!$res) {
-			$cmd = "php $dir/propagate.php dapps $peer > /dev/null 2>&1  &";
-			_log("Dapps: exec propagate to $hostname cmd: $cmd", 5);
-			system($cmd);
-		}
+		Propagate::dappsToPeer($hostname);
 	}
 
 	static function render() {
@@ -247,6 +236,7 @@ class Dapps extends Daemon
 		$_SERVER['DAPPS_URL']=$url;
 		$_SERVER['DAPPS_NETWORK']=NETWORK;
 		$_SERVER['DAPPS_FULL_URL']=$_SERVER['REQUEST_SCHEME']."://".$_SERVER['HTTP_HOST'].$_SERVER["REQUEST_URI"];
+		$_SERVER['DAPPS_HOSTNAME']=$_config['hostname'];
 
 		foreach ($_SERVER as $key=>$val) {
 			$server_args.=" $key='$val' ";
@@ -263,10 +253,10 @@ class Dapps extends Daemon
 		$functions_file = ROOT . "/include/dapps.functions.php";
 
 		$allowed_files = [
+			ROOT . "/testnet",
 			ROOT . "/include/dapps.functions.php",
 			ROOT . "/include/common.functions.php",
 			ROOT . "/include/coinspec.inc.php",
-			ROOT . "/testnet",
 		];
 
 		if(file_exists(ROOT."/testnet")) {
@@ -338,6 +328,20 @@ class Dapps extends Daemon
 		if($actionObj['type']=="dapps_exec" && self::isLocal($dapps_id)) {
 			$code = $actionObj['code'];
 			eval($code);
+			exit;
+		}
+		if($actionObj['type']=="dapps_exec_fn" && self::isLocal($dapps_id)) {
+			$fn_name = $actionObj['fn_name'];
+			$params = $actionObj['params'];
+			$dapps_fn_file = ROOT . "/include/dapps.local.inc.php";
+			if(!file_exists($dapps_fn_file)) {
+				die("Dapps local functions file not exists");
+			}
+			require_once $dapps_fn_file;
+			if(!function_exists($fn_name)) {
+				die("Called function $fn_name not exists");
+			}
+			call_user_func($fn_name, ...$params);
 			exit;
 		}
 		if($actionObj['type']=="dapps_json_response") {
@@ -473,15 +477,7 @@ class Dapps extends Daemon
 		} else {
 			_log("Dapps: Found ".count($peers)." to ask for update dapps $dapps_id", 5);
 			foreach ($peers as $peer) {
-				$peer = base64_encode($peer['hostname']);
-				$dir = ROOT."/cli";
-				$res = shell_exec("ps uax | grep '$dir/propagate.php dapps-update $peer $dapps_id' | grep -v grep");
-				if(!$res) {
-					$cmd = "php $dir/propagate.php dapps-update $peer $dapps_id > /dev/null 2>&1  &";
-					_log("Dapps: exec propagate cmd: $cmd");
-					system($cmd);
-				}
-
+				Propagate::dappsUpdateToPeer($peer['hostname'], $dapps_id);
 			}
 		}
 

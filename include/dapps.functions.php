@@ -182,6 +182,19 @@ function dapps_exec($code) {
 	exit;
 }
 
+function dapps_exec_fn($name, ...$params) {
+	if(!dapps_is_local()) {
+		exit;
+	}
+	$action = [
+		"type"=>"dapps_exec_fn",
+		"fn_name"=>$name,
+		"params"=>$params
+	];
+	echo "action:" . json_encode($action);
+	exit;
+}
+
 /**
  * Retrieves random peer from network
  * @return string - url of random peer
@@ -218,7 +231,7 @@ function dapps_get_random_peer() {
  */
 function dapps_api($api=null, $node=null, &$error = null) {
 	if(empty($node)) {
-		$node = dapps_get_random_peer();
+		$node = $_SERVER['DAPPS_HOSTNAME'];
 	}
 	$url = $node. "/api.php?q=".$api;
 	$res = file_get_contents($url);

@@ -846,6 +846,9 @@ class Transaction
 	{
 		global $db;
 		$r = Mempool::getById($id);
+		if(empty($r)) {
+			return null;
+		}
 		$r['date']=intval($r['date']);
 		return $r;
 	}
@@ -1084,9 +1087,7 @@ class Transaction
 			$db->commit();
 
 			$hashp=escapeshellarg(san($hash));
-			$dir = dirname(dirname(__DIR__)) . "/cli";
-			$cmd = "php $dir/propagate.php transaction $hashp > /dev/null 2>&1  &";
-			system($cmd);
+			Propagate::transactionToAll($hashp);
 			return $hash;
 
 		} catch (Exception $e) {

@@ -207,6 +207,11 @@ class Nodeutil
 			return false;
 		} else {
 			$hash = $res['hash'];
+			$appsHashCalc = Nodeutil::calcAppsHash();
+			if($appsHashCalc == $hash) {
+				_log("Apps are up to date");
+				return true;
+			}
 			$signature = $res['signature'];
 			$verify = Account::checkSignature($hash, $signature, APPS_REPO_SERVER_PUBLIC_KEY);
 			_log("Verify repo response hash=$hash signature=$signature verify=$verify",3);
@@ -563,6 +568,21 @@ class Nodeutil
 			'hashRate100'=>$hashRate100,
 			'lastBlockTime'=>$current['date']
 		];
+	}
+
+	static function isRepoServer() {
+		global $_config;
+		$repoServer = false;
+		if($_config['repository'] && $_config['repository_private_key']) {
+			$private_key = coin2pem($_config['repository_private_key'], true);
+			$pkey = openssl_pkey_get_private($private_key);
+			$k = openssl_pkey_get_details($pkey);
+			$public_key = pem2coin($k['key']);
+			if ($public_key == APPS_REPO_SERVER_PUBLIC_KEY) {
+				$repoServer = true;
+			}
+		}
+		return $repoServer;
 	}
 
 }

@@ -105,6 +105,8 @@ propagate-dapps                                         - propagate local dapps 
 download-dapps <dapps_id>                               - request download dapps from network
 recalculate-masternodes                                 - recalculate masternodes from blockchain
 propagate-apps <peer>									- propagate apps update to peer (only for repo server)
+peer-call <peer> <method> <data>						- call peer post method
+
 ";
 	}
 }

@@ -836,6 +836,7 @@ class Util
 		} else {
 			echo "There is no new version".PHP_EOL;
 		}
+		Nodeutil::downloadApps();
 		echo "Finished".PHP_EOL;
 	}
 
@@ -1015,10 +1016,7 @@ class Util
 		$peers = Peer::getPeersForSync(10);
 		$dir = ROOT."/cli";
 		foreach($peers  as $peer) {
-			$hostname = $peer['hostname'];
-			$peer = base64_encode($hostname);
-			$cmd = "php $dir/propagate.php message $peer $msg > /dev/null 2>&1  &";
-			system($cmd);
+			Propagate::messageToPeer($peer['hostname'], $msg);
 		}
 	}
 
@@ -1126,11 +1124,28 @@ class Util
 		}
 		$appsHashFile = Nodeutil::getAppsHashFile();
 		$appsHash = file_get_contents($appsHashFile);
-		$hostname = base64_encode($peer);
-		$dir = ROOT . "/cli";
-		$cmd = "php $dir/propagate.php appspeer $appsHash $hostname";
-		_log($cmd);
-		Nodeutil::runSingleProcess($cmd);
+		Propagate::appsToPeer($peer, $appsHash);
 	}
 
+	static function peerCall($argv) {
+		$peer = $argv[2];
+		if(empty($peer)) {
+			echo "Empty peer".PHP_EOL;
+			exit;
+		}
+		$method = $argv[3];
+		if(empty($method)) {
+			echo "Empty method".PHP_EOL;
+			exit;
+		}
+		$data = json_decode($argv[4], true);
+		$url = $peer . "/peer.php?q=$method";
+		$res = peer_post($url, $data, 30, $err);
+		if($res) {
+			api_echo($res);
+		} else {
+			api_err($err);
+		}
+	}
+	
 }
