@@ -19,7 +19,7 @@ class Propagate
 		$id=escapeshellcmd(san($id));
 		$dir = ROOT . "/cli";
 		$cmd = "php $dir/propagate.php block '$id' '$host' '$ip'";
-		_log("Propagate cmd: $cmd");
+		_log("Propagate cmd: $cmd",5);
 		Nodeutil::runSingleProcess($cmd);
 	}
 

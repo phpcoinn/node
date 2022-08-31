@@ -937,7 +937,6 @@ class Masternode extends Daemon
 		global $db;
 		$sql = "select 1 from masternode m where m.height = :height and m.public_key = :public_key";
 		$res = $db->single($sql, [":height"=>$height, ":public_key"=>$public_key]);
-		_log("Masternode checkSynced=$res");
 		return $res == 1;
 	}
 
