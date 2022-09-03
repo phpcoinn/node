@@ -52,17 +52,24 @@ const REWARD_SCHEME = [
 	'mining'=>[
 		'block_per_segment'=>[
 			10, 10, 10, 10, 10, 10, 10, 10, 10, 10
-		]
+		],
+		'reward_per_segment'=>[
+			1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+		],
 	],
 	'combined'=>[
 		'block_per_segment'=>[
 			1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000
-		]
+		],
+		'reward'=> 10,
 	],
 	'deflation'=>[
 		'block_per_segment'=>[
 			1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000
-		]
+		],
+		'reward_per_segment'=>[
+			9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+		],
 	]
 ];
 
@@ -79,7 +86,7 @@ const FEE_DIVIDER = 1 / 1000;
 const TX_SC_CREATE_FEE = 10;
 const TX_SC_EXEC_FEE = 0.001;
 const SC_START_HEIGHT = 20;
-const TX_TYPE_BURN_START_HEIGHT = 150;
+const TX_TYPE_BURN_START_HEIGHT = 15;
 
 const SC_MAX_EXEC_TIME = 5;
 const SC_MEMORY_LIMIT = "128M";
