@@ -152,4 +152,11 @@ class Blockchain
 		$fee_ratio = round((intval($fee_ratio) / 100000000) * $fee_multiplier , 5);
 		return $fee_ratio;
 	}
+
+
+	static function getTotalSupply() {
+		$total = TOTAL_SUPPLY;
+		$burnedAmount = Transaction::getBurnedAmount();
+		return $total - $burnedAmount;
+	}
 }

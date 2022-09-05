@@ -91,7 +91,7 @@ const TX_TYPE_BURN_START_HEIGHT = 15;
 const SC_MAX_EXEC_TIME = 5;
 const SC_MEMORY_LIMIT = "128M";
 
-const TOTAL_SUPPLY = 714990;
+const TOTAL_SUPPLY = 155640;
 const GIT_URL = "https://github.com/phpcoinn/node";
 const UPDATE_1_BLOCK_ZERO_TIME = 5;
 const UPDATE_2_BLOCK_CHECK_IMPROVED = 10;

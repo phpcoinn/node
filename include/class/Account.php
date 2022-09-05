@@ -140,6 +140,7 @@ class Account
 
 		        // version 0 -> reward transaction, version 1 -> normal transaction
 		        $sign="";
+		        $trans['type_value'] = $x['type'];
 		        if ($x['type'] == TX_TYPE_REWARD) {
 			        $trans['type_label'] = "mining";
 			        $sign="+";

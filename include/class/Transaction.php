@@ -1219,4 +1219,10 @@ class Transaction
 	}
 
 
+	public static function getBurnedAmount() {
+		global $db;
+		$sql = "select sum(t.val) as sum from transactions t where t.type = :type";
+		$res = $db->single($sql, [":type"=>TX_TYPE_BURN]);
+		return $res;
+	}
 }
