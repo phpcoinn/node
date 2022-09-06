@@ -140,6 +140,7 @@ class Account
 
 		        // version 0 -> reward transaction, version 1 -> normal transaction
 		        $sign="";
+		        $trans['type_value'] = $x['type'];
 		        if ($x['type'] == TX_TYPE_REWARD) {
 			        $trans['type_label'] = "mining";
 			        $sign="+";
@@ -170,6 +171,9 @@ class Account
 		        } elseif ($x['type'] == TX_TYPE_FEE) {
 			        $sign="+";
 			        $trans['type_label'] = "fee";
+		        } elseif ($x['type'] == TX_TYPE_BURN) {
+			        $sign="-";
+			        $trans['type_label'] = "burn";
 		        } else {
 			        $trans['type_label'] = "other";
 		        }
@@ -226,6 +230,8 @@ class Account
 		        } else {
 			        $sign = "+";
 		        }
+	        } else if ($x['type'] == TX_TYPE_BURN) {
+		        $sign = "-";
 	        }
 	        $trans['sign']=$sign;
             ksort($trans);

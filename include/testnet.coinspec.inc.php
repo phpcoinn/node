@@ -34,6 +34,7 @@ const TX_TYPE_FEE = 4;
 const TX_TYPE_SC_CREATE = 5;
 const TX_TYPE_SC_EXEC = 6;
 const TX_TYPE_SC_SEND = 7;
+const TX_TYPE_BURN = 8;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
@@ -51,17 +52,24 @@ const REWARD_SCHEME = [
 	'mining'=>[
 		'block_per_segment'=>[
 			10, 10, 10, 10, 10, 10, 10, 10, 10, 10
-		]
+		],
+		'reward_per_segment'=>[
+			1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+		],
 	],
 	'combined'=>[
 		'block_per_segment'=>[
 			1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000
-		]
+		],
+		'reward'=> 10,
 	],
 	'deflation'=>[
 		'block_per_segment'=>[
 			1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000
-		]
+		],
+		'reward_per_segment'=>[
+			9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+		],
 	]
 ];
 
@@ -78,11 +86,12 @@ const FEE_DIVIDER = 1 / 1000;
 const TX_SC_CREATE_FEE = 10;
 const TX_SC_EXEC_FEE = 0.001;
 const SC_START_HEIGHT = 20;
+const TX_TYPE_BURN_START_HEIGHT = 15;
 
 const SC_MAX_EXEC_TIME = 5;
 const SC_MEMORY_LIMIT = "128M";
 
-const TOTAL_SUPPLY = 714990;
+const TOTAL_SUPPLY = 155640;
 const GIT_URL = "https://github.com/phpcoinn/node";
 const UPDATE_1_BLOCK_ZERO_TIME = 5;
 const UPDATE_2_BLOCK_CHECK_IMPROVED = 10;

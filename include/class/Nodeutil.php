@@ -560,7 +560,7 @@ class Nodeutil
 			'generator'    => $generator,
 			'miner'        => $miner,
 			'masternode'   => $masternode,
-			'totalSupply'  => TOTAL_SUPPLY,
+			'totalSupply'  => Blockchain::getTotalSupply(),
 			'currentSupply'  => $circulation,
 			'avgBlockTime10'  => $avgBlockTime10,
 			'avgBlockTime100'  => $avgBlockTime100,

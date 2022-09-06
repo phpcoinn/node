@@ -35,6 +35,7 @@ const TX_TYPE_FEE = 4;
 const TX_TYPE_SC_CREATE = 5;
 const TX_TYPE_SC_EXEC = 6;
 const TX_TYPE_SC_SEND = 7;
+const TX_TYPE_BURN = 8;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
@@ -51,17 +52,24 @@ const REWARD_SCHEME = [
 	'mining'=>[
 		'block_per_segment'=>[
 			10000,10000,10000,10000,10000,2000,2000,2000,2000,2000
-		]
+		],
+		'reward_per_segment'=>[
+			10, 20, 30, 40, 50, 60, 70, 80, 90, 100
+		],
 	],
 	'combined'=>[
 		'block_per_segment'=>[
 			50000,50000,50000,50000,50000,50000,50000,50000,50000,50000
-		]
+		],
+		'reward'=> 100,
 	],
 	'deflation'=>[
 		'block_per_segment'=>[
 			100000,100000,100000,100000,100000,100000,100000,100000,100000,100000
-		]
+		],
+		'reward_per_segment'=>[
+			90, 80, 70, 60, 50, 40, 30, 20, 10, 0
+		],
 	]
 ];
 
@@ -78,6 +86,7 @@ const FEE_DIVIDER = 100;
 const TX_SC_CREATE_FEE = 100;
 const TX_SC_EXEC_FEE = 0.01;
 const SC_START_HEIGHT = PHP_INT_MAX;
+const TX_TYPE_BURN_START_HEIGHT = PHP_INT_MAX;
 
 const SC_MAX_EXEC_TIME = 30;
 const SC_MEMORY_LIMIT = "256M";
