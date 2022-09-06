@@ -74,7 +74,7 @@ if (empty($dbversion)) {
 			primary key,
 		height int not null,
 		src varchar(128) not null,
-		dst varchar(128) not null,
+		dst varchar(128) null,
 		val decimal(20,8) not null,
 		fee decimal(20,8) not null,
 		signature varchar(255) not null,
@@ -112,7 +112,7 @@ if (empty($dbversion)) {
 		block varchar(128) not null,
 		height int not null,
 		src varchar(128) null,
-		dst varchar(128) not null,
+		dst varchar(128) null,
 		val decimal(20,8) not null,
 		fee decimal(20,8) not null,
 		signature varchar(255) not null,
@@ -398,13 +398,29 @@ if($dbversion == 17) {
 }
 
 if($dbversion == 18) {
-	$db->run("alter table mempool modify dst varchar(128) null");
-	$dbversion = 19;
+	if(!$was_empty) {
+		$lock_dir = ROOT . "/tmp/db-migrate";
+		if (mkdir($lock_dir, 0700)) {
+			$db->run("alter table mempool modify dst varchar(128) null");
+			@rmdir($lock_dir);
+			$dbversion = 19;
+		}
+	} else {
+		$dbversion = 19;
+	}
 }
 
 if($dbversion == 19) {
-	$db->run("alter table transactions modify dst varchar(128) null");
-	$dbversion = 20;
+	if(!$was_empty) {
+		$lock_dir = ROOT . "/tmp/db-migrate";
+		if (mkdir($lock_dir, 0700)) {
+			$db->run("alter table transactions modify dst varchar(128) null");
+			@rmdir($lock_dir);
+			$dbversion = 20;
+		}
+	} else {
+		$dbversion = 20;
+	}
 }
 
 // update the db version to the latest one
