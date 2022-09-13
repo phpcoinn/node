@@ -524,7 +524,7 @@ class Nodeutil
 	}
 
 	static function getNodeInfo() {
-		global $db;
+		global $db, $_config;
 		$dbVersion = $db->single("SELECT val FROM config WHERE cfg='dbversion'");
 		$hostname = $db->single("SELECT val FROM config WHERE cfg='hostname'");
 		$accounts = $db->single("SELECT COUNT(1) FROM accounts");
