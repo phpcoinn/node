@@ -59,66 +59,74 @@ class Blockchain
 
 	}
 
+	static function getPhases() {
+		$phases = [];
+		$phases[] = ["name"=>"genesis", "blocks"=>1, "reward"=>REWARD_SCHEME['genesis']['reward']];
+		$phases[] = ["name"=>"launch", "blocks"=>REWARD_SCHEME['launch']['blocks'], "reward"=>REWARD_SCHEME['launch']['reward']];
+		foreach(REWARD_SCHEME['mining']['block_per_segment'] as $s => $segment_blocks) {
+			$phases[] = ["name"=>"mining","blocks"=>$segment_blocks, "reward"=>REWARD_SCHEME['mining']['reward_per_segment'][$s],"segment"=>$s+1];
+		}
+		foreach(REWARD_SCHEME['combined']['block_per_segment'] as $s => $segment_blocks) {
+			$phases[] = ["name"=>"combined","blocks"=>$segment_blocks, "reward"=>REWARD_SCHEME['combined']['reward'],"segment"=>$s+1];
+		}
+		foreach(REWARD_SCHEME['deflation']['block_per_segment'] as $s => $segment_blocks) {
+			$phases[] = ["name"=>"deflation","blocks"=>$segment_blocks, "reward"=>REWARD_SCHEME['deflation']['reward_per_segment'][$s],"segment"=>$s+1];
+		}
+		$total = 0;
+		$block = 0;
+		foreach($phases as &$phase) {
+			$block+=$phase['blocks'];
+			$phase['total_blocks']=$block;
+			$phase['start']=$block - $phase['blocks'] +1 ;
+			$phase['end']=$phase['start'] + $phase['blocks'] - 1 ;
+			$total += ($phase['blocks']*$phase['reward']);
+			$phase['total']=$total;
+		}
+		return $phases;
+	}
+
 	static function calculateRewardsScheme($real=true) {
-
-		$prev_reward = null;
-		$total_supply = 0;
-
-		$start_block = 1;
 		$start_time = GENESIS_TIME;
-
 		$rows = [];
 
-		if($real) {
-			$block = Block::current(true);
-			$start_block = $block->height + 1;
-			$start_time = $block->date;
-			$total_supply = Account::getCirculation();
-		}
+		$phases = self::getPhases();
 
-		for($i=$start_block;$i<=PHP_INT_MAX;$i++) {
-			$reward = Block::reward($i);
-			$elapsed = ($i-$start_block) * BLOCK_TIME;
+		$block = Block::current();
+
+		$total_supply = 0;
+		foreach($phases as  $phase) {
+			$key = $phase['name']."-".$phase['segment'];
+			$reward = Block::reward($phase['start']);
+			$elapsed = ($phase['start']-1) * BLOCK_TIME;
 			$time = $start_time + $elapsed;
 			$days = $elapsed / 60 / 60 / 24;
-			if($reward['key'] != $prev_reward) {
-				$rows[$reward['key']] = [
-					'phase' => $reward['phase'],
-					'block' => $i,
-					'total' => $reward['total'],
-					'miner' => $reward['miner'],
-					'gen' => $reward['generator'],
-					'mn' => $reward['masternode'],
-					'pos' => $reward['pos'],
-					'elapsed' => $elapsed,
-					'days' => $days,
-					'time' => $time,
-					'segment'=>$reward['segment'],
-					'key'=>$reward['key']
-				];
+			$total_supply += $phase['blocks'] * $reward['total'];
+			if($phase['start'] < $block['height']) {
+				$real_block = Block::get($phase['start']);
+				$real_start_time = $real_block['date'];
+			} else {
+				$real_start_time = ($phase['start'] - $block['height']) * BLOCK_TIME + $block['date'];
 			}
-			if($reward['total']==0) {
-				break;
-			}
-			$prev_reward = $reward['key'];
+			$rows[$key] = [
+				'phase' => $phase['name'],
+				'block' => $phase['start'],
+				'total' => $reward['total'],
+				'miner' => $reward['miner'],
+				'gen' => $reward['generator'],
+				'mn' => $reward['masternode'],
+				'pos' => $reward['pos'],
+				'elapsed' => $elapsed,
+				'days' => $days,
+				'time' => $time,
+				'segment'=>$reward['segment'],
+				'key'=>$phase['name']."-".$phase['segment'],
+				'end_block'=>$phase['end'],
+				'blocks'=>$phase['blocks'],
+				'supply'=>$total_supply,
+				'real_start_time'=>$real_start_time
+			];
 		}
-
-		$rows = array_values($rows);
-		foreach ($rows as $index => &$row) {
-			if(isset($rows[$index+1])) {
-				$row['end_block'] = $rows[$index+1]['block']-1;
-				$row['blocks']=$row['end_block'] - $row['block'] + 1;
-				$total_supply += $row['blocks'] * $row['total'];
-				$row['supply'] = $total_supply;
-			}
-		}
-
-		$rows2 = [];
-		foreach ($rows as $row2) {
-			$rows2[$row2['key']]=$row2;
-		}
-
-		return $rows2;
+		return $rows;
 	}
 
 	static function feeMultiplier($height = null) {
@@ -155,8 +163,14 @@ class Blockchain
 
 
 	static function getTotalSupply() {
-		$total = TOTAL_SUPPLY;
+		$total = self::getTotalGeneratedSupply();
 		$burnedAmount = Transaction::getBurnedAmount();
 		return $total - $burnedAmount;
+	}
+
+	static function getTotalGeneratedSupply() {
+		$phases = self::getPhases();
+		$last = array_pop($phases);
+		return $last['total'];
 	}
 }

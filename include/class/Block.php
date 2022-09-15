@@ -240,129 +240,69 @@ class Block
     }
 
     // calculate the reward for each block
-    public static function reward($id, $data = [])
-    {
+	public static function reward($height)
+	{
+		$rewards = [];
+		unset($phase);
+		$phases = Blockchain::getPhases();
+		foreach($phases as $index=>$phase) {
 
-	    global $_config;
-
-    	$launch_blocks = REWARD_SCHEME['launch']['blocks'];
-	    $launch_reward = REWARD_SCHEME['launch']['reward'];
-	    $base_reward = BASE_REWARD;
-
-    	$mining_segments = count(REWARD_SCHEME['mining']['block_per_segment']);
-    	$mining_segment_block = REWARD_SCHEME['mining']['block_per_segment'];
-    	$mining_decrease_per_segment = $base_reward / $mining_segments;
-
-    	$combined_segmnets = count(REWARD_SCHEME['combined']['block_per_segment']);
-    	$combined_segment_block = REWARD_SCHEME['combined']['block_per_segment'];
-    	$combined_decrease_per_segment = BASE_REWARD / $combined_segmnets;
-
-    	$deflation_segments = count(REWARD_SCHEME['deflation']['block_per_segment']);
-    	$deflation_segment_block = REWARD_SCHEME['deflation']['block_per_segment'];
-    	$deflation_decrease_per_segment = BASE_REWARD / $deflation_segments;
-
-	    $launch_end_block = $launch_blocks + 1;
-    	$mining_end_block = array_sum($mining_segment_block) + $launch_end_block;
-    	$combined_end_block = array_sum($combined_segment_block) + $mining_end_block;
-    	$deflation_end_block = array_sum($deflation_segment_block) + $combined_end_block;
-
-	    $total = 0;
-	    $miner = 0;
-	    $mn_reward = 0;
-	    $generator = 0;
-	    $pos_reward = 0;
-	    if($id == 1) {
-	    	//genesis
-		    $total = GENESIS_REWARD;
-		    $miner = $total;
-		    $mn_reward = 0;
-		    $generator = 0;
-		    $pos_reward = 0;
-		    $phase = "genesis";
-	    } else if ($id <= $launch_end_block ) {
-			//launch from 1
-		    $total = $launch_reward;
-		    $miner = $total * 0.9;
-		    $generator = $total * 0.1;
-		    $mn_reward = 0;
-		    $pos_reward = 0;
-		    $phase = "launch";
-	    } else if ($id <= $mining_end_block) {
-		    //mining from 210000
-		    $start = $launch_end_block + 1;
-		    foreach ($mining_segment_block as $index=>$blocks) {
-				$end = $start + $blocks - 1;
-				if($id >= $start && $id <= $end) {
-					$segment = $index + 1;
+			$start = $phase['start'];
+			$end = $phase['end'];
+			if($height < $start || $height > $end) {
+				continue;
+			}
+			$name = $phase['name'];
+			$total = $phase['reward'];
+			$segment = $phase['segment'];
+			$pos_reward = 0;
+			switch ($name) {
+				case "genesis":
+					$miner = $total;
+					$generator = 0;
+					$mn_reward = 0;
 					break;
-				}
-			    $start += $blocks;
-		    }
-		    $total = $segment * $mining_decrease_per_segment;
-		    $miner = $total * 0.9;
-		    $generator = $total * 0.1;
-		    $mn_reward = 0;
-		    $pos_reward = 0;
-		    $phase = "mining";
-	    } else if ($id <= $combined_end_block) {
-			// combined
-		    $start = $mining_end_block + 1;
-		    foreach ($combined_segment_block as $index=>$blocks) {
-			    $end = $start + $blocks - 1;
-			    if($id >= $start && $id <= $end) {
-				    $segment = $index + 1;
-				    break;
-			    }
-			    $start += $blocks;
-		    }
-		    $total = $base_reward;
-		    $miner_reward = ($combined_segmnets - $segment) * $combined_decrease_per_segment;
-		    $remain_reward = $base_reward - $miner_reward;
-		    $miner = $miner_reward * 0.9;
-		    $generator = $miner_reward * 0.1;
-		    $pos_ratio = 0;
-		    $pos_reward = $pos_ratio * $remain_reward;
-		    $mn_reward = $remain_reward - $pos_reward;
-		    $phase = "combined";
-	    } else if ($id <= $deflation_end_block) {
-	    	//deflation
-		    $start = $combined_end_block + 1;
-		    foreach ($deflation_segment_block as $index=>$blocks) {
-			    $end = $start + $blocks - 1;
-			    if($id >= $start && $id <= $end) {
-				    $segment = $index + 1;
-				    break;
-			    }
-			    $start += $blocks;
-		    }
-		    $total = ($deflation_segments - $segment)*$deflation_decrease_per_segment;
-		    $pos_ratio = 0;
-		    $pos_reward = $pos_ratio * $total;
-		    $mn_reward = $total - $pos_reward;
-		    $miner = 0;
-		    $generator = 0;
-		    $phase = "deflation";
-	    } else {
-		    $total = 0;
-		    $miner = 0;
-		    $mn_reward = 0;
-		    $pos_reward = 0;
-		    $generator = 0;
-		    $phase = "final";
-	    }
-	    $out = [
-	    	'total'=>$total,
-		    'miner'=>$miner,
-		    'generator'=>$generator,
-		    'masternode'=>$mn_reward,
-		    'pos'=>$pos_reward,
-		    'key'=>"$phase-$segment",
-		    'phase'=>$phase,
-		    'segment'=>$segment
-	    ];
-        //_log("Reward ", json_encode($out));
-	    return $out;
-    }
+				case "launch":
+					$miner = $total * 0.9;
+					$generator = $total * 0.1;
+					$mn_reward = 0;
+					break;
+				case "mining":
+					$miner = $total * 0.9;
+					$generator = $total * 0.1;
+					$mn_reward = 0;
+					break;
+				case "combined":
+					$mn_reward = $segment/10 * $total;
+					$remain_reward = $total - $mn_reward;
+					$miner = $remain_reward * 0.9;
+					$generator = $remain_reward * 0.1;
+					break;
+				case "deflation":
+					$mn_reward = $total;
+					$miner = 0;
+					$generator = 0;
+					break;
+				default:
+					$total = 0;
+					$miner = 0;
+					$mn_reward = 0;
+					$pos_reward = 0;
+					$generator = 0;
+			}
+			$out = [
+				'total'=>$total,
+				'miner'=>$miner,
+				'generator'=>$generator,
+				'masternode'=>$mn_reward,
+				'pos'=>$pos_reward,
+				'key'=>"$name-$segment",
+				'phase'=>$name,
+				'segment'=>$segment
+			];
+			return $out;
+		}
+	}
 
 	public function check($new=true)
 	{
@@ -1069,9 +1009,11 @@ class Block
 	}
 
 	static function getMnStartHeight() {
-		$mining_segment_block = REWARD_SCHEME['mining']['block_per_segment'];
-		$launch_blocks = REWARD_SCHEME['launch']['blocks'];
-		$mining_end_block = array_sum($mining_segment_block) + $launch_blocks + 1;
-		return $mining_end_block +1;
+		$phases = Blockchain::getPhases();
+		foreach ($phases as $phase) {
+			if($phase['name']=="combined") {
+				return $phase['start'];
+			}
+		}
 	}
 }

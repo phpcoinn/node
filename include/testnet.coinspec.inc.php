@@ -62,6 +62,9 @@ const REWARD_SCHEME = [
 			1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000
 		],
 		'reward'=> 10,
+		'mn_reward_per_segment'=>[
+			1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+		],
 	],
 	'deflation'=>[
 		'block_per_segment'=>[
@@ -91,7 +94,6 @@ const TX_TYPE_BURN_START_HEIGHT = 15;
 const SC_MAX_EXEC_TIME = 5;
 const SC_MEMORY_LIMIT = "128M";
 
-const TOTAL_SUPPLY = 155640;
 const GIT_URL = "https://github.com/phpcoinn/node";
 const UPDATE_1_BLOCK_ZERO_TIME = 5;
 const UPDATE_2_BLOCK_CHECK_IMPROVED = 10;
