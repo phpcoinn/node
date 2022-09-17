@@ -222,8 +222,8 @@ if($type == "appspeer") {
 		_log("Not repo server");
 		exit;
 	}
-	$hash = $argv[1];
-	$hostname = $argv[2];
+	$hash = $argv[2];
+	$hostname = $argv[3];
 	$hostname = base64_decode($hostname);
 	$url = $hostname."/peer.php?q=updateApps";
 	$res = peer_post($url, ["hash"=>$hash]);
