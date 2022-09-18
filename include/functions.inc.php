@@ -251,7 +251,7 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null)
 
     // the function will return false if something goes wrong
     if ($res['status'] != "ok" || $res['coin'] != COIN || (isset($res['network']) && $res['network'] != NETWORK)) {
-    	_log("Peer response to $url not ok", 5);
+    	_log("Peer response to $url not ok res=$result", 5);
 	    $err = $res['data'];
         return false;
     } else {
