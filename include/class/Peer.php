@@ -58,7 +58,7 @@ class Peer
 
 	static function getPeersForMasternode($limit = null) {
 		global $db;
-		$sql="select * from peers p WHERE (p.blacklisted < ".DB::unixTimeStamp()." or p.generator = 1 or p.miner = 1 )
+		$sql="select * from peers p WHERE (p.blacklisted < ".DB::unixTimeStamp()." or p.generator is not null or p.miner is not null )
 			and ping > ".DB::unixTimeStamp()."- 60*2
 			order by ".DB::random();
 		if(!empty($limit)) {
@@ -159,9 +159,9 @@ class Peer
 		global $_config;
 		$appsHashFile = Nodeutil::getAppsHashFile();
 		$appsHash = @file_get_contents($appsHashFile);
-		$generator = isset($_config['generator_public_key']) && $_config['generator'];
-		$miner = isset($_config['miner_public_key']) && $_config['miner'];
-		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'];
+		$generator = isset($_config['generator_public_key']) && $_config['generator'] ? Account::getAddress($_config['generator_public_key']) :  null;
+		$miner = isset($_config['miner_public_key']) && $_config['miner'] ? Account::getAddress($_config['miner_public_key']) :  null;
+		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'] ? Account::getAddress($_config['masternode_public_key']) : null;
 		$current = Cache::get("current", function() {
 			return Block::current();
 		});
@@ -277,9 +277,9 @@ class Peer
 
 	static function updateInfo($id, $info) {
 		global $db;
-		$miner = isset($info['miner']) && $info['miner'] ? 1 : 0 ;
-		$generator = isset($info['generator']) && $info['generator'] ? 1 : 0 ;
-		$masternode = isset($info['masternode']) && $info['masternode'] ? 1 : 0 ;
+		$miner = isset($info['miner']) && !empty($info['miner']) ? $info['miner'] : null ;
+		$generator = isset($info['generator']) && !empty($info['generator']) ? $info['generator'] : null;
+		$masternode = isset($info['masternode']) && !empty($info['masternode']) ? $info['masternode'] : null ;
 //		_log("PeerSync: update peer data $id info=".json_encode($info));
 		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, block_id=:block_id, appshash=:appshash, score=:score, version=:version,  
 				miner=:miner, generator=:generator, masternode=:masternode
