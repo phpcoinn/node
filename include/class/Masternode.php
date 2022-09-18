@@ -538,9 +538,10 @@ class Masternode extends Daemon
 			if(!$res) {
 				throw new Exception("Masternode: check failed: $err");
 			}
-			
-			_log("Masternode: check if synced height=".$mn_height . " public_key=".$masternode['public_key'], 5);
-			$mn_synced = Masternode::checkSynced($mn_height, $masternode['public_key']);
+
+			$signature=$masternode['signature'];
+			_log("Masternode: check if synced signature=".$signature . " public_key=".$masternode['public_key'], 5);
+			$mn_synced = Masternode::checkSynced($signature, $masternode['public_key']);
 			if($mn_synced) {
 				_log("Masternode: already synced");
 				return true;
@@ -923,10 +924,10 @@ class Masternode extends Daemon
 
 	}
 
-	static function checkSynced($height, $public_key) {
+	static function checkSynced($signature, $public_key) {
 		global $db;
-		$sql = "select 1 from masternode m where m.height = :height and m.public_key = :public_key";
-		$res = $db->single($sql, [":height"=>$height, ":public_key"=>$public_key]);
+		$sql = "select 1 from masternode m where m.signature = :signature and m.public_key = :public_key";
+		$res = $db->single($sql, [":signature"=>$signature, ":public_key"=>$public_key]);
 		return $res == 1;
 	}
 
