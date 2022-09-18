@@ -141,7 +141,7 @@ class NodeMiner extends Daemon {
 			if(Masternode::allowedMasternodes($height)) {
 				$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $this->public_key, $this->private_key, $height, $mn_signature);
 				if (!$mn_reward_tx) {
-					_log("Node score not ok - mining dropped");
+					_log("No masternode winner - mining dropped");
 					$this->miningStat['rejected']++;
 					break;
 				}
