@@ -543,7 +543,7 @@ class Masternode extends Daemon
 			_log("Masternode: check if synced signature=".$signature . " public_key=".$masternode['public_key'], 5);
 			$mn_synced = Masternode::checkSynced($signature, $masternode['public_key']);
 			if($mn_synced) {
-				_log("Masternode: already synced");
+				_log("Masternode: already synced", 3);
 				return true;
 			}
 
