@@ -128,7 +128,7 @@ class Block
 			_log("Inserted new block height={$this->height} id=$hash ");
             $db->commit();
 	        $db->unlockTables();
-			Cache::set("current", $bind);
+			Cache::set("current", $this->toArray());
 			Cache::set("current_export", Block::export($hash));
 	        return true;
 
