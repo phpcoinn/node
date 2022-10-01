@@ -97,14 +97,8 @@ class PeerRequest
 		} else {
 			_log("$hostname is new peer",2);
 		}
-		// if we have enough peers, add it to DB as reserve
-		$res = Peer::getCount(true);
-		$reserve = 1;
-		if ($res < $_config['max_peers']) {
-			$reserve = 0;
-		}
 		_log("Inserting $hostname in peer db",3);
-		$res = Peer::insert($ip, $hostname, $reserve);
+		$res = Peer::insert($ip, $hostname);
 		_log("Inserted $hostname = $res",3);
 		// re-peer to make sure the peer is valid
 		if ($data['repeer'] == 1) {

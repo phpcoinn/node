@@ -31,9 +31,9 @@ class Peer
 		return $rows;
 	}
 
-	static function getActive($limit=100, $includeReserved = false) {
+	static function getActive($limit=100) {
 		global $db;
-		$sql="select * from peers WHERE  blacklisted < ".DB::unixTimeStamp()." " . ($includeReserved ? "" : "AND reserve=0 ") . " ORDER by ".DB::random()." LIMIT :limit";
+		$sql="select * from peers WHERE  blacklisted < ".DB::unixTimeStamp()." ORDER by ".DB::random()." LIMIT :limit";
 		$rows = $db->run($sql, ["limit"=>$limit]);
 		return $rows;
 	}
@@ -129,7 +129,7 @@ class Peer
 		$db->run('delete from peers');
 	}
 
-	static function insert($ip,$hostname,$reserve) {
+	static function insert($ip,$hostname) {
 		global $db;
 		if($db->isSqlite()) {
 			$row = $db->run("select * from peers where ip=:ip",[":ip" => $ip]);
@@ -138,18 +138,18 @@ class Peer
 			} else {
 				$res = $db->run(
 					"INSERT INTO peers 
-					    (hostname, reserve, ping, ip) 
-					    values  (:hostname, :reserve, ".DB::unixTimeStamp().", :ip) ",
-					[":ip" => $ip, ":hostname" => $hostname, ":reserve" => $reserve]
+					    (hostname, ping, ip) 
+					    values  (:hostname, ".DB::unixTimeStamp().", :ip) ",
+					[":ip" => $ip, ":hostname" => $hostname]
 				);
 			}
 		} else {
 			$res = $db->run(
 				"INSERT ignore INTO peers 
-				    (hostname, reserve, ping, ip) 
-				    values  (:hostname, :reserve, ".DB::unixTimeStamp().", :ip) 
+				    (hostname, ping, ip) 
+				    values  (:hostname, ".DB::unixTimeStamp().", :ip) 
 					ON DUPLICATE KEY UPDATE hostname=:hostname2",
-				[":ip" => $ip, ":hostname2" => $hostname, ":hostname" => $hostname, ":reserve" => $reserve]
+				[":ip" => $ip, ":hostname2" => $hostname, ":hostname" => $hostname]
 			);
 		}
 		return $res;
@@ -221,21 +221,12 @@ class Peer
 	static function findByIp($ip) {
 		global $db;
 		$x = $db->row(
-			"SELECT id,hostname FROM peers WHERE reserve=0 AND blacklisted<".DB::unixTimeStamp()." AND ip=:ip",
+			"SELECT id,hostname FROM peers WHERE blacklisted<".DB::unixTimeStamp()." AND ip=:ip",
 			[":ip" => $ip]
 		);
 		return $x;
 	}
 
-	static function reserve($res) {
-		global $db;
-		$db->run("UPDATE peers SET reserve=0 WHERE reserve=1 AND blacklisted<".DB::unixTimeStamp()." LIMIT $res");
-	}
-
-	static function getReserved($limit) {
-		global $db;
-		return $db->run("SELECT * FROM peers WHERE blacklisted<".DB::unixTimeStamp()." and reserve=1 LIMIT :limit", [":limit"=>$limit]);
-	}
 
 	static function cleanBlacklist() {
 		global $db;

@@ -213,18 +213,14 @@ class Util
 	 * php util.php peers
 	 *
 	 * @apiSuccessExample {text} Success-Response:
-	 * http://35.190.160.142   active
+	 * http://35.190.160.142   1.2.3.4
 	 * ...
 	 * http://php.master.hashpi.com    active
 	 */
 	static function peers() {
 		$r = Peer::getAll();
 		foreach ($r as $x) {
-			$status = "active";
-			if ($x['reserve'] == 1) {
-				$status = "reserve";
-			}
-			echo "$x[hostname]\t$status\n";
+			echo "$x[hostname]\t$x[ip]\n";
 		}
 	}
 
