@@ -424,11 +424,9 @@ if($dbversion == 19) {
 }
 
 if($dbversion == 20) {
-	if(!$was_empty || true) {
-		$db->run("alter table peers modify miner varchar(128) null");
-		$db->run("alter table peers modify generator varchar(128) null");
-		$db->run("alter table peers modify masternode varchar(128) null");
-	}
+	$db->run("alter table peers modify miner varchar(128) null");
+	$db->run("alter table peers modify generator varchar(128) null");
+	$db->run("alter table peers modify masternode varchar(128) null");
 	$dbversion = 21;
 }
 
