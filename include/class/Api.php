@@ -540,7 +540,6 @@ class Api
 	 * @apiSuccess {string} hostname Peer hostname
 	 * @apiSuccess {numeric} blacklisted UNIX timestamp until peer is blacklisted
 	 * @apiSuccess {numeric} ping UNIX timestamp when peer was last pinged
-	 * @apiSuccess {numeric} reserve (net relevant)
 	 * @apiSuccess {numeric} fails Number of failed conections to peer
 	 * @apiSuccess {numeric} stuckfail Number of failed stuck conentions to peer
 	 * @apiSuccess {numeric} height Blockchain height of peer

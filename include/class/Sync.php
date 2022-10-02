@@ -87,7 +87,7 @@ class Sync extends Daemon
 
 				if ($_config['passive_peering'] == true) {
 					// does not peer, just add it to DB in passive mode
-					$res=Peer::insert(md5($peer), $peer, 0);
+					$res=Peer::insert(md5($peer), $peer);
 				} else {
 					// forces the other node to peer with us.
 					$res = peer_post($peer."/peer.php?q=peer", ["hostname" => $_config['hostname'], "repeer" => 1], 30, $err);
@@ -152,7 +152,7 @@ class Sync extends Daemon
 		}
 		$live_peers_count = count($peerData);
 		//Then get all other peers
-		$peers = Peer::getActive(100, true);
+		$peers = Peer::getActive(100);
 		//_log("PeerSync: syncing other peers ".count($peers));
 		foreach($peers as $peer) {
 			$hostname = $peer['hostname'];
@@ -345,26 +345,6 @@ class Sync extends Daemon
 			}
 		}
 
-		//add new peers if there aren't enough active
-		if ($total_peers < $_config['max_peers'] * 0.7) {
-			$res = $_config['max_peers'] - $total_peers;
-			Peer::reserve($res);
-		}
-
-		//random peer check
-		$r = Peer::getReserved(intval($_config['max_test_peers']));
-		foreach ($r as $x) {
-			$url = $x['hostname']."/peer.php?q=";
-			$data = peer_post($url."ping", []);
-			if ($data === false) {
-				_log("blakclist peer ".$x['hostname']." because it is not answering", 4);
-				Peer::blacklist($x['id'],"Not answer");
-				_log("Random reserve peer test $x[hostname] -> FAILED");
-			} else {
-				_log("Random reserve peer test $x[hostname] -> OK",3);
-				Peer::clearFails($x['id']);
-			}
-		}
 
 		Nodeutil::cleanTmpFiles();
 
