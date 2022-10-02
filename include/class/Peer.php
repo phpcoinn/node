@@ -351,4 +351,12 @@ class Peer
 		return $db->run($sql, [":dapps_id"=>$dapps_id, ":ip"=>$ip]);
 	}
 
+	public static function getDappsIdPeer($dapps_id)
+	{
+		global $db;
+		$sql = "select * from peers p where p.dapps_id = :dapps_id";
+		$row = $db->row($sql, [":dapps_id"=>$dapps_id]);
+		return $row;
+	}
+
 }

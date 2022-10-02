@@ -471,7 +471,20 @@ class Dapps extends Daemon
 
 	public static function downloadDapps($dapps_id)
 	{
-		$peers = Peer::getPeersForSync();
+		_log("Dapps: downloadDapps dapps_id=$dapps_id");
+		if(!Account::valid($dapps_id)) {
+			_log("Dapps: downloadDapps dapps_id=$dapps_id NOT VALID");
+			return false;
+		}
+		$peer = Peer::getDappsIdPeer($dapps_id);
+		_log("Dapps: downloadDapps found_peer=".json_encode($peer));
+		$found = false;
+		if($peer) {
+			$peers = [$peer];
+			$found = true;
+		} else {
+			$peers = Peer::getPeersForSync();
+		}
 		if(count($peers)==0) {
 			_log("Dapps: No peers to update dapps $dapps_id");
 		} else {
@@ -480,7 +493,7 @@ class Dapps extends Daemon
 				Propagate::dappsUpdateToPeer($peer['hostname'], $dapps_id);
 			}
 		}
-
+		return $found;
 	}
 
 	public static function propagateDappsUpdate($hash, $id)
