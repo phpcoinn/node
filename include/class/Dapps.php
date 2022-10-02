@@ -475,13 +475,13 @@ class Dapps extends Daemon
 
 	public static function downloadDapps($dapps_id)
 	{
-		_log("Dapps: downloadDapps dapps_id=$dapps_id");
+		_log("Dapps: downloadDapps dapps_id=$dapps_id", 5);
 		if(!Account::valid($dapps_id)) {
 			_log("Dapps: downloadDapps dapps_id=$dapps_id NOT VALID");
 			return false;
 		}
 		$peer = Peer::getDappsIdPeer($dapps_id);
-		_log("Dapps: downloadDapps found_peer=".json_encode($peer));
+		_log("Dapps: downloadDapps found_peer=".json_encode($peer), 5);
 		$found = false;
 		if($peer) {
 			$peers = [$peer];
