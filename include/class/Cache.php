@@ -46,6 +46,12 @@ class Cache
 		file_put_contents($cache_file, $value);
 	}
 
+	public static function clearOldFiles()
+	{
+		$cmd = "find ".self::$path." -mtime +1 -exec ls -al {} +";
+		shell_exec($cmd);
+	}
+
 }
 
 Cache::init();
