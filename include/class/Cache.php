@@ -23,16 +23,19 @@ class Cache
 
 	static function get($key, $default = null) {
 		$cache_file = self::getCacheFile($key);
-		_log("Cache:get $key file=$cache_file exists=".file_exists($cache_file)." callable", 5);
+		_log("Cache:get $key file=$cache_file exists=".file_exists($cache_file)." callable=".is_callable($default), 5);
 		if(file_exists($cache_file)) {
 			$content = file_get_contents($cache_file);
-			return json_decode($content, true);
-		} else {
-			if(is_callable($default)) {
-				return call_user_func($default);
-			} else {
-				return $default;
+			$res = json_decode($content, true);
+			if($res) {
+				return $res;
 			}
+		}
+		if(is_callable($default)) {
+			$res = call_user_func($default);
+			return $res;
+		} else {
+			return $default;
 		}
 	}
 
