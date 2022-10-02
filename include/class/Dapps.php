@@ -155,7 +155,11 @@ class Dapps extends Daemon
 		$dapps_dir = Dapps::getDappsDir();
 		if(!file_exists($dapps_dir ."/". $dapps_id)) {
 			_log("Dapps: Does not exists $dapps_id");
-			Dapps::downloadDapps($dapps_id);
+			$res = Dapps::downloadDapps($dapps_id);
+			if($res) {
+				sleep(5);
+				header("location: " . $_SERVER['REQUEST_URI']);
+			}
 			return;
 		}
 
