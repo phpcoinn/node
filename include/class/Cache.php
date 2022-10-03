@@ -52,6 +52,11 @@ class Cache
 		shell_exec($cmd);
 	}
 
+	public static function resetCache() {
+		$cmd = "rm -rf ".self::$path = ROOT . "/tmp/cache";
+		shell_exec($cmd);
+	}
+
 }
 
 Cache::init();

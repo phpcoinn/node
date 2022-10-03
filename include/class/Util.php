@@ -833,6 +833,7 @@ class Util
 			echo "There is no new version".PHP_EOL;
 		}
 		Nodeutil::downloadApps();
+		Cache::resetCache();
 		echo "Finished".PHP_EOL;
 	}
 
