@@ -17,7 +17,7 @@ class Cache
 	}
 
 	static function getCacheFile($key){
-		return self::$path . "/" . base64_encode($key);
+		return self::$path . "/" . $key;
 	}
 
 
