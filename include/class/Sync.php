@@ -350,6 +350,8 @@ class Sync extends Daemon
 
 		Minepool::deleteOldEntries();
 
+		Cache::clearOldFiles();
+
 		_log("Finishing sync",3);
 
 		$t2 = microtime(true);
