@@ -434,6 +434,11 @@ class Nodeutil
 		$data['apps']['apps_archive']['exists']=file_exists($appsArchive);
 		$data['apps']['apps_archive']['owner']=shell_exec("stat -c '%U' $appsArchive");
 		$data['apps']['apps_archive']['perms']=shell_exec("stat -c '%a' $appsArchive");
+		$cache_folder = Cache::$path;
+		$data['apps']['cache_folder']['path']=$cache_folder;
+		$data['apps']['cache_folder']['exists']=file_exists($cache_folder);
+		$data['apps']['cache_folder']['owner']=shell_exec("stat -c '%U' $cache_folder");
+		$data['apps']['cache_folder']['perms']=shell_exec("stat -c '%a' $cache_folder");
 		$propagate_file = ROOT . "/tmp/propagate_info.txt";
 		$data['propagate_info']=json_decode(file_get_contents($propagate_file), true);
 		return $data;

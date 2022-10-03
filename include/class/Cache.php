@@ -3,7 +3,7 @@
 class Cache
 {
 
-	private static $path;
+	public static $path;
 	private static $enabled = false;
 
 	static function init() {
