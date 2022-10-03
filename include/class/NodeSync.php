@@ -198,6 +198,9 @@ class NodeSync
 		$peers_count = count($peers);
 		$current = Block::current();
 		$t1=microtime(true);
+
+		$blocksMap = [];
+
 		if ($peers_count) {
 			foreach ($peers as $index => $peer) {
 				$host = $peer['hostname'];
@@ -214,28 +217,24 @@ class NodeSync
 					$data['height']=$peer['height'];
 				}
 
-				if ($data['id'] == $current['id']) {
+				if ($data['height'] == $current['height']) {
 					$ok_block++;
-				} else {
-					$height_diff = $data['height']-$current['height'];
-					if(abs($height_diff)>1) {
-						$url = $host . "/peer.php?q=";
-							$res = peer_post($url . "currentBlock", [], 5);
-							if ($res !== false) {
-								$data = $res['block'];
-								$height_diff = $data['height']-$current['height'];
-								$ip=$peer['ip'];
-								Peer::updateHeight($ip, $data);
-							}
+				} else if($current['height'] > $data['height']) {
+					if(!isset($blocksMap[$data['height']])) {
+						$block = Block::get($data['height']);
+						$blocksMap[$data['height']]=$block;
 					}
-
-					if(abs($height_diff)>1) {
-						$failed_block++;
-					} else {
+					$block = $blocksMap[$data['height']];
+					if($block['id']==$data['id']) {
 						$ok_block++;
+					} else {
+						_log("NS: Invalid block for peer $host");
+						$failed_block++;
+						Peer::blacklist($peer['id'], 'Invalid block '.$data['height']);
 					}
+				} else {
+					_log("NS: my height is lower");
 				}
-
 
 				$data['id']=$peer['block_id'];
 				_log("Node score: Checking peer ".($index+1)." / $peers_count $host block id=" . $data['id'] .  " height=" . $data['height'] . " current=" . $current['id'] . " height=".$current['height'], 5);
