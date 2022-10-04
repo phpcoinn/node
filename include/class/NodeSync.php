@@ -228,12 +228,12 @@ class NodeSync
 					if($block['id']==$data['id']) {
 						$ok_block++;
 					} else {
-						_log("NS: Invalid block for peer $host");
+						_log("Node score: Invalid block for peer $host");
 						$failed_block++;
 						Peer::blacklist($peer['id'], 'Invalid block '.$data['height']);
 					}
 				} else {
-					_log("NS: my height is lower");
+					_log("Node score: my height is lower", 4);
 				}
 
 				$data['id']=$peer['block_id'];
