@@ -404,7 +404,7 @@ class Dapps extends Daemon
 		}
 
 		if(!isset($_config['dapps_anonymous']) || !$_config['dapps_anonymous']) {
-			Peer::updateDappsId($ip, $dapps_id);
+			Peer::updateDappsId($ip, $dapps_id, $dapps_hash);
 		}
 
 		_log("Dapps: Request from ip=$ip peer=".$peer['hostname'], 5);

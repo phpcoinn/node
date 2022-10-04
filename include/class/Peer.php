@@ -344,11 +344,11 @@ class Peer
 		return $db->row($sql, [":dapps_id"=>$dapps_id]);
 	}
 
-	public static function updateDappsId($ip, $dapps_id)
+	public static function updateDappsId($ip, $dapps_id, $dapps_hash)
 	{
 		global $db;
-		$sql = "update peers p set p.dapps_id = :dapps_id where p.ip = :ip";
-		return $db->run($sql, [":dapps_id"=>$dapps_id, ":ip"=>$ip]);
+		$sql = "update peers p set p.dapps_id = :dapps_id, p.dappshash = :dappshash where p.ip = :ip";
+		return $db->run($sql, [":dapps_id"=>$dapps_id, ":ip"=>$ip, ":dappshash" => $dapps_hash]);
 	}
 
 	public static function getDappsIdPeer($dapps_id)

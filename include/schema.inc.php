@@ -430,6 +430,12 @@ if($dbversion == 20) {
 	$dbversion = 21;
 }
 
+if($dbversion == 21) {
+	$db->run("alter table peers add dapps_id varchar(128) null");
+	$db->run("alter table peers add dappshash varchar(250) null");
+	$dbversion = 22;
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
