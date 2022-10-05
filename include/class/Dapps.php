@@ -139,7 +139,7 @@ class Dapps extends Daemon
 
 	static function render() {
 
-		global $_config;
+		global $_config, $db;
 
 		require_once ROOT . "/include/dapps.functions.php";
 		if(php_sapi_name() === 'cli') {
@@ -241,6 +241,13 @@ class Dapps extends Daemon
 		$_SERVER['DAPPS_NETWORK']=NETWORK;
 		$_SERVER['DAPPS_FULL_URL']=$_SERVER['REQUEST_SCHEME']."://".$_SERVER['HTTP_HOST'].$_SERVER["REQUEST_URI"];
 		$_SERVER['DAPPS_HOSTNAME']=$_config['hostname'];
+		if(Dapps::isLocal($dapps_id)) {
+			$dapps_hash = $db->getConfig('dapps_hash');
+		} else {
+			$peer = Peer::getDappsIdPeer($dapps_id);
+			$dapps_hash = $peer['dappshash'];
+		}
+		$_SERVER['DAPPS_HASH']=$dapps_hash;
 
 		foreach ($_SERVER as $key=>$val) {
 			$server_args.=" $key='$val' ";
@@ -404,7 +411,7 @@ class Dapps extends Daemon
 		}
 
 		if(!isset($_config['dapps_anonymous']) || !$_config['dapps_anonymous']) {
-			Peer::updateDappsId($ip, $dapps_id);
+			Peer::updateDappsId($ip, $dapps_id, $dapps_hash);
 		}
 
 		_log("Dapps: Request from ip=$ip peer=".$peer['hostname'], 5);
@@ -455,9 +462,6 @@ class Dapps extends Daemon
 	public static function download()
 	{
 		_log("Dapps: called download");
-		if(!Dapps::isEnabled()) {
-			exit;
-		}
 
 		$file = ROOT . "/tmp/dapps.tar.gz";
 		if(!file_exists($file)) {
