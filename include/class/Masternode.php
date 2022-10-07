@@ -549,8 +549,13 @@ class Masternode extends Daemon
 
 			$mn_ip = Masternode::getByIp($ip);
 			if($mn_ip && $mn_ip['public_key']!=$masternode['public_key']) {
-				_log("Masternode: invalid IP address $ip for public_key ".$masternode['public_key']);
-				return true;
+				_log("Masternode: clear ip for ".$mn_ip['public_key'], 4);
+				_log("Masternode: set ip=".$ip." for ".$masternode['public_key'], 4);
+				Masternode::clearIp($mn_ip['public_key']);
+				Masternode::updatePublicKey($masternode['public_key'], $ip);
+
+				_log("Masternode: invalid IP address $ip for public_key ".$masternode['public_key']." - corrected");
+//				return true;
 			}
 
 //		    _log("Masternode: synced ".$masternode['public_key']." win_height=".$masternode['win_height']);
@@ -936,6 +941,20 @@ class Masternode extends Daemon
 		$sql = "select * from masternode m where m.ip = :ip";
 		$row = $db->row($sql, [":ip"=>$ip]);
 		return $row;
+	}
+
+	private static function clearIp($public_key)
+	{
+		global $db;
+		$sql="update masternode set ip=null where public_key =:public_key";
+		$db->run($sql, [":public_key"=>$public_key]);
+	}
+
+	private static function updatePublicKey($public_key, $ip)
+	{
+		global $db;
+		$sql="update masternode set ip=:ip where public_key =:public_key";
+		$db->run($sql, [":ip"=>$ip, ":public_key"=>$public_key]);
 	}
 
 }
