@@ -174,7 +174,8 @@ class Peer
 			"miner"=>$miner,
 			"generator"=>$generator,
 			"masternode"=>$masternode,
-			"block"=>$current['id']
+			"block"=>$current['id'],
+			"hostname"=>$_config['hostname']
 		];
 	}
 
