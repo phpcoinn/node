@@ -286,7 +286,7 @@ if ($q == "info") {
 		$l .= " add=$res";
 		if ($res) {
 			Propagate::blockToAll("current");
-			_log("Accepted block from miner $ip address=$address block_height=$height elapsed=$elapsed block_id=" . $block->id, 3);
+			_log("Accepted block from miner $ip address=$address block_height=$height elapsed=$elapsed block_id=" . $block->id);
 			$l .= " ACCEPTED";
 			_log($l);
 			$generator_stat['accepted']++;

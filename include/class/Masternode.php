@@ -593,6 +593,7 @@ class Masternode extends Daemon
 		$rewardinfo = Block::reward($height);
 		$reward = $rewardinfo['masternode'];
 		$reward_tx = Transaction::getRewardTransaction($dst, $new_block_date, $public_key, $private_key, $reward, "masternode");
+		_log("Masternode: reward tx=".json_encode($reward_tx));
 		return $reward_tx;
 	}
 
