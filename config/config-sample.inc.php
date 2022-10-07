@@ -173,5 +173,5 @@ $_config['dapps']=false;
 $_config['dapps_public_key']="";
 $_config['dapps_private_key']="";
 $_config['dapps_anonymous']=false;
+$_config['dapps_disable_auto_propagate']=true;
 
-//sportiwo commit test

@@ -78,6 +78,12 @@ class Dapps extends Daemon
 			return;
 		}
 
+		$dapps_disable_auto_propagate = isset($_config['dapps_disable_auto_propagate']) && $_config['dapps_disable_auto_propagate'];
+		if($dapps_disable_auto_propagate && !$force) {
+			_log("Dapps: disabled auto propagate", 5);
+			return;
+		}
+
 		$saved_dapps_hash = $db->getConfig('dapps_hash');
 		_log("Dapps: hash from db = $saved_dapps_hash", 5);
 		$dapps_hash = self::calcDappsHash($dapps_id);
@@ -107,7 +113,7 @@ class Dapps extends Daemon
 		$dapps_hash = self::calcDappsHash($dapps_id);
 		if($id === "local") {
 			//start propagate to each peer
-			$peers = Peer::getPeersForSync();
+			$peers = Peer::getAll();
 			if(count($peers)==0) {
 				_log("Dapps: No peers to propagate", 5);
 			} else {
