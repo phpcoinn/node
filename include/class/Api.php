@@ -664,6 +664,22 @@ class Api
 		api_echo(Nodeutil::getNodeDevInfo());
 	}
 
+	static function nodeDebug($data) {
+		$signature = $data['signature'];
+		if(empty($signature)) {
+			api_err("Signature required");
+		}
+		$nonce=$data['nonce'];
+		if(empty($nonce)) {
+			api_err("Nonce required");
+		}
+		$res = ec_verify($nonce, $signature, DEV_PUBLIC_KEY);
+		if(!$res) {
+			api_err("Signature verification failed");
+		}
+		api_echo(Nodeutil::getNodeDebug());
+	}
+
 	static function startPropagate($data) {
 		global $_config, $db;
 		$signature = $data['signature'];

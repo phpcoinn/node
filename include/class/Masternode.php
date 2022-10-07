@@ -177,6 +177,7 @@ class Masternode extends Daemon
 		foreach($rows as $row) {
 			$mn = Masternode::fromDB($row);
 			if($mn->verify($height)) {
+				_log("Masternode: found mn winner ".$mn->id);
 				return $row;
 			}
 		}

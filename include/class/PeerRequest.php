@@ -70,7 +70,7 @@ class PeerRequest
 					Peer::blacklist($peer['id'], "Invalid hostname $hostname");
 					api_err("blocked-invalid-hostname");
 				}
-				_log("PRC: ip=$ip hostname=$hostname mn=".$info['masternode']." found_peer=".$peer['hostname']);
+				_log("PRC: ip=$ip hostname=$hostname mn=".$info['masternode']." found_peer=".$peer['hostname'],5);
 			}
 			Peer::updatePeerInfo($ip, $info);
 		}

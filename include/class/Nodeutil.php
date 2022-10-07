@@ -444,6 +444,12 @@ class Nodeutil
 		return $data;
 	}
 
+	static function getNodeDebug() {
+		$logData = self::getLogData(1000);
+		$log=explode(PHP_EOL, $logData);
+		return $log;
+	}
+
 	static function getServerData() {
 		$serverData = [];
 		$serverData['hostname']=gethostname();
@@ -517,13 +523,13 @@ class Nodeutil
 		return $dbData;
 	}
 
-	static function getLogData() {
+	static function getLogData($lines=100) {
 		global $_config;
 		$log_file = $_config['log_file'];
 		if(substr($log_file, 0, 1)!= "/") {
 			$log_file = ROOT . "/" .$log_file;
 		}
-		$cmd = "tail -n 100 $log_file";
+		$cmd = "tail -n $lines $log_file";
 		$logData = shell_exec($cmd);
 		return $logData;
 	}
