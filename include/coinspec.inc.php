@@ -7,7 +7,7 @@ if(@file_exists(dirname(__DIR__)."/testnet")) {
 // mainnet specification
 const NETWORK = "mainnet-alpha";
 const VERSION = "1.0.8";
-const BUILD_VERSION = 123;
+const BUILD_VERSION = 124;
 const MIN_VERSION = "1.0.7";
 const DEVELOPMENT = false;
 const XDEBUG = "";

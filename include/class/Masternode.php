@@ -511,7 +511,7 @@ class Masternode extends Daemon
 			$savedMasternode->ip=$masternode['ip'];
 			$res = $savedMasternode->update();
 			if($res === false) {
-				_log("Masternode: Can not update masternode");
+				_log("Masternode: Can not update masternode = ".json_encode($masternode));
 				return false;
 			}
 		}
