@@ -160,7 +160,14 @@ class Masternode extends Daemon
 	}
 
 	static function getWinner($height) {
-		global $db;
+		global $db, $_config;
+
+		$local_id = null;
+		if(Masternode::isLocalMasternode()) {
+			$publicKey = $_config['masternode_public_key'];
+			$local_id = Account::getAddress($publicKey);
+		}
+
 
 		$sql = "select m.id, m.signature, m.public_key, masternode_height.last_win_height
 			from masternode m
@@ -176,6 +183,9 @@ class Masternode extends Daemon
 		$rows = $db->run($sql, [":height"=>$height]);
 		foreach($rows as $row) {
 			$mn = Masternode::fromDB($row);
+			if(!empty($local_id) && $local_id == $mn->id) {
+				continue;
+			}
 			if($mn->verify($height)) {
 				_log("Masternode: found mn winner ".$mn->id);
 				return $row;

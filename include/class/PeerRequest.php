@@ -62,6 +62,15 @@ class PeerRequest
 			}
 		}
 
+		$peer = Peer::getByIp($ip);
+		if($peer) {
+			if($peer['blacklisted'] > time() && strpos($peer['blacklist_reason'],"Invalid hostname") === 0) {
+				$hostname=$info['hostname'];
+				_log("Peer request from blacklisted peer ip=$ip hostname=$hostname reason=".$peer['blacklist_reason']." info=".json_encode($info));
+				api_err("blacklisted-peer");
+			}
+		}
+
 		if(!empty($info)) {
 			$hostname=$info['hostname'];
 			if(!empty($hostname)) {
