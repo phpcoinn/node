@@ -286,12 +286,12 @@ class Peer
 		global $db;
 		_log("PeerSync: Peer request: update info from $ip ".json_encode($info), 3);
 		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, block_id=:block_id, appshash=:appshash, score=:score, version=:version,  
-				miner=:miner, generator=:generator, masternode=:masternode
+				miner=:miner, generator=:generator, masternode=:masternode, hostname=:hostname
 				WHERE ip=:ip",
 			[":ip" => $ip, ':height'=>$info['height'], ':appshash'=>$info['appshash'],
 				':score'=>$info['score'], ':version' => $info['version'],
 				':miner' => $info['miner'], ':generator' => $info['generator'], ':masternode'=>$info['masternode'],
-				':block_id' => $info['block']]);
+				':block_id' => $info['block'], "::hostname"=>$info['hostname']]);
 	}
 
 	static function storePing($url, $curl_info) {
