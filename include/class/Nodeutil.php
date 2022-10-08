@@ -181,6 +181,9 @@ class Nodeutil
 			$ip = san_ip($_SERVER['REMOTE_ADDR']);
 		}
 		$ip = Peer::validateIp($ip);
+		if(!$ip) {
+			_log("Peer Request: invalid ip = $ip SERVER=".json_encode($_SERVER));
+		}
 		return $ip;
 	}
 

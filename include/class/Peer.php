@@ -99,7 +99,7 @@ class Peer
 
 	static function validateIp($ip) {
 		if(!DEVELOPMENT) {
-			$ip = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+			$ip = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE | FILTER_FLAG_IPV4);
 		}
 		return $ip;
 	}
@@ -363,6 +363,12 @@ class Peer
 	public static function deleteBlacklisted() {
 		global $db;
 		$sql="delete from peers where blacklisted > unix_timestamp() and mid(blacklist_reason, 1, 16) = 'Invalid hostname'";
+		$db->run($sql);
+	}
+
+	static function deleteWrongHostnames() {
+		global $db;
+		$sql="delete from peers where hostname not like concat('%',ip,'%')";
 		$db->run($sql);
 	}
 
