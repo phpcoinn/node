@@ -291,7 +291,7 @@ class Peer
 			[":ip" => $ip, ':height'=>$info['height'], ':appshash'=>$info['appshash'],
 				':score'=>$info['score'], ':version' => $info['version'],
 				':miner' => $info['miner'], ':generator' => $info['generator'], ':masternode'=>$info['masternode'],
-				':block_id' => $info['block'], "::hostname"=>$info['hostname']]);
+				':block_id' => $info['block'], ":hostname"=>$info['hostname']]);
 	}
 
 	static function storePing($url, $curl_info) {
