@@ -834,6 +834,7 @@ class Util
 		}
 		Nodeutil::downloadApps();
 		Cache::resetCache();
+		Peer::deleteBlacklisted();
 		echo "Finished".PHP_EOL;
 	}
 

@@ -360,4 +360,10 @@ class Peer
 		return $row;
 	}
 
+	public static function deleteBlacklisted() {
+		global $db;
+		$sql="delete from peers where blacklisted > unix_timestamp() and mid(blacklist_reason, 1, 16) = 'Invalid hostname'";
+		$db->run($sql);
+	}
+
 }
