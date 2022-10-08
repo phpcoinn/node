@@ -75,7 +75,7 @@ class PeerRequest
 			$hostname=$info['hostname'];
 			if(!empty($hostname)) {
 				$peer=Peer::getByIp($ip);
-				if($peer['hostname'] != $hostname) {
+				if(!empty($peer['hostname']) && $peer['hostname'] != $hostname) {
 					Peer::blacklist($peer['id'], "Invalid hostname $hostname");
 					api_err("blocked-invalid-hostname");
 				}
