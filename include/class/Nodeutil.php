@@ -173,12 +173,14 @@ class Nodeutil
 	}
 
 	static function getRemoteAddr() {
-		$ip = san_ip($_SERVER['REMOTE_ADDR']);
-		$ip = Peer::validateIp($ip);
-		if(!$ip) {
+		if(isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+			$ip = san_ip($_SERVER['HTTP_CF_CONNECTING_IP']);
+		} elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
 			$ip = san_ip($_SERVER['HTTP_X_FORWARDED_FOR']);
-			$ip = Peer::validateIp($ip);
+		} else {
+			$ip = san_ip($_SERVER['REMOTE_ADDR']);
 		}
+		$ip = Peer::validateIp($ip);
 		return $ip;
 	}
 
