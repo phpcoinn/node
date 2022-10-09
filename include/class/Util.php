@@ -836,6 +836,7 @@ class Util
 		Cache::resetCache();
 		Peer::deleteBlacklisted();
 		Peer::deleteWrongHostnames();
+		Dapps::createDir();
 		echo "Finished".PHP_EOL;
 	}
 

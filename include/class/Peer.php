@@ -368,7 +368,8 @@ class Peer
 
 	static function deleteWrongHostnames() {
 		global $db;
-		$sql="delete from peers where hostname not like concat('%',ip,'%')";
+		$sql="delete from peers where hostname not like concat('%',ip,'%') 
+			and blacklisted > unix_timestamp() and mid(blacklist_reason, 1, 16) = 'Invalid hostname'";
 		$db->run($sql);
 	}
 

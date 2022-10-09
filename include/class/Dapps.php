@@ -46,6 +46,15 @@ class Dapps extends Daemon
 		}
 	}
 
+	static function createDir() {
+		$dapps_root_dir = self::getDappsDir();
+		if(!file_exists($dapps_root_dir)) {
+			@mkdir($dapps_root_dir);
+			@chown($dapps_root_dir, "www-data");
+			@chgrp($dapps_root_dir, "www-data");
+		}
+	}
+
 	static function process($force = false) {
 		global $_config, $db;
 		_log("Dapps: start process" , 5);
@@ -56,9 +65,7 @@ class Dapps extends Daemon
 			_log("Dapps: dapps root folder $dapps_root_dir does not exists");
 			if (php_sapi_name() == 'cli') {
 				_log("Dapps: create root folder $dapps_root_dir and set permissions");
-				@mkdir($dapps_root_dir);
-				@chown($dapps_root_dir, "www-data");
-				@chgrp($dapps_root_dir, "www-data");
+				self::createDir();
 			}
 			return;
 		}

@@ -425,25 +425,24 @@ class Nodeutil
 		$data['nodeInfo']=self::getNodeInfo();
 		$data['peer']=Peer::getInfo();
 		$tmp_folder = ROOT."/tmp";
-		$data['apps']['tmp_folder']['path']=$tmp_folder;
-		$data['apps']['tmp_folder']['exists']=file_exists($tmp_folder);
-		$data['apps']['tmp_folder']['owner']=shell_exec("stat -c '%U' $tmp_folder");
-		$data['apps']['tmp_folder']['perms']=shell_exec("stat -c '%a' $tmp_folder");
 		$appsHashFile = Nodeutil::getAppsHashFile();
-		$data['apps']['hash_file']['path']=$appsHashFile;
-		$data['apps']['hash_file']['exists']=file_exists($appsHashFile);
-		$data['apps']['hash_file']['owner']=shell_exec("stat -c '%U' $appsHashFile");
-		$data['apps']['hash_file']['perms']=shell_exec("stat -c '%a' $appsHashFile");
 		$appsArchive = ROOT . "/tmp/apps.tar.gz";
-		$data['apps']['apps_archive']['path']=$appsArchive;
-		$data['apps']['apps_archive']['exists']=file_exists($appsArchive);
-		$data['apps']['apps_archive']['owner']=shell_exec("stat -c '%U' $appsArchive");
-		$data['apps']['apps_archive']['perms']=shell_exec("stat -c '%a' $appsArchive");
 		$cache_folder = Cache::$path;
-		$data['apps']['cache_folder']['path']=$cache_folder;
-		$data['apps']['cache_folder']['exists']=file_exists($cache_folder);
-		$data['apps']['cache_folder']['owner']=shell_exec("stat -c '%U' $cache_folder");
-		$data['apps']['cache_folder']['perms']=shell_exec("stat -c '%a' $cache_folder");
+		$folders = [
+			'tmp_folder'=>$tmp_folder,
+			'hash_file'=>$appsHashFile,
+			'apps_archive'=>$appsArchive,
+			'cache_folder'=>$cache_folder,
+			'dapps_folder'=>Dapps::getDappsDir()
+		];
+
+		foreach ($folders as $name => $folder) {
+			$data['folders'][$name]['path']=$folder;
+			$data['folders'][$name]['exists']=file_exists($folder);
+			$data['folders'][$name]['owner']=shell_exec("stat -c '%U' $folder");
+			$data['folders'][$name]['perms']=shell_exec("stat -c '%a' $folder");
+		}
+
 		$propagate_file = ROOT . "/tmp/propagate_info.txt";
 		$data['propagate_info']=json_decode(file_get_contents($propagate_file), true);
 		return $data;
