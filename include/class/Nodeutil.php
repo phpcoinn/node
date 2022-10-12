@@ -189,6 +189,12 @@ class Nodeutil
 
 	static function downloadApps(&$error=null) {
 		global $_config;
+
+		if(!FEATURE_APPS) {
+			_log("Apps feature disabled");
+			return true;
+		}
+
 		if(!defined("APPS_REPO_SERVER")) {
 			if($_config['testnet'] ) {
 				define("APPS_REPO_SERVER", "https://repo.testnet.phpcoin.net:8001");

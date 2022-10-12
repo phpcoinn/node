@@ -457,6 +457,11 @@ class PeerRequest
 
 	static function getApps() {
 		global $_config;
+
+		if(!FEATURE_APPS) {
+			api_err("Apps: Apps feature disabled");
+		}
+
 		if ($_config['repository']) {
 			_log("AppsHash: Received request getApps", 3);
 			$appsHashFile = Nodeutil::getAppsHashFile();
@@ -503,6 +508,10 @@ class PeerRequest
 	}
 
 	static function updateApps() {
+
+		if(!FEATURE_APPS) {
+			api_err("Apps: Apps feature disabled");
+		}
 
 		global $_config;
 		if(!defined("APPS_REPO_SERVER")) {
