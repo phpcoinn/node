@@ -29,6 +29,9 @@ function isRepoServer() {
 	return $repoServer;
 }
 
+global $_config;
+$nodeScore = round($_config['node_score'],2);
+
 if(!FEATURE_APPS) {
 	_log("Apps: feature disabled");
 	return;
@@ -61,10 +64,6 @@ if(!file_exists($appsHashFile)) {
 }
 
 $appsHash = file_get_contents($appsHashFile);
-
-global $_config;
-
-$nodeScore = round($_config['node_score'],2);
 
 $dev = false;
 $adminView = (strpos($_SERVER['REQUEST_URI'], "/apps/admin")===0);
