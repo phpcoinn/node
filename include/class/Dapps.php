@@ -493,28 +493,40 @@ class Dapps extends Daemon
 	public static function downloadDapps($dapps_id)
 	{
 		_log("Dapps: downloadDapps dapps_id=$dapps_id", 5);
-		if(!Account::valid($dapps_id)) {
-			_log("Dapps: downloadDapps dapps_id=$dapps_id NOT VALID");
-			return false;
-		}
-		$peer = Peer::getDappsIdPeer($dapps_id);
-		_log("Dapps: downloadDapps found_peer=".json_encode($peer), 5);
-		$found = false;
-		if($peer) {
-			$peers = [$peer];
-			$found = true;
-		} else {
-			$peers = Peer::getPeersForSync();
-		}
-		if(count($peers)==0) {
-			_log("Dapps: No peers to update dapps $dapps_id");
-		} else {
-			_log("Dapps: Found ".count($peers)." to ask for update dapps $dapps_id", 5);
-			foreach ($peers as $peer) {
-				Propagate::dappsUpdateToPeer($peer['hostname'], $dapps_id);
+
+		if(empty($dapps_id)) {
+			_log("Dapps: downloadDapps dapps from all peers", 5);
+			$dappsPeers = Peer::getDappsPeers();
+			_log("Found total ".count($dappsPeers)." peers", 5);
+			foreach ($dappsPeers as $dappsPeer) {
+				self::downloadDapps($dappsPeer['dapps_id']);
 			}
+		} else {
+			if(!Account::valid($dapps_id)) {
+				_log("Dapps: downloadDapps dapps_id=$dapps_id NOT VALID");
+				return false;
+			}
+			$peer = Peer::getDappsIdPeer($dapps_id);
+			_log("Dapps: downloadDapps found_peer=".json_encode($peer), 5);
+			$found = false;
+			if($peer) {
+				$peers = [$peer];
+				$found = true;
+			} else {
+				$peers = Peer::getPeersForSync();
+			}
+			if(count($peers)==0) {
+				_log("Dapps: No peers to update dapps $dapps_id");
+			} else {
+				_log("Dapps: Found ".count($peers)." to ask for update dapps $dapps_id", 5);
+				foreach ($peers as $peer) {
+					Propagate::dappsUpdateToPeer($peer['hostname'], $dapps_id);
+				}
+			}
+			return $found;
 		}
-		return $found;
+
+
 	}
 
 	public static function propagateDappsUpdate($hash, $id)

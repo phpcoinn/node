@@ -846,7 +846,7 @@ class Util
 		} else {
 			echo "There is no new version".PHP_EOL;
 		}
-//		Nodeutil::downloadApps();
+		Util::downloadDapps(null);
 		Cache::resetCache();
 		Peer::deleteBlacklisted();
 		Peer::deleteWrongHostnames();

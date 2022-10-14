@@ -373,4 +373,10 @@ class Peer
 		$db->run($sql);
 	}
 
+	static function getDappsPeers() {
+		global $db;
+		$sql="select * from peers p where p.dapps_id is not null";
+		return $db->run($sql);
+	}
+
 }
