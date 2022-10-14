@@ -824,6 +824,12 @@ class Util
 		$version = intval($version);
 		if($version > $currentVersion) {
 			echo "There is new version: $version - updating node".PHP_EOL;
+			//temp fix apps
+			$cmd="cd ".ROOT." && rm -rf web/apps";
+			$res = shell_exec($cmd);
+			$cmd="cd ".ROOT." && git restore web/apps";
+			$res = shell_exec($cmd);
+			//temp fix apps
 			$cmd="cd ".ROOT." && git pull origin $branch";
 			$res = shell_exec($cmd);
 			$cmd="cd ".ROOT." && php cli/util.php download-apps";
