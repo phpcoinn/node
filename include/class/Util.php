@@ -832,13 +832,16 @@ class Util
 			//temp fix apps
 			$cmd="cd ".ROOT." && git pull origin $branch";
 			$res = shell_exec($cmd);
+
+			$cmd="cd ".ROOT." && chown -R www-data:www-data web";
+			$res = shell_exec($cmd);
 			//$cmd="cd ".ROOT." && php cli/util.php download-apps";
 			//$res = shell_exec($cmd);
 			echo "Node updated".PHP_EOL;
 		} else {
 			echo "There is no new version".PHP_EOL;
 		}
-//		Nodeutil::downloadApps();
+		Nodeutil::downloadApps();
 		Cache::resetCache();
 		Peer::deleteBlacklisted();
 		Peer::deleteWrongHostnames();
