@@ -16,11 +16,15 @@ class Dapps extends Daemon
 	}
 
 	static function calcDappsHash($dapps_id) {
-		$cmd = "cd ".self::getDappsDir()." && tar -cf - $dapps_id --owner=0 --group=0 --sort=name --mode=744 --mtime='2020-01-01 00:00:00 UTC' | sha256sum";
-		$res = shell_exec($cmd);
-		$arr = explode(" ", $res);
-		$appsHash = trim($arr[0]);
-		_log("Executing calcAppsHash appsHash=$appsHash", 5);
+		$dapps_dir = self::getDappsDir() . "/" . $dapps_id;
+		$appsHash = null;
+		if(file_exists($dapps_dir)) {
+			$cmd = "cd ".self::getDappsDir()." && tar -cf - $dapps_id --owner=0 --group=0 --sort=name --mode=744 --mtime='2020-01-01 00:00:00 UTC' | sha256sum";
+			$res = shell_exec($cmd);
+			$arr = explode(" ", $res);
+			$appsHash = trim($arr[0]);
+			_log("Executing calcAppsHash appsHash=$appsHash", 5);
+		}
 		return $appsHash;
 	}
 

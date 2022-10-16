@@ -157,7 +157,7 @@ class Peer
 
 	static function getInfo() {
 		global $_config;
-		$appsHash = "";
+		$appsHash = null;
 		if(FEATURE_APPS) {
 			$appsHashFile = Nodeutil::getAppsHashFile();
 			$appsHash = @file_get_contents($appsHashFile);
