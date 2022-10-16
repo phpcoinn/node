@@ -577,7 +577,9 @@ class Dapps extends Daemon
 		if(self::isEnabled()) {
 			if(isset($_config['dapps_public_key'])) {
 				$dapps_id = Account::getAddress($_config['dapps_public_key']);
-				$dapps_hash = Dapps::calcDappsHash($dapps_id);
+				if(!empty($dapps_id)) {
+					$dapps_hash = Dapps::calcDappsHash($dapps_id);
+				}
 			}
 		}
 		return [
