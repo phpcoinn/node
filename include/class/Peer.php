@@ -157,15 +157,21 @@ class Peer
 
 	static function getInfo() {
 		global $_config;
-		$appsHashFile = Nodeutil::getAppsHashFile();
-		$appsHash = @file_get_contents($appsHashFile);
+		$appsHash = "";
+		if(FEATURE_APPS) {
+			$appsHashFile = Nodeutil::getAppsHashFile();
+			$appsHash = @file_get_contents($appsHashFile);
+		}
 		$generator = isset($_config['generator_public_key']) && $_config['generator'] ? Account::getAddress($_config['generator_public_key']) :  null;
 		$miner = isset($_config['miner_public_key']) && $_config['miner'] ? Account::getAddress($_config['miner_public_key']) :  null;
 		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'] ? Account::getAddress($_config['masternode_public_key']) : null;
 		$current = Cache::get("current", function() {
 			return Block::current();
 		});
-		_log("Cache: current = ".json_encode($current), 5);
+		$dapps_data = Cache::get("dapps_data", function() {
+			return Dapps::getLocalData();
+		});
+		_log("Cache: dapps_data = ".json_encode($dapps_data), 5);
 		return [
 			"height" => $current['height'],
 			"appshash" => $appsHash,
@@ -175,7 +181,9 @@ class Peer
 			"generator"=>$generator,
 			"masternode"=>$masternode,
 			"block"=>$current['id'],
-			"hostname"=>$_config['hostname']
+			"hostname"=>$_config['hostname'],
+			"dapps_id"=>$dapps_data['dapps_id'],
+			"dapps_hash"=>$dapps_data['dapps_hash']
 		];
 	}
 
@@ -286,12 +294,12 @@ class Peer
 		global $db;
 		_log("PeerSync: Peer request: update info from $ip ".json_encode($info), 3);
 		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, block_id=:block_id, appshash=:appshash, score=:score, version=:version,  
-				miner=:miner, generator=:generator, masternode=:masternode, hostname=:hostname
+				miner=:miner, generator=:generator, masternode=:masternode, hostname=:hostname, dapps_id =:dapps_id, dappshash =:dapps_hash
 				WHERE ip=:ip",
 			[":ip" => $ip, ':height'=>$info['height'], ':appshash'=>$info['appshash'],
 				':score'=>$info['score'], ':version' => $info['version'],
 				':miner' => $info['miner'], ':generator' => $info['generator'], ':masternode'=>$info['masternode'],
-				':block_id' => $info['block'], ":hostname"=>$info['hostname']]);
+				':block_id' => $info['block'], ":hostname"=>$info['hostname'], ":dapps_id"=>$info['dapps_id'], ":dapps_hash"=>$info['dapps_hash']]);
 	}
 
 	static function storePing($url, $curl_info) {

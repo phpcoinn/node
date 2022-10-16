@@ -98,6 +98,7 @@ class Dapps extends Daemon
 		_log("Dapps: exists archive file = $archive_built", 5);
 		if($saved_dapps_hash != $dapps_hash || $force || !$archive_built) {
 			$db->setConfig("dapps_hash", $dapps_hash);
+			Cache::set("dapps_data", Dapps::getLocalData());
 			_log("Dapps: trigger propagate");
 			self::buildDappsArchive($dapps_id);
 			_log("Dapps: Propagating dapps",5);
@@ -405,6 +406,10 @@ class Dapps extends Daemon
 			api_err("Dapps: Dapps $dapps_id - public key not found");
 		}
 
+		if(!isset($_config['dapps_anonymous']) || !$_config['dapps_anonymous']) {
+			Peer::updateDappsId($ip, $dapps_id, $dapps_hash);
+		}
+
 		$calc_dapps_hash = Dapps::calcDappsHash($dapps_id);
 
 		if($calc_dapps_hash == $dapps_hash) {
@@ -421,10 +426,6 @@ class Dapps extends Daemon
 		$peer = Peer::findByIp($ip);
 		if(!$peer) {
 			api_err("Dapps: Remote peer ip=$ip not found", 0);
-		}
-
-		if(!isset($_config['dapps_anonymous']) || !$_config['dapps_anonymous']) {
-			Peer::updateDappsId($ip, $dapps_id, $dapps_hash);
 		}
 
 		_log("Dapps: Request from ip=$ip peer=".$peer['hostname'], 5);
@@ -557,6 +558,28 @@ class Dapps extends Daemon
 		}
 		self::propagateToPeer($peer);
 		api_echo("OK");
+	}
+
+	public static function getLink($dapps_id)
+	{
+		return "/dapps.php?url=".$dapps_id;
+	}
+
+	public static function getLocalData()
+	{
+		global $_config;
+		$dapps_id = null;
+		$dapps_hash = null;
+		if(self::isEnabled()) {
+			if(isset($_config['dapps_public_key'])) {
+				$dapps_id = Account::getAddress($_config['dapps_public_key']);
+				$dapps_hash = Dapps::calcDappsHash($dapps_id);
+			}
+		}
+		return [
+			"dapps_id"=>$dapps_id,
+			"dapps_hash"=>$dapps_hash,
+		];
 	}
 
 }
