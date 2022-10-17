@@ -10,6 +10,8 @@ class Cache
 		self::$path = ROOT . "/tmp/cache";
 		if(!file_exists(self::$path)) {
 			self::$enabled = mkdir(self::$path, 0777);
+			chown(self::$path, "www-data");
+			chgrp(self::$path, "www-data");
 		} else {
 			self::$enabled = true;
 		}
@@ -42,8 +44,20 @@ class Cache
 	static function set($key, $value) {
 		$cache_file = self::getCacheFile($key);
 		$value = json_encode($value);
-		_log("Cache:set $key file=$cache_file value=$value", 5);
-		file_put_contents($cache_file, $value);
+		$res = file_put_contents($cache_file, $value);
+		_log("Cache:set $key file=$cache_file value=$value res=$res", 5);
+	}
+
+	static function exists ($key) {
+		$cache_file = self::getCacheFile($key);
+		return file_exists($cache_file);
+	}
+
+	static function remove($key) {
+		$cache_file = self::getCacheFile($key);
+		if(file_exists($cache_file)) {
+			unlink($cache_file);
+		}
 	}
 
 	public static function clearOldFiles()
