@@ -11,7 +11,7 @@ class NodeSync
 		$this->peers = $peers;
 	}
 
-	public function start($largest_height, $most_common)
+	public function start($largest_height, $largest_id)
 	{
 
 		global $db;
@@ -36,9 +36,9 @@ class NodeSync
 
 			$current = Block::current();
 			$syncing = (($current['height'] < $largest_height && $largest_height > 1)
-				|| ($current['height'] == $largest_height && $current['id'] != $most_common));
+				|| ($current['height'] == $largest_height && $current['id'] != $largest_id));
 			_log("check syncing syncing=$syncing current_height=" . $current['height'] . " largest_height=$largest_height current_id=" .
-				$current['id'] . " most_common=$most_common", 3);
+				$current['id'] . " largest_id=$largest_id", 3);
 
 			if (!$syncing) {
 				break;
@@ -181,8 +181,6 @@ class NodeSync
 
 		Config::setSync(0);
 
-		$this->calculateNodeScore();
-
 		if($syncing) {
 			_log("NodeSync finished", 3);
 		}
@@ -208,13 +206,21 @@ class NodeSync
 					$url = $host . "/peer.php?q=";
 					$res = peer_post($url . "currentBlock", [], 5);
 					if ($res === false) {
+						_log("Node score: skipped $host because response is false", 3);
 						$skipped_peer++;
+						continue;
 					} else{
 						$data = $res['block'];
 					}
 				} else {
 					$data['id']=$peer['block_id'];
 					$data['height']=$peer['height'];
+				}
+
+				if(empty($data['id'])) {
+					_log("Node score: skipped $host because block id is null", 3);
+					$skipped_peer++;
+					continue;
 				}
 
 				if ($data['height'] == $current['height']) {
