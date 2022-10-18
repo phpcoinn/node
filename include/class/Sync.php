@@ -34,18 +34,6 @@ class Sync extends Daemon
 
 		// update the last time sync ran, to set the execution of the next run
 		$db->run("UPDATE config SET val=:time WHERE cfg='sync_last'", [":time" => $t]);
-		$block_peers = [];
-		$longest_size = 0;
-		$longest = 0;
-		$blocks = [];
-		$blocks_count = [];
-		$most_common = "";
-		$most_common_size = 0;
-		$most_common_height = 0;
-		$total_active_peers = 0;
-		$largest_most_common = "";
-		$largest_most_common_size = 0;
-		$largest_most_common_height = 0;
 
 		// delete the dead peers
 		Peer::deleteDeadPeers();
@@ -113,11 +101,6 @@ class Sync extends Daemon
 			}
 		}
 
-		$i = 0;
-
-		$peered = [];
-		$peer_cnt = 0;
-
 		$min = intval(date("i"));
 		$run_get_more_peers = $min % 5 == 0;
 
@@ -152,14 +135,14 @@ class Sync extends Daemon
 		}
 		$live_peers_count = count($peerData);
 		//Then get all other peers
-		$peers = Peer::getActive(100);
-		//_log("PeerSync: syncing other peers ".count($peers));
+		$peers = Peer::getActive($live_peers_count * 2);
+		_log("PeerSync: get active peers ".count($peers), 5);
 		foreach($peers as $peer) {
 			$hostname = $peer['hostname'];
 			if(isset($peerData[$hostname])) {
 				continue;
 			}
-			//	_log("PeerSync: Contacting peer $hostname");
+			_log("PeerSync: Contacting peer $hostname", 5);
 			$url = $hostname."/peer.php?q=";
 			$res = peer_post($url."currentBlock", [], 5);
 			if ($res === false) {
@@ -181,13 +164,14 @@ class Sync extends Daemon
 				"id"=>$data['id'],
 				"height"=>$data["height"]
 			];
-		//	_log("PeerSync: add other peer data id=".$peer['id']." $hostname block_id=".$data["id"]." height=".$data["height"]);
+			_log("PeerSync: add other peer data id=".$peer['id']." $hostname block_id=".$data["id"]." height=".$data["height"], 5);
 		}
 
 		$peers_count = count($peerData);
+		_log("PeerSync: total peers_count=$peers_count", 5);
 
-		$t1= microtime(true);
-		$peerStats = [];
+		$blocksMap = [];
+		$peersMap = [];
 
 		//check all, but if ping is older contact peer
 		foreach ($peerData as $hostname => $data) {
@@ -195,14 +179,8 @@ class Sync extends Daemon
 //			_log("PeerSync: check blacklist $hostname height=".$data['height']." id=".$data['id'],5);
 
 			$peer = $data['peer'];
-			if($current['height'] >= $data['height']) {
-				$block = Block::get($data['height']);
-				if(!empty($data['id']) && !empty($block['id']) && $block['id'] != $data['id']) {
-//					_log("PeerSync: blacklist peer $hostname because of invalid block at height".$data['height']." my=".$block['id']." peer=".$data['id']);
-//					Peer::blacklist($peer['id'], "Invalid block ".$data['height']);
-					continue;
-				}
-			}
+			$height = $data['height'];
+			$id = $data['id'];
 
 
 			if ($current['height'] > 1 && $data['height'] >1 && $data['height'] < $current['height'] - 100) {
@@ -215,110 +193,111 @@ class Sync extends Daemon
 				}
 			}
 
-			$total_active_peers++;
-			// add the hostname and block relationship to an array
-			$block_peers[$data['id']][] = $hostname;
-			// count the number of peers with this block id
-			$blocks_count[$data['id']]++;
-			// keep block data for this block id
-			$blocks[$data['id']] = $data;
-			// set the most common block on all peers
-			if ($blocks_count[$data['id']] > $most_common_size) {
-				$most_common = $data['id'];
-				$most_common_size = $blocks_count[$data['id']];
-				$most_common_height = $data['height'];
-			}
-			if ($blocks_count[$data['id']] > $largest_most_common_size && $data['height'] > $current['height']) {
-				$largest_most_common = $data['id'];
-				$largest_most_common_size = $blocks_count[$data['id']];
-				$largest_most_common_height = $data['height'];
-			}
 			// set the largest height block
-			if ($data['height'] > $largest_height) {
-				$largest_height = $data['height'];
-				$largest_height_block = $data['id'];
-			} elseif ($data['height'] == $largest_height && $data['id'] != $largest_height_block) {
-				// if there are multiple blocks on the largest height, choose one with the smallest (hardest) difficulty
-				if ($data['difficulty'] == $blocks[$largest_height_block]['difficulty']) {
-					// if they have the same difficulty, choose if it's most common
-					if ($most_common == $data['id']) {
-						$largest_height = $data['height'];
-						$largest_height_block = $data['id'];
-					} else {
-						// if the blocks have the same number of transactions, choose the one with the highest derived integer from the first 12 hex characters
-						$no1 = hexdec(substr(coin2hex($largest_height_block), 0, 12));
-						$no2 = hexdec(substr(coin2hex($data['id']), 0, 12));
-						if (gmp_cmp($no1, $no2) == 1) {
-							$largest_height = $data['height'];
-							$largest_height_block = $data['id'];
+			$blocksMap[$height][$id][$hostname]=$hostname;
+			$peersMap[$height][]=$hostname;
+		}
+
+		uksort($blocksMap, function($k1, $k2) {
+			return $k2 - $k1;
+		});
+
+		_log("Block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
+
+		$forked = false;
+		_log("Checking blocks map for forks", 5);
+		foreach($blocksMap as $height => $blocks) {
+			_log("Checking height=$height blocks=".count($blocks));
+			if(count($blocks)>1) {
+				$forked = true;
+				_log("Start checking blocks time and difficulty", 5);
+				$forkedBlocksMap = [];
+				foreach ($blocks as $block_id => $peers) {
+					_log("Checking block $block_id count=" . count($peers), 5);
+					foreach ($peers as $peer) {
+						$url = $peer . "/peer.php?q=";
+						$peer_blocks = peer_post($url . "getBlocks", ["height" => $height - 1], 5);
+						if (!$peer_blocks) {
+							continue;
 						}
+						$peer_prev_block = array_shift($peer_blocks);
+						$peer_block = array_shift($peer_blocks);
+						if (!$peer_prev_block || !$peer_block) {
+							continue;
+						}
+						$elapsed = $peer_block['date'] - $peer_prev_block['date'];
+						$peer_block['elapsed'] = $elapsed;
+						$difficulty = $peer_block['difficulty'];
+						_log("Read block at height $height from peer $peer elapsed=$elapsed diff=$difficulty", 5);
+						$forkedBlocksMap[$block_id] = $peer_block;
+						break;
 					}
-				} elseif ($data['difficulty'] > $blocks[$largest_height_block]['difficulty']) {
-					// choose higher (hardest) difficulty
-					$largest_height = $data['height'];
-					$largest_height_block = $data['id'];
+				}
+				uasort($forkedBlocksMap, function ($b1, $b2) {
+					return $b1['elapsed'] - $b2['elapsed'];
+				});
+				_log("Forked blocks " . json_encode($forkedBlocksMap, JSON_PRETTY_PRINT), 5);
+				$winForkedBlock = array_shift($forkedBlocksMap);
+				_log("Forked block winner is block " . $winForkedBlock['id']);
+				$winPeers = $blocksMap[$height][$winForkedBlock['id']];
+				$blocksMap[$height] = [$winForkedBlock['id'] => $winPeers];
+			}
+		}
+
+		if($forked) {
+			_log("Corrected block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
+		}
+
+		foreach($blocksMap as $height => $blocks) {
+			_log("Checking height=$height blocks=".count($blocks));
+			$block_id =  array_keys($blocks)[0];
+			_log("Check height $height block_id = $block_id", 5);
+			if($height > $current['height']) {
+				_log("Not top block - need sync", 5);
+			} else if ($height == $current['height']) {
+				_log("Check top block", 5);
+				if($block_id == $current['id']) {
+					_log("Our top block is ok", 5);
+				} else {
+					_log("We have wrong top block - pop it", 5);
+					Block::pop();
+					Config::setSync(0);
+					return;
+				}
+			} else {
+				_log("Check not top block", 5);
+				$block = Block::get($height);
+				_log("Check block at height=$height our=".$block['id'], 5);
+				if($block_id == $block['id']) {
+					_log("Our block is ok", 5);
+				} else {
+					_log("We have wrong block - pop up to it", 5);
+					$no = $current['height'] - $height;
+					Block::pop($no);
+					Config::setSync(0);
+					return;
 				}
 			}
-
 		}
 
-		$largest_size=$blocks_count[$largest_height_block];
+		$largest_height = array_keys($blocksMap)[0];
+		$largest_height_block = array_keys($blocksMap[$largest_height])[0];
 
-		$peerStats['most_common']=$most_common;
-		$peerStats['most_common_size']=$most_common_size;
-		$peerStats['most_common_height']=$most_common_height;
 		$peerStats['largest_height']=$largest_height;
-		$peerStats['largest_size']=$largest_size;
-		$peerStats['largest_most_common']=$largest_most_common;
-		$peerStats['largest_most_common_size']=$largest_most_common_size;
-		$peerStats['largest_most_common_height']=$largest_most_common_height;
-		$peerStats['total_active_peers']=$total_active_peers;
 		$peerStats['current_height']=$current['height'];
-
-		_log("Most common: $most_common", 5);
-		_log( "Most common block size: $most_common_size",5);
-		_log( "Most common height: $most_common_height",5);
 		_log( "Longest chain height: $largest_height",5);
-		_log( "Longest chain size: $largest_size",5);
-		_log( "Larger Most common: $largest_most_common",5);
-		_log( "Larger Most common block size: $largest_most_common_size",5);
-		_log( "Larger Most common height: $largest_most_common_height",5);
-		_log( "Total size: $total_active_peers",5);
 
-		_log( "Current block: $current[height]",5);
 
-		if($largest_height-$most_common_height>100&&$largest_size==1&&$current['id']==$largest_height_block){
-			_log("Current node is alone on the chain and over 100 blocks ahead. Poping 200 blocks.");
-			Block::pop(200);
-			_log("Exiting sync, next will sync from 200 blocks ago.");
-
-			Config::setSync(0);
-			return;
-		}
-
-		// if there's a single node with over 100 blocks ahead on a single peer, use the most common block
-		if($largest_height-$most_common_height>100 && $largest_size==1){
-			if($current['id']==$most_common && $largest_most_common_size>3){
-				_log("Longest chain is way ahead, using largest most common block");
-				$largest_height=$largest_most_common_height;
-				$largest_size=$largest_most_common_size;
-				$largest_height_block=$largest_most_common;
-			} else {
-				_log("Longest chain is way ahead, using most common block");
-				$largest_height=$most_common_height;
-				$largest_size=$most_common_size;
-				$largest_height_block=$most_common;
-			}
-		}
-
-		$peers = $block_peers[$largest_height_block];
-		if(is_array($peers)) {
-			$peers_count = count($peers);
-			shuffle($peers);
-		}
-
+		$peers = array_keys($blocksMap[$largest_height][$largest_height_block]);
 		$nodeSync = new NodeSync($peers);
-		$nodeSync->start($largest_height, $most_common);
+		if($largest_height > $current['height']) {
+			_log("Start syncing to height $largest_height", 5);
+			$nodeSync->start($largest_height, $largest_height_block);
+		} else {
+			_log("Our blockchain is synced", 5);
+		}
+
+		$nodeSync->calculateNodeScore();
 
 		Mempool::deleteOldMempool();
 

@@ -101,6 +101,7 @@ class Dapps extends Daemon
 		$archive_built = file_exists(ROOT  . "/tmp/dapps.tar.gz");
 		_log("Dapps: exists archive file = $archive_built", 5);
 		if($saved_dapps_hash != $dapps_hash || $force || !$archive_built) {
+			Cache::remove("dapps_data");
 			$db->setConfig("dapps_hash", $dapps_hash);
 			Cache::set("dapps_data", Dapps::getLocalData());
 			_log("Dapps: trigger propagate");
@@ -110,6 +111,13 @@ class Dapps extends Daemon
 		} else {
 			_log("Dapps: not changed dapps", 5);
 		}
+		if(!Cache::exists("dapps_data")) {
+			_log("Cache dapps_data not exists", 5);
+			Cache::set("dapps_data", Dapps::getLocalData());
+		} else {
+			_log("Cache dapps_data exists", 5);
+		}
+
 	}
 
 	static function propagate($id) {

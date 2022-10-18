@@ -149,7 +149,7 @@ class Daemon
 				_log("Daemon: $name - Run only once - exit" , 3);
 				break;
 			}
-
+			clearstatcache($control_file);
 			$control_file_md5_check = md5_file($control_file);
 			$control_file_time_check = filemtime($control_file);
 			_log("Daemon: control_file=$control_file start md5=$control_file_md5 time=$control_file_time", 5);

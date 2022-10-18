@@ -33,8 +33,8 @@ class Peer
 
 	static function getActive($limit=100) {
 		global $db;
-		$sql="select * from peers WHERE  blacklisted < ".DB::unixTimeStamp()." ORDER by ".DB::random()." LIMIT :limit";
-		$rows = $db->run($sql, ["limit"=>$limit]);
+		$sql="select * from peers WHERE  blacklisted < ".DB::unixTimeStamp()." ORDER by ".DB::random().(!empty($limit) ? " LIMIT $limit" : "");
+		$rows = $db->run($sql);
 		return $rows;
 	}
 

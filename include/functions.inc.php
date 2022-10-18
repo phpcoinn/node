@@ -85,23 +85,29 @@ function _log($data, $verbosity = 0)
     if (!empty($trace[$loc]['function']) && $trace[$loc]['function'] != '_log') {
         $res .= '->'.$trace[$loc]['function'].'()';
     }
-    $res .= " $data \n";
-    if (($_config && $_config['enable_logging'] == true && $_config['log_verbosity'] >= $verbosity) || !empty(getenv('LOG_DEBUG'))) {
-	    if (php_sapi_name() === 'cli') {
-	    	if(!defined("CLI_UTIL") || CLI_UTIL == 0) {
-	            echo $res;
+
+	$prefix = $res . " ";
+	$lines = explode(PHP_EOL, $data);
+	foreach ($lines as $line) {
+		$res = $prefix . $line . PHP_EOL;
+	    if (($_config && $_config['enable_logging'] == true && $_config['log_verbosity'] >= $verbosity) || !empty(getenv('LOG_DEBUG'))) {
+		    if (php_sapi_name() === 'cli') {
+		        if(!defined("CLI_UTIL") || CLI_UTIL == 0) {
+		            echo $res;
+			    }
+		    } else {
+		        if(isset($_config['server_log']) && $_config['server_log']) {
+		            error_log($res);
+			    }
 		    }
-	    } else {
-	    	if(isset($_config['server_log']) && $_config['server_log']) {
-	            error_log($res);
+		    $log_file = $_config['log_file'];
+		    if(substr($log_file, 0, 1)!= "/") {
+			    $log_file = ROOT . "/" . $log_file;
 		    }
+	        @file_put_contents($log_file, $res, FILE_APPEND);
 	    }
-	    $log_file = $_config['log_file'];
-	    if(substr($log_file, 0, 1)!= "/") {
-		    $log_file = ROOT . "/" . $log_file;
-	    }
-        @file_put_contents($log_file, $res, FILE_APPEND);
-    }
+	}
+
 }
 
 // converts PEM key to hex
