@@ -7,7 +7,7 @@ if(@file_exists(dirname(__DIR__)."/testnet")) {
 // mainnet specification
 const NETWORK = "mainnet-alpha";
 const VERSION = "1.0.8";
-const BUILD_VERSION = 139;
+const BUILD_VERSION = 140;
 const MIN_VERSION = "1.0.7";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -89,7 +89,7 @@ const FEE_DIVIDER = 100;
 const TX_SC_CREATE_FEE = 100;
 const TX_SC_EXEC_FEE = 0.01;
 const SC_START_HEIGHT = PHP_INT_MAX;
-const TX_TYPE_BURN_START_HEIGHT = PHP_INT_MAX;
+const TX_TYPE_BURN_START_HEIGHT = 440000;
 
 const SC_MAX_EXEC_TIME = 30;
 const SC_MEMORY_LIMIT = "256M";
