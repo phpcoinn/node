@@ -436,15 +436,19 @@ if($dbversion == 21) {
 	$dbversion = 22;
 }
 
-if($dbversion < 27) {
-	$lock_dir = ROOT . "/tmp/db-migrate-27";
-	if (mkdir($lock_dir, 0700)) {
-		$db->run("update config set val=1 where cfg='offline'");
+if($dbversion < 28) {
+	if(!$was_empty) {
+		$lock_file = ROOT . "/tmp/db-lock-28";
+		if (!mkdir($lock_file, 0700)) {
+			$db->rollBack();
+			return;
+		}
+		$db->run("lock tables transactions write");
 		$db->run("alter table transactions modify dst varchar(128) null");
-		$db->run("update config set val=0 where cfg='offline'");
-		@rmdir($lock_dir);
-		$dbversion = 27;
+		$db->run("unlock tables");
+		@rmdir($lock_file);
 	}
+	$dbversion = 28;
 }
 
 // update the db version to the latest one
