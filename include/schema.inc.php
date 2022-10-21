@@ -436,6 +436,15 @@ if($dbversion == 21) {
 	$dbversion = 22;
 }
 
+if($dbversion == 22) {
+	$lock_dir = ROOT . "/tmp/db-migrate";
+	if (mkdir($lock_dir, 0700)) {
+		$db->run("alter table transactions modify dst varchar(128) null");
+		@rmdir($lock_dir);
+		$dbversion = 23;
+	}
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
