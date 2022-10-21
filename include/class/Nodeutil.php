@@ -435,6 +435,7 @@ class Nodeutil
 		$appsArchive = ROOT . "/tmp/apps.tar.gz";
 		$cache_folder = Cache::$path;
 		$folders = [
+			"root"=>ROOT,
 			'tmp_folder'=>$tmp_folder,
 			'hash_file'=>$appsHashFile,
 			'apps_archive'=>$appsArchive,
@@ -453,7 +454,8 @@ class Nodeutil
 
 		$propagate_file = ROOT . "/tmp/propagate_info.txt";
 		$data['propagate_info']=json_decode(file_get_contents($propagate_file), true);
-		$data['git_status']=shell_exec("cd ".ROOT." && git status");
+		$git_status=shell_exec("cd ".ROOT." && git status");
+		$data['git_status']=explode(PHP_EOL, $git_status);
 		return $data;
 	}
 
