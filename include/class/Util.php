@@ -829,9 +829,9 @@ class Util
 //			$cmd="cd ".ROOT." && rm -rf web/apps";
 //			$res = shell_exec($cmd);
 //			_log("cmd=$cmd res=$res", 5);
-//			$cmd="cd ".ROOT." && git restore web/apps";
-//			$res = shell_exec($cmd);
-//			_log("cmd=$cmd res=$res", 5);
+			$cmd="cd ".ROOT." && git restore .";
+			$res = shell_exec($cmd);
+			_log("cmd=$cmd res=$res", 5);
 			//temp fix apps
 			$cmd="cd ".ROOT." && git pull origin $branch";
 			$res = shell_exec($cmd);

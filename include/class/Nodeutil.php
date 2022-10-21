@@ -439,7 +439,9 @@ class Nodeutil
 			'hash_file'=>$appsHashFile,
 			'apps_archive'=>$appsArchive,
 			'cache_folder'=>$cache_folder,
-			'dapps_folder'=>Dapps::getDappsDir()
+			'dapps_folder'=>Dapps::getDappsDir(),
+			'log_file'=>ROOT ."/tmp/phpcoin.log",
+			"db_migrate_lock"=>ROOT . "/tmp/db-migrate"
 		];
 
 		foreach ($folders as $name => $folder) {
@@ -451,6 +453,7 @@ class Nodeutil
 
 		$propagate_file = ROOT . "/tmp/propagate_info.txt";
 		$data['propagate_info']=json_decode(file_get_contents($propagate_file), true);
+		$data['git_status']=shell_exec("cd ".ROOT." && git status");
 		return $data;
 	}
 
