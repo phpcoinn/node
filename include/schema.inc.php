@@ -445,6 +445,17 @@ if($dbversion == 22) {
 	}
 }
 
+if($dbversion == 23) {
+	$lock_dir = ROOT . "/tmp/db-migrate";
+	if (mkdir($lock_dir, 0700)) {
+		$db->run("update config set val=1 where cfg='offline'");
+		$db->run("alter table transactions modify dst varchar(128) null");
+		$db->run("update config set val=0 where cfg='offline'");
+		@rmdir($lock_dir);
+		$dbversion = 24;
+	}
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
