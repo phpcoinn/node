@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__)."/apps.inc.php";
+require_once ROOT. '/web/apps/explorer/include/functions.php';
 define("PAGE", true);
 define("APP_NAME", "Explorer");
 $id = $_GET['id'];
@@ -52,11 +53,11 @@ require_once __DIR__. '/../common/include/top.php';
         </tr>
         <tr>
             <td>height</td>
-            <td><?php echo $tx['height'] ?></td>
+            <td><a href="/apps/explorer/block.php?height=<?php echo $tx['height'] ?>"><?php echo $tx['height'] ?></a></td>
         </tr>
         <tr>
             <td>Block</td>
-            <td><?php echo $tx['block'] ?></td>
+            <td><?php echo explorer_block_link($tx['block']) ?></td>
         </tr>
         <tr>
             <td>Confirmations</td>
@@ -64,7 +65,9 @@ require_once __DIR__. '/../common/include/top.php';
         </tr>
         <tr>
             <td>Date</td>
-            <td><?php echo $tx['date'] ?></td>
+            <td>
+                <?php echo display_date($tx['date']) ?>
+            </td>
         </tr>
         <?php
         if($tx['type']==TX_TYPE_REWARD || $tx['type']==TX_TYPE_FEE) {
@@ -77,13 +80,13 @@ require_once __DIR__. '/../common/include/top.php';
             <td>Source</td>
             <td>
                 <?php if($src) { ?>
-                    <?php echo Account::getAddress($tx['public_key']) ?>
+                    <?php echo explorer_address_link(Account::getAddress($tx['public_key'])) ?>
                 <?php } ?>
             </td>
         </tr>
         <tr>
             <td>Destination</td>
-            <td><?php echo $tx['dst'] ?></td>
+            <td><?php echo explorer_address_link($tx['dst']) ?></td>
         </tr>
         <tr>
             <td>Type</td>

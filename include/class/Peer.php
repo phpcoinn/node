@@ -387,4 +387,12 @@ class Peer
 		return $db->run($sql);
 	}
 
+	public static function getPeerByType($address, $type)
+	{
+		global $db;
+		$sql="select * from peers p where p.$type = :address limit 1";
+		$row = $db->row($sql, [":address"=>$address]);
+		return $row;
+	}
+
 }

@@ -410,7 +410,60 @@ class Transaction
 		return true;
 	}
 
-	// add a new transaction to the blockchain
+	public static function getTxStatByType($address, $type)
+	{
+		global $db;
+		$sql="select sum(t.val) as total, count(t.id) as tx_cnt from transactions t where t.dst = :address and t.type = 0
+            and t.message = :type
+			and exists (select 1 from blocks b where b.$type = t.dst)";
+		$res = $db->row($sql, [":address"=>$address, ":type"=>$type]);
+		return $res;
+	}
+
+	public static function getByAddressType($address, $type, $dm)
+	{
+		global $db;
+
+		if(is_array($dm)) {
+			$page = $dm['page'];
+			$limit = $dm['limit'];
+			$offset = ($page-1)*$limit;
+		} else {
+			$limit = intval($dm);
+			if ($limit > 100 || $limit < 1) {
+				$limit = 100;
+			}
+		}
+
+		$res = $db->run(
+			"SELECT * FROM transactions t
+				WHERE t.dst = :address
+				  and t.message = :message
+				and exists (select 1 from blocks b where b.$type = t.dst)
+				ORDER by t.height DESC LIMIT :offset, :limit", [":address"=>$address, ":offset"=>$offset, ":limit"=>$limit, ":message"=>$type]
+		);
+		return $res;
+	}
+
+	public static function getRewardsStat($address, $type)
+	{
+		global $db;
+		$sql="select min(t.date) as min_date, max(t.date) as max_date, sum(t.val) as total 
+			from transactions t where t.dst = :address and t.type = 0
+			and t.message = :type";
+		$data = [];
+		$row = $db->row($sql, [":address"=>$address, ":type"=>$type]);
+		$data['total']['start']=$row['min_date'];
+		$data['total']['start']=$row['max_date'];
+		$data['total']['elapsed']=$row['max_date'] - $row['min_date'];
+		$data['total']['days']=$data['total']['elapsed'] / 86400;
+		$data['total']['daily']=$row['total'] / $data['total']['days'];
+		$data['total']['weekly']=$data['total']['daily'] * 7;
+		$data['total']['monthly']=$data['total']['daily'] * 30;
+		$data['total']['yearly']=$data['total']['monthly'] * 12;
+		return $data;
+	}
+
 	public function add($block, $height, &$error = null)
 	{
 

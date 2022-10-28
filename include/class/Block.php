@@ -49,6 +49,19 @@ class Block
 		$this->prevBlockId = $prevBlockId;
 	}
 
+	public static function getAddressTypes($address)
+	{
+		global $db;
+		$data = [];
+		$sql="select 1 from blocks b where b.masternode = :masternode limit 1";
+		$data['is_masternode']=$db->single($sql, [":masternode"=>$address]) == 1;
+		$sql="select 1 from blocks b where b.generator = :generator limit 1";
+		$data['is_generator']=$db->single($sql, [":generator"=>$address]) == 1;
+		$sql="select 1 from blocks b where b.miner = :miner limit 1";
+		$data['is_miner']=$db->single($sql, [":miner"=>$address]) == 1;
+		return $data;
+	}
+
 	public function add(&$error = null)
     {
         global $db;

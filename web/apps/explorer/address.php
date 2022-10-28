@@ -33,6 +33,8 @@ $addressStat = Transaction::getAddressStat($address);
 
 $mempool = Account::getMempoolTransactions($address);
 
+$addressTypes = Block::getAddressTypes($address);
+
 ?>
 <?php
 require_once __DIR__. '/../common/include/top.php';
@@ -47,7 +49,24 @@ require_once __DIR__. '/../common/include/top.php';
 <table class="table table-sm table-striped">
     <tr>
         <td>Address</td>
-        <td><?php echo $address ?></td>
+        <td>
+            <?php echo $address ?>
+            <?php if($addressTypes['is_generator']) { ?>
+                <a href="/apps/explorer/address_info.php?address=<?php echo $address ?>&type=generator">
+                    <span class="badge rounded-pill bg-success font-size-12">Generator</span>
+                </a>
+            <?php } ?>
+	        <?php if($addressTypes['is_miner']) { ?>
+                <a href="/apps/explorer/address_info.php?address=<?php echo $address ?>&type=miner">
+                    <span class="badge rounded-pill bg-warning font-size-12">Miner</span>
+                </a>
+	        <?php } ?>
+	        <?php if($addressTypes['is_masternode']) { ?>
+                <a href="/apps/explorer/address_info.php?address=<?php echo $address ?>&type=masternode">
+                    <span class="badge rounded-pill bg-info font-size-12">Masternode</span>
+                </a>
+	        <?php } ?>
+        </td>
     </tr>
     <tr>
         <td>Public key</td>
@@ -159,7 +178,20 @@ require_once __DIR__. '/../common/include/top.php';
                         <?php echo truncate_hash($transaction['block']) ?></a></td>
                 <td><a href="/apps/explorer/address.php?address=<?php echo $party ?>">
 			            <?php echo truncate_hash($party) ?></a></td>
-                <td><?php echo TransactionTypeLabel($transaction['type']) ?></td>
+                <td>
+                    <?php echo TransactionTypeLabel($transaction['type']) ?>
+                    <?php if($transaction['type'] == TX_TYPE_REWARD) { ?>
+                        <?php if($transaction['message']=="generator") { ?>
+                            <span class="badge rounded-pill bg-success">Generator</span>
+                        <?php } ?>
+                        <?php if($transaction['message']=="miner") { ?>
+                            <span class="badge rounded-pill bg-warning">Miner</span>
+                        <?php } ?>
+                        <?php if($transaction['message']=="masternode") { ?>
+                            <span class="badge rounded-pill bg-info">Masternode</span>
+                        <?php } ?>
+                    <?php } ?>
+                </td>
                 <td class="<?php echo $transaction['sign']=='-' ? 'text-danger' : 'text-success' ?>">
                     <?php echo $transaction['sign'] .  num($transaction['val']) ?>
                 </td>

@@ -214,7 +214,20 @@ require_once __DIR__. '/../common/include/top.php';
                     <td><?php echo explorer_address_link2($tx['dst'], true); ?></td>
                     <td class="text-end"><?php echo num($tx['val']) ?></td>
                     <td><?php echo num($tx['fee']) ?></td>
-                    <td><?php echo TransactionTypeLabel($tx['type']) ?></td>
+                    <td>
+                        <?php echo TransactionTypeLabel($tx['type']) ?>
+	                    <?php if($tx['type'] == TX_TYPE_REWARD) { ?>
+		                    <?php if($tx['message']=="generator") { ?>
+                                <span class="badge rounded-pill bg-success">Generator</span>
+		                    <?php } ?>
+		                    <?php if($tx['message']=="miner") { ?>
+                                <span class="badge rounded-pill bg-warning">Miner</span>
+		                    <?php } ?>
+		                    <?php if($tx['message']=="masternode") { ?>
+                                <span class="badge rounded-pill bg-info">Masternode</span>
+		                    <?php } ?>
+	                    <?php } ?>
+                    </td>
                     <td><?php echo display_date($tx['date']) ?></td>
                 </tr>
             </tbody>
