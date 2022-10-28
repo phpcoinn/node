@@ -455,6 +455,7 @@ class Nodeutil
 		$propagate_file = ROOT . "/tmp/propagate_info.txt";
 		$data['propagate_info']=json_decode(file_get_contents($propagate_file), true);
 		$git_status=shell_exec("cd ".ROOT." && git status");
+		$data['git_version']=shell_exec("git --version");
 		$data['git_status']=explode(PHP_EOL, $git_status);
 		return $data;
 	}
