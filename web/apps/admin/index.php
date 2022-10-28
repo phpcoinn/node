@@ -620,7 +620,7 @@ require_once __DIR__. '/../common/include/top.php';
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'ping', 'Ping' ,'') ?>
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'height', 'Height' ,'') ?>
                         <th>Ip</th>
-                        <th>Version</th>
+	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'version', 'Version' ,'') ?>
                         <th>Fails</th>
                         <th>Stuckfail</th>
                         <th>Reason</th>
