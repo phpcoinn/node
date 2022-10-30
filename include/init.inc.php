@@ -118,9 +118,9 @@ if (file_exists($db_update_file)) {
 }
 
 // current hostname
-$hostname = (!empty($_SERVER['HTTPS']) ? 'https' : 'http')."://".san_host($_SERVER['HTTP_HOST']);
+$hostname = (!empty($_SERVER['HTTPS']) ? 'https' : 'http')."://".san_host(@$_SERVER['HTTP_HOST']);
 // set the hostname to the current one
-if ($hostname != $_config['hostname'] && $_SERVER['HTTP_HOST'] != "localhost" && $_SERVER['HTTP_HOST'] != "127.0.0.1" && $_SERVER['hostname'] != '::1' && php_sapi_name() !== 'cli' && ($_config['allow_hostname_change'] != false || empty($_config['hostname']))) {
+if ($hostname != @$_config['hostname'] && @$_SERVER['HTTP_HOST'] != "localhost" && @$_SERVER['HTTP_HOST'] != "127.0.0.1" && @$_SERVER['hostname'] != '::1' && php_sapi_name() !== 'cli' && ($_config['allow_hostname_change'] != false || empty(@$_config['hostname']))) {
     $db->run("UPDATE config SET val=:hostname WHERE cfg='hostname' LIMIT 1", [":hostname" => $hostname]);
     $_config['hostname'] = $hostname;
 }

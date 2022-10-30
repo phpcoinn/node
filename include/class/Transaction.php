@@ -218,8 +218,8 @@ class Transaction
 		$trans->src = $x['src'];
 		$trans->fee = floatval($x['fee']);
 		$trans->signature = $x['signature'];
-		$trans->data = $x['data'];
-		$trans->height = $x['height'];
+		$trans->data = @$x['data'];
+		$trans->height = @$x['height'];
 		return $trans;
 	}
 

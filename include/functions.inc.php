@@ -18,7 +18,7 @@ function san_ip($a)
 
 function san_host($a)
 {
-    $a = preg_replace("/[^a-zA-Z0-9\.\-\:\/]/", "", $a);
+    $a = @preg_replace("/[^a-zA-Z0-9\.\-\:\/]/", "", $a);
     return $a;
 }
 
@@ -73,7 +73,7 @@ function _log($data, $verbosity = 0)
 		if(!empty(PeerRequest::$requestId)) {
 			$dev_part .= "[".PeerRequest::$requestId."]";
 		}
-		$ua = $_SERVER['HTTP_USER_AGENT'];
+		$ua = @$_SERVER['HTTP_USER_AGENT'];
 		$dev_part .= " $ua";
 	}
 

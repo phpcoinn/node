@@ -267,7 +267,7 @@ class Block
 			}
 			$name = $phase['name'];
 			$total = $phase['reward'];
-			$segment = $phase['segment'];
+			$segment = @$phase['segment'];
 			$pos_reward = 0;
 			switch ($name) {
 				case "genesis":

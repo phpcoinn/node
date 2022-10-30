@@ -658,7 +658,7 @@ class Util
 	}
 
 	static function verifyBlocks($argv) {
-		$range = $argv[2];
+		$range = @$argv[2];
 		if(empty($range)) {
 			$start=1;
 			$stop= Block::getHeight();

@@ -31,7 +31,7 @@ if (php_sapi_name() !== 'cli') {
 }
 
 require_once dirname(__DIR__).'/include/init.inc.php';
-$cmd = trim($argv[1]);
+$cmd = @trim(@$argv[1]);
 
 $log = getenv("LOG");
 if(!$log) {
@@ -43,6 +43,7 @@ if(method_exists(Util::class, $cmd)) {
 	call_user_func([Util::class, $cmd], $argv);
 	return;
 } else {
+	$str = "";
 	if(!empty($cmd)) {
 		$str = str_replace(' ', '', ucwords(str_replace('-', ' ', $cmd)));
 		$str[0] = strtolower($str[0]);
