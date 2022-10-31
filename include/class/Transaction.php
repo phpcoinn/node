@@ -742,7 +742,7 @@ class Transaction
 	        }
 
 	        //verify the ecdsa signature
-	        if (!Account::checkSignature($base, $this->signature, $this->publicKey)) {
+	        if (!Account::checkSignature($base, $this->signature, $this->publicKey, $height)) {
 		        throw new Exception("{$this->id} - Invalid signature - $base");
 	        }
 
@@ -870,10 +870,11 @@ class Transaction
 
     }
 
-	public function sign($private_key)
+	public function sign($private_key, $height= null)
 	{
 		$base = $this->getSignatureBase();
-		$signature = ec_sign($base, $private_key);
+		$chain_id = Block::getChainId($height);
+		$signature = ec_sign($base, $private_key, $chain_id);
 		$this->signature = $signature;
 		return $signature;
 	}
@@ -1029,9 +1030,9 @@ class Transaction
         return $trans;
     }
 
-    static function getRewardTransaction($dst,$date,$public_key,$private_key,$reward, $msg) {
+    static function getRewardTransaction($dst,$date,$public_key,$private_key,$reward, $msg, $height = null) {
 	    $transaction = new Transaction($public_key,$dst,$reward,TX_TYPE_REWARD,$date,$msg);
-	    $signature = $transaction->sign($private_key);
+	    $signature = $transaction->sign($private_key, $height);
 	    $transaction->hash();
 	    return $transaction->toArray();
     }
@@ -1223,7 +1224,7 @@ class Transaction
 		return $res;
 	}
 
-	static function processFee(&$transactions, $public_key, $private_key, $miner, $date) {
+	static function processFee(&$transactions, $public_key, $private_key, $miner, $date, $height=null) {
 		$fee = 0;
 		foreach($transactions as $tx_id => $transaction) {
 			$tx_fee = floatval($transaction['fee']);
@@ -1234,7 +1235,7 @@ class Transaction
 		$fee = round($fee, 8);
 		if($fee > 0) {
 			$tx = new Transaction($public_key,$miner,$fee,TX_TYPE_FEE,$date,"fee");
-			$tx->sign($private_key);
+			$tx->sign($private_key, $height);
 			$hash = $tx->hash();
 			$transactions[$hash] = $tx->toArray();
 		}

@@ -5,11 +5,14 @@ function num($val) {
 }
 
 // sign data with private key
-function ec_sign($data, $key)
+function ec_sign($data, $key, $chain_id = CHAIN_ID)
 {
 	// transform the base58 key format to PEM
 	$private_key = coin2pem($key, true);
 
+	$data = $chain_id . $data;
+
+	_log("Sign: sign data $data chain_id=$chain_id", 5);
 
 	$pkey = openssl_pkey_get_private($private_key);
 

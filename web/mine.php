@@ -240,14 +240,14 @@ if ($q == "info") {
 	$new_block_date = $block_date + $elapsed;
 	$rewardInfo = Block::reward($height);
 	$minerReward = num($rewardInfo['miner']);
-	$reward_tx = Transaction::getRewardTransaction($address, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $minerReward, $msg);
+	$reward_tx = Transaction::getRewardTransaction($address, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $minerReward, $msg, $height);
 
 //	$l .= " reward_tx=".json_encode($reward_tx);
 
 	$data[$reward_tx['id']] = $reward_tx;
 
 	$generatorReward = num($rewardInfo['generator']);
-	$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $generatorReward, "generator");
+	$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $generatorReward, "generator", $height);
 	if(Masternode::allowedMasternodes($height)) {
 		$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $height, $mn_signature);
 		if (!$mn_reward_tx) {
@@ -269,7 +269,7 @@ if ($q == "info") {
 
 	ksort($data);
 
-	Transaction::processFee($data, $_config['generator_public_key'], $_config['generator_private_key'], $fee_dst, $new_block_date);
+	Transaction::processFee($data, $_config['generator_public_key'], $_config['generator_private_key'], $fee_dst, $new_block_date, $height);
 	ksort($data);
 
 	$block->data = $data;

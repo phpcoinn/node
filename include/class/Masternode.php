@@ -23,7 +23,8 @@ class Masternode extends Daemon
 
 	function sign($height, $private_key) {
 		$base = self::getSignatureBase($this->public_key, $height);
-		$this->signature = ec_sign($base, $private_key);
+		$chain_id = Block::getChainId($height);
+		$this->signature = ec_sign($base, $private_key, $chain_id);
 		return $this->signature;
 	}
 
@@ -602,7 +603,7 @@ class Masternode extends Daemon
 		}
 		$rewardinfo = Block::reward($height);
 		$reward = $rewardinfo['masternode'];
-		$reward_tx = Transaction::getRewardTransaction($dst, $new_block_date, $public_key, $private_key, $reward, "masternode");
+		$reward_tx = Transaction::getRewardTransaction($dst, $new_block_date, $public_key, $private_key, $reward, "masternode", $height);
 		_log("Masternode: reward tx=".json_encode($reward_tx));
 		return $reward_tx;
 	}

@@ -347,6 +347,7 @@ class Wallet
 				"coin" => COIN,
 				"version"=> VERSION,
 				"network"=> NETWORK,
+				"chain_id"=> CHAIN_ID,
 			]
 		);
 

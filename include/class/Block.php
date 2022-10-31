@@ -90,7 +90,7 @@ class Block
 	        $info = $this->getSignatureBase();
 	    // _log($info,3);
 
-            if (!Account::checkSignature($info, $this->signature, $this->publicKey)) {
+            if (!Account::checkSignature($info, $this->signature, $this->publicKey, $this->height)) {
 	            throw new Exception("Block signature check failed info=$info signature={$this->signature} public_key={$this->publicKey}");
             }
 
@@ -626,8 +626,8 @@ class Block
     public function sign($key)
     {
         $info = $this->getSignatureBase();
-
-        $signature = ec_sign($info, $key);
+		$chain_id = Block::getChainId($this->height);
+        $signature = ec_sign($info, $key, $chain_id);
         $this->signature = $signature;
         _log("sign: $info | key={$key} | signature=$signature", 5);
         return $signature;
@@ -994,8 +994,10 @@ class Block
 			return "010001";
 		} else if ($height >= UPDATE_2_BLOCK_CHECK_IMPROVED && $height < UPDATE_3_ARGON_HARD) {
 			return "010002";	
-		} else {
+		} else if ($height >= UPDATE_3_ARGON_HARD && $height < UPDATE_6_CHAIN_ID) {
 			return "010003";
+		} else {
+			return NEW_CHAIN_ID . "0004";
 		}
 	}
 
@@ -1027,6 +1029,15 @@ class Block
 			if($phase['name']=="combined") {
 				return $phase['start'];
 			}
+		}
+	}
+
+	static function getChainId($height=null) {
+		//Must work until all updated
+		if(empty($height) || $height < UPDATE_6_CHAIN_ID) {
+			return "";
+		} else {
+			return NEW_CHAIN_ID;
 		}
 	}
 }

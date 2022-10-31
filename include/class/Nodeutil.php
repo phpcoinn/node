@@ -575,6 +575,7 @@ class Nodeutil
 			'hostname'     => $hostname,
 			'version'      => VERSION,
 			'network'      => NETWORK,
+			'chain_id'     => CHAIN_ID,
 			'dbversion'    => $dbVersion,
 			'accounts'     => $accounts,
 			'transactions' => $tr,

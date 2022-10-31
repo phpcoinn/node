@@ -6,6 +6,9 @@ if(@file_exists(dirname(__DIR__)."/testnet")) {
 
 // mainnet specification
 const NETWORK = "mainnet-alpha";
+const CHAIN_ID = "";
+const NEW_CHAIN_ID = "01";          //new chain_id for mainnet-alpha (for mainnet will be "00"
+const COIN_PORT = "";
 const VERSION = "1.0.8";
 const BUILD_VERSION = 147;
 const MIN_VERSION = "1.0.7";
@@ -100,6 +103,7 @@ const UPDATE_2_BLOCK_CHECK_IMPROVED = 25000;
 const UPDATE_3_ARGON_HARD = 45000;
 const UPDATE_4_NO_POOL_MINING = 45400;
 const UPDATE_5_NO_MASTERNODE = 290000;
+const UPDATE_6_CHAIN_ID = PHP_INT_MAX;
 
 const DEV_PUBLIC_KEY = "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCyao5hHHJd9axKhC1c5emTgT4hT7k7EvXiZrjTJSGEPmz9K1swEDQi8j14vCRwUisMsvHr4P5kirrDawM3NJiknWR";
 const FEATURE_APPS = false;

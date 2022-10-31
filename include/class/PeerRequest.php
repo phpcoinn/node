@@ -25,6 +25,11 @@ class PeerRequest
 				api_err("Invalid network ".$_POST['network']);
 			}
 		}
+		if(isset($_POST['chain_id'])) {
+			if($_POST['chain_id'] != CHAIN_ID) {
+				api_err("Invalid chain ID ".$_POST['chain_id']);
+			}
+		}
 		$ip = Nodeutil::getRemoteAddr();
 		if(version_compare($_POST['version'], MIN_VERSION) < 0) {
 			$peer = Peer::findByIp($ip);
@@ -34,7 +39,7 @@ class PeerRequest
 			api_err("Invalid version ".$_POST['version']);
 		}
 		$requestId = $_POST['requestId'];
-		_log("Peer request from IP = $ip requestId=$requestId",4);
+		_log("Peer request from IP = $ip requestId=$requestId chainId=".$_POST['chain_id'] ,4);
 
 		$info = $_POST['info'];
 
@@ -46,7 +51,7 @@ class PeerRequest
 		}
 
 		if($_config['testnet']) {
-			$ip = $ip . ":8001";
+			$ip = $ip . (empty(COIN_PORT) ? "" :  ":" . COIN_PORT);
 		}
 
 		if(!Blacklist::checkIp($ip)) {

@@ -4,8 +4,9 @@ class Account
 {
 
 	// checks the ecdsa secp256k1 signature for a specific public key
-	public static function checkSignature($data, $signature, $public_key) {
-		$res = ec_verify($data, $signature, $public_key);
+	public static function checkSignature($data, $signature, $public_key, $height = null) {
+		$chain_id = Block::getChainId($height);
+		$res = ec_verify($data, $signature, $public_key, $chain_id);
 //        _log("check_signature: $data | signature=$signature | pub_key=$public_key | res=$res");
 		return $res;
 	}

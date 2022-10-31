@@ -32,7 +32,7 @@ function api_err($data, $verbosity = 4)
         header('Content-Type: application/json');
 	    header('Access-Control-Allow-Origin: *');
     }
-    echo json_encode(["status" => "error", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK]);
+    echo json_encode(["status" => "error", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK, "chain_id"=>CHAIN_ID]);
 	//Nodeutil::measure();
     exit;
 }
@@ -47,7 +47,7 @@ function api_echo($data, $verbosity=5)
 	    header('Access-Control-Allow-Origin: *');
     }
     _log("api_echo: " . json_encode($data), $verbosity);
-    echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK]);
+    echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK, "chain_id"=>CHAIN_ID]);
 	//Nodeutil::measure();
     exit;
 }
@@ -157,10 +157,12 @@ function priv2pub($private_key) {
 	return $public_key;
 }
 
-function ec_verify($data, $signature, $key)
+function ec_verify($data, $signature, $key, $chain_id = CHAIN_ID)
 {
     // transform the base58 key to PEM
     $public_key = coin2pem($key);
+
+	$data = $chain_id . $data;
 
     $signature = base58_decode($signature);
 
@@ -168,7 +170,7 @@ function ec_verify($data, $signature, $key)
 
     $res = openssl_verify($data, $signature, $pkey, OPENSSL_ALGO_SHA256);
 
-
+	_log("Sign: verify signature for data: $data chain_id=$chain_id res=$res", 5);
     if ($res === 1) {
         return true;
     }
@@ -200,6 +202,7 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null)
             "coin" => COIN,
 	        "version"=>VERSION,
 	        "network"=>NETWORK,
+	        "chain_id"=>CHAIN_ID,
 	        "requestId" => uniqid(),
 	        "info"=>Peer::getInfo()
         ]
@@ -256,7 +259,7 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null)
     $res = json_decode($result, true);
 
     // the function will return false if something goes wrong
-    if ($res['status'] != "ok" || $res['coin'] != COIN || (isset($res['network']) && $res['network'] != NETWORK)) {
+    if ($res['status'] != "ok" || $res['coin'] != COIN || (isset($res['network']) && $res['network'] != NETWORK && $res['chain_id'] != CHAIN_ID)) {
     	_log("Peer response to $url not ok res=$result", 5);
 	    $err = $res['data'];
         return false;

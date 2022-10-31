@@ -49,7 +49,8 @@ class Blockchain
 			"ip"=>$_SERVER['REMOTE_ADDR'],
 			"hashingOptions"=>Block::hashingOptions($current['height']+1),
 			"fee"=>Blockchain::getFee(),
-			"network"=>NETWORK
+			"network"=>NETWORK,
+			"chain_id"=>CHAIN_ID
 		];
 //		_log("getMineInfo: ".json_encode($res), 5);
 		return $res;
