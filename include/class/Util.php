@@ -1159,7 +1159,10 @@ class Util
 			echo "Empty method".PHP_EOL;
 			exit;
 		}
-		$data = json_decode($argv[4], true);
+		$data = null;
+		if(isset($argv[4])) {
+			$data = json_decode($argv[4], true);
+		}
 		$url = $peer . "/peer.php?q=$method";
 		$res = peer_post($url, $data, 30, $err);
 		if($res) {
