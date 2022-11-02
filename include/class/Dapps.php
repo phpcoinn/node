@@ -266,7 +266,9 @@ class Dapps extends Daemon
 		}
 		$_SERVER['DAPPS_URL']=$url;
 		$_SERVER['DAPPS_NETWORK']=NETWORK;
-		$_SERVER['DAPPS_CHAIN_ID']=CHAIN_ID;
+
+		$height = Block::getCachedHeight();
+		$_SERVER['DAPPS_CHAIN_ID']=Block::getChainId($height);
 		$_SERVER['DAPPS_FULL_URL']=$_SERVER['REQUEST_SCHEME']."://".$_SERVER['HTTP_HOST'].$_SERVER["REQUEST_URI"];
 		$_SERVER['DAPPS_HOSTNAME']=$_config['hostname'];
 		if(Dapps::isLocal($dapps_id)) {

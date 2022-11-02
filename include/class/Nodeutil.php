@@ -575,7 +575,7 @@ class Nodeutil
 			'hostname'     => $hostname,
 			'version'      => VERSION,
 			'network'      => NETWORK,
-			'chain_id'     => CHAIN_ID,
+			'chain_id'     => Block::getChainId(Block::getHeight()),
 			'dbversion'    => $dbVersion,
 			'accounts'     => $accounts,
 			'transactions' => $tr,

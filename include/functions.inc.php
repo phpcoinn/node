@@ -28,11 +28,13 @@ function api_err($data, $verbosity = 4)
     global $_config;
     _log("api_err: ".json_encode($data),$verbosity);
 
+	$height = Block::getCachedHeight();
+
     if (!headers_sent()) {
         header('Content-Type: application/json');
 	    header('Access-Control-Allow-Origin: *');
     }
-    echo json_encode(["status" => "error", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK, "chain_id"=>CHAIN_ID]);
+    echo json_encode(["status" => "error", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK, "chain_id"=>Block::getChainId($height)]);
 	//Nodeutil::measure();
     exit;
 }
@@ -42,12 +44,14 @@ function api_echo($data, $verbosity=5)
 {
     global $_config;
 
+	$height = Block::getCachedHeight();
+
     if (!headers_sent()) {
         header('Content-Type: application/json');
 	    header('Access-Control-Allow-Origin: *');
     }
     _log("api_echo: " . json_encode($data), $verbosity);
-    echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK, "chain_id"=>CHAIN_ID]);
+    echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK, "chain_id"=>Block::getChainId($height)]);
 	//Nodeutil::measure();
     exit;
 }
@@ -196,13 +200,17 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null)
     	_log("Not valid peer post url $url");
         return false;
     }
+
+	$height = Block::getCachedHeight();
+	$chain_id = Block::getChainId($height);
+
     $postdata = http_build_query(
         [
             'data' => json_encode($data),
             "coin" => COIN,
 	        "version"=>VERSION,
 	        "network"=>NETWORK,
-	        "chain_id"=>CHAIN_ID,
+	        "chain_id"=>$chain_id,
 	        "requestId" => uniqid(),
 	        "info"=>Peer::getInfo()
         ]
@@ -259,7 +267,7 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null)
     $res = json_decode($result, true);
 
     // the function will return false if something goes wrong
-    if ($res['status'] != "ok" || $res['coin'] != COIN || (isset($res['network']) && $res['network'] != NETWORK && $res['chain_id'] != CHAIN_ID)) {
+    if ($res['status'] != "ok" || $res['coin'] != COIN || (isset($res['network']) && $res['network'] != NETWORK && $res['chain_id'] != $chain_id)) {
     	_log("Peer response to $url not ok res=$result", 5);
 	    $err = $res['data'];
         return false;

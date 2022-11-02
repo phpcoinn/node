@@ -30,7 +30,8 @@ class Masternode extends Daemon
 
 	function verify($height) {
 		$base = self::getSignatureBase($this->public_key, $height);
-		return ec_verify($base, $this->signature, $this->public_key);
+		$chain_id = Block::getChainId($height);
+		return ec_verify($base, $this->signature, $this->public_key, $chain_id);
 	}
 
 	static function getSignatureBase($public_key, $win_height) {
@@ -633,7 +634,7 @@ class Masternode extends Daemon
 					}
 				}
 				$signatureBase = Masternode::getSignatureBase($mnPublicKey, $height);
-				$res = ec_verify($signatureBase, $block['mn_signature'], $mnPublicKey);
+				$res = ec_verify($signatureBase, $block['mn_signature'], $mnPublicKey, Block::getChainId($height));
 				if(!$res) {
 					throw new Exception("Masternode signature not valid");
 				}
@@ -713,7 +714,7 @@ class Masternode extends Daemon
 				}
 
 				$base = Masternode::getSignatureBase($mnPublickKey, $block->height);
-				$res = ec_verify($base, $block->mn_signature, $mnPublickKey);
+				$res = ec_verify($base, $block->mn_signature, $mnPublickKey, Block::getChainId($block->height));
 				if(!$res) {
 					throw new Exception("Masternode: masternode signature failed");
 				}

@@ -26,7 +26,8 @@ class PeerRequest
 			}
 		}
 		if(isset($_POST['chain_id'])) {
-			if($_POST['chain_id'] != CHAIN_ID) {
+			$height = Block::getCachedHeight();
+			if($_POST['chain_id'] != Block::getChainId($height)) {
 				api_err("Invalid chain ID ".$_POST['chain_id']);
 			}
 		}
@@ -39,7 +40,7 @@ class PeerRequest
 			api_err("Invalid version ".$_POST['version']);
 		}
 		$requestId = $_POST['requestId'];
-		_log("Peer request from IP = $ip requestId=$requestId chainId=".$_POST['chain_id'] ,4);
+		_log("Peer request from IP = $ip requestId=$requestId q=".$_GET['q']." chainId=".$_POST['chain_id'] ,4);
 
 		$info = $_POST['info'];
 

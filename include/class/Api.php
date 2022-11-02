@@ -623,7 +623,8 @@ class Api
 		}
 		$account = Account::getByPublicKey($public_key);
 		if(!$account) {
-			if(Account::checkSignature($nonce, $signature, $public_key)) {
+			$height = Block::getCachedHeight();
+			if(Account::checkSignature($nonce, $signature, $public_key, $height)) {
 				$address = Account::getAddress($public_key);
 				$account = ["address"=>$address, "public_key"=>$public_key];
 			} else {

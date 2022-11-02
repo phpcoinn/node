@@ -142,6 +142,7 @@ class Block
             $db->commit();
 	        $db->unlockTables();
 			Cache::set("current", $this->toArray());
+			Cache::set("height", $this->height);
 			Cache::set("current_export", Block::export($hash));
 	        return true;
 
@@ -914,7 +915,7 @@ class Block
 			$data = json_encode($data);
 			$this->prevBlockId = $prev_block_id;
 			$signature_base = $this->getSignatureBase();
-			$res = ec_verify($signature_base, $this->signature, $public_key);
+			$res = ec_verify($signature_base, $this->signature, $public_key, Block::getChainId($this->height));
 			if(!$res) {
 				throw new Exception("Block signature check failed signature_base=$signature_base signature={$this->signature} public_key=$public_key");
 			}
@@ -1039,5 +1040,11 @@ class Block
 		} else {
 			return NEW_CHAIN_ID;
 		}
+	}
+
+	static function getCachedHeight() {
+		return Cache::get("height", function() {
+			return Block::getHeight();
+		});
 	}
 }
