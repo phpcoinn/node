@@ -25,9 +25,9 @@ class PeerRequest
 				api_err("Invalid network ".$_POST['network']);
 			}
 		}
-		if(isset($_POST['chain_id'])) {
+		if(isset($_POST['chain_id']) && strlen($_POST['chain_id'])>0) {
 			$height = Block::getCachedHeight();
-			if($_POST['chain_id'] != Block::getChainId($height)) {
+			if($_POST['chain_id'] != Block::getChainId($height) && $_POST['height'] > UPDATE_6_CHAIN_ID) {
 				api_err("Invalid chain ID ".$_POST['chain_id']);
 			}
 		}
