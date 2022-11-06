@@ -26501,19 +26501,7 @@ const PrivateKey = ellipticcurve.PrivateKey;
 const PublicKey = ellipticcurve.PublicKey;
 const Signature = ellipticcurve.Signature;
 
-let networks = {
-    mainnet:{
-        network_prefix: "38"
-    },
-    "mainnet-alpha":{
-        network_prefix: "38"
-    },
-    testnet: {
-        network_prefix: "30"
-    }
-}
-
-const defaultNetwork = "mainnet"
+const network_prefix = "38"
 
 let pem2coin = (pem) => {
     let pemB58 = pem.replace('-----BEGIN EC PRIVATE KEY-----','')
@@ -26538,8 +26526,8 @@ let coin2pem = (coin, private_key = false) => {
     }
 }
 
-let getAddress = (pubkey, network = defaultNetwork) => {
-    let network_prefix = networks[network].network_prefix
+let getAddress = (pubkey) => {
+    let network_prefix = "38"
     let hash1 = crypto.createHash('sha256').update(pubkey).digest('hex');
     let hash2 = crypto.createHash('ripemd160').update(hash1).digest('hex');
     let baseAddress = network_prefix + hash2
@@ -26553,8 +26541,7 @@ let getAddress = (pubkey, network = defaultNetwork) => {
     return addressB58
 }
 
-let verifyAddress = (address, network = defaultNetwork) => {
-    let network_prefix = networks[network].network_prefix
+let verifyAddress = (address) => {
     let addressBin = Base58.decode(address)
     let addressHex = Buffer.from(addressBin).toString('hex')
     let addressChecksum = addressHex.substr(addressHex.length - 8, addressHex.length)
@@ -26608,19 +26595,18 @@ function privateKeyToPem(privateKeyBase58) {
 }
 
 module.exports = {
-    generateAccount(network = defaultNetwork) {
+    generateAccount() {
         let privateKey = new PrivateKey();
         let privateKeyPem = privateKey.toPem()
         let privateKeyB58 = pem2coin(privateKeyPem)
         let publicKey = privateKey.publicKey();
         let publicKeyPem = publicKey.toPem()
         let publicKeyB58 = pem2coin(publicKeyPem)
-        let address = getAddress(publicKeyB58, network)
+        let address = getAddress(publicKeyB58)
         return {
             privateKey: privateKeyB58,
             publicKey: publicKeyB58,
-            address,
-            network
+            address
         }
     },
     getAddress,
@@ -26663,14 +26649,14 @@ module.exports = {
         let str = (decrypted + decipher.final('utf8'))
         return str
     },
-    importPrivateKey(privateKey, network = defaultNetwork) {
+    importPrivateKey(privateKey) {
         try {
             let privateKeyPem = privateKeyToPem(privateKey)
             let publicKeyDer = privateKeyPem.publicKey()
             let publicKeyPem = publicKeyDer.toPem()
             let publicKey = pem2coin(publicKeyPem)
-            let address = getAddress(publicKey, network)
-            if(!verifyAddress(address, network)) {
+            let address = getAddress(publicKey)
+            if(!verifyAddress(address)) {
                 return false
             }
             return {
@@ -26687,8 +26673,7 @@ module.exports = {
         let publicKey = pem2coin(publicKeyPem)
         return publicKey
     },
-    privateKeyToPem,
-    network: defaultNetwork
+    privateKeyToPem
 }
 
 
@@ -28650,7 +28635,7 @@ var fromJacobian = function (p, P) {
     // :param P: Prime number in the module of the equation Y^2 = X^3 + A*X + B (mod p)
     // :return: Point in default coordinates
 
-    z = inv(p.z, P);
+    var z = inv(p.z, P);
 
     var point = new Point(
         modulo(p.x.multiply(z.pow(2)), P),
@@ -28699,10 +28684,10 @@ var jacobianAdd = function (p, q, A, P) {
         return p;
     };
 
-    U1 = modulo(p.x.multiply(q.z.pow(2)), P);
-    U2 = modulo(q.x.multiply(p.z.pow(2)), P);
-    S1 = modulo(p.y.multiply(q.z.pow(3)), P);
-    S2 = modulo(q.y.multiply(p.z.pow(3)), P);
+    let U1 = modulo(p.x.multiply(q.z.pow(2)), P);
+    let U2 = modulo(q.x.multiply(p.z.pow(2)), P);
+    let S1 = modulo(p.y.multiply(q.z.pow(3)), P);
+    let S2 = modulo(q.y.multiply(p.z.pow(3)), P);
 
     if (U1.eq(U2)) {
         if (S1.neq(S2)) {
@@ -28711,14 +28696,14 @@ var jacobianAdd = function (p, q, A, P) {
         return jacobianDouble(p, A, P);
     };
 
-    H = U2.minus(U1);
-    R = S2.minus(S1);
-    H2 = modulo((H.multiply(H)), P);
-    H3 = modulo((H.multiply(H2)), P);
-    U1H2 = modulo((U1.multiply(H2)), P);
-    nx = modulo(((R.pow(2)).minus(H3).minus(U1H2.multiply(2))), P);
-    ny = modulo((R.multiply(U1H2.minus(nx)).minus(S1.multiply(H3))), P);
-    nz = modulo((H.multiply(p.z).multiply(q.z)), P);
+    let H = U2.minus(U1);
+    let R = S2.minus(S1);
+    let H2 = modulo((H.multiply(H)), P);
+    let H3 = modulo((H.multiply(H2)), P);
+    let U1H2 = modulo((U1.multiply(H2)), P);
+    let nx = modulo(((R.pow(2)).minus(H3).minus(U1H2.multiply(2))), P);
+    let ny = modulo((R.multiply(U1H2.minus(nx)).minus(S1.multiply(H3))), P);
+    let nz = modulo((H.multiply(p.z).multiply(q.z)), P);
 
     return new Point(nx, ny, nz);
 };
@@ -29162,7 +29147,7 @@ const bytesHexF = Buffer.from(hexF).toString('binary');
 exports.encodeSequence = function () {
     let sequence = [];
     let totalLengthLen = 0;
-    for (i=0; i < arguments.length; i++) {
+    for (let i = 0; i < arguments.length; i++) {
         sequence.push(arguments[i]);
         totalLengthLen += arguments[i].length;
     }
@@ -29240,7 +29225,7 @@ exports.removeSequence = function (string) {
     let length = result[0];
     let lengthLen = result[1];
 
-    endSeq = 1 + lengthLen + length;
+    let endSeq = 1 + lengthLen + length;
 
     return [string.slice(1 + lengthLen, endSeq), string.slice(endSeq)];
 }
@@ -29320,20 +29305,20 @@ exports.removeOctetString = function (string) {
     let length = result[0];
     let lengthLen = result[1];
 
-    body = string.slice(1 + lengthLen, 1 + lengthLen + length);
-    rest = string.slice(1 + lengthLen + length);
+    let body = string.slice(1 + lengthLen, 1 + lengthLen + length);
+    let rest = string.slice(1 + lengthLen + length);
 
     return [body, rest];
 }
 
 
 exports.removeConstructed = function (string) {
-    s0 = _extractFirstInt(string);
+    let s0 = _extractFirstInt(string);
     if ((s0 & hex224) != hex129) {
         throw new Error("wanted constructed tag (0xa0-0xbf), got 0x" + s0);
     }
 
-    tag = s0 & hex31
+    let tag = s0 & hex31
     let result = _readLength(string.slice(1));
     let length = result[0];
     let lengthLen = result[1];
@@ -29349,8 +29334,7 @@ exports.fromPem = function (pem) {
     let split = pem.split("\n");
     let stripped = "";
 
-    let i;
-    for (i = 0; i < split.length; i++) {
+    for (let i = 0; i < split.length; i++) {
         if (!split[i].startsWith("-----")) {
             stripped += split[i].trim();
         }
@@ -29362,9 +29346,9 @@ exports.fromPem = function (pem) {
 
 exports.toPem = function (der, name) {
     let b64 = Base64.encode(der);
-    lines = [("-----BEGIN " + name + "-----\n")];
+    let lines = [("-----BEGIN " + name + "-----\n")];
 
-    for (start = 0; start <= b64.length; start += 64) {
+    for (let start = 0; start <= b64.length; start += 64) {
         lines.push(b64.slice(start, start + 64) + "\n")
     }
     lines.push("-----END " + name + "-----\n");
@@ -29416,7 +29400,7 @@ function _encodeNumber (n) {
 
 
 function _readLength (string) {
-    num = _extractFirstInt(string);
+    let num = _extractFirstInt(string);
     if (!(num & hex160)) {
         return [(num & hex127), 1];
     }

@@ -9,7 +9,7 @@
     "argon2": "^0.28.5",
     "argon2-browser": "^1.16.0",
     "atob": "^2.1.2",
-    "aws-sdk": "^2.1157.0",
+    "aws-sdk": "^2.1248.0",
     "axios": "^0.24.0",
     "browserify": "^17.0.0",
     "js-crypto-ec": "^1.0.4",
