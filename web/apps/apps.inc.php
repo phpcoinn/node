@@ -33,7 +33,7 @@ global $_config;
 $nodeScore = round($_config['node_score'],2);
 
 if(!FEATURE_APPS) {
-	_log("Apps: feature disabled");
+	_log("Apps: feature disabled", 5);
 	return;
 }
 
