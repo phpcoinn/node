@@ -997,7 +997,7 @@ class Block
 		} else if ($height >= UPDATE_3_ARGON_HARD && $height < UPDATE_6_CHAIN_ID) {
 			return "010003";
 		} else {
-			return NEW_CHAIN_ID . "0004";
+			return CHAIN_ID . "0004";
 		}
 	}
 
