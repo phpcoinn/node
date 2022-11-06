@@ -88,7 +88,8 @@ function _log($data, $verbosity = 0)
 		$res = $prefix . $line . PHP_EOL;
 	    if (($_config && $_config['enable_logging'] == true && $_config['log_verbosity'] >= $verbosity) || !empty(getenv('LOG_DEBUG'))) {
 		    if (php_sapi_name() === 'cli') {
-		        if(!defined("CLI_UTIL") || CLI_UTIL == 0) {
+				global $argv;
+		        if(!defined("CLI_UTIL") || CLI_UTIL == 0 || in_array("--log", $argv)) {
 		            echo $res;
 			    }
 		    } else {
