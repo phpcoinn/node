@@ -7,7 +7,7 @@ global $_config;
     <div class="container-fluid">
         <div class="row">
             <div class="col-sm-6 text-center text-md-start mb-2 mb-sm-0">
-	            <?php echo COIN_NAME ?> - <?php if(defined("NETWORK")) echo strtoupper(NETWORK) ?> - <?php echo VERSION ?><?php if(defined("BUILD_VERSION")) echo "." . BUILD_VERSION ?>
+	            <?php echo COIN_NAME ?> - <?php if(defined("NETWORK")) echo strtoupper(NETWORK) ?> (<?php echo CHAIN_ID ?>) - <?php echo VERSION ?><?php if(defined("BUILD_VERSION")) echo "." . BUILD_VERSION ?>
                 <?php
                 if(!empty($gitRev)) { ?>
                     - <a href="<?php echo GIT_URL ?>/tree/<?php echo $gitRev ?>" target="_blank"><?php echo substr($gitRev, 0, 8) ?></a>

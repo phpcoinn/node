@@ -627,8 +627,7 @@ class Block
     public function sign($key)
     {
         $info = $this->getSignatureBase();
-		$chain_id = Block::getChainId($this->height);
-        $signature = ec_sign($info, $key, $chain_id);
+        $signature = ec_sign($info, $key);
         $this->signature = $signature;
         _log("sign: $info | key={$key} | signature=$signature", 5);
         return $signature;
@@ -1034,11 +1033,14 @@ class Block
 	}
 
 	static function getChainId($height=null) {
-		//Must work until all updated
-		if(empty($height) || $height < UPDATE_6_CHAIN_ID) {
-			return "";
+		if(empty($height)) {
+			return CHAIN_ID;
 		} else {
-			return NEW_CHAIN_ID;
+			if($height < UPDATE_6_CHAIN_ID) {
+				return "";
+			} else {
+				return CHAIN_ID;
+			}
 		}
 	}
 

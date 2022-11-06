@@ -870,11 +870,10 @@ class Transaction
 
     }
 
-	public function sign($private_key, $height= null)
+	public function sign($private_key)
 	{
 		$base = $this->getSignatureBase();
-		$chain_id = Block::getChainId($height);
-		$signature = ec_sign($base, $private_key, $chain_id);
+		$signature = ec_sign($base, $private_key);
 		$this->signature = $signature;
 		return $signature;
 	}
@@ -1030,9 +1029,9 @@ class Transaction
         return $trans;
     }
 
-    static function getRewardTransaction($dst,$date,$public_key,$private_key,$reward, $msg, $height = null) {
+    static function getRewardTransaction($dst,$date,$public_key,$private_key,$reward, $msg) {
 	    $transaction = new Transaction($public_key,$dst,$reward,TX_TYPE_REWARD,$date,$msg);
-	    $signature = $transaction->sign($private_key, $height);
+	    $transaction->sign($private_key);
 	    $transaction->hash();
 	    return $transaction->toArray();
     }
@@ -1235,7 +1234,7 @@ class Transaction
 		$fee = round($fee, 8);
 		if($fee > 0) {
 			$tx = new Transaction($public_key,$miner,$fee,TX_TYPE_FEE,$date,"fee");
-			$tx->sign($private_key, $height);
+			$tx->sign($private_key);
 			$hash = $tx->hash();
 			$transactions[$hash] = $tx->toArray();
 		}

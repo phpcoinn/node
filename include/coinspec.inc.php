@@ -6,7 +6,7 @@ if(@file_exists(dirname(__DIR__)."/testnet")) {
 
 // mainnet specification
 const NETWORK = "mainnet-alpha";
-const CHAIN_ID = "";
+const CHAIN_ID = "01";
 const NEW_CHAIN_ID = "01";          //new chain_id for mainnet-alpha (for mainnet will be "00"
 const COIN_PORT = "";
 const VERSION = "1.0.9";

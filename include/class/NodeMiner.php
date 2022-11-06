@@ -136,7 +136,7 @@ class NodeMiner extends Daemon {
 			$rewardinfo = Block::reward($height);
 			$reward = $rewardinfo['miner'] + $rewardinfo['generator'];
 			$reward = num($reward);
-			$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $this->public_key, $this->private_key, $reward, "nodeminer", $height);
+			$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $this->public_key, $this->private_key, $reward, "nodeminer");
 			$data[$reward_tx['id']]=$reward_tx;
 			if(Masternode::allowedMasternodes($height)) {
 				$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $this->public_key, $this->private_key, $height, $mn_signature);

@@ -147,8 +147,7 @@ class Dapps extends Daemon
 			$peer = base64_decode($id);
 			_log("Dapps: propagating dapps to $peer pid=".getmypid(), 5);
 			$url = $peer."/peer.php?q=updateDapps";
-			$chain_id = Block::getChainId();
-			$dapps_signature = ec_sign($dapps_hash, $dapps_private_key, $chain_id);
+			$dapps_signature = ec_sign($dapps_hash, $dapps_private_key);
 			$data = [
 				"dapps_id"=>$dapps_id,
 				"dapps_hash"=>$dapps_hash,
@@ -267,8 +266,7 @@ class Dapps extends Daemon
 		$_SERVER['DAPPS_URL']=$url;
 		$_SERVER['DAPPS_NETWORK']=NETWORK;
 
-		$height = Block::getCachedHeight();
-		$_SERVER['DAPPS_CHAIN_ID']=Block::getChainId($height);
+		$_SERVER['DAPPS_CHAIN_ID']=CHAIN_ID;
 		$_SERVER['DAPPS_FULL_URL']=$_SERVER['REQUEST_SCHEME']."://".$_SERVER['HTTP_HOST'].$_SERVER["REQUEST_URI"];
 		$_SERVER['DAPPS_HOSTNAME']=$_config['hostname'];
 		if(Dapps::isLocal($dapps_id)) {

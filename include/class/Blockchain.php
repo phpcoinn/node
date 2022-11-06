@@ -50,7 +50,7 @@ class Blockchain
 			"hashingOptions"=>Block::hashingOptions($current['height']+1),
 			"fee"=>Blockchain::getFee(),
 			"network"=>NETWORK,
-			"chain_id"=>Block::getChainId($current['height'])
+			"chain_id"=>CHAIN_ID
 		];
 //		_log("getMineInfo: ".json_encode($res), 5);
 		return $res;
