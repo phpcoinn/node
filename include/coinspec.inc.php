@@ -8,9 +8,9 @@ if(@file_exists(dirname(__DIR__)."/testnet")) {
 const NETWORK = "mainnet-alpha";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
-const VERSION = "1.0.9";
-const BUILD_VERSION = 152;
-const MIN_VERSION = "1.0.7";
+const VERSION = "1.1.0";
+const BUILD_VERSION = 153;
+const MIN_VERSION = "1.0.9";
 const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
