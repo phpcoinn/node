@@ -88,10 +88,9 @@ class DB extends PDO
         try {
             $pdostmt = $this->prepare($this->sql);
             if ($pdostmt->execute($this->bind) !== false) {
-	            $time2 = microtime(true);
-	            $diff = round(($time2-$time1)*1000);
-//	            _log("SQL EXEC time=$diff ms sql=$sql", 5);
-                return $pdostmt->fetchColumn();
+                $res =  $pdostmt->fetchColumn();
+	            $this->logSql($this->sql, $time1);
+				return $res;
             }
         } catch (PDOException $e) {
             $this->error = $e->getMessage();
@@ -105,25 +104,19 @@ class DB extends PDO
         $this->sql = trim($sql);
         $this->bind = $this->cleanup($bind, $sql);
         $this->error = "";
-	    //$time1 = microtime(true);
+	    $time1 = microtime(true);
 
         try {
             $pdostmt = $this->prepare($this->sql);
             if ($pdostmt->execute($this->bind) !== false) {
                 if (preg_match("/^(".implode("|", ["select", "describe", "pragma", "show"]).") /i", $this->sql)) {
-	                //$time2 = microtime(true);
-	                //$diff = round(($time2-$time1)*1000);
-	                //if($diff > 1000) {
-	                //    _log("SQL EXEC time=$diff ms sql=$sql", 5);
-	                //}
-                    return $pdostmt->fetchAll(PDO::FETCH_ASSOC);
+                    $res =  $pdostmt->fetchAll(PDO::FETCH_ASSOC);
+					$this->logSql($this->sql, $time1);
+					return $res;
                 } elseif (preg_match("/^(".implode("|", ["delete", "insert", "update"]).") /i", $this->sql)) {
-	                //$time2 = microtime(true);
-	                //$diff = round(($time2-$time1)*1000);
-	                //if($diff > 1000) {
-		            //     _log("SQL EXEC time=$diff ms sql=$sql", 5);
-	                //}
-                    return $pdostmt->rowCount();
+	                $res = $pdostmt->rowCount();
+	                $this->logSql($this->sql, $time1);
+					return $res;
                 }
             }
         } catch (PDOException $e) {
@@ -132,6 +125,14 @@ class DB extends PDO
             return false;
         }
     }
+
+	private function logSql($sql, $start) {
+//		$time2 = microtime(true);
+//		$diff = round(($time2-$start)*1000);
+//		$GLOBALS['sql_counts'][$sql]['count']++;
+//		$GLOBALS['sql_counts'][$sql]['total_time']+=$diff;
+//		_log("SQL EXEC time=$diff ms sql=$sql", 5);
+	}
 
     public function row($sql, $bind = "")
     {

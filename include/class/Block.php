@@ -807,6 +807,7 @@ class Block
     static function getAll($page, $limit) {
     	global $db;
 	    $start = ($page-1)*$limit;
+		if($start < 0) $start = 0;
     	$sql="select * from blocks order by height desc limit $start, $limit";
     	return $db->run($sql);
     }

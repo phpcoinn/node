@@ -120,6 +120,7 @@ class Sync extends Daemon
 
 		$peers = Peer::getPeersForSync();
 		$peerData = [];
+		$peerResponseTimes = [];
 		foreach($peers as $peer) {
 			$hostname = $peer['hostname'];
 			if(empty($peer['block_id']) || empty($peer['height'])) {
@@ -131,6 +132,12 @@ class Sync extends Daemon
 				"id"=>$peer["block_id"],
 				"height"=>$peer["height"]
 			];
+			if($peer['response_cnt']==0) {
+				$responseTime = PHP_INT_MAX;
+			} else {
+				$responseTime = $peer['response_time'] / $peer['response_cnt'];
+			}
+			$peerResponseTimes[$hostname] = $responseTime;
 		//	_log("PeerSync: add live peer data $hostname block_id=".$peer["block_id"]." height=".$peer["height"]);
 		}
 		$live_peers_count = count($peerData);
@@ -164,6 +171,12 @@ class Sync extends Daemon
 				"id"=>$data['id'],
 				"height"=>$data["height"]
 			];
+			if($peer['response_cnt']==0) {
+				$responseTime = PHP_INT_MAX;
+			} else {
+				$responseTime = $peer['response_time'] / $peer['response_cnt'];
+			}
+			$peerResponseTimes[$hostname] = $responseTime;
 			_log("PeerSync: add other peer data id=".$peer['id']." $hostname block_id=".$data["id"]." height=".$data["height"], 5);
 		}
 
@@ -289,6 +302,13 @@ class Sync extends Daemon
 
 
 		$peers = array_keys($blocksMap[$largest_height][$largest_height_block]);
+
+		usort($peers, function($p1, $p2) use ($peerResponseTimes) {
+			$t1 = isset($peerResponseTimes[$p1]) ? $peerResponseTimes[$p1] : PHP_INT_MAX;
+			$t2 = isset($peerResponseTimes[$p2]) ? $peerResponseTimes[$p2] : PHP_INT_MAX;
+			return $t2 - $t1;
+		});
+
 		$nodeSync = new NodeSync($peers);
 		if($largest_height > $current['height']) {
 			_log("Start syncing to height $largest_height", 5);

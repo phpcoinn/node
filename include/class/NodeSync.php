@@ -49,7 +49,7 @@ class NodeSync
 			$ok_block = 0;
 			$height = $current['height'];
 			$peers_count = 0;
-			$min_ok_blocks = 5;
+			$min_ok_blocks = 1;
 			$good_peers = [];
 			foreach ($this->peers as $host) {
 				$peers_count++;
