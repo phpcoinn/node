@@ -292,14 +292,15 @@ class Dapps extends Daemon
 		$functions_file = ROOT . "/include/dapps.functions.php";
 
 		$allowed_files = [
-			ROOT . "/testnet",
+			ROOT . "/chain_id",
 			ROOT . "/include/dapps.functions.php",
 			ROOT . "/include/common.functions.php",
 			ROOT . "/include/coinspec.inc.php",
 		];
 
-		if(file_exists(ROOT."/testnet")) {
-			$allowed_files[]=ROOT . "/include/testnet.coinspec.inc.php";
+		if(file_exists(ROOT."/chain_id")) {
+			$chain_id = file_get_contents(dirname(__DIR__)."/chain_id");
+			$allowed_files[]=ROOT . "/include/coinspec.".$chain_id.".inc.php";
 		}
 
 		$dapps_local = 0;

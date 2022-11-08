@@ -47,7 +47,7 @@ if(!($res['status']=="ok" && !empty($res['data']))) {
 $_config['enable_logging'] = true;
 $_config['log_verbosity']=3;
 $_config['log_file']="/dev/null";
-$_config['testnet'] = file_exists(dirname(__DIR__)."/testnet");
+$_config['chain_id'] = file_exists(dirname(__DIR__)."/chain_id") || DEFAULT_CHAIN_ID;
 
 define("ROOT", __DIR__);
 

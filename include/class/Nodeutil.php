@@ -195,21 +195,6 @@ class Nodeutil
 			return true;
 		}
 
-		if(!defined("APPS_REPO_SERVER")) {
-			if($_config['testnet'] ) {
-				define("APPS_REPO_SERVER", "https://repo.testnet.phpcoin.net:8001");
-			} else {
-				define("APPS_REPO_SERVER", "https://repo.phpcoin.net");
-			}
-		}
-		if(!defined("APPS_REPO_SERVER_PUBLIC_KEY")) {
-			if($_config['testnet'] ) {
-				define("APPS_REPO_SERVER_PUBLIC_KEY", "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwUKtSuRJEs8RrRrkZbND1WxVNomPtvowAo5hzQr6xe2TUyHYLnzu2ubVMfBAYM4cBZJLckvxWenHB2nULzmU8VHz");
-			} else {
-				define("APPS_REPO_SERVER_PUBLIC_KEY", "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCyHWjnG15LHdWRRbNEmAPiYcyCqFZm1VKi8QziKYbMtrXUw8rqhrS3EEoyJxXASNZid9CsB1dg64u5sYgnUsrZg7C");
-			}
-		}
-
 		$res = peer_post(APPS_REPO_SERVER."/peer.php?q=getApps", [], 30, $err);
 		_log("Contancting repo server response=".json_encode($res),3);
 		if($res === false) {

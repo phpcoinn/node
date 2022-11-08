@@ -120,8 +120,8 @@ class Daemon
 		$rune_once = self::hasArg("once");
 
 		$control_file = ROOT . "/include/coinspec.inc.php";
-		if($_config['testnet']) {
-			$control_file = ROOT . "/include/testnet.coinspec.inc.php";
+		if($_config['chain_id']!=DEFAULT_CHAIN_ID) {
+			$control_file = ROOT . "/include/coinspec.".$_config['chain_id']."inc.php";
 		}
 		$control_file_md5 = md5_file($control_file);
 		$control_file_time = filemtime($control_file);

@@ -5,9 +5,10 @@
 | Database Configuration
 |--------------------------------------------------------------------------
 */
-$_config['testnet'] = file_exists(dirname(__DIR__)."/testnet");
-if($_config['testnet']) {
-	require_once __DIR__ . "/config.testnet.inc.php";
+
+$_config['chain_id'] = file_get_contents(dirname(__DIR__)."/chain_id") || DEFAULT_CHAIN_ID;
+if($_config['chain_id'] != DEFAULT_CHAIN_ID) {
+	require_once __DIR__ . "/config.".$_config['chain_id'].".inc.php";
 	return;
 }
 // The database DSN

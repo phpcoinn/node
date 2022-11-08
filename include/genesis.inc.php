@@ -1,7 +1,8 @@
 <?php
 
-if(file_exists(dirname(__DIR__)."/testnet")) {
-	require_once __DIR__ . "/genesis.testnet.inc.php";
+$chain_id = @file_get_contents(dirname(__DIR__)."/chain_id") || DEFAULT_CHAIN_ID;
+if($chain_id != DEFAULT_CHAIN_ID) {
+	require_once __DIR__ . "/genesis.".$chain_id.".inc.php";
 	return;
 }
 

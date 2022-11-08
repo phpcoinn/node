@@ -1,6 +1,7 @@
 <?php
-if(@file_exists(dirname(__DIR__)."/testnet")) {
-	require_once __DIR__ . "/testnet.coinspec.inc.php";
+$_config['chain_id'] = @file_get_contents(dirname(__DIR__)."/chain_id") || DEFAULT_CHAIN_ID;
+if($_config['chain_id'] != DEFAULT_CHAIN_ID) {
+	require_once __DIR__ . "/testnet.coinspec.".$_config['chain_id'].".inc.php";
 	return;
 }
 

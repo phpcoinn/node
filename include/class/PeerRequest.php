@@ -50,9 +50,7 @@ class PeerRequest
 			api_err("Invalid peer IP address");
 		}
 
-		if($_config['testnet']) {
-			$ip = $ip . (empty(COIN_PORT) ? "" :  ":" . COIN_PORT);
-		}
+		$ip = $ip . (empty(COIN_PORT) ? "" :  ":" . COIN_PORT);
 
 		if(!Blacklist::checkIp($ip)) {
 			api_err("blocked-ip");
@@ -519,20 +517,6 @@ class PeerRequest
 		}
 
 		global $_config;
-		if(!defined("APPS_REPO_SERVER")) {
-			if($_config['testnet'] ) {
-				define("APPS_REPO_SERVER", "https://repo.testnet.phpcoin.net:8001");
-			} else {
-				define("APPS_REPO_SERVER", "https://repo.phpcoin.net");
-			}
-		}
-		if(!defined("APPS_REPO_SERVER_PUBLIC_KEY")) {
-			if($_config['testnet'] ) {
-				define("APPS_REPO_SERVER_PUBLIC_KEY", "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwUKtSuRJEs8RrRrkZbND1WxVNomPtvowAo5hzQr6xe2TUyHYLnzu2ubVMfBAYM4cBZJLckvxWenHB2nULzmU8VHz");
-			} else {
-				define("APPS_REPO_SERVER_PUBLIC_KEY", "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCyHWjnG15LHdWRRbNEmAPiYcyCqFZm1VKi8QziKYbMtrXUw8rqhrS3EEoyJxXASNZid9CsB1dg64u5sYgnUsrZg7C");
-			}
-		}
 
 		$data = self::$data;
 		$hash = $data['hash'];

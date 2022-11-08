@@ -1,6 +1,8 @@
 <?php
 $GLOBALS['start_time']=microtime(true);
 
+const DEFAULT_CHAIN_ID = "01";
+
 $blocked_agents = ["DataForSeoBot","BLEXBot","SemrushBot","YandexBot","AhrefsBot"];
 if (php_sapi_name() !== 'cli') {
 	if(isset($_SERVER['HTTP_USER_AGENT'])) {

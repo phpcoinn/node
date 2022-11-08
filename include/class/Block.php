@@ -733,10 +733,10 @@ class Block
 			return 0;
 		}
 		$target = gmp_div(gmp_mul($this->difficulty , BLOCK_TIME), $elapsed);
-		if($target == 0 && $_config['testnet']) {
+		if($target == 0 && DEVELOPMENT) {
 			$target = 1;
 		}
-		if($target > 100 && $_config['testnet']) {
+		if($target > 100 && DEVELOPMENT) {
 			$target = 100;
 		}
 		return $target;
