@@ -359,7 +359,7 @@ class Account
 		$addressHex=bin2hex($addressBin);
 		$addressChecksum=substr($addressHex, -8);
 		$baseAddress = substr($addressHex, 0, -8);
-		if(substr($baseAddress, 0, 2) != NETWORK_PREFIX) {
+		if(substr($baseAddress, 0, 2) != CHAIN_PREFIX) {
 			return false;
 		}
 		$checksumCalc1=hash('sha256', $baseAddress);

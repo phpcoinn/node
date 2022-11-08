@@ -28881,7 +28881,7 @@ const PrivateKey = ellipticcurve.PrivateKey;
 const PublicKey = ellipticcurve.PublicKey;
 const Signature = ellipticcurve.Signature;
 
-const network_prefix = "38"
+const chain_prefix = "38"
 
 let pem2coin = (pem) => {
     let pemB58 = pem.replace('-----BEGIN EC PRIVATE KEY-----','')
@@ -28907,10 +28907,9 @@ let coin2pem = (coin, private_key = false) => {
 }
 
 let getAddress = (pubkey) => {
-    let network_prefix = "38"
     let hash1 = crypto.createHash('sha256').update(pubkey).digest('hex');
     let hash2 = crypto.createHash('ripemd160').update(hash1).digest('hex');
-    let baseAddress = network_prefix + hash2
+    let baseAddress = chain_prefix + hash2
     let checksumCalc1 = crypto.createHash('sha256').update(baseAddress).digest('hex')
     let checksumCalc2 = crypto.createHash('sha256').update(checksumCalc1).digest('hex')
     let checksumCalc3 = crypto.createHash('sha256').update(checksumCalc2).digest('hex')
@@ -28926,7 +28925,7 @@ let verifyAddress = (address) => {
     let addressHex = Buffer.from(addressBin).toString('hex')
     let addressChecksum = addressHex.substr(addressHex.length - 8, addressHex.length)
     let baseAddress = addressHex.substr(0, addressHex.length-8)
-    if(baseAddress.substr(0,2)!==network_prefix) {
+    if(baseAddress.substr(0,2)!==chain_prefix) {
         return false
     }
     let checksumCalc1 = crypto.createHash('sha256').update(baseAddress).digest('hex')
