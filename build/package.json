@@ -26,7 +26,7 @@
     "url": ""
   },
   "scripts": {
-    "build_doc": "rm -rf doc && node_modules/.bin/apidoc -o ../web/doc/ -i ../ -f Api.php",
+    "build_doc": "rm -rf ../web/doc && node_modules/.bin/apidoc -o ../web/doc/ -i ../include -f Api.php",
     "build_web_miner": "node_modules/.bin/browserify js/web-miner.js -o ../web/apps/common/js/web-miner.js",
     "build_phpcoin_crypto": "node_modules/.bin/browserify js/phpcoin-crypto.js -o ../web/apps/common/js/phpcoin-crypto.js"
   },
