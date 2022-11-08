@@ -220,7 +220,7 @@ class Sync extends Daemon
 		$forked = false;
 		_log("Checking blocks map for forks", 5);
 		foreach($blocksMap as $height => $blocks) {
-			_log("Checking height=$height blocks=".count($blocks));
+			_log("Checking height=$height blocks=".count($blocks), 3);
 			if(count($blocks)>1) {
 				$forked = true;
 				_log("Start checking blocks time and difficulty", 5);
@@ -262,7 +262,7 @@ class Sync extends Daemon
 		}
 
 		foreach($blocksMap as $height => $blocks) {
-			_log("Checking height=$height blocks=".count($blocks));
+			_log("Checking height=$height blocks=".count($blocks), 3);
 			$block_id =  array_keys($blocks)[0];
 			_log("Check height $height block_id = $block_id", 5);
 			if($height > $current['height']) {
