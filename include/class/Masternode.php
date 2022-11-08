@@ -138,7 +138,7 @@ class Masternode extends Daemon
 		global $db;
 		$sql="select * from masternode where public_key=:public_key";
 		$res=$db->run($sql, [":public_key"=>$publicKey]);
-		return $res[0];
+		return @$res[0];
 	}
 
 	static function create($publicKey, $height) {
