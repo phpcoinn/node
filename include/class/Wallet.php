@@ -408,7 +408,6 @@ class Wallet
 		);
 	}
 
-	//php wallet.php masternode-create LWNkKuU41paSgzFtnKgjiJsKkoo3HwV39C
 	function createMasternode($mnAddress) {
 		if(empty($mnAddress)) {
 			echo "Missing destination address".PHP_EOL;
