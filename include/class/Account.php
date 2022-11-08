@@ -331,7 +331,7 @@ class Account
 		if(empty($public_key)) return null;
 		$hash1=hash('sha256', $public_key);
 		$hash2=hash('ripemd160',$hash1);
-		$baseAddress=NETWORK_PREFIX.$hash2;
+		$baseAddress=CHAIN_PREFIX.$hash2;
 		$checksumCalc1=hash('sha256', $baseAddress);
 		$checksumCalc2=hash('sha256', $checksumCalc1);
 		$checksumCalc3=hash('sha256', $checksumCalc2);
