@@ -854,7 +854,7 @@ class Transaction
 				if(empty($poolMinerPublicKey)) {
 					throw new Exception("Reward transaction not valid: not found public key for address $poolMinerAddress");
 				}
-				$res = Account::checkSignature($poolMinerAddress, $poolMinerAddressSignature, $poolMinerPublicKey);
+				$res = Account::checkSignature($poolMinerAddress, $poolMinerAddressSignature, $poolMinerPublicKey, $height);
 				if(!$res) {
 					throw new Exception("Reward transaction not valid: address signature failed poolMinerAddress=$poolMinerAddress poolMinerAddressSignature=$poolMinerAddressSignature");
 				}
