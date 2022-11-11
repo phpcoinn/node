@@ -17,6 +17,7 @@ function dapps_init() {
 	dapps_get();
 	dapps_post();
 	dapps_get_session();
+	dapps_get_cookies();
 }
 
 /**
@@ -59,6 +60,16 @@ function dapps_get_session() {
 	});
 
 	return $session_id;
+}
+
+/**
+ * Reads cookies from request and populate $_COOKIE variable
+ * @return string id of session
+ */
+function dapps_get_cookies() {
+	$cookie_data = $_SERVER['COOKIE_DATA'];
+	$_COOKIE = json_decode(base64_decode($cookie_data), true);
+	return $_COOKIE;
 }
 
 if(!function_exists('_log')) {

@@ -289,6 +289,8 @@ class Dapps extends Daemon
 		}
 		$get_data = base64_encode(json_encode($parsed));
 
+		$cookie_data = base64_encode(json_encode($_COOKIE));
+
 		$functions_file = ROOT . "/include/dapps.functions.php";
 
 		$allowed_files = [
@@ -311,7 +313,7 @@ class Dapps extends Daemon
 
 		$allowed_files_list = implode(":", $allowed_files);
 
-		$cmd = "$server_args GET_DATA=$get_data POST_DATA=$post_data SESSION_ID=$session_id SESSION_DATA=$session_data " .
+		$cmd = "$server_args GET_DATA=$get_data POST_DATA=$post_data SESSION_ID=$session_id SESSION_DATA=$session_data COOKIE_DATA=$cookie_data" .
 			" DAPPS_ID=$dapps_id DAPPS_LOCAL=$dapps_local " .
 			" php -d disable_functions=exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,set_time_limit,ini_set" .
 			" -d open_basedir=" . $dapps_dir . "/$dapps_id:".$tmp_dir.":".$allowed_files_list .
