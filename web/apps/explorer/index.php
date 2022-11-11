@@ -65,7 +65,7 @@ $fee = Blockchain::getFee();
 <?php if(true) { ?>
 <div class="row mt-3">
 
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
             <div class="card-body">
                 <div class="row align-items-center">
@@ -85,7 +85,7 @@ $fee = Blockchain::getFee();
     </div>
 
 
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
             <div class="card-body">
                 <div class="row align-items-center">
@@ -116,7 +116,7 @@ $fee = Blockchain::getFee();
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
             <div class="card-body">
                 <div class="row align-items-center">
@@ -147,7 +147,7 @@ $fee = Blockchain::getFee();
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
             <div class="card-body">
                 <div class="row align-items-center">
@@ -170,7 +170,7 @@ $fee = Blockchain::getFee();
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
             <div class="card-body">
                 <div class="row align-items-center">
@@ -191,7 +191,7 @@ $fee = Blockchain::getFee();
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
             <div class="card-body">
                 <div class="row align-items-center">
@@ -220,7 +220,7 @@ $fee = Blockchain::getFee();
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
             <div class="card-body">
                 <div class="row align-items-center">
@@ -247,7 +247,7 @@ $fee = Blockchain::getFee();
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
             <div class="card-body">
                 <div class="row align-items-center">
