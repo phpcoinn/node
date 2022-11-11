@@ -43,7 +43,7 @@ function explorer_address_link2($address, $short= false) {
 	if($short) {
 		$text  = truncate_hash($address);
 	}
-	return '<a target="_blank" href="/apps/explorer/address.php?address='.$address.'">'.$text.'</a>';
+	return '<a href="/apps/explorer/address.php?address='.$address.'">'.$text.'</a>';
 }
 
 function TransactionTypeLabel($type) {
