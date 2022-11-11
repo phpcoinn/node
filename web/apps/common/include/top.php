@@ -2,6 +2,13 @@
 
 if(!defined("PAGE")) exit;
 
+$theme = "light";
+if(isset($_COOKIE['theme'])) {
+    $theme = $_COOKIE['theme'];
+}
+
+$theme = ($theme == "dark" ? "dark" : "light");
+
 $menuPeers = Peer::getPeersForSync();
 usort($menuPeers, function($p1, $p2) {
     return strcmp($p2['hostname'], $p1['hostname']);
@@ -47,7 +54,7 @@ usort($menuPeers, function($p1, $p2) {
             display: none; }
         body.phpcoin .topnav {
             margin-top: 0;
-            background-color: #fbfaff; }
+        }
         body.phpcoin .page-content {
             margin-top: 0 !important; }
         body.phpcoin .navbar-brand img {
@@ -135,7 +142,7 @@ usort($menuPeers, function($p1, $p2) {
 
 
 
-<body class="phpcoin" data-layout="horizontal">
+<body class="phpcoin" data-layout="horizontal" data-layout-mode="<?php echo $theme ?>">
 
 <!--    layout-wrapper-->
     <div id="layout-wrapper">
@@ -204,9 +211,9 @@ usort($menuPeers, function($p1, $p2) {
 	                        <?php } ?>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle arrow-none" id="mode-setting-btn" href="#" role="button">
-                                    <i data-feather="moon" class="icon-lg layout-mode-dark"></i>
-                                    <i data-feather="sun" class="icon-lg layout-mode-light"></i>
-                                    Theme
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon icon-lg layout-mode-dark"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun icon-lg layout-mode-light"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                                    <span data-key="t-theme">Theme</span>
                                 </a>
                             </li>
                         </ul>
