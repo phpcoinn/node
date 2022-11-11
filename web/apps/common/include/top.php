@@ -174,6 +174,15 @@ usort($menuPeers, function($p1, $p2) {
                                     <i class="fas fa-binoculars me-2"></i><span data-key="t-dashboards">Explorer</span>
                                 </a>
                             </li>
+	                        <?php if(Dapps::isEnabled() && !empty($_config['dapps_public_key'])) {
+	                        $dapps_id = Account::getAddress($_config['dapps_public_key']);
+	                        ?>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle arrow-none" href="/dapps.php?url=<?php echo $dapps_id ?>" id="topnav-dashboard" role="button">
+                                        <i class="fas fa-cubes me-2"></i><span data-key="t-dashboards">Dapps</span>
+                                    </a>
+                                </li>
+                            <?php } ?>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle arrow-none" href="/dapps.php?url=<?php echo MAIN_DAPPS_ID ?>/miner" id="topnav-dashboard" role="button">
                                     <i class="fas fa-hammer me-2"></i><span data-key="t-dashboards">Miner</span>

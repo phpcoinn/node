@@ -114,7 +114,7 @@ global $_config;
                 </a>
             </div>
             <div class="row justify-content-center">
-                <div class="col-sm-6 col-md-2 col-6 my-3">
+                <div class="col-sm-6 col-md-4 col-lg-3 col-12 col-xl-2 my-3">
                     <div class="d-grid gap-2">
                         <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/explorer">
                             <h5 class="mb-3 text-white">Explorer</h5>
@@ -122,28 +122,8 @@ global $_config;
                         </a>
                     </div>
                 </div>
-	            <?php if (Nodeutil::walletEnabled()) { ?>
-                    <div class="col-sm-6 col-md-2 col-6 my-3">
-                        <div class="d-grid gap-2">
-                            <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="https://<?php echo APPS_WALLET_SERVER_NAME ?>/apps/wallet">
-                                <h5 class="mb-3 text-white">Wallet</h5>
-                                <i class="fas fa-wallet fa-2x"></i>
-                            </a>
-                        </div>
-                    </div>
-                <?php } ?>
-                <?php if(isset($_config['faucet'])) { ?>
-                    <div class="col-sm-6 col-md-2 col-6 my-3">
-                        <div class="d-grid gap-2">
-                            <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/faucet">
-                                <h5 class="mb-3 text-white">Faucet</h5>
-                                <i class="fas fa-faucet fa-2x"></i>
-                            </a>
-                        </div>
-                    </div>
-                <?php } ?>
                 <?php if (Nodeutil::miningEnabled()) { ?>
-                    <div class="col-sm-6 col-md-2 col-6 my-3">
+                    <div class="col-sm-6 col-md-4 col-lg-3 col-12 col-xl-2 my-3">
                         <div class="d-grid gap-2">
                             <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/apps/miner">
                                 <h5 class="mb-3 text-white">Miner</h5>
@@ -152,14 +132,18 @@ global $_config;
                         </div>
                     </div>
                 <?php } ?>
-                <div class="col-sm-6 col-md-2 col-6 my-3">
-                    <div class="d-grid gap-2" data-bs-toggle="tooltip" title="Coming soon...">
-                        <button class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" disabled="disabled">
-                            <h5 class="mb-3 text-white">Apps</h5>
-                            <i class="fas fa-cubes fa-2x"></i>
-                        </button>
+                <?php if(Dapps::isEnabled() && !empty($_config['dapps_public_key'])) {
+                    $dapps_id = Account::getAddress($_config['dapps_public_key']);
+                    ?>
+                    <div class="col-sm-6 col-md-4 col-lg-3 col-12 col-xl-2 my-3">
+                        <div class="d-grid gap-2" data-bs-toggle="tooltip" title="Decentralized apps">
+                            <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light" href="/dapps.php?url=<?php echo $dapps_id ?>">
+                                <h5 class="mb-3 text-white">Dapps</h5>
+                                <i class="fas fa-cubes fa-2x"></i>
+                            </a>
+                        </div>
                     </div>
-                </div>
+                <?php } ?>
             </div>
         </div>
 
