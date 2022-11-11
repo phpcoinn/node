@@ -35,6 +35,17 @@ global $_config;
 
 
 </div>
+<span id="layout-horizontal"></span>
+<span id="layout-mode-dark"></span>
+<span id="layout-mode-light"></span>
+<span id="layout-width-fuild"></span>
+<span id="layout-position-fixed"></span>
+<span id="topbar-color-light"></span>
+<span id="sidebar-size-default"></span>
+<span id="sidebar-color-light"></span>
+<span id="layout-direction-ltr"></span>
+<span id="sidebar-color-dark"></span>
+<span id="topbar-color-dark"></span>
 
 
 <!-- JAVASCRIPT -->
