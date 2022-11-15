@@ -69,10 +69,11 @@ class Nodeutil
 		return str_pad("", count($arFrom) * 3, '..'.$ps).implode($ps, $arTo);
 	}
 
-	static function checkBlocksWithPeer($peer) {
+	static function checkBlocksWithPeer($hostname) {
 		$current = Block::current();
 		$top = $current['height'];
-		$peerTopBlock = peer_post($peer."/peer.php?q=currentBlock");
+		$peer = Peer::findByHostname($hostname);
+		$peerTopBlock = peer_post(Peer::getPeerUrl($peer['ip'])."/peer.php?q=currentBlock");
 		$peerTop = $peerTopBlock["block"]['height'];
 		$top = min($top, $peerTop);
 		_log("max blocks $top",3);
@@ -83,7 +84,7 @@ class Nodeutil
 			$check = intval(($top + $bottom) /2);
 			_log("checking block $check",3);
 			$myBlock = Block::get($check);
-			$b = peer_post($peer . "/peer.php?q=getBlock", ["height" => $check]);
+			$b = peer_post(Peer::getPeerUrl($peer['ip']) . "/peer.php?q=getBlock", ["height" => $check]);
 			if (!$b) {
 				_log("Not good peer to check. No response for block $check");
 				exit;

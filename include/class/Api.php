@@ -733,7 +733,7 @@ class Api
 		}
 		$dir = ROOT."/cli";
 		foreach($peers  as $peer) {
-			Propagate::messageToPeer($peer['hostname'], $msg);
+			Propagate::messageToPeer($peer['ip'], $msg);
 		}
 		api_echo("Propagate started");
 	}

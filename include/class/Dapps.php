@@ -144,9 +144,9 @@ class Dapps extends Daemon
 			}
 		} else {
 			//propagate to single peer
-			$peer = base64_decode($id);
-			_log("Dapps: propagating dapps to $peer pid=".getmypid(), 5);
-			$url = $peer."/peer.php?q=updateDapps";
+			$ip = base64_decode($id);
+			_log("Dapps: propagating dapps to $ip pid=".getmypid(), 5);
+			$url = Peer::getPeerUrl($ip)."/peer.php?q=updateDapps";
 			$dapps_signature = ec_sign($dapps_hash, $dapps_private_key);
 			$data = [
 				"dapps_id"=>$dapps_id,
@@ -154,13 +154,12 @@ class Dapps extends Daemon
 				"dapps_signature"=>$dapps_signature,
 			];
 			$res = peer_post($url, $data, 30, $err);
-			_log("Dapps: Propagating to peer: ".$peer." data=".http_build_query($data)." res=".json_encode($res). " err=$err", $err ? 0 : 5);
+			_log("Dapps: Propagating to peer: ".$url." data=".http_build_query($data)." res=".json_encode($res). " err=$err", $err ? 0 : 5);
 		}
 	}
 
 	private static function propagateToPeer($peer) {
-		$hostname = $peer['hostname'];
-		Propagate::dappsToPeer($hostname);
+		Propagate::dappsToPeer($peer['ip']);
 	}
 
 	static function render() {
@@ -538,7 +537,7 @@ class Dapps extends Daemon
 			} else {
 				_log("Dapps: Found ".count($peers)." to ask for update dapps $dapps_id", 5);
 				foreach ($peers as $peer) {
-					Propagate::dappsUpdateToPeer($peer['hostname'], $dapps_id);
+					Propagate::dappsUpdateToPeer($peer['ip'], $dapps_id);
 				}
 			}
 			return $found;
@@ -547,11 +546,11 @@ class Dapps extends Daemon
 
 	}
 
-	public static function propagateDappsUpdate($hash, $id)
+	public static function propagateDappsUpdate($ip, $id)
 	{
-		$hostname = base64_decode($hash);
-		_log("Dapps: called propagate update apps id=$id to host=$hostname");
-		$url = $hostname."/peer.php?q=checkDapps";
+		$ip = base64_decode($ip);
+		_log("Dapps: called propagate update apps id=$id to host=$ip");
+		$url = Peer::getPeerUrl($ip)."/peer.php?q=checkDapps";
 		$res = peer_post($url, ["dapps_id"=>$id], 30, $err);
 		_log("Dapps: response $res err=$err");
 	}

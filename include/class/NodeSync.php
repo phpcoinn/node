@@ -51,9 +51,9 @@ class NodeSync
 			$peers_count = 0;
 			$min_ok_blocks = 1;
 			$good_peers = [];
-			foreach ($this->peers as $host) {
+			foreach ($this->peers as $ip) {
 				$peers_count++;
-				$peer_block = $this->getPeerBlock($host, $height);
+				$peer_block = $this->getPeerBlock($ip, $height);
 				if ($peer_block) {
 					_log("peer_block=" . $peer_block['id'] . " current_id=" . $current['id'], 4);
 					if ($peer_block['id'] != $current['id']) {
@@ -62,7 +62,7 @@ class NodeSync
 						_log("We have wrong block $height failed_block=$failed_block");
 					} else {
 						$ok_block++;
-						$good_peers[]=$host;
+						$good_peers[]=$ip;
 						_log("We have ok block $height ok_block=$ok_block", 4);
 						if($ok_block >= $min_ok_blocks) {
 							break;
@@ -92,10 +92,10 @@ class NodeSync
 				$height++;
 
 				$min_elapsed = PHP_INT_MAX;
-				foreach ($good_peers as $host) {
-					$next_block = $this->getPeerBlock($host, $height);
+				foreach ($good_peers as $ip) {
+					$next_block = $this->getPeerBlock($ip, $height);
 					if (!$next_block) {
-						_log("Could not get block from $host - " . $height, 3);
+						_log("Could not get block from $ip - " . $height, 3);
 						$failed_next_peer++;
 						continue;
 					}
@@ -104,7 +104,7 @@ class NodeSync
 					if ($elapsed < $min_elapsed) {
 						$min_elapsed = $elapsed;
 					}
-					$next_block_peers[$elapsed][$host] = $next_block;
+					$next_block_peers[$elapsed][$ip] = $next_block;
 				}
 
 
@@ -115,17 +115,17 @@ class NodeSync
 					if (count(array_keys($next_block_peers)) == 1) {
 						$id = array_keys($next_block_peers)[0];
 						_log("All peers return same block - checking block $height", 4);
-						$hosts = array_keys($next_block_peers[$id]);
-						$host = $hosts[0];
-						$next_block = $next_block_peers[$id][$host];
+						$ips = array_keys($next_block_peers[$id]);
+						$ip = $ips[0];
+						$next_block = $next_block_peers[$id][$ip];
 //				_log("Checking block ". print_r($next_block,1));
 						$block = Block::getFromArray($next_block);
 						if (!$block->check()
 						) {
 							_log("Invalid block mined at height " . $height);
 							$syncing = false;
-							_log("Blacklist node $host");
-							$peer = Peer::findByHostname($host);
+							_log("Blacklist node $ip");
+							$peer = Peer::findByIp($ip);
 							Peer::blacklist($peer['id'], 'Invalid block '.$height);
 							break;
 						} else {
@@ -137,8 +137,8 @@ class NodeSync
 							if (!$res) {
 								_log("Block add: could not add block at height $height");
 								$syncing = false;
-								_log("Blacklist node $host");
-								$peer = Peer::findByHostname($host);
+								_log("Blacklist node $ip");
+								$peer = Peer::findByIp($ip);
 								Peer::blacklist($peer['id'], 'Invalid block '.$height);
 								break;
 							} else {
@@ -147,8 +147,8 @@ class NodeSync
 								if (!$res) {
 									_log("Block is not verified");
 									$syncing = false;
-									_log("Blacklist node $host");
-									$peer = Peer::findByHostname($host);
+									_log("Blacklist node $ip");
+									$peer = Peer::findByIp($ip);
 									Peer::blacklist($peer['id'], 'Invalid block '.$height);
 									break;
 								}
@@ -160,9 +160,9 @@ class NodeSync
 						$best_block_peers = $next_block_peers[$min_elapsed];
 						foreach ($next_block_peers as $elapsed => $nodes) {
 							if ($elapsed != $min_elapsed) {
-								foreach ($nodes as $node => $b) {
-									_log("Blacklist node $node");
-									$peer = Peer::findByHostname($node);
+								foreach ($nodes as $ip => $b) {
+									_log("Blacklist node $ip");
+									$peer = Peer::findByIp($ip);
 									Peer::blacklist($peer['id'], 'Invalid block '.$height);
 								}
 							}
@@ -201,7 +201,7 @@ class NodeSync
 
 		if ($peers_count) {
 			foreach ($peers as $index => $peer) {
-				$host = $peer['hostname'];
+				$host = Peer::getPeerUrl($peer['ip']);
 				if(empty($peer['block_id'])) {
 					$url = $host . "/peer.php?q=";
 					$res = peer_post($url . "currentBlock", [], 5);
@@ -258,24 +258,24 @@ class NodeSync
 		$db->setConfig('node_score', $node_score);
 	}
 
-	function getPeerBlock($host, $height) {
-		if(isset($this->peerBlocks[$host][$height])) {
-			return $this->peerBlocks[$host][$height];
+	function getPeerBlock($ip, $height) {
+		if(isset($this->peerBlocks[$ip][$height])) {
+			return $this->peerBlocks[$ip][$height];
 		} else {
 			$limit = 10;
-			$url = $host."/peer.php?q=";
-			_log("Reading blocks from $height from peer $host", 3);
+			$url = Peer::getPeerUrl($ip)."/peer.php?q=";
+			_log("Reading blocks from $height from peer $ip", 3);
 			$peer_blocks = peer_post($url."getBlocks", ["height" => $height - $limit], 5);
 			if ($peer_blocks === false) {
-				_log("Could not get block from $host - " . $height, 3);
+				_log("Could not get block from $ip - " . $height, 3);
 			} else {
 				if(is_array($peer_blocks)) {
 					foreach($peer_blocks as $peer_block) {
-						$this->peerBlocks[$host][$peer_block['height']]=$peer_block;
+						$this->peerBlocks[$ip][$peer_block['height']]=$peer_block;
 					}
 				}
 			}
-			return $this->peerBlocks[$host][$height];
+			return $this->peerBlocks[$ip][$height];
 		}
 	}
 

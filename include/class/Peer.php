@@ -99,7 +99,7 @@ class Peer
 
 	static function validateIp($ip) {
 		if(!DEVELOPMENT) {
-			$ip = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE | FILTER_FLAG_IPV4);
+			$ip = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE | FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6);
 		}
 		return $ip;
 	}
@@ -230,7 +230,7 @@ class Peer
 	static function findByIp($ip) {
 		global $db;
 		$x = $db->row(
-			"SELECT id,hostname FROM peers WHERE blacklisted<".DB::unixTimeStamp()." AND ip=:ip",
+			"SELECT id,hostname,ip FROM peers WHERE blacklisted<".DB::unixTimeStamp()." AND ip=:ip",
 			[":ip" => $ip]
 		);
 		return $x;
@@ -317,7 +317,7 @@ class Peer
 	{
 		global $db;
 		$x = $db->row(
-			"SELECT id,hostname FROM peers WHERE hostname=:hostname",
+			"SELECT id,hostname, ip FROM peers WHERE hostname=:hostname",
 			[":hostname" => $hostName]
 		);
 		return $x;
@@ -393,6 +393,18 @@ class Peer
 		$sql="select * from peers p where p.$type = :address limit 1";
 		$row = $db->row($sql, [":address"=>$address]);
 		return $row;
+	}
+
+	static function getPeerUrl($ip) {
+		_log("getPeerUrl ip=$ip");
+		$parsed = parse_url("http://".$ip);
+		_log("Parsed ip = ".json_encode($parsed));
+		if(isset($parsed['port'])) {
+			$port = $parsed['port'];
+		} else {
+			$port = COIN_PORT;
+		}
+		return "http://".$parsed['host'].":".$port;
 	}
 
 }

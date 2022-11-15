@@ -122,12 +122,12 @@ class Sync extends Daemon
 		$peerData = [];
 		$peerResponseTimes = [];
 		foreach($peers as $peer) {
-			$hostname = $peer['hostname'];
+			$ip = $peer['ip'];
 			if(empty($peer['block_id']) || empty($peer['height'])) {
 		//		_log("PeerSync: skip live peer $hostname block_id=".$peer['block_id']." height=".$peer['height']." version=".$peer['version']);
 				continue;
 			}
-			$peerData[$hostname]=[
+			$peerData[$ip]=[
 				"peer"=>$peer,
 				"id"=>$peer["block_id"],
 				"height"=>$peer["height"]
@@ -137,7 +137,7 @@ class Sync extends Daemon
 			} else {
 				$responseTime = $peer['response_time'] / $peer['response_cnt'];
 			}
-			$peerResponseTimes[$hostname] = $responseTime;
+			$peerResponseTimes[$ip] = $responseTime;
 		//	_log("PeerSync: add live peer data $hostname block_id=".$peer["block_id"]." height=".$peer["height"]);
 		}
 		$live_peers_count = count($peerData);
@@ -145,12 +145,12 @@ class Sync extends Daemon
 		$peers = Peer::getActive($live_peers_count * 2);
 		_log("PeerSync: get active peers ".count($peers), 5);
 		foreach($peers as $peer) {
-			$hostname = $peer['hostname'];
-			if(isset($peerData[$hostname])) {
+			$ip = $peer['ip'];
+			if(isset($peerData[$ip])) {
 				continue;
 			}
-			_log("PeerSync: Contacting peer $hostname", 5);
-			$url = $hostname."/peer.php?q=";
+			_log("PeerSync: Contacting peer $ip", 5);
+			$url = Peer::getPeerUrl($ip)."/peer.php?q=";
 			$res = peer_post($url."currentBlock", [], 5);
 			if ($res === false) {
 				//		_log("Peer $hostname unresponsive url={$url}currentBlock response=$res");
@@ -166,7 +166,7 @@ class Sync extends Daemon
 				Peer::clearFails($peer['id']);
 			}
 			Peer::updateInfo($peer['id'], $info);
-			$peerData[$hostname]=[
+			$peerData[$ip]=[
 				"peer"=>$peer,
 				"id"=>$data['id'],
 				"height"=>$data["height"]
@@ -176,18 +176,17 @@ class Sync extends Daemon
 			} else {
 				$responseTime = $peer['response_time'] / $peer['response_cnt'];
 			}
-			$peerResponseTimes[$hostname] = $responseTime;
-			_log("PeerSync: add other peer data id=".$peer['id']." $hostname block_id=".$data["id"]." height=".$data["height"], 5);
+			$peerResponseTimes[$ip] = $responseTime;
+			_log("PeerSync: add other peer data id=".$peer['id']." $ip block_id=".$data["id"]." height=".$data["height"], 5);
 		}
 
 		$peers_count = count($peerData);
 		_log("PeerSync: total peers_count=$peers_count", 5);
 
 		$blocksMap = [];
-		$peersMap = [];
 
 		//check all, but if ping is older contact peer
-		foreach ($peerData as $hostname => $data) {
+		foreach ($peerData as $ip => $data) {
 
 //			_log("PeerSync: check blacklist $hostname height=".$data['height']." id=".$data['id'],5);
 
@@ -197,7 +196,7 @@ class Sync extends Daemon
 
 
 			if ($current['height'] > 1 && $data['height'] >1 && $data['height'] < $current['height'] - 100) {
-				_log("PeerSync: blacklist peer $hostname because is 100 blocks behind, our height=".$current['height']." peer_height=".$data['height'],2);
+				_log("PeerSync: blacklist peer $ip because is 100 blocks behind, our height=".$current['height']." peer_height=".$data['height'],2);
 				Peer::blacklistStuck($peer['id'],"100 blocks behind");
 				continue;
 			} else {
@@ -207,8 +206,7 @@ class Sync extends Daemon
 			}
 
 			// set the largest height block
-			$blocksMap[$height][$id][$hostname]=$hostname;
-			$peersMap[$height][]=$hostname;
+			$blocksMap[$height][$id][$ip]=$ip;
 		}
 
 		uksort($blocksMap, function($k1, $k2) {
@@ -225,10 +223,10 @@ class Sync extends Daemon
 				$forked = true;
 				_log("Start checking blocks time and difficulty", 5);
 				$forkedBlocksMap = [];
-				foreach ($blocks as $block_id => $peers) {
+				foreach ($blocks as $block_id => $ips) {
 					_log("Checking block $block_id count=" . count($peers), 5);
-					foreach ($peers as $peer) {
-						$url = $peer . "/peer.php?q=";
+					foreach ($ips as $ip) {
+						$url = Peer::getPeerUrl($ip) . "/peer.php?q=";
 						$peer_blocks = peer_post($url . "getBlocks", ["height" => $height - 1], 5);
 						if (!$peer_blocks) {
 							continue;
@@ -241,7 +239,7 @@ class Sync extends Daemon
 						$elapsed = $peer_block['date'] - $peer_prev_block['date'];
 						$peer_block['elapsed'] = $elapsed;
 						$difficulty = $peer_block['difficulty'];
-						_log("Read block at height $height from peer $peer elapsed=$elapsed diff=$difficulty", 5);
+						_log("Read block at height $height from peer $ip elapsed=$elapsed diff=$difficulty", 5);
 						$forkedBlocksMap[$block_id] = $peer_block;
 						break;
 					}

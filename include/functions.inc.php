@@ -176,7 +176,7 @@ function ec_verify($data, $signature, $key, $chain_id = CHAIN_ID)
 // verify the validity of an url
 function isValidURL($url)
 {
-    return preg_match('|^(ht)?(f)?tp(s)?://[a-z0-9-]+(.[a-z0-9-]+)*(:[0-9]+)?(/.*)?$|i', $url);
+	return filter_var($url, FILTER_VALIDATE_URL);
 }
 
 // POST data to an URL (usualy peer). The data is an array, json encoded with is sent as $_POST['data']
@@ -235,6 +235,11 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null)
 	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
 	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
 	curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+//	curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
+	if(isset($_config['peer_interface'])) {
+		_log("Set curl interface " . $_config['peer_interface']);
+		curl_setopt($ch, CURLOPT_INTERFACE, $_config['peer_interface']);
+	}
 	$result = curl_exec($ch);
 
 	$curl_error = curl_errno($ch);

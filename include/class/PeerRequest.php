@@ -30,7 +30,19 @@ class PeerRequest
 				api_err("Invalid chain ID ".$_POST['chain_id']);
 			}
 		}
-		$ip = Nodeutil::getRemoteAddr();
+
+		if(isset($data['ip'])) {
+			$ip = $data['ip'];
+			_log("Received peer ip=$ip");
+			$ip = Peer::validateIp($ip);
+			if(!$ip) {
+				_log("Peer Request: invalid ip = $ip SERVER=".json_encode($_SERVER));
+			}
+			_log("Validated peer ip=$ip");
+		} else {
+			$ip = Nodeutil::getRemoteAddr();
+		}
+
 		if(version_compare($_POST['version'], MIN_VERSION) < 0) {
 			$peer = Peer::findByIp($ip);
 			if($peer) {
@@ -43,14 +55,13 @@ class PeerRequest
 
 		$info = $_POST['info'];
 
-		$ip = Peer::validateIp($ip);
 		_log("Filtered IP = $ip",4);
 
 		if(($ip === false || strlen($ip)==0)) {
 			api_err("Invalid peer IP address");
 		}
 
-		$ip = $ip . (empty(COIN_PORT) ? "" :  ":" . COIN_PORT);
+		//$ip = $ip . (empty(COIN_PORT) ? "" :  ":" . COIN_PORT);
 
 		if(!Blacklist::checkIp($ip)) {
 			api_err("blocked-ip");
@@ -108,7 +119,13 @@ class PeerRequest
 		if ($res == 1) {
 			_log("$hostname is already in peer db",3);
 			if ($data['repeer'] == 1) {
-				$res = peer_post($hostname."/peer.php?q=peer", ["hostname" => $_config['hostname']], 30, $err);
+				$data = [
+					"hostname" => $_config['hostname']
+				];
+				if(isset($_config['ip'])) {
+					$data['ip']=$_config['ip'];
+				}
+				$res = peer_post($hostname."/peer.php?q=peer", $data, 30, $err);
 				if ($res !== false) {
 					api_echo("re-peer-ok");
 				} else {
@@ -124,9 +141,15 @@ class PeerRequest
 		_log("Inserted $hostname = $res",3);
 		// re-peer to make sure the peer is valid
 		if ($data['repeer'] == 1) {
-			_log("Repeer to $hostname",3);
-			$res = peer_post($hostname . "/peer.php?q=peer", ["hostname" => $_config['hostname']], 30, $err);
-			_log("peer response " . print_r($res,1),4);
+			_log("ipv6 Repeer to $hostname",3);
+			$data = [
+				"hostname" => $_config['hostname']
+			];
+			if(isset($_config['ip'])) {
+				$data['ip']=$_config['ip'];
+			}
+			$res = peer_post($hostname . "/peer.php?q=peer", $data, 30, $err);
+			_log("ipv6 peer response " . print_r($res,1),4);
 			if ($res !== false) {
 				_log("Repeer OK",3);
 				api_echo("re-peer-ok");
@@ -318,7 +341,7 @@ class PeerRequest
 					//_log("DFSH: No peer by IP $ip");
 					api_err("block-too-old");
 				}
-				Propagate::blockToPeer($pr['hostname'], $pr['ip'], "current");
+				Propagate::blockToPeer($pr['ip'], "current");
 				_log('['.$ip."] block too old, sending our current block - $current[height]",3);
 				//_log("DFSH: Send our block to peer ".$pr['hostname']);
 				api_err("block-too-old");
@@ -646,7 +669,7 @@ class PeerRequest
 				$peers = Peer::getPeersForSync($limit, true);
 				$dir = ROOT . "/cli";
 				foreach ($peers as $peer) {
-					Propagate::messageToPeer($peer['hostname'], $msg);
+					Propagate::messageToPeer($peer['ip'], $msg);
 				}
 			}
 			peer_post("https://node1.phpcoin.net/peer.php?q=logPropagate", $msg);

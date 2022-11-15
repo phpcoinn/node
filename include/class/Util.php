@@ -88,7 +88,21 @@ class Util
 		if(empty($peer)) {
 			die("Missing <peer> argument. Command: peer <peer>".PHP_EOL);
 		}
-		$res = peer_post($argv[2]."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1]);
+		$peer = Peer::findByHostname($peer);
+		if($peer && !empty($peer['ip'])) {
+			$url = Peer::getPeerUrl($peer['ip']);
+		} else {
+			$url = $argv[2];
+		}
+		_log("url=$url");
+		$data = [
+			"hostname" => $_config['hostname'],
+			'repeer'=>1
+		];
+		if(isset($_config['ip'])) {
+			$data['ip']=$_config['ip'];
+		}
+		$res = peer_post($url."/peer.php?q=peer", $data);
 		if ($res !== false) {
 			echo "Peering OK\n";
 		} else {
@@ -267,7 +281,7 @@ class Util
 	static function recheckPeers() {
 		$r = Peer::getAll();
 		foreach ($r as $x) {
-			$a = peer_post($x['hostname']."/peer.php?q=ping");
+			$a = peer_post(Peer::getPeerUrl($x['ip'])."/peer.php?q=ping");
 			if ($a != "pong") {
 				echo "$x[hostname] -> failed\n";
 				Peer::delete($x['id']);
@@ -300,7 +314,7 @@ class Util
 		}
 		$r = Peer::getActive();
 		foreach ($r as $x) {
-			$a = peer_post($x['hostname']."/peer.php?q=currentBlock", []);
+			$a = peer_post(Peer::getPeerUrl($x['ip'])."/peer.php?q=currentBlock", []);
 			$enc = base58_encode($x['hostname']);
 			if ($argv[2] == "debug") {
 				echo "$enc\t";
@@ -453,8 +467,9 @@ class Util
 		if ($limit==0) {
 			$limit=5000;
 		}
+		$peer = Peer::findByHostname($peer);
 		for ($i=$current['height']-$limit;$i<=$current['height'];$i++) {
-			$data=peer_post($peer."/peer.php?q=getBlock", ["height" => $i]);
+			$data=peer_post(Peer::getPeerUrl($peer['ip'])."/peer.php?q=getBlock", ["height" => $i]);
 			if ($data==false) {
 				continue;
 			}
@@ -478,8 +493,9 @@ class Util
 			die("Missing arguments: compare-accounts <peer>".PHP_EOL);
 		}
 		$r=$db->run("SELECT id,balance FROM accounts");
+		$peer = Peer::findByHostname($peer);
 		foreach ($r as $x) {
-			$data=peer_post($peer."/api.php?q=getBalance", ["address" => $x['id']]);
+			$data=peer_post(Peer::getPeerUrl($peer['ip'])."/api.php?q=getBalance", ["address" => $x['id']]);
 			if ($data==false) {
 				continue;
 			}
@@ -533,7 +549,8 @@ class Util
 		if ($data===false) {
 			die("Could not find this block");
 		}
-		$response = peer_post($peer."/peer.php?q=submitBlock", $data);
+		$peer = Peer::findByHostname($peer);
+		$response = peer_post(Peer::getPeerUrl($peer['ip'])."/peer.php?q=submitBlock", $data);
 		var_dump($response);
 	}
 
@@ -551,20 +568,17 @@ class Util
 		if(empty($height)) {
 			$height=1;
 		}
-
-		$last=peer_post($peer."/peer.php?q=currentBlock");
-
-		$b=peer_post($peer."/peer.php?q=getBlock", ["height"=>$height]);
+		$peer = Peer::findByHostname($peer);
+		$last=peer_post(Peer::getPeerUrl($peer['ip'])."/peer.php?q=currentBlock");
 
 		for ($i = $height+1; $i <= $last['block']['height']; $i++) {
-			$c=peer_post($peer."/peer.php?q=getBlock", ["height"=>$i]);
+			$c=peer_post(Peer::getPeerUrl($peer['ip'])."/peer.php?q=getBlock", ["height"=>$i]);
 			$block = Block::getFromArray($c);
 			if (!$block->mine()) {
 				print("Invalid block detected. $c[height] - $c[id]\n");
 				break;
 			}
 			echo "Block $i -> ok\n";
-			$b=$c;
 		}
 	}
 
@@ -581,7 +595,8 @@ class Util
 			die("Invalid peer hostname");
 		}
 		$peer = filter_var($peer, FILTER_SANITIZE_URL);
-		$b=peer_post($peer."/peer.php?q=getBlock", ["height"=>$height]);
+		$peer = Peer::findByHostname($peer);
+		$b=peer_post(Peer::getPeerUrl($peer['ip'])."/peer.php?q=getBlock", ["height"=>$height]);
 		$block = Block::getFromArray($b);
 		if (!$block->mine()) {
 			print("Block is invalid\n");
@@ -944,7 +959,7 @@ class Util
 		$peered = [];
 		$peer_cnt = 0;
 		foreach ($peers as $peer) {
-			$url = $peer['hostname']."/peer.php?q=";
+			$url = Peer::getPeerUrl($peer['ip'])."/peer.php?q=";
 			$data = peer_post($url."getPeers", []);
 			if ($data === false) {
 				_log("Peer $peer[hostname] unresponsive data=".json_encode($data), 2);
@@ -984,7 +999,7 @@ class Util
 					$peer['hostname'] = filter_var($peer['hostname'], FILTER_SANITIZE_URL);
 					// peer with each one
 					_log("Trying to peer with recommended peer: $peer[hostname]", 4);
-					$test = peer_post($peer['hostname']."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1]);
+					$test = peer_post(Peer::getPeerUrl($peer['ip'])."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1]);
 					if ($test !== false) {
 						_log("GMP: Peered with: $peer[hostname]");
 //				// a single new peer per sync
@@ -1035,9 +1050,8 @@ class Util
 		_log("Msg propagate: start data=".json_encode($data));
 		$msg = base64_encode(json_encode($data));
 		$peers = Peer::getPeersForSync(10);
-		$dir = ROOT."/cli";
 		foreach($peers  as $peer) {
-			Propagate::messageToPeer($peer['hostname'], $msg);
+			Propagate::messageToPeer($peer['ip'], $msg);
 		}
 	}
 
@@ -1139,13 +1153,14 @@ class Util
 			echo "Peer not specified".PHP_EOL;
 			exit;
 		}
+		$peer = Peer::findByHostname($peer);
 		if(!isRepoServer()) {
 			echo "Only repo server can propagate apps".PHP_EOL;
 			exit;
 		}
 		$appsHashFile = Nodeutil::getAppsHashFile();
 		$appsHash = file_get_contents($appsHashFile);
-		Propagate::appsToPeer($peer, $appsHash);
+		Propagate::appsToPeer($peer['ip'], $appsHash);
 	}
 
 	static function peerCall($argv) {
@@ -1163,7 +1178,8 @@ class Util
 		if(isset($argv[4])) {
 			$data = json_decode($argv[4], true);
 		}
-		$url = $peer . "/peer.php?q=$method";
+		$peer = Peer::findByHostname($peer);
+		$url = Peer::getPeerUrl($peer['ip']) . "/peer.php?q=$method";
 		$res = peer_post($url, $data, 30, $err);
 		if($res) {
 			api_echo($res);

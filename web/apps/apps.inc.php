@@ -81,7 +81,7 @@ if(!$allow_insecure_apps && $appsChanged) {
 	$peerAppsHash = false;
 	foreach ($peers as $peer) {
 		_log("APPS: contacting peer ".$peer['hostname'], 3);
-		$peerAppsHash = peer_post($peer['hostname']."/peer.php?q=getAppsHash", null);
+		$peerAppsHash = peer_post(Peer::getPeerUrl($peer['ip'])."/peer.php?q=getAppsHash", null);
 		_log("APPS: get apphahs from peer ".$peer['hostname']." hash=".$peerAppsHash, 3);
 		if($peerAppsHash) {
 			break;

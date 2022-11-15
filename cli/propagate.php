@@ -55,7 +55,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
     $r = Peer::getPeersForSync($peers_limit);
     foreach ($r as $x) {
         if($x['hostname']==$_config['hostname']) continue;
-		Propagate::blockToPeer($x['hostname'], $x['ip'], $id);
+		Propagate::blockToPeer($x['ip'], $id);
     }
     exit;
 }
@@ -63,6 +63,8 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 
 // broadcast a block to a single peer (usually a forked process from above)
 if ($type == "block") {
+	$id = san($argv[2]);
+	$ip = trim($argv[3]);
 	_log("Propagate block $id", 5);
     // current block or read cache
     if ($id == "current") {
@@ -85,7 +87,8 @@ if ($type == "block") {
             exit;
         }
     }
-    $hostname = base58_decode($peer);
+	$ip = base58_decode($ip);
+	$hostname = Peer::getPeerUrl($ip);
     // send the block as POST to the peer
     _log("Block sent to $hostname:\n".print_r($data,1), 5);
     $response = peer_post($hostname."/peer.php?q=submitBlock", $data, 30, $err);
@@ -129,7 +132,6 @@ if ($type == "block") {
         // the peer informe us that we should run a microsync
         echo "Running microsync\n";
         _log("Running microsync",1);
-        $ip = trim($argv[4]);
         $ip = Peer::validateIp($ip);
         _log("Filtered ip=".$ip,3);
         if ($ip === false) {
@@ -169,15 +171,16 @@ if ($type == "transaction") {
     }
 	$dir = ROOT . "/cli";
     foreach ($r as $x) {
-		Propagate::transactionToPeer($id, $x['hostname']);
+		Propagate::transactionToPeer($id, $x['ip']);
     }
 }
 
 if ($type == "transactionpeer") {
 	$id = $argv[2];
-	$hostname = $argv[3];
-	$hostname = base64_decode($hostname);
-	_log("Transaction $id propagate to peer $hostname",3);
+	$ip = $argv[3];
+	$ip = base64_decode($ip);
+	_log("Transaction $id propagate to peer $ip",3);
+	$hostname = Peer::getPeerUrl($ip);
 	$url = $hostname."/peer.php?q=submitTransaction";
 	$data = Cache::get("tx_$id", function () use ($id) {
 		return Transaction::export($id);
@@ -211,7 +214,7 @@ if($type == "apps") {
 		_log("PropagateApps: No peers to propagate", 5);
 	} else {
 		foreach ($peers as $peer) {
-			Propagate::appsToPeer($peer['hostname'], $hash);
+			Propagate::appsToPeer($peer['ip'], $hash);
 		}
 	}
 }
@@ -223,33 +226,35 @@ if($type == "appspeer") {
 		exit;
 	}
 	$hash = $argv[2];
-	$hostname = $argv[3];
-	$hostname = base64_decode($hostname);
-	$url = $hostname."/peer.php?q=updateApps";
+	$ip = $argv[3];
+	$ip = base64_decode($ip);
+	$url = Peer::getPeerUrl($ip)."/peer.php?q=updateApps";
 	$res = peer_post($url, ["hash"=>$hash]);
 	_log("PropagateApps: propagate to peer $url res=".json_encode($res), 5);
 }
 
 
 if($type == "masternode") {
+	$id = san($argv[2]);
 	Masternode::propagate($id);
 }
 
 if($type == "message") {
-	$hash = $argv[2];
+	$ip = $argv[2];
 	$data = $argv[3];
-	$hostname = base64_decode($hash);
-	$url = $hostname."/peer.php?q=propagateMsg";
+	$ip = base64_decode($ip);
+	$url = Peer::getPeerUrl($ip)."/peer.php?q=propagateMsg";
 	$res = peer_post($url, ["data"=>$data], 30, $err);
 	_log("Propagate message: propagate to peer $url res=".json_encode($res). " err=".json_encode($err), 5);
 }
 
 if($type == "dapps") {
+	$id = san($argv[2]);
 	Dapps::propagate($id);
 }
 
 if($type == "dappsupdate") {
-	$hash = $argv[2];
+	$ip = $argv[2];
 	$id = $argv[3];
-	Dapps::propagateDappsUpdate($hash, $id);
+	Dapps::propagateDappsUpdate($ip, $id);
 }

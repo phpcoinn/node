@@ -19,7 +19,7 @@ if (!empty($ip)) {
 			break;
 		}
 		_log("Microsync: Get block ".$current['height']." from peer ".$x['hostname'],3);
-		$url = $x['hostname']."/peer.php?q=";
+		$url = Peer::getPeerUrl($x['ip'])."/peer.php?q=";
 		$data = peer_post($url."getBlock", ["height" => $current['height']]);
 
 		if (!$data) {

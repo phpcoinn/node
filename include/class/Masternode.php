@@ -474,13 +474,14 @@ class Masternode extends Daemon
 				_log("Masternode: No peers to propagate");
 			} else {
 				foreach ($peers as $peer) {
-					Propagate::masternodeToPeer($peer['hostname']);
+					Propagate::masternodeToPeer($peer['ip']);
 				}
 			}
 		} else {
 			//propagate to single peer
-			$peer = base64_decode($id);
-			_log("Masternode: propagating masternode to $peer pid=".getmypid(), 5);
+			$ip = base64_decode($id);
+			_log("Masternode: propagating masternode to $ip pid=".getmypid(), 5);
+			$peer = Peer::getPeerUrl($ip);
 			$url = $peer."/peer.php?q=updateMasternode";
 			$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 30, $err);
 			_log("Masternode: Propagating to peer: ".$peer." res=".json_encode($res). " err=$err",5);
@@ -761,7 +762,7 @@ class Masternode extends Daemon
 
 			$win_heights = [];
 			foreach ($peers as $peer) {
-				$peer_url = $peer['hostname'];
+				$peer_url = Peer::getPeerUrl($peer['ip']);
 				$masternode = peer_post($peer_url."/peer.php?q=getMasternode", $row['public_key']);
 				if(!$masternode) {
 					continue;
