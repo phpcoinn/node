@@ -393,11 +393,22 @@ class Block
 				throw new Exception("Invalid argon={$this->argon}");
 			}
 
-	    $calcNonce = $this->calculateNonce($prev_date, $elapsed);
+	        $calcNonce = $this->calculateNonce($prev_date, $elapsed);
+			$oldCalcNonce = $this->calculateNonce($prev_date, $elapsed, "");
 
-//        $block_date = $time;
-			if($calcNonce != $this->nonce && $this->height > UPDATE_3_ARGON_HARD) {
-				throw new Exception("Invalid nonce {$this->nonce} - {$prev_date}-{$elapsed} calcNonce=$calcNonce");
+			if($this->height < UPDATE_7_MINER_CHAIN_ID) {
+				if($calcNonce == $this->nonce) {
+					_log("Mine: accepted new nonce", 5);
+				} else if ($oldCalcNonce == $this->nonce) {
+					_log("Mine: accepted old nonce", 5);
+				}
+				if($calcNonce != $this->nonce && $oldCalcNonce != $this->nonce && $this->height > UPDATE_3_ARGON_HARD) {
+					throw new Exception("Invalid nonce {$this->nonce} - {$prev_date}-{$elapsed} calcNonce=$calcNonce");
+				}
+			} else {
+				if($calcNonce != $this->nonce) {
+					throw new Exception("Invalid nonce {$this->nonce} - {$prev_date}-{$elapsed} calcNonce=$calcNonce - Invalid chainId");
+				}
 			}
 
 			if(strlen($this->nonce) != 64) {
@@ -766,8 +777,8 @@ class Block
 		return $info;
 	}
 
-    function calculateNonce($prev_block_date, $elapsed) {
-    	$nonceBase = "{$this->miner}-{$prev_block_date}-{$elapsed}-{$this->argon}";
+    function calculateNonce($prev_block_date, $elapsed, $chain_id = CHAIN_ID) {
+    	$nonceBase = "{$chain_id}{$this->miner}-{$prev_block_date}-{$elapsed}-{$this->argon}";
 	    $calcNonce = hash("sha256", $nonceBase);
 	    _log("calculateNonce nonceBase=$nonceBase argon={$this->argon} calcNonce=$calcNonce", 5);
 	    return $calcNonce;
@@ -887,8 +898,15 @@ class Block
 			}
 			$nonce = $this->nonce;
 			$calcNonce = $this->calculateNonce($prev_block_date, $elapsed);
-			if($calcNonce != $nonce && $height > UPDATE_3_ARGON_HARD) {
-				throw new Exception("Check nonce failed");
+			$oldCalcNonce = $this->calculateNonce($prev_block_date, $elapsed,"");
+			if($height < UPDATE_7_MINER_CHAIN_ID) {
+				if($calcNonce != $nonce && $oldCalcNonce != $nonce && $height > UPDATE_3_ARGON_HARD) {
+					throw new Exception("Check nonce failed");
+				}
+			} else {
+				if($calcNonce != $nonce) {
+					throw new Exception("Check nonce failed - Invalid chainId");
+				}
 			}
 			$hit = $this->calculateHit();
 			$target = $this->calculateTarget($elapsed);
