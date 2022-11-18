@@ -117,6 +117,7 @@ class WebMiner {
             let nodeTime = info.data.time
             let data = info.data.data
             let block = info.data.block
+            let chain_id = info.data.chain_id
             let offset = nodeTime - now
             let elapsed = 0
             let new_block_date
@@ -225,7 +226,7 @@ class WebMiner {
                     })
 
                 argon = hash.encoded
-                nonceBase = `${address}-${block_date}-${elapsed}-${argon}`
+                nonceBase = `${chain_id}${address}-${block_date}-${elapsed}-${argon}`
                 this.miner.argon = argon
                 this.miner.nonceBase = nonceBase
 

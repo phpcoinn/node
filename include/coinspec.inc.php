@@ -10,7 +10,7 @@ const NETWORK = "mainnet-alpha";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
 const VERSION = "1.1.1";
-const BUILD_VERSION = 156;
+const BUILD_VERSION = 157;
 const MIN_VERSION = "1.0.9";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -104,7 +104,7 @@ const UPDATE_3_ARGON_HARD = 45000;
 const UPDATE_4_NO_POOL_MINING = 45400;
 const UPDATE_5_NO_MASTERNODE = 290000;
 const UPDATE_6_CHAIN_ID = 460000;
-const UPDATE_7_MINER_CHAIN_ID = PHP_INT_MAX;
+const UPDATE_7_MINER_CHAIN_ID = 480000;
 
 const DEV_PUBLIC_KEY = "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCyao5hHHJd9axKhC1c5emTgT4hT7k7EvXiZrjTJSGEPmz9K1swEDQi8j14vCRwUisMsvHr4P5kirrDawM3NJiknWR";
 const FEATURE_APPS = false;
