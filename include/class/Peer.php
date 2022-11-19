@@ -230,7 +230,7 @@ class Peer
 	static function findByIp($ip) {
 		global $db;
 		$x = $db->row(
-			"SELECT id,hostname FROM peers WHERE blacklisted<".DB::unixTimeStamp()." AND ip=:ip",
+			"SELECT id,hostname FROM peers WHERE ip=:ip",
 			[":ip" => $ip]
 		);
 		return $x;
