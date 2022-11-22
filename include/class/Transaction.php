@@ -387,7 +387,7 @@ class Transaction
 			"public_key" => $this->publicKey,
 			":height"    => $height,
 			":src"       => $this->src,
-			":dst"       => $this->dst,
+			":dst"       => empty($this->dst) ?  null : $this->dst,
 			":val"       => $this->val,
 			":fee"       => $this->fee,
 			":signature" => $this->signature,
@@ -489,7 +489,7 @@ class Transaction
 				":public_key" => $this->publicKey,
 				":height"     => $height,
 				":block"      => $block,
-				":dst"        => $this->dst,
+				":dst"        => empty($this->dst) ? null : $this->dst,
 				":val"        => $this->val,
 				":fee"        => $this->fee,
 				":signature"  => $this->signature,
@@ -894,7 +894,7 @@ class Transaction
     	$parts = [];
     	$parts[]=$val;
     	$parts[]=$fee;
-    	$parts[]=$this->dst;
+    	$parts[]=empty($this->dst) ? "" : $this->dst;
     	$parts[]=$this->msg;
     	$parts[]=$this->type;
     	$parts[]=$this->publicKey;

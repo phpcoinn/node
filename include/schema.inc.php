@@ -451,6 +451,11 @@ if($dbversion < 28) {
 	$dbversion = 28;
 }
 
+if($dbversion < 29) {
+	$db->run("update transactions t set t.dst = null where t.dst = '' and t.type = 8;");
+	$dbversion = 29;
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
