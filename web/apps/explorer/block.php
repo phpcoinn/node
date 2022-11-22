@@ -25,6 +25,17 @@ if(isset($_GET['height'])) {
 	$height = $block['height'];
 }
 
+if($block) {
+
+	if($height > 1) {
+		$prevBlock = Block::getAtHeight($height - 1);
+		$block_time = $block['date']-$prevBlock['date'];
+	}
+
+    $bl = Block::getFromArray($block);
+    $target = $bl->calculateTarget($block_time);
+    $hit = $bl->calculateHit();
+}
 
 
 if(isset($_GET['action'])) {
@@ -167,14 +178,17 @@ require_once __DIR__. '/../common/include/top.php';
                 <td><?php echo $block['argon'] ?></td>
             </tr>
             <tr>
+                <td>Target</td>
+                <td><?php echo $target ?></td>
+            </tr>
+            <tr>
+                <td>Hit</td>
+                <td><?php echo $hit ?></td>
+            </tr>
+            <tr>
                 <td>Block time</td>
                 <td>
-                    <?php
-                    if($height > 1) {
-	                    $prevBlock = Block::getAtHeight($height - 1);
-                        echo $block['date']-$prevBlock['date'];
-                    }
-                    ?>
+                    <?php echo $block_time; ?>
                 </td>
             </tr>
         </tbody>
