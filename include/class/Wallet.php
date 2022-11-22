@@ -327,7 +327,7 @@ class Wallet
 		}
 
 		if(DEVELOPMENT) {
-			return "http://spectre:8001";
+			return "http://spectre:8000";
 		} else {
 			return $peer;
 		}

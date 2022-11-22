@@ -34,14 +34,13 @@ class Blockchain
 		global $_config;
 		$diff = Block::difficulty();
 		$current = Block::current();
-		$data = Transaction::mempool(Block::max_transactions(), false);
 		$reward = Block::reward($current['height']+1);
 		$res = [
 			"difficulty" => $diff,
 			"block"      => $current['id'],
 			"height"     => $current['height'],
 			"date"=>$current['date'],
-			"data"=>$data,
+			"data"=>[],
 			"time"=>time(),
 			"reward"=>num($reward['miner']),
 			"version"=>Block::versionCode($current['height']+1),

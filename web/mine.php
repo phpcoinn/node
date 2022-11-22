@@ -178,7 +178,6 @@ if ($q == "info") {
 	$elapsed = intval($_POST['elapsed']);
 	$difficulty = san($_POST['difficulty']);
 	$argon = $_POST['argon'];
-	$data = json_decode($_POST['data'], true);
 
 	$l .= " height=$height address=$address elapsed=$elapsed argon=$argon";
 
@@ -230,6 +229,7 @@ if ($q == "info") {
 		api_err("minepool-error");
 	}
 
+	$data = Transaction::mempool(Block::max_transactions(), false);
 	$block = new Block($generator, $address, $height, $date, $nonce, $data, $difficulty, $version, $argon, $prev_block['id']);
 	$block->publicKey = $_config['generator_public_key'];
 

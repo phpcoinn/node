@@ -67,7 +67,7 @@ class NodeMiner extends Daemon {
 			$height = $info['height']+1;
 			$block_date = $info['date'];
 			$difficulty = $info['difficulty'];
-			$data = $info['data'];
+			$data = Transaction::mempool(Block::max_transactions(), false);
 			$prev_block_id = $info['block'];
 			$blockFound = false;
 

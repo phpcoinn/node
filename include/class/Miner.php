@@ -104,7 +104,7 @@ class Miner {
 			$block_date = $info['data']['date'];
 			$difficulty = $info['data']['difficulty'];
 			$reward = $info['data']['reward'];
-			$data = $info['data']['data'];
+			$data = [];
 			$nodeTime = $info['data']['time'];
 			$prev_block_id = $info['data']['block'];
 			$blockFound = false;
@@ -164,7 +164,6 @@ class Miner {
 					'difficulty' => $difficulty,
 					'address' => $this->address,
 					'date'=> $new_block_date,
-					'data' => json_encode($data),
 					'elapsed' => $elapsed,
 					'minerInfo'=>'phpcoin-miner cli ' . VERSION
 				]

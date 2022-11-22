@@ -113,7 +113,6 @@ class WebMiner {
             let block_date = parseInt(info.data.date)
             let now = Math.round(Date.now() / 1000)
             let nodeTime = info.data.time
-            let data = info.data.data
             let block = info.data.block
             let chain_id = info.data.chain_id
             let offset = nodeTime - now
@@ -130,10 +129,6 @@ class WebMiner {
             let version = info.data.version
             let attempt = 0
             let speed = 0
-
-            if(Array.isArray(data) && data.length === 0) {
-                data = {}
-            }
 
             this.miner = {
                 address,
@@ -155,7 +150,6 @@ class WebMiner {
                 hit,
                 target,
                 blockFound,
-                data,
                 signatureBase,
                 signature,
                 json,
@@ -262,7 +256,6 @@ class WebMiner {
                 difficulty,
                 address,
                 date: new_block_date,
-                data: JSON.stringify(data),
                 elapsed,
                 minerInfo: this.minerInfo
             }
