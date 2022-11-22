@@ -44,6 +44,12 @@ $rewardStat = Transaction::getRewardsStat($address, $type);
 
 $addressPeer = Peer::getPeerByType($address, $type);
 
+if($type == "generator" && $addressPeer) {
+    $url = $addressPeer['hostname'] . "/mine.php?q=stat";
+    $res = url_get($url);
+    $miner_stats = json_decode($res, true);
+}
+
 global $_config;
 
 require_once __DIR__. '/../common/include/top.php';
@@ -166,6 +172,85 @@ require_once __DIR__. '/../common/include/top.php';
         </div>
     </div>
 </div>
+
+<?php if($miner_stats) {?>
+
+    <h4>Miner statistics</h4>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <tr>
+                <td>Running</td>
+                <td>
+                    <?php
+                    $miner_stats['data']['started']= 1667332680;
+                    if(isset($miner_stats['data']['started'])) {
+	                    $elapsed = time() - $miner_stats['data']['started'];
+	                    $days = (int) ($elapsed / 60 / 60 / 24);
+	                    $remain = $elapsed - $days * 60 * 60 * 24;
+	                    if ($days > 0) {
+                            echo $days." d ";
+	                    }
+                        echo date("H:i:s", $remain);
+                    }
+                    ?>
+                </td>
+            </tr>
+            <tr>
+                <td>Submits</td>
+                <td><?php echo $miner_stats['data']['submits'] ?></td>
+            </tr>
+            <tr>
+                <td>Accepted</td>
+                <td><?php echo $miner_stats['data']['accepted'] ?></td>
+            </tr>
+            <tr>
+                <td>Rejected</td>
+                <td>
+                    <div class="d-flex">
+                        <span class="pe-4"><?php echo $miner_stats['data']['rejected'] ?></span>
+                        <table class="table table-sm table-striped">
+                            <?php foreach($miner_stats['data']['reject-reasons'] as $reason => $count) { ?>
+                            <tr>
+                                <td><?php echo $reason ?></td>
+                                <td><?php echo $count ?></td>
+                            </tr>
+                            <?php } ?>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>Unique Ips</td>
+                <td><?php echo count(array_keys($miner_stats['data']['ips'])) ?></td>
+            </tr>
+            <tr>
+                <td>Unique Miners</td>
+                <td><?php echo count(array_keys($miner_stats['data']['miners'])) ?></td>
+            </tr>
+            <tr>
+                <td>Miners</td>
+                <td>
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Address</th>
+                                <th>Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($miner_stats['data']['miners'] as $address => $count) { ?>
+                                <tr>
+                                    <td><?php echo explorer_address_link($address) ?></td>
+                                    <td><?php echo $count ?></td>
+                                </tr>
+                            <?php } ?>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+<?php } ?>
 
 <h4>Transactions</h4>
 <div class="table-responsive">

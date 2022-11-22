@@ -290,6 +290,7 @@ if ($q == "info") {
 			$l .= " ACCEPTED";
 			_log($l);
 			$generator_stat['accepted']++;
+			$generator_stat['miners'][$address]++;
 			saveGeneratorStat($generator_stat);
 			api_echo("accepted");
 		} else {
