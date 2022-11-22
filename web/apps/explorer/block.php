@@ -223,6 +223,9 @@ require_once __DIR__. '/../common/include/top.php';
 		                    <?php if($tx['message']=="miner") { ?>
                                 <span class="badge rounded-pill bg-warning">Miner</span>
 		                    <?php } ?>
+		                    <?php if($tx['message']=="nodeminer") { ?>
+                                <span class="badge rounded-pill bg-warning">Nodeminer</span>
+		                    <?php } ?>
 		                    <?php if($tx['message']=="masternode") { ?>
                                 <span class="badge rounded-pill bg-info">Masternode</span>
 		                    <?php } ?>
