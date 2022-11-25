@@ -25,6 +25,9 @@ require_once __DIR__. '/../common/include/top.php';
                 <th>Public key</th>
                 <th>Block</th>
                 <?php echo sort_column('/apps/explorer/accounts.php?',$dm,'balance','Balance') ?>
+                <?php echo sort_column('/apps/explorer/accounts.php?',$dm,'height','Height') ?>
+                <?php echo sort_column('/apps/explorer/accounts.php?',$dm,'maturity','Maturity') ?>
+                <?php echo sort_column('/apps/explorer/accounts.php?',$dm,'weight','Weight') ?>
             </tr>
         </thead>
         <tbody>
@@ -34,6 +37,11 @@ require_once __DIR__. '/../common/include/top.php';
                     <td><?php echo explorer_address_pubkey($account['public_key']) ?></td>
                     <td><?php echo explorer_block_link($account['block']) ?></td>
                     <td align="right"><?php echo num($account['balance']); ?></td>
+                    <td>
+                        <a href="/apps/explorer/block.php?height=<?php echo $account['height']; ?>"><?php echo $account['height']; ?></a>
+                    </td>
+                    <td align="right"><?php echo $account['maturity']; ?></td>
+                    <td align="right"><?php echo $account['weight']; ?></td>
                 </tr>
             <?php } ?>
         </tbody>

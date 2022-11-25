@@ -265,6 +265,20 @@ if ($q == "info") {
 		$fee_dst = $generator;
 	}
 
+	if($height >= STAKING_START_HEIGHT) {
+		$reward = num($rewardInfo['staker']);
+		$stake_reward_tx = Transaction::getStakeRewardTx($height, $generator, $_config['generator_public_key'], $_config['generator_private_key'], $reward, $new_block_date);
+		if(!$stake_reward_tx) {
+			$l .= " rejected - Not found stake winner";
+			_log($l);
+			api_err("No stake winner - mining dropped");
+			$generator_stat['rejected']++;
+			@$generator_stat['reject-reasons']['Not found masternode winner']++;
+			$this->miningStat['rejected']++;
+		}
+		$data[$stake_reward_tx['id']]=$stake_reward_tx;
+	}
+
 	$data[$reward_tx['id']] = $reward_tx;
 
 	ksort($data);

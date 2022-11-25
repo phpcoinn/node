@@ -74,34 +74,41 @@ class Transaction
         global $db;
 
 		try {
-			$r = $db->run("SELECT * FROM transactions WHERE block=:block ORDER by `type` DESC", [":block" => $block]);
+			$r = $db->run("SELECT * FROM transactions WHERE block=:block ORDER by `type` DESC", [":block" => $block['id']]);
 			foreach ($r as $x) {
 				$tx = Transaction::getFromDbRecord($x);
 				_log("Reversing transaction {$tx->id}", 3);
 
+				if(!empty($tx->dst)) {
+					$dst_height = Transaction::getLastHeight($tx->dst, $block['height']);
+				}
+				if(!empty($tx->src)) {
+					$src_height = Transaction::getLastHeight($tx->src, $block['height']);
+				}
+
 		        $type = $tx->type;
 		        $res = true;
 		        if($type == TX_TYPE_REWARD) {
-			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1));
+			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 		        }
 				if ($type == TX_TYPE_SEND) {
-			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1));
-			        $res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
+			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
+			        $res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee),$src_height);
 					$res = $res && $tx->add_mempool();
 		        }
 
 				if ($type == TX_TYPE_BURN) {
-					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
+					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee),$src_height);
 					$res = $res && $tx->add_mempool();
 				}
 
 		        if ($type == TX_TYPE_FEE) {
-			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1));
+			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 		        }
 
 				if ($type == TX_TYPE_MN_CREATE) {
-					$res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1));
-					$res = $res && Account::addBalance($tx->src, floatval($tx->val));
+					$res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
+					$res = $res && Account::addBalance($tx->src, floatval($tx->val),$src_height);
 					$res = $res && $tx->add_mempool();
 					if($res === false) {
 						throw new Exception("Update balance for reverse transaction failed");
@@ -114,8 +121,8 @@ class Transaction
 				}
 
 				if ($type == TX_TYPE_MN_REMOVE) {
-					$res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1));
-					$res = $res && Account::addBalance($tx->src, floatval($tx->val));
+					$res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
+					$res = $res && Account::addBalance($tx->src, floatval($tx->val),$src_height);
 					$res = $res && $tx->add_mempool();
 					if($res === false) {
 						throw new Exception("Update balance for reverse transaction failed");
@@ -132,8 +139,8 @@ class Transaction
 
 				if ($type == TX_TYPE_SC_CREATE) {
 
-					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1));
-					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
+					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
+					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee),$src_height);
 					$res = $res && $tx->add_mempool();
 
 					$res = $res && SmartContract::reverse($tx, $err);
@@ -143,8 +150,8 @@ class Transaction
 				}
 
 				if ($type == TX_TYPE_SC_EXEC) {
-					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1));
-					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
+					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
+					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee),$src_height);
 					$res = $res && $tx->add_mempool();
 
 					$height = $tx->height;
@@ -155,8 +162,8 @@ class Transaction
 				}
 
 				if ($type == TX_TYPE_SC_SEND) {
-					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1));
-					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee));
+					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1), $dst_height);
+					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee), $src_height);
 					$res = $res && $tx->add_mempool();
 
 					$height = $tx->height;
@@ -470,13 +477,13 @@ class Transaction
 		return try_catch(function () use ($block, $height, &$error) {
 			$public_key = $this->publicKey;
 			$address = Account::getAddress($public_key);
-			$res = Account::checkAccount($address, $public_key, $block);
+			$res = Account::checkAccount($address, $public_key, $block, $height);
 			if ($res === false) {
 				throw new Exception("Error checking account address");
 			}
 			//allow receive on unverified address
 			if ($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_SEND) {
-				$res = Account::checkAccount($this->dst, "", $block);
+				$res = Account::checkAccount($this->dst, "", $block, $height);
 				if ($res === false) {
 					throw new Exception("Error checking account address for send");
 				}
@@ -507,23 +514,23 @@ class Transaction
 			$type = $this->type;
 			$res = true;
 			if($type == TX_TYPE_REWARD && $this->val > 0) {
-				$res = $res && Account::addBalance($this->dst, $this->val);
+				$res = $res && Account::addBalance($this->dst, $this->val,$height);
 			} else if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE) {
-				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
-				$res = $res && Account::addBalance($this->dst, ($this->val));
+				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
+				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
 			} else if ($type == TX_TYPE_FEE) {
-				$res = $res && Account::addBalance($this->dst, $this->val);
+				$res = $res && Account::addBalance($this->dst, $this->val,$height);
 			} else if ($type == TX_TYPE_SC_CREATE) {
-				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
-				$res = $res && Account::addBalance($this->dst, ($this->val));
+				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
+				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
 			} else if ($type == TX_TYPE_SC_EXEC) {
-				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
-				$res = $res && Account::addBalance($this->dst, ($this->val));
+				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
+				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
 			} else if ($type == TX_TYPE_SC_SEND) {
-				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
-				$res = $res && Account::addBalance($this->dst, ($this->val));
+				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
+				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
 			} else if ($type == TX_TYPE_BURN) {
-				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
+				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
 			}
 			if($res === false) {
 				throw new Exception("Error updating balance for transaction ".$this->id." type=$type");
@@ -539,8 +546,8 @@ class Transaction
 
 			if ($type == TX_TYPE_MN_REMOVE) {
 				$res = true;
-				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1));
-				$res = $res && Account::addBalance($this->dst, ($this->val));
+				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
+				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
 				if($res === false) {
 					throw new Exception("Error updating balance for transaction ".$this->id);
 				}
@@ -668,7 +675,7 @@ class Transaction
 			}
 
 	        if($this->type==TX_TYPE_REWARD) {
-	            $res = $this->checkRewards($height, $err);
+	            $res = $this->checkRewards($height, $verify,$err);
 	            if(!$res) {
 		            if($height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 			            throw new Exception("Transaction rewards check failed: $err");
@@ -812,7 +819,7 @@ class Transaction
 		return $this->check($height, true, $error);
     }
 
-    function checkRewards($height, &$error = null) {
+    function checkRewards($height, $verify=false, &$error = null) {
 		$reward = Block::reward($height);
 		$msg = $this->msg;
 
@@ -821,7 +828,7 @@ class Transaction
 			if(empty($msg) && $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 				throw new Exception("Reward transaction message missing");
 			}
-			if(!in_array($msg, ["nodeminer", "miner", "generator","masternode"]) &&
+			if(!in_array($msg, ["nodeminer", "miner", "generator","masternode","stake"]) &&
 				!(substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING)
 				&& $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 				throw new Exception("Reward transaction invalid message: $msg");
@@ -839,6 +846,11 @@ class Transaction
 				$val_check = num($masternode);
 			} else if (substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING) {
 				$val_check = num($miner);
+			} else if ($msg == "stake") {
+				if($height < STAKING_START_HEIGHT) {
+					throw new Exception("Invalid staking transaction before start height " . STAKING_START_HEIGHT);
+				}
+				$val_check = num($reward['staker']);
 			}
 			if(empty($val_check) && $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 				throw new Exception("Reward transaction no value id=".$this->id, 5);
@@ -857,6 +869,37 @@ class Transaction
 				$res = Account::checkSignature($poolMinerAddress, $poolMinerAddressSignature, $poolMinerPublicKey, $height);
 				if(!$res) {
 					throw new Exception("Reward transaction not valid: address signature failed poolMinerAddress=$poolMinerAddress poolMinerAddressSignature=$poolMinerAddressSignature");
+				}
+			}
+
+			if($msg == "stake" && $height >= STAKING_START_HEIGHT) {
+
+				if($height == Block::getHeight() + 1) {
+					$winner = Account::getStakeWinner($height);
+					if(!empty($winner) && $winner != $this->dst) {
+						throw new Exception("Staking winner not found");
+					} else if (empty($winner) && $this->dst != Account::getAddress($this->publicKey)) {
+						throw new Exception("Staking winner not valid - must be generator");
+					}
+				} else {
+					$last_height = Account::getLastTxHeight($this->dst, $height);
+					if(!$last_height) {
+						throw new Exception("Staking winner check failed: Can not found last height for address ".$this->dst);
+					}
+
+					$block = Block::get($height);
+					$winner_is_generator = $block['generator']==$this->dst;
+
+					$maturity = $height - $last_height;
+					_log("Check stake address=".$this->dst. " height=$height last_height=$last_height verify=$verify winner_is_generator=$winner_is_generator maturity=$maturity", 5);
+					if($maturity < STAKING_COIN_MATURITY && !$winner_is_generator) {
+						throw new Exception("Staking winner check failed: Staking maturity not valid ".$maturity);
+					}
+
+					$balance = Account::getBalanceAtHeight($this->dst, $height);
+					if(floatval($balance) <= STAKING_MIN_BALANCE && !$winner_is_generator) {
+						throw new Exception("Staking winner check failed: Staking balance not valid ".$balance);
+					}
 				}
 			}
 
@@ -1035,6 +1078,17 @@ class Transaction
 	    $transaction->hash();
 	    return $transaction->toArray();
     }
+
+	static function getStakeRewardTx($height,$generator,$public_key,$private_key,$reward,$date) {
+		$winner = Account::getStakeWinner($height);
+		if(!$winner) {
+			$winner = $generator;
+		}
+		$transaction = new Transaction($public_key,$winner,$reward,TX_TYPE_REWARD,$date,"stake");
+		$transaction->sign($private_key);
+		$transaction->hash();
+		return $transaction->toArray();
+	}
 
     static function getForBlock($height) {
 		return Transaction::get_transactions($height, "");
@@ -1277,5 +1331,13 @@ class Transaction
 		$sql = "select sum(t.val) as sum from transactions t where t.type = :type";
 		$res = $db->single($sql, [":type"=>TX_TYPE_BURN]);
 		return $res;
+	}
+
+	static function getLastHeight($address, $height) {
+		global $db;
+		$sql = "select max(t.height) from transactions t
+			where (t.src = :src or t.dst = :dst)
+			and t.height < :height";
+		return $db->single($sql, [":src"=>$address, ":dst"=>$address, ":height"=>$height]);
 	}
 }

@@ -114,6 +114,7 @@ class Blockchain
 				'miner' => $reward['miner'],
 				'gen' => $reward['generator'],
 				'mn' => $reward['masternode'],
+				'staker' => $reward['staker'],
 				'pos' => $reward['pos'],
 				'elapsed' => $elapsed,
 				'days' => $days,
