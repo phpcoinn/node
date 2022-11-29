@@ -290,25 +290,32 @@ class Block
 					$staker = 0;
 					break;
 				case "combined":
-					if($height >= STAKING_START_HEIGHT) {
-						$mn_reward = $segment/10 * $total;
-						$remain_reward = $total - $mn_reward;
-						$miner = $remain_reward * 0.8;
-						$staker = $remain_reward * 0.1;
-						$generator = $remain_reward * 0.1;
+					if($segment == 10) {
+						$mn_reward = 0.6 * $total;
+						$generator = 0.1 * $total;
+						$miner = 0.2 * $total;
+						$staker = 0.1 * $total;
 					} else {
-						$mn_reward = $segment/10 * $total;
-						$remain_reward = $total - $mn_reward;
-						$miner = $remain_reward * 0.9;
-						$generator = $remain_reward * 0.1;
-						$staker = 0;
+						if($height >= STAKING_START_HEIGHT) {
+							$mn_reward = $segment/10 * $total;
+							$remain_reward = $total - $mn_reward;
+							$miner = $remain_reward * 0.8;
+							$staker = $remain_reward * 0.1;
+							$generator = $remain_reward * 0.1;
+						} else {
+							$mn_reward = $segment/10 * $total;
+							$remain_reward = $total - $mn_reward;
+							$miner = $remain_reward * 0.9;
+							$generator = $remain_reward * 0.1;
+							$staker = 0;
+						}
 					}
 					break;
 				case "deflation":
-					$mn_reward = $total;
-					$miner = 0;
-					$generator = 0;
-					$staker = 0;
+					$mn_reward = 0.6 * $total;
+					$generator = 0.1 * $total;
+					$miner = 0.2 * $total;
+					$staker = 0.1 * $total;
 					break;
 				default:
 					$total = 0;
