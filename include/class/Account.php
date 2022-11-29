@@ -309,7 +309,7 @@ class Account
 		if(!$row) {
 			$bind = [":id" => $address, ":block" => $block, ":public_key" => $public_key, ":height"=>$height];
 			$res = $db->run("INSERT INTO accounts 
-		        (id, public_key, block, balance, last_height)
+		        (id, public_key, block, balance, height)
 		        values (:id, :public_key, :block, 0, :height)", $bind);
 			return $res;
 		} else {
