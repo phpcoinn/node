@@ -60,7 +60,6 @@ fi
 echo "PHPCoin: configure node"
 echo "==================================================================================================="
 mkdir tmp
-mkdir web/apps
 chown -R www-data:www-data tmp
 chown -R www-data:www-data web/apps
 mkdir dapps
@@ -80,10 +79,6 @@ wget https://phpcoin.net/download/blockchain.sql.zip -O blockchain.sql.zip
 unzip -o blockchain.sql.zip
 cd /var/www/phpcoin
 php cli/util.php importdb tmp/blockchain.sql
-
-echo "PHPCoin: synchronize apps"
-echo "==================================================================================================="
-php cli/util.php download-apps
 
 echo "PHPCoin: Setup node automatic update"
 echo "==================================================================================================="
