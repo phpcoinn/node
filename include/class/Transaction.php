@@ -897,7 +897,7 @@ class Transaction
 					}
 
 					$balance = Account::getBalanceAtHeight($this->dst, $height);
-					if(floatval($balance) <= STAKING_MIN_BALANCE && !$winner_is_generator) {
+					if(floatval($balance) < STAKING_MIN_BALANCE && !$winner_is_generator) {
 						throw new Exception("Staking winner check failed: Staking balance not valid ".$balance);
 					}
 				}
