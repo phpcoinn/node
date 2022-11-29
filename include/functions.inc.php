@@ -84,11 +84,12 @@ function _log($data, $verbosity = 0)
 
 	$prefix = $res . " ";
 	$lines = explode(PHP_EOL, $data);
+	global $argv;
 	foreach ($lines as $line) {
 		$res = $prefix . $line . PHP_EOL;
-	    if (($_config && $_config['enable_logging'] == true && $_config['log_verbosity'] >= $verbosity) || !empty(getenv('LOG_DEBUG'))) {
+	    if (($_config && $_config['enable_logging'] == true && $_config['log_verbosity'] >= $verbosity) || !empty(getenv('LOG_DEBUG'))
+	    || in_array("--debug", $argv)) {
 		    if (php_sapi_name() === 'cli') {
-				global $argv;
 		        if(!defined("CLI_UTIL") || CLI_UTIL == 0 || in_array("--log", $argv)) {
 		            echo $res;
 			    }
