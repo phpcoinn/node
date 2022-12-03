@@ -826,9 +826,9 @@ class Util
 		if($version > $currentVersion || !empty($force)) {
 			echo "There is new version: $version - updating node".PHP_EOL;
 			//temp fix apps
-			$cmd="cd ".ROOT." && rm -rf web/apps";
-			$res = shell_exec($cmd);
-			_log("cmd=$cmd res=$res", 5);
+//			$cmd="cd ".ROOT." && rm -rf web/apps";
+//			$res = shell_exec($cmd);
+//			_log("cmd=$cmd res=$res", 5);
 
 			$cmd="cd ".ROOT." && git restore .";
 			$res = shell_exec($cmd);
