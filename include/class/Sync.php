@@ -299,8 +299,9 @@ class Sync extends Daemon
 				} else {
 					_log("We have wrong top block $height - pop it", 5);
 					Block::pop();
-					Config::setSync(0);
-					return;
+					break;
+//					Config::setSync(0);
+//					return;
 				}
 			} else {
 				_log("Check not top block", 5);
@@ -312,8 +313,9 @@ class Sync extends Daemon
 					_log("We have wrong block $height - pop up to it", 5);
 					$no = $current['height'] - $height + 1;
 					Block::pop($no);
-					Config::setSync(0);
-					return;
+					break;
+//					Config::setSync(0);
+//					return;
 				}
 			}
 		}
@@ -339,6 +341,7 @@ class Sync extends Daemon
 
 		Config::setSync(0);
 
+		$current = Block::current();
 		$nodeSync = new NodeSync($peers);
 		if($largest_height > $current['height']) {
 			_log("Start syncing to height $largest_height", 5);

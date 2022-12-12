@@ -7,6 +7,13 @@ $ip = trim($argv[1]);
 require_once dirname(__DIR__).'/include/init.inc.php';
 
 if (!empty($ip)) {
+
+	if (Config::isSync()) {
+		_log('['.$ip."] Block rejected due to sync", 5);
+		api_err("sync");
+	}
+
+
 	do {
 		_log("Microsync: Find peer by ip = $ip", 3);
 		// the microsync runs only against 1 specific peer
