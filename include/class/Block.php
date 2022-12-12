@@ -645,6 +645,9 @@ class Block
 				$db->commit();
 				$db->unlockTables();
 			}
+			Cache::remove("current");
+			Cache::remove("height");
+			Cache::remove("current_export");
 			return true;
 		} catch (Exception $e) {
 			Config::setSync(0);

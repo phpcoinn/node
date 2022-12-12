@@ -31,6 +31,7 @@ class Sync extends Daemon
 		$t = time();
 		$t1 = microtime(true);
 		_log("Starting sync",3);
+		Config::setSync(1);
 
 		// update the last time sync ran, to set the execution of the next run
 		$db->run("UPDATE config SET val=:time WHERE cfg='sync_last'", [":time" => $t]);
@@ -250,20 +251,24 @@ class Sync extends Daemon
 					}
 				}
 
-				if(count(array_keys($forkedBlocksMap))>1) {
-					$forked = true;
-					uasort($forkedBlocksMap, function ($b1, $b2) {
-						if($b1['elapsed'] == $b2['elapsed']) {
-							if($b1['id'] != $b2['id']) {
-								$w=1;
+				if(count($forkedBlocksMap) === 0) {
+					unset($blocksMap[$height]);
+				} else {
+					if(count(array_keys($forkedBlocksMap))>1) {
+						$forked = true;
+						uasort($forkedBlocksMap, function ($b1, $b2) {
+							if($b1['elapsed'] == $b2['elapsed']) {
+								if($b1['id'] != $b2['id']) {
+									$w=1;
+								}
+								if($b1['date'] == $b2['date']) {
+									$s=1;
+								}
+								return $b1['date'] - $b2['date'];
 							}
-							if($b1['date'] == $b2['date']) {
-								$s=1;
-							}
-							return $b1['date'] - $b2['date'];
-						}
-						return $b1['elapsed'] - $b2['elapsed'];
-					});
+							return $b1['elapsed'] - $b2['elapsed'];
+						});
+					}
 					_log("Forked blocks " . json_encode($forkedBlocksMap, JSON_PRETTY_PRINT), 5);
 					$winForkedBlock = array_shift($forkedBlocksMap);
 					_log("Forked block winner is block " . $winForkedBlock['id']);
@@ -292,7 +297,7 @@ class Sync extends Daemon
 				if($block_id == $current['id']) {
 					_log("Our top block is ok", 5);
 				} else {
-					_log("We have wrong top block - pop it", 5);
+					_log("We have wrong top block $height - pop it", 5);
 					Block::pop();
 					Config::setSync(0);
 					return;
@@ -304,7 +309,7 @@ class Sync extends Daemon
 				if($block_id == $block['id']) {
 					_log("Our block is ok", 5);
 				} else {
-					_log("We have wrong block - pop up to it", 5);
+					_log("We have wrong block $height - pop up to it", 5);
 					$no = $current['height'] - $height;
 					Block::pop($no);
 					Config::setSync(0);
@@ -331,6 +336,8 @@ class Sync extends Daemon
 			$t2 = isset($peerResponseTimes[$p2]) ? $peerResponseTimes[$p2] : PHP_INT_MAX;
 			return $t2 - $t1;
 		});
+
+		Config::setSync(0);
 
 		$nodeSync = new NodeSync($peers);
 		if($largest_height > $current['height']) {
