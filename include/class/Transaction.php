@@ -879,7 +879,8 @@ class Transaction
 					if(!empty($winner) && $winner != $this->dst) {
 						throw new Exception("Staking winner not found");
 					} else if (empty($winner) && $this->dst != Account::getAddress($this->publicKey)) {
-						throw new Exception("Staking winner not valid - must be generator");
+						//temporary disabled
+						//throw new Exception("Staking winner not valid - must be generator");
 					}
 				} else {
 					$last_height = Account::getLastTxHeight($this->dst, $height);
