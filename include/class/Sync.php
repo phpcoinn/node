@@ -310,7 +310,7 @@ class Sync extends Daemon
 					_log("Our block is ok", 5);
 				} else {
 					_log("We have wrong block $height - pop up to it", 5);
-					$no = $current['height'] - $height;
+					$no = $current['height'] - $height + 1;
 					Block::pop($no);
 					Config::setSync(0);
 					return;
