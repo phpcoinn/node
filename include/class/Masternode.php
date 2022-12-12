@@ -38,7 +38,10 @@ class Masternode extends Daemon
 		$address = Account::getAddress($public_key);
 		$parts[]=$address;
 		$parts[]=$win_height;
-		return implode("-", $parts);
+		$parts[]=Block::getMasternodeCollateral($win_height);
+		$base = implode("-", $parts);
+		_log("Masternode: signature base=$base", 5);
+		return $base;
 	}
 
 	function storeSignature() {
@@ -240,7 +243,7 @@ class Masternode extends Daemon
 			if (!self::allowedMasternodes($height)) {
 				throw new Exception("Not allowed transaction type {$transaction->type} for height $height");
 			}
-
+			$in_collateral_change = Masternode::isInCollateralChangeWindow($height);
 			if(!$verify) {
 				//source address can not be masternode
 				$res = Masternode::existsPublicKey($transaction->publicKey);
@@ -261,8 +264,16 @@ class Masternode extends Daemon
 				}
 			}
 			//masternode collateral must be exact
-			if($transaction->val != MN_COLLATERAL) {
-				throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".MN_COLLATERAL);
+			$collateral = Block::getMasternodeCollateral($height);
+			if($in_collateral_change) {
+				$next_collateral = Block::getMasternodeCollateral($height, true);
+				if($transaction->val != $collateral && $transaction->val != $next_collateral) {
+					throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".$collateral." or ". $next_collateral);
+				}
+			} else {
+				if($transaction->val != $collateral) {
+					throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".$collateral);
+				}
 			}
 			return true;
 		} catch (Exception $e) {
@@ -279,7 +290,7 @@ class Masternode extends Daemon
 			if(!Masternode::allowedMasternodes($height)) {
 				throw new Exception("Not allowed transaction type {$transaction->type} for height $height");
 			}
-
+			$in_collateral_change = Masternode::isInCollateralChangeWindow($height);
 			if(!$verify) {
 				//masternode must exists in database
 				$masternode = Masternode::get($transaction->publicKey);
@@ -287,7 +298,7 @@ class Masternode extends Daemon
 					throw new Exception("Can not find masternode with public key ".$transaction->publicKey);
 				}
 				//masternode must run minimal number of blocks
-				if($height < $masternode['height'] + MN_MIN_RUN_BLOCKS ) {
+				if($height < $masternode['height'] + MN_MIN_RUN_BLOCKS && !$in_collateral_change) {
 					throw new Exception("Masternode must run at least ".MN_MIN_RUN_BLOCKS." blocks. Created at block ". $masternode['height']. " check block=".$height);
 				}
 				//destination address can not be masternode
@@ -301,8 +312,16 @@ class Masternode extends Daemon
 				}
 			}
 			//masternode collateral must be exact
-			if($transaction->val != MN_COLLATERAL) {
-				throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".MN_COLLATERAL);
+			$collateral = Block::getMasternodeCollateral($height);
+			if(!$in_collateral_change) {
+				if($transaction->val != $collateral) {
+					throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".$collateral);
+				}
+			} else {
+				$next_collateral = Block::getMasternodeCollateral($height, true);
+				if($transaction->val != $collateral && $transaction->val != $next_collateral) {
+					throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".$collateral. " or ".$next_collateral);
+				}
 			}
 			return true;
 
@@ -324,7 +343,8 @@ class Masternode extends Daemon
 					$masternode = Masternode::get($transaction->publicKey);
 					if($masternode) {
 						$balance = Account::getBalanceByPublicKey($transaction->publicKey);
-						if(floatval($balance) - $transaction->val < MN_COLLATERAL) {
+						$collateral = Block::getMasternodeCollateral($height);
+						if(floatval($balance) - $transaction->val < $collateral) {
 							throw new Exception("Can not spent more than collateral. Balance=$balance amount=".$transaction->val);
 						}
 					}
@@ -863,7 +883,8 @@ class Masternode extends Daemon
 			if($masternode) {
 				$balance = Account::getBalanceByPublicKey($transaction->publicKey);
 				$memspent = Mempool::getSourceMempoolBalance($transaction->src);
-				if(floatval($balance) - floatval($memspent) - $transaction->val < MN_COLLATERAL) {
+				$collateral = Block::getMasternodeCollateral($height);
+				if(floatval($balance) - floatval($memspent) - $transaction->val < $collateral) {
 					throw new Exception("Can not spent more than collateral. Balance=$balance memspent=$memspent amount=".$transaction->val);
 				}
 			}
@@ -963,6 +984,23 @@ class Masternode extends Daemon
 		global $db;
 		$sql="update masternode set ip=:ip where public_key =:public_key";
 		$db->run($sql, [":ip"=>$ip, ":public_key"=>$public_key]);
+	}
+
+	static function isInCollateralChangeWindow($height) {
+		$heights = array_keys(COLLATERAL_SCHEME);
+		foreach ($heights as $index => $h) {
+			if(isset($heights[$index+1]) && $height >= $heights[$index] && $height < $heights[$index+1]) {
+				$collateral_height = $heights[$index+1];
+				break;
+			}
+		}
+
+		if(empty($collateral_height)) {
+			$collateral_height = PHP_INT_MAX;
+		}
+
+		return $height > $collateral_height - COLLATERAL_CHANGE_WINDOW && $height <= $collateral_height;
+
 	}
 
 }

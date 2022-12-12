@@ -413,13 +413,16 @@ class Wallet
 			echo "Missing destination address".PHP_EOL;
 			exit;
 		}
+
+		$collateral = $this->wallet_peer_post("/api.php?q=getCollateral");
+
 		$date=time();
 		$msg = "mncreate";
-		$tx = new Transaction($this->public_key, $mnAddress, MN_COLLATERAL, TX_TYPE_MN_CREATE, $date, $msg);
+		$tx = new Transaction($this->public_key, $mnAddress, $collateral, TX_TYPE_MN_CREATE, $date, $msg);
 		$signature = $tx->sign($this->private_key);
 
 		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
-			array("dst" => $mnAddress, "val" => MN_COLLATERAL, "signature" => $signature,
+			array("dst" => $mnAddress, "val" => $collateral, "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_MN_CREATE,
 				"message" => $msg, "date" => $date));
 		$this->checkApiResponse($res);
@@ -427,14 +430,14 @@ class Wallet
 	}
 
 	function removeMasternode($payoutAddress) {
-		$mnAddress = Account::getAddress($this->public_key);
+		$collateral = $this->wallet_peer_post("/api.php?q=getCollateral");
 		$date=time();
 		$msg = "mnremove";
-		$tx = new Transaction($this->public_key, $payoutAddress, MN_COLLATERAL, TX_TYPE_MN_REMOVE, $date, $msg);
+		$tx = new Transaction($this->public_key, $payoutAddress, $collateral, TX_TYPE_MN_REMOVE, $date, $msg);
 		$signature = $tx->sign($this->private_key);
 
 		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
-			array("dst" => $payoutAddress, "val" => MN_COLLATERAL, "signature" => $signature,
+			array("dst" => $payoutAddress, "val" => $collateral, "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_MN_REMOVE,
 				"message" => $msg, "date" => $date));
 		$this->checkApiResponse($res);

@@ -12,7 +12,7 @@ const COIN_PORT = "";
 const VERSION = "1.1.1";
 const BUILD_VERSION = 158;
 const MIN_VERSION = "1.0.9";
-const DEVELOPMENT = false;
+const DEVELOPMENT = true;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
 
@@ -79,11 +79,19 @@ const REWARD_SCHEME = [
 	]
 ];
 
+const COLLATERAL_SCHEME = [
+	1 => 10000,
+	486000 => 15000,
+	486100 => 20000,
+	486200 => 25000
+];
+
 const MIN_NODE_SCORE = 80;
 
 const FEATURE_MN = true;
-const MN_COLLATERAL = 10000;
+//const MN_COLLATERAL = 10000;
 const MN_MIN_RUN_BLOCKS = 1440*30;
+const COLLATERAL_CHANGE_WINDOW = 30;
 
 const FEE_START_HEIGHT = PHP_INT_MAX;
 const FEE_DIVIDER = 100;

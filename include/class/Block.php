@@ -1068,4 +1068,28 @@ class Block
 			return Block::getHeight();
 		});
 	}
+
+	static function getMasternodeCollateral($height, $next=false) {
+		$heights = array_keys(COLLATERAL_SCHEME);
+		foreach ($heights as $index => $h) {
+			if(isset($heights[$index+1]) && $height >= $heights[$index] && $height < $heights[$index+1]) {
+				if($next) {
+					$collateral = COLLATERAL_SCHEME[$heights[$index+1]];
+				} else {
+					$collateral = COLLATERAL_SCHEME[$h];
+				}
+				break;
+			}
+		}
+
+		if(empty($collateral)) {
+			if($next) {
+				$collateral = COLLATERAL_SCHEME[$heights[count($heights)-1]];
+			} else {
+				$collateral = $h;
+			}
+		}
+
+		return $collateral;
+	}
 }
