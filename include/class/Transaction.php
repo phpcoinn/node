@@ -1341,4 +1341,16 @@ class Transaction
 			and t.height < :height";
 		return $db->single($sql, [":src"=>$address, ":dst"=>$address, ":height"=>$height]);
 	}
+
+	static function convertValidBurnDst(&$data, $height) {
+		if($height >= UPDATE_8_FIX_CHECK_BURN_TX_DST_NULL[0] && $height <= UPDATE_8_FIX_CHECK_BURN_TX_DST_NULL[1]) {
+			foreach ($data as $id => &$tx) {
+				if($tx['type']==TX_TYPE_BURN) {
+					if($tx['dst']===null) {
+						$tx['dst']="";
+					}
+				}
+			}
+		}
+	}
 }

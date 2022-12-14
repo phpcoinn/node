@@ -706,7 +706,7 @@ class Block
         foreach ($r as $x) {
             $trans = [
                 "id"         => $x['id'],
-                "dst"        => empty($x['dst']) ? "" : $x['dst'],
+                "dst"        => $x['dst'],
                 "val"        => num($x['val']),
                 "fee"        => num($x['fee']),
                 "signature"  => $x['signature'],
@@ -787,6 +787,7 @@ class Block
     	$parts[] = $this->nonce;
     	$data = $this->data;
     	ksort($data);
+		Transaction::convertValidBurnDst($data, $this->height);
 		$data = json_encode($data);
     	$parts[] = $data;
     	$parts[] = $this->difficulty;
