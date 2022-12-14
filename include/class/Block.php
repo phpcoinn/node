@@ -706,7 +706,7 @@ class Block
         foreach ($r as $x) {
             $trans = [
                 "id"         => $x['id'],
-                "dst"        => $x['dst'],
+                "dst"        => empty($x['dst']) ? "" : $x['dst'],
                 "val"        => num($x['val']),
                 "fee"        => num($x['fee']),
                 "signature"  => $x['signature'],
