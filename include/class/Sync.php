@@ -258,20 +258,19 @@ class Sync extends Daemon
 						$forked = true;
 						uasort($forkedBlocksMap, function ($b1, $b2) {
 							if($b1['elapsed'] == $b2['elapsed']) {
-								if($b1['id'] != $b2['id']) {
-									$w=1;
-								}
 								if($b1['date'] == $b2['date']) {
-									$s=1;
+									return strcmp($b1['id'], $b2['id']);
+								} else {
+									return $b1['date'] - $b2['date'];
 								}
-								return $b1['date'] - $b2['date'];
+							} else {
+								return $b1['elapsed'] - $b2['elapsed'];
 							}
-							return $b1['elapsed'] - $b2['elapsed'];
 						});
 					}
 					_log("Forked blocks " . json_encode($forkedBlocksMap, JSON_PRETTY_PRINT), 5);
 					$winForkedBlock = array_shift($forkedBlocksMap);
-					_log("Forked block winner is block " . $winForkedBlock['id']);
+					_log("Forked block winner at height $height is block " . $winForkedBlock['id']);
 					$winPeers = $blocksMap[$height][$winForkedBlock['id']];
 					$blocksMap[$height] = [$winForkedBlock['id'] => $winPeers];
 				}
