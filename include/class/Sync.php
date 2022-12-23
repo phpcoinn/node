@@ -46,6 +46,7 @@ class Sync extends Daemon
 		// if we have no peers, get the seed list from the official site
 		if ($total_peers == 0) {
 			$i = 0;
+			$failed_peers = 0;
 			_log('No peers found. Attempting to get peers from the initial list');
 
 			$peers = Peer::getInitialPeers();
@@ -85,7 +86,11 @@ class Sync extends Daemon
 					$i++;
 					_log("Peering OK - $peer");
 				} else {
+					$failed_peers++;
 					_log("Peering FAIL - $peer Error: $err");
+					if($failed_peers > 10) {
+						break;
+					}
 				}
 				if ($i > $_config['max_peers']) {
 					break;
