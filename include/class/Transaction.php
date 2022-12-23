@@ -674,7 +674,7 @@ class Transaction
 			}
 
 	        if($this->type==TX_TYPE_REWARD) {
-	            $res = $this->checkRewards($height,$err);
+	            $res = $this->checkRewards($block,$err);
 	            if(!$res) {
 		            if($height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 			            throw new Exception("Transaction rewards check failed: $err");
@@ -816,7 +816,8 @@ class Transaction
 		return $this->check($block, true, $error);
     }
 
-    function checkRewards($height, &$error = null) {
+    function checkRewards($block, &$error = null) {
+	    $height = $block->height;
 		$reward = Block::reward($height);
 		$msg = $this->msg;
 
@@ -871,30 +872,20 @@ class Transaction
 
 			if($msg == "stake" && $height >= STAKING_START_HEIGHT) {
 
-				if($height == Block::getHeight() + 1) {
-					$winner = Account::getStakeWinner($height);
-					if(!empty($winner) && $winner != $this->dst) {
-						// throw new Exception("Staking winner not found");
-					} else if (empty($winner) && $this->dst != Account::getAddress($this->publicKey)) {
-						//temporary disabled
-						//throw new Exception("Staking winner not valid - must be generator");
-					}
-				} else {
+				$winner_is_generator = $block->generator==$this->dst;
+				if(!$winner_is_generator) {
 					$last_height = Account::getLastTxHeight($this->dst, $height);
 					if(!$last_height) {
 						throw new Exception("Staking winner check failed: Can not found last height for address ".$this->dst);
 					}
 
-					$block = Block::get($height);
-					$winner_is_generator = $block['generator']==$this->dst;
-
 					$maturity = $height - $last_height;
-					if($maturity < STAKING_COIN_MATURITY && !$winner_is_generator) {
+					if($maturity < STAKING_COIN_MATURITY) {
 						throw new Exception("Staking winner check failed: Staking maturity not valid ".$maturity);
 					}
 
 					$balance = Account::getBalanceAtHeight($this->dst, $height);
-					if(floatval($balance) < STAKING_MIN_BALANCE && !$winner_is_generator) {
+					if(floatval($balance) < STAKING_MIN_BALANCE) {
 						throw new Exception("Staking winner check failed: Staking balance not valid ".$balance);
 					}
 				}
