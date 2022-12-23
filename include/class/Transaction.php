@@ -873,35 +873,26 @@ class Transaction
 			}
 
 			if($msg == "stake" && $height >= STAKING_START_HEIGHT) {
+				$winner_is_generator = $this->_block->generator==$this->dst;
+				_log("Check stake: height=$height generator=".$this->_block->generator." dst=".$this->dst);
 
-				if($height == Block::getHeight() + 1) {
-					$winner = Account::getStakeWinner($height);
-					if(!empty($winner) && $winner != $this->dst) {
-						// throw new Exception("Staking winner not found");
-					} else if (empty($winner) && $this->dst != Account::getAddress($this->publicKey)) {
-						//temporary disabled
-						//throw new Exception("Staking winner not valid - must be generator");
-					}
-				} else {
+				if(!$winner_is_generator) {
 					$last_height = Account::getLastTxHeight($this->dst, $height);
 					if(!$last_height) {
 						throw new Exception("Staking winner check failed: Can not found last height for address ".$this->dst);
 					}
-
-					$block = Block::get($height);
-					$winner_is_generator = $block['generator']==$this->dst;
-
 					$maturity = $height - $last_height;
-					_log("Check stake address=".$this->dst. " height=$height last_height=$last_height verify=$verify winner_is_generator=$winner_is_generator maturity=$maturity", 5);
-					if($maturity < STAKING_COIN_MATURITY && !$winner_is_generator) {
+					if($maturity < STAKING_COIN_MATURITY) {
 						throw new Exception("Staking winner check failed: Staking maturity not valid ".$maturity);
 					}
 
 					$balance = Account::getBalanceAtHeight($this->dst, $height);
-					if(floatval($balance) < STAKING_MIN_BALANCE && !$winner_is_generator) {
+					if(floatval($balance) < STAKING_MIN_BALANCE) {
 						throw new Exception("Staking winner check failed: Staking balance not valid ".$balance);
 					}
 				}
+
+				_log("Stake height=$height gen=$winner_is_generator address=".$this->dst." maturity = $maturity balance = $balance");
 			}
 
 			return true;
