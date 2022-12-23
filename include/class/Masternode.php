@@ -39,7 +39,7 @@ class Masternode extends Daemon
 		$parts[]=$address;
 		$parts[]=$win_height;
 		if($win_height > UPDATE_9_ADD_MN_COLLATERAL_TO_SIGNATURE) {
-			$parts[]=Block::getMasternodeCollateral($win_height);
+			$parts[]=MN_COLLATERAL;
 		}
 		$base = implode("-", $parts);
 		_log("Masternode: signature base=$base", 5);
@@ -642,6 +642,10 @@ class Masternode extends Daemon
 				if(!$res) {
 					throw new Exception("Masternode signature not valid");
 				}
+				$res=Masternode::checkCollateral($block->masternode, $height);
+				if(!$res) {
+					throw new Exception("Masternode collateral not found");
+				}
 			} else {
 				if($transaction->dst != $block->generator) {
 					throw new Exception("Transaction dst invalid. Must be generator");
@@ -968,6 +972,14 @@ class Masternode extends Daemon
 		global $db;
 		$sql="update masternode set ip=:ip where public_key =:public_key";
 		$db->run($sql, [":ip"=>$ip, ":public_key"=>$public_key]);
+	}
+
+	static function checkCollateral($masternode, $height) {
+		global $db;
+		$collateral = MN_COLLATERAL;
+		$sql="select * from transactions t where t.dst = :dst and t.type = :type and t.val =:collateral";
+		$row = $db->row($sql, [":dst"=>$masternode, ":type"=>TX_TYPE_MN_CREATE, ":collateral"=>$collateral]);
+		return $row;
 	}
 
 }
