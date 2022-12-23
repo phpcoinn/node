@@ -38,7 +38,12 @@ class Masternode extends Daemon
 		$address = Account::getAddress($public_key);
 		$parts[]=$address;
 		$parts[]=$win_height;
-		return implode("-", $parts);
+		if($win_height > UPDATE_9_ADD_MN_COLLATERAL_TO_SIGNATURE) {
+			$parts[]=Block::getMasternodeCollateral($win_height);
+		}
+		$base = implode("-", $parts);
+		_log("Masternode: signature base=$base", 5);
+		return $base;
 	}
 
 	function storeSignature() {
