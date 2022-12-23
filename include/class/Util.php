@@ -35,6 +35,19 @@ class Util
 		Nodeutil::deleteLatestBlocks($no);
 	}
 
+	static function clearBlocks($argv) {
+		$height = intval($argv[2]);
+		if(empty($height)) {
+			return;
+		}
+		$current_height = Block::getHeight();
+		$no = $current_height - $height;
+		if($no <= 0) {
+			return;
+		}
+		Nodeutil::deleteLatestBlocks($no);
+	}
+
 	/**
 	 * @api {php util.php} block-time Block-time
 	 * @apiName block-time
