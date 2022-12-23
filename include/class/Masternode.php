@@ -613,7 +613,8 @@ class Masternode extends Daemon
 		return $reward_tx;
 	}
 
-	static function checkTx(Transaction $transaction, $height, &$error) {
+	static function checkTx(Transaction $transaction, $block, &$error) {
+		$height = $block->height;
 		if(!Masternode::allowedMasternodes($height)) {
 			return true;
 		}
@@ -622,28 +623,27 @@ class Masternode extends Daemon
 		}
 
 		try {
-			$block = Block::get($height);
-			if($block['masternode']) {
-				if($transaction->dst != $block['masternode']) {
+			if($block->masternode) {
+				if($transaction->dst != $block->masternode) {
 					throw new Exception("Transaction dst invalid. Must be masternode");
 				}
-				$mnPublicKey = Account::publicKey($block['masternode']);
+				$mnPublicKey = Account::publicKey($block->masternode);
 				if(!$mnPublicKey) {
 					throw new Exception("Not found public key for msternode");
 				}
 				$masternode = Masternode::get($mnPublicKey);
 				if(!$masternode) {
-					if(!Masternode::checkExistsMasternode($block['masternode'], $height))  {
+					if(!Masternode::checkExistsMasternode($block->masternode, $height))  {
 						throw new Exception("Masternode not found in list");
 					}
 				}
 				$signatureBase = Masternode::getSignatureBase($mnPublicKey, $height);
-				$res = ec_verify($signatureBase, $block['mn_signature'], $mnPublicKey, Block::getChainId($height));
+				$res = ec_verify($signatureBase, $block->mn_signature, $mnPublicKey, Block::getChainId($height));
 				if(!$res) {
 					throw new Exception("Masternode signature not valid");
 				}
 			} else {
-				if($transaction->dst != $block['generator']) {
+				if($transaction->dst != $block->generator) {
 					throw new Exception("Transaction dst invalid. Must be generator");
 				}
 			}
