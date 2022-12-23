@@ -659,6 +659,10 @@ class Masternode extends Daemon
 				if(!$res) {
 					throw new Exception("Masternode signature not valid");
 				}
+				$res=Masternode::checkCollateral($block['masternode'], $height);
+				if(!$res) {
+					throw new Exception("Masternode collateral not found");
+				}
 			} else {
 				if($transaction->dst != $block['generator']) {
 					throw new Exception("Transaction dst invalid. Must be generator");
@@ -1003,6 +1007,14 @@ class Masternode extends Daemon
 
 		return $height > $collateral_height - COLLATERAL_CHANGE_WINDOW && $height <= $collateral_height;
 
+	}
+
+	static function checkCollateral($masternode, $height) {
+		global $db;
+		$collateral = Block::getMasternodeCollateral($height);
+		$sql="select * from transactions t where t.dst = :dst and t.type = :type and t.val =:collateral";
+		$row = $db->row($sql, [":dst"=>$masternode, ":type"=>TX_TYPE_MN_CREATE, ":collateral"=>$collateral]);
+		return $row;
 	}
 
 }

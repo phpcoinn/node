@@ -1112,7 +1112,7 @@ class Block
 			if($next) {
 				$collateral = COLLATERAL_SCHEME[$heights[count($heights)-1]];
 			} else {
-				$collateral = $h;
+				$collateral =  COLLATERAL_SCHEME[$h];
 			}
 		}
 
