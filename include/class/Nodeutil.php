@@ -443,6 +443,8 @@ class Nodeutil
 		$git_status=shell_exec("cd ".ROOT." && git status");
 		$data['git_version']=shell_exec("git --version");
 		$data['git_status']=explode(PHP_EOL, $git_status);
+		$cron_list = shell_exec("crontab -l");
+		$data['cron_list']=explode(PHP_EOL, $cron_list);
 		return $data;
 	}
 

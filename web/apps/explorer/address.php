@@ -193,6 +193,9 @@ require_once __DIR__. '/../common/include/top.php';
                         <?php if($transaction['message']=="masternode") { ?>
                             <span class="badge rounded-pill bg-info">Masternode</span>
                         <?php } ?>
+                        <?php if($transaction['message']=="stake") { ?>
+                            <span class="badge rounded-pill bg-pink">Stake</span>
+                        <?php } ?>
                     <?php } ?>
                 </td>
                 <td class="<?php echo $transaction['sign']=='-' ? 'text-danger' : 'text-success' ?>">

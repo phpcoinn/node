@@ -33,6 +33,7 @@ if (empty($dbversion)) {
 		block varchar(128) not null,
 		balance decimal(20,8) not null,
 		alias varchar(32) null,
+		last_height int null,
 		constraint accounts
 			foreign key (block) references blocks (id)
 				on delete cascade
@@ -454,6 +455,13 @@ if($dbversion < 28) {
 if($dbversion < 29) {
 	$db->run("update transactions t set t.dst = null where t.dst = '' and t.type = 8;");
 	$dbversion = 29;
+}
+
+if($dbversion < 31) {
+	if(!$was_empty) {
+		$db->run("alter table accounts add height int null");
+	}
+	$dbversion = 31;
 }
 
 // update the db version to the latest one

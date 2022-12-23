@@ -275,27 +275,47 @@ class Block
 					$miner = $total;
 					$generator = 0;
 					$mn_reward = 0;
+					$staker = 0;
 					break;
 				case "launch":
 					$miner = $total * 0.9;
 					$generator = $total * 0.1;
 					$mn_reward = 0;
+					$staker = 0;
 					break;
 				case "mining":
 					$miner = $total * 0.9;
 					$generator = $total * 0.1;
 					$mn_reward = 0;
+					$staker = 0;
 					break;
 				case "combined":
-					$mn_reward = $segment/10 * $total;
-					$remain_reward = $total - $mn_reward;
-					$miner = $remain_reward * 0.9;
-					$generator = $remain_reward * 0.1;
+					if($segment == 10) {
+						$mn_reward = 0.6 * $total;
+						$generator = 0.1 * $total;
+						$miner = 0.2 * $total;
+						$staker = 0.1 * $total;
+					} else {
+						if($height >= STAKING_START_HEIGHT) {
+							$mn_reward = $segment/10 * $total;
+							$remain_reward = $total - $mn_reward;
+							$miner = $remain_reward * 0.8;
+							$staker = $remain_reward * 0.1;
+							$generator = $remain_reward * 0.1;
+						} else {
+							$mn_reward = $segment/10 * $total;
+							$remain_reward = $total - $mn_reward;
+							$miner = $remain_reward * 0.9;
+							$generator = $remain_reward * 0.1;
+							$staker = 0;
+						}
+					}
 					break;
 				case "deflation":
-					$mn_reward = $total;
-					$miner = 0;
-					$generator = 0;
+					$mn_reward = 0.6 * $total;
+					$generator = 0.1 * $total;
+					$miner = 0.2 * $total;
+					$staker = 0.1 * $total;
 					break;
 				default:
 					$total = 0;
@@ -303,6 +323,7 @@ class Block
 					$mn_reward = 0;
 					$pos_reward = 0;
 					$generator = 0;
+					$staker = 0;
 			}
 			$out = [
 				'total'=>$total,
@@ -312,7 +333,8 @@ class Block
 				'pos'=>$pos_reward,
 				'key'=>"$name-$segment",
 				'phase'=>$name,
-				'segment'=>$segment
+				'segment'=>$segment,
+				'staker'=>$staker
 			];
 			return $out;
 		}
@@ -599,7 +621,7 @@ class Block
 		try {
 
 			foreach ($r as $x) {
-				$res = Transaction::reverse($x['id'], $err);
+				$res = Transaction::reverse($x, $err);
 				if ($res === false) {
 					_log("A transaction could not be reversed. Delete block failed.");
 					throw new Exception("A transaction could not be reversed");
@@ -623,6 +645,9 @@ class Block
 				$db->commit();
 				$db->unlockTables();
 			}
+			Cache::remove("current");
+			Cache::remove("height");
+			Cache::remove("current_export");
 			return true;
 		} catch (Exception $e) {
 			Config::setSync(0);
@@ -762,6 +787,7 @@ class Block
     	$parts[] = $this->nonce;
     	$data = $this->data;
     	ksort($data);
+		Transaction::convertValidBurnDst($data, $this->height);
 		$data = json_encode($data);
     	$parts[] = $data;
     	$parts[] = $this->difficulty;

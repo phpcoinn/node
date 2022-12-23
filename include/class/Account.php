@@ -283,7 +283,12 @@ class Account
 					$sorting.= ' ' . $dm['order'];
 				}
 			}
-			$sql="select * from accounts $sorting limit $start, $limit";
+			$height = Block::getHeight();
+			$maturity = STAKING_COIN_MATURITY;
+			$min_balance = STAKING_MIN_BALANCE;
+			$sql="select *, ($height - a.height) as maturity,
+       			if($height - a.height >= $maturity and a.balance >= $min_balance, ($height - a.height)*a.balance, 0) as weight
+				from accounts a $sorting limit $start, $limit";
 			return $db->run($sql);
 		}
 	}
@@ -298,19 +303,19 @@ class Account
 	 * @param $block
 	 * @return array|bool|int
 	 */
-	public static function checkAccount($address, $public_key, $block) {
+	public static function checkAccount($address, $public_key, $block, $height) {
 		global $db;
 		$row = $db->row("select * from accounts where id=:id",[":id" => $address]);
 		if(!$row) {
-			$bind = [":id" => $address, ":block" => $block, ":public_key" => $public_key];
+			$bind = [":id" => $address, ":block" => $block, ":public_key" => $public_key, ":height"=>$height];
 			$res = $db->run("INSERT INTO accounts 
-		        (id, public_key, block, balance)
-		        values (:id, :public_key, :block, 0)", $bind);
+		        (id, public_key, block, balance, height)
+		        values (:id, :public_key, :block, 0, :height)", $bind);
 			return $res;
 		} else {
 			if(empty($row['public_key'])) {
-				$res = $db->run("update accounts set public_key=:public_key where id=:id", [
-					":id" => $address, ":public_key" => $public_key
+				$res = $db->run("update accounts set public_key=:public_key, height=:height where id=:id", [
+					":id" => $address, ":public_key" => $public_key, ":height"=>$height
 				]);
 				return $res;
 			}
@@ -318,11 +323,14 @@ class Account
 		return true;
 	}
 
-	public static function addBalance($id, $val) {
+	public static function addBalance($id, $val, $height) {
 		global $db;
+		if($height < STAKING_START_HEIGHT) {
+			$height = null;
+		}
 		$res=$db->run(
-			"UPDATE accounts SET balance=balance+:val WHERE id=:id",
-			[":id" => $id, ":val" => $val]
+			"UPDATE accounts SET balance=balance+:val, height=:height WHERE id=:id",
+			[":id" => $id, ":val" => $val, ":height"=>$height]
 		);
 		return $res !== false;
 	}
@@ -403,6 +411,38 @@ class Account
 		global $db;
 		$sql="select * from accounts a where a.public_key = :public_key";
 		return $db->row($sql,[":public_key" => $public_key]);
+	}
+
+	static function getStakeWinner($height) {
+		global $db;
+		$maturity = STAKING_COIN_MATURITY;
+		$min_balance = STAKING_MIN_BALANCE;
+		$sql = "select a.id, a.height, a.balance,
+		       ($height - a.height) as maturity,
+		       if(($height - a.height) > $maturity and a.balance >= $min_balance, ($height - a.height)*a.balance,0) as weight
+		from accounts a where a.height is not null
+		having weight > 0
+		order by weight desc, a.id limit 1";
+		$row = $db->row($sql);
+		if($row) {
+			return $row['id'];
+		}
+	}
+
+	static function getLastTxHeight($address, $height) {
+		global $db;
+		$sql= "select max(t.height)
+			from transactions t where t.height < :height
+    		and (t.src = :src or t.dst=:dst)";
+		return $db->single($sql, [":height"=>$height, ":src"=>$address, ":dst"=>$address]);
+	}
+
+	static function getBalanceAtHeight($address, $height) {
+		global $db;
+		$sql= "select sum(if(t.src = :address,t.val*(-1),t.val))
+			from transactions t where t.height < :height
+    		and (t.src = :src or t.dst=:dst)";
+		return $db->single($sql, [":height"=>$height, ":src"=>$address, ":dst"=>$address,":address"=>$address]);
 	}
 
 }

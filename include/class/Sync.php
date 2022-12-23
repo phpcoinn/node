@@ -31,6 +31,7 @@ class Sync extends Daemon
 		$t = time();
 		$t1 = microtime(true);
 		_log("Starting sync",3);
+		Config::setSync(1);
 
 		// update the last time sync ran, to set the execution of the next run
 		$db->run("UPDATE config SET val=:time WHERE cfg='sync_last'", [":time" => $t]);
@@ -212,30 +213,33 @@ class Sync extends Daemon
 		}
 
 		uksort($blocksMap, function($k1, $k2) {
-			return $k2 - $k1;
+			return $k1 - $k2;
 		});
 
 		_log("Block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
 
 		$forked = false;
+		$not_forked_heights = [];
 		_log("Checking blocks map for forks", 5);
 		foreach($blocksMap as $height => $blocks) {
 			_log("Checking height=$height blocks=".count($blocks), 3);
 			if(count($blocks)>1) {
-				$forked = true;
 				_log("Start checking blocks time and difficulty", 5);
 				$forkedBlocksMap = [];
 				foreach ($blocks as $block_id => $peers) {
 					_log("Checking block $block_id count=" . count($peers), 5);
 					foreach ($peers as $peer) {
 						$url = $peer . "/peer.php?q=";
-						$peer_blocks = peer_post($url . "getBlocks", ["height" => $height - 1], 5);
+						$peer_blocks = peer_post($url . "getBlocks", ["height" => $height -1] );
 						if (!$peer_blocks) {
 							continue;
 						}
 						$peer_prev_block = array_shift($peer_blocks);
 						$peer_block = array_shift($peer_blocks);
 						if (!$peer_prev_block || !$peer_block) {
+							continue;
+						}
+						if($peer_block['id']!=$block_id) {
 							continue;
 						}
 						$elapsed = $peer_block['date'] - $peer_prev_block['date'];
@@ -246,14 +250,33 @@ class Sync extends Daemon
 						break;
 					}
 				}
-				uasort($forkedBlocksMap, function ($b1, $b2) {
-					return $b1['elapsed'] - $b2['elapsed'];
-				});
-				_log("Forked blocks " . json_encode($forkedBlocksMap, JSON_PRETTY_PRINT), 5);
-				$winForkedBlock = array_shift($forkedBlocksMap);
-				_log("Forked block winner is block " . $winForkedBlock['id']);
-				$winPeers = $blocksMap[$height][$winForkedBlock['id']];
-				$blocksMap[$height] = [$winForkedBlock['id'] => $winPeers];
+
+				if(count($forkedBlocksMap) === 0) {
+					unset($blocksMap[$height]);
+				} else {
+					if(count(array_keys($forkedBlocksMap))>1) {
+						$forked = true;
+						uasort($forkedBlocksMap, function ($b1, $b2) {
+							if($b1['elapsed'] == $b2['elapsed']) {
+								if($b1['date'] == $b2['date']) {
+									return strcmp($b1['id'], $b2['id']);
+								} else {
+									return $b1['date'] - $b2['date'];
+								}
+							} else {
+								return $b1['elapsed'] - $b2['elapsed'];
+							}
+						});
+					}
+					_log("Forked blocks " . json_encode($forkedBlocksMap, JSON_PRETTY_PRINT), 5);
+					$winForkedBlock = array_shift($forkedBlocksMap);
+					_log("Forked block winner at height $height is block " . $winForkedBlock['id']);
+					$winPeers = $blocksMap[$height][$winForkedBlock['id']];
+					$blocksMap[$height] = [$winForkedBlock['id'] => $winPeers];
+				}
+			}
+			if(!$forked) {
+				$not_forked_heights[] = $height;
 			}
 		}
 
@@ -262,6 +285,7 @@ class Sync extends Daemon
 		}
 
 		foreach($blocksMap as $height => $blocks) {
+			$current = Block::current();
 			_log("Checking height=$height blocks=".count($blocks), 3);
 			$block_id =  array_keys($blocks)[0];
 			_log("Check height $height block_id = $block_id", 5);
@@ -272,10 +296,11 @@ class Sync extends Daemon
 				if($block_id == $current['id']) {
 					_log("Our top block is ok", 5);
 				} else {
-					_log("We have wrong top block - pop it", 5);
+					_log("We have wrong top block $height - pop it", 5);
 					Block::pop();
-					Config::setSync(0);
-					return;
+					break;
+//					Config::setSync(0);
+//					return;
 				}
 			} else {
 				_log("Check not top block", 5);
@@ -284,16 +309,20 @@ class Sync extends Daemon
 				if($block_id == $block['id']) {
 					_log("Our block is ok", 5);
 				} else {
-					_log("We have wrong block - pop up to it", 5);
-					$no = $current['height'] - $height;
+					_log("We have wrong block $height - pop up to it", 5);
+					$no = $current['height'] - $height + 1;
 					Block::pop($no);
-					Config::setSync(0);
-					return;
+					break;
+//					Config::setSync(0);
+//					return;
 				}
 			}
 		}
 
-		$largest_height = array_keys($blocksMap)[0];
+		$largest_height = max($not_forked_heights);
+
+//		$largest_height = array_keys($blocksMap)[count($blocksMap)-1];
+
 		$largest_height_block = array_keys($blocksMap[$largest_height])[0];
 
 		$peerStats['largest_height']=$largest_height;
@@ -309,6 +338,9 @@ class Sync extends Daemon
 			return $t2 - $t1;
 		});
 
+		Config::setSync(0);
+
+		$current = Block::current();
 		$nodeSync = new NodeSync($peers);
 		if($largest_height > $current['height']) {
 			_log("Start syncing to height $largest_height", 5);

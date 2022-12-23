@@ -154,6 +154,17 @@ class NodeMiner extends Daemon {
 			}
 
 
+			if($height >= STAKING_START_HEIGHT) {
+				$reward = num($rewardinfo['staker']);
+				$stake_reward_tx = Transaction::getStakeRewardTx($height, $generator, $this->public_key, $this->private_key, $reward, $new_block_date);
+				if(!$stake_reward_tx) {
+					_log("No stake winner - mining dropped");
+					$this->miningStat['rejected']++;
+					break;
+				}
+				$data[$stake_reward_tx['id']]=$stake_reward_tx;
+			}
+
 			Transaction::processFee($data, $this->public_key, $this->private_key, $fee_dst, $new_block_date, $height);
 			ksort($data);
 
