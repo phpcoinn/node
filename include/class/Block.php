@@ -500,7 +500,7 @@ class Block
 	        foreach ($this->data as $x) {
 		        //validate the transaction
 		        $tx = Transaction::getFromArray($x);
-		        if (!$tx->check($this->height, false, $tx_err)) {
+		        if (!$tx->check($this, false, $tx_err)) {
 			        throw new Exception("Transaction check failed - {$tx->id}: $tx_err");
 		        }
 
@@ -945,7 +945,7 @@ class Block
 			foreach ($data as $transaction) {
 
 				$tx = Transaction::getFromArray($transaction);
-				$res = $tx->verify($height, $tx_error);
+				$res = $tx->verify($this, $tx_error);
 				if(!$res) {
 					throw new Exception("Transaction id=".$tx->id." check failed: ".$tx_error);
 				}

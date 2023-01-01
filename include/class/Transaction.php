@@ -289,7 +289,7 @@ class Transaction
 		                continue;
 	                }
                 }
-                if (!$trans->check($current['height'], false, $error)) {
+                if (!$trans->check(null, false, $error)) {
 	                $tx_error = "Transaction Check Failed: ".$error;
 	                if(!$with_errors) {
 		                continue;
@@ -611,16 +611,15 @@ class Transaction
 	}
 
     // check the transaction for validity
-    public function check($block_height = 0, $verify = false, &$error = null)
+    public function check($block, $verify = false, &$error = null)
     {
         global $db, $_config;
         // if no specific block, use current
-        if (empty($block_height)) {
-	        $current = Block::current();
-            $height = $current['height'];
-        } else {
-	        $height = $block_height;
-        }
+	    if(!$block) {
+		    $current = Block::current();
+			$block = Block::getFromArray($current);
+	    }
+	    $height = $block->height;
         $base = $this->getSignatureBase();
 
 		$reward = Block::reward($height);
@@ -675,7 +674,7 @@ class Transaction
 			}
 
 	        if($this->type==TX_TYPE_REWARD) {
-	            $res = $this->checkRewards($height, $verify,$err);
+	            $res = $this->checkRewards($block,$err);
 	            if(!$res) {
 		            if($height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 			            throw new Exception("Transaction rewards check failed: $err");
@@ -795,12 +794,10 @@ class Transaction
 				}
 			}
 
-			if($verify) {
-				if ($this->type == TX_TYPE_REWARD) {
-					$res = Masternode::checkTx($this, $height, $error);
-					if (!$res) {
-						throw new Exception("Invalid transaction for masternde reward: $error");
-					}
+			if ($this->type == TX_TYPE_REWARD) {
+				$res = Masternode::checkTx($this, $block, $error);
+				if (!$res) {
+					throw new Exception("Invalid transaction for masternde reward: $error");
 				}
 			}
 
@@ -814,12 +811,13 @@ class Transaction
     }
 
 
-    public function verify($height = 0, &$error = null)
+    public function verify($block, &$error = null)
     {
-		return $this->check($height, true, $error);
+		return $this->check($block, true, $error);
     }
 
-    function checkRewards($height, $verify=false, &$error = null) {
+    function checkRewards($block, &$error = null) {
+	    $height = $block->height;
 		$reward = Block::reward($height);
 		$msg = $this->msg;
 
@@ -873,7 +871,7 @@ class Transaction
 			}
 
 			if($msg == "stake" && $height >= STAKING_START_HEIGHT) {
-				$winner_is_generator = $this->_block->generator==$this->dst;
+				$winner_is_generator = $block->generator==$this->dst;
 				_log("Check stake: height=$height generator=".$this->_block->generator." dst=".$this->dst);
 
 				if(!$winner_is_generator) {
@@ -1124,7 +1122,7 @@ class Transaction
 		    if($mempool_size + 1 > $max_txs) {
 			    throw new Exception("Not added transaction to mempool because is full: max_txs=$max_txs mempool_size=$mempool_size");
 		    }
-		    if (!$this->check(0, false, $err)) {
+		    if (!$this->check(null, false, $err)) {
 			    throw new Exception("Transaction check failed. Error: $err");
 		    }
 			$res = Mempool::existsTx($hash);
