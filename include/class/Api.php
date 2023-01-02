@@ -798,6 +798,6 @@ class Api
 		} else {
 			$height = Block::getHeight()+1;
 		}
-		api_echo(Block::getMasternodeCollateral($height));
+		api_echo(Masternode::getCollateralForCreate($height));
 	}
 }

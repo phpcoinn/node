@@ -66,7 +66,8 @@ if (empty($dbversion)) {
 		status tinyint default 1 not null,
 		vote_key varchar(128) null,
 		cold_last_won int default 0 not null,
-		voted tinyint default 0 not null
+		voted tinyint default 0 not null,
+		collateral int default 10000 not null
 	)");
 
 	$db->run("create table mempool
@@ -463,6 +464,16 @@ if($dbversion < 31) {
 	}
 	$dbversion = 31;
 }
+
+if($dbversion < 32) {
+	if(!$was_empty) {
+		$db->run("alter table masternode
+			add collateral int default 10000 not null;");
+	}
+	$dbversion = 32;
+}
+
+
 
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
