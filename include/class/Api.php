@@ -567,6 +567,16 @@ class Api
 		api_echo(Masternode::getMasternodesForPublicKey($public_key));
 	}
 
+	static function getMasternode($data) {
+		$address = $data['address'];
+		if(empty($address)) {
+			api_err("Empty masternode address");
+		}
+		$public_key = Account::publicKey($address);
+		$mn = Masternode::get($public_key);
+		api_echo($mn);
+	}
+
 	static function getFee($data) {
 		$fee = Blockchain::getFee($data['height']);
 		api_echo(number_format($fee, 5));
@@ -796,8 +806,8 @@ class Api
 		if(isset($data['height'])) {
 			$height = $data['height'];
 		} else {
-			$height = Block::getHeight()+1;
+			$height = Block::getHeight();
 		}
-		api_echo(Masternode::getCollateralForCreate($height));
+		api_echo(Block::getMasternodeCollateral($height));
 	}
 }

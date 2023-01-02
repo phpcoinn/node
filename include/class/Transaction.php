@@ -872,7 +872,7 @@ class Transaction
 
 			if($msg == "stake" && $height >= STAKING_START_HEIGHT) {
 				$winner_is_generator = $block->generator==$this->dst;
-				_log("Check stake: height=$height generator=".$this->_block->generator." dst=".$this->dst);
+				_log("Check stake: height=$height generator=".$block->generator." dst=".$this->dst);
 
 				if(!$winner_is_generator) {
 					$last_height = Account::getLastTxHeight($this->dst, $height);
@@ -881,7 +881,7 @@ class Transaction
 					}
 					$maturity = $height - $last_height;
 					if($maturity < STAKING_COIN_MATURITY) {
-						throw new Exception("Staking winner check failed: Staking maturity not valid ".$maturity);
+						throw new Exception("Staking winner check failed: Staking maturity = $maturity not valid. address=".$this->dst." last_height=$last_height height=$height");
 					}
 
 					$balance = Account::getBalanceAtHeight($this->dst, $height);

@@ -430,7 +430,9 @@ class Wallet
 	}
 
 	function removeMasternode($payoutAddress) {
-		$collateral = $this->wallet_peer_post("/api.php?q=getCollateral");
+		$mn_address = Account::getAddress($this->public_key);
+		$mnData = $this->wallet_peer_post("/api.php?q=getMasternode&address=$mn_address");
+		$collateral = $mnData['collateral'];
 		$date=time();
 		$msg = "mnremove";
 		$tx = new Transaction($this->public_key, $payoutAddress, $collateral, TX_TYPE_MN_REMOVE, $date, $msg);

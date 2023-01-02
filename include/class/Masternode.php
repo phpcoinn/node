@@ -36,15 +36,9 @@ class Masternode extends Daemon
 			if(!$res) {
 				throw new Exception("Masternode signature not valid");
 			}
-			$collaterals = [];
-			$in_collateral_change = Masternode::isInCollateralChangeWindow($height);
 			$collateral = Block::getMasternodeCollateral($height);
-			$collaterals[]=$collateral;
-			if($in_collateral_change) {
-				$collateral_next = Block::getMasternodeCollateral($height, true);
-				$collaterals[]=$collateral_next;
-			}
-			if(!in_array($this->collateral, [$collaterals])) {
+			_log("Masternode: verify collateral mn=".$this->collateral." valid=".$collateral);
+			if($this->collateral != $collateral) {
 				throw new Exception("Masternode collateral not valid");
 			}
 		} catch (Exception $e) {
@@ -53,6 +47,13 @@ class Masternode extends Daemon
 			return false;
 		}
 		return true;
+	}
+
+	static function getCountByCollateral($collateral) {
+		global $db;
+		$sql="select count(*) from masternode m where m.collateral = :collateral";
+		$cnt = $db->single($sql, [":collateral"=>$collateral]);
+		return $cnt;
 	}
 
 	static function getSignatureBase($public_key, $win_height) {
@@ -179,7 +180,7 @@ class Masternode extends Daemon
 		$mn->signature = null;
 		$mn->win_height = Masternode::getLastWinHeight($mn->id);
 		if(empty($collateral)) {
-			$collateral = Masternode::getCollateralForCreate($height);
+			$collateral = Block::getMasternodeCollateral($height);
 		}
 		$mn->collateral = $collateral;
 		$res = $mn->add();
@@ -203,7 +204,7 @@ class Masternode extends Daemon
 			$local_id = Account::getAddress($publicKey);
 		}
 
-
+		$collateral = Block::getMasternodeCollateral($height);
 		$sql = "select m.id, m.signature, m.public_key, masternode_height.last_win_height, m.collateral
 			from masternode m
 			left join (
@@ -212,10 +213,10 @@ class Masternode extends Daemon
 			where b.masternode is not null
 			group by b.masternode
 			    ) as masternode_height on (masternode_height.masternode = m.id)
-			where m.height <= :height
+			where m.height <= :height and m.collateral = :collateral
 			group by m.id, m.signature, m.public_key, masternode_height.last_win_height
 			order by masternode_height.last_win_height, md5(m.signature), m.height";
-		$rows = $db->run($sql, [":height"=>$height]);
+		$rows = $db->run($sql, [":height"=>$height, ":collateral"=>$collateral]);
 		foreach($rows as $row) {
 			$mn = Masternode::fromDB($row);
 			if(!empty($local_id) && $local_id == $mn->id) {
@@ -274,7 +275,6 @@ class Masternode extends Daemon
 			if (!self::allowedMasternodes($height)) {
 				throw new Exception("Not allowed transaction type {$transaction->type} for height $height");
 			}
-			$in_collateral_change = Masternode::isInCollateralChangeWindow($height);
 			if(!$verify) {
 				//source address can not be masternode
 				$res = Masternode::existsPublicKey($transaction->publicKey);
@@ -296,15 +296,8 @@ class Masternode extends Daemon
 			}
 			//masternode collateral must be exact
 			$collateral = Block::getMasternodeCollateral($height);
-			if($in_collateral_change) {
-				$next_collateral = Block::getMasternodeCollateral($height, true);
-				if($transaction->val != $collateral && $transaction->val != $next_collateral) {
-					throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".$collateral." or ". $next_collateral);
-				}
-			} else {
-				if($transaction->val != $collateral) {
-					throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".$collateral);
-				}
+			if($transaction->val != $collateral) {
+				throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".$collateral);
 			}
 			return true;
 		} catch (Exception $e) {
@@ -321,7 +314,6 @@ class Masternode extends Daemon
 			if(!Masternode::allowedMasternodes($height)) {
 				throw new Exception("Not allowed transaction type {$transaction->type} for height $height");
 			}
-			$in_collateral_change = Masternode::isInCollateralChangeWindow($height);
 			if(!$verify) {
 				//masternode must exists in database
 				$masternode = Masternode::get($transaction->publicKey);
@@ -329,7 +321,8 @@ class Masternode extends Daemon
 					throw new Exception("Can not find masternode with public key ".$transaction->publicKey);
 				}
 				//masternode must run minimal number of blocks
-				if($height < $masternode['height'] + MN_MIN_RUN_BLOCKS && !$in_collateral_change) {
+				$collateral_changed = $masternode['collateral'] != Block::getMasternodeCollateral($height);
+				if($height < $masternode['height'] + MN_MIN_RUN_BLOCKS && !$collateral_changed) {
 					throw new Exception("Masternode must run at least ".MN_MIN_RUN_BLOCKS." blocks. Created at block ". $masternode['height']. " check block=".$height);
 				}
 				//destination address can not be masternode
@@ -342,17 +335,10 @@ class Masternode extends Daemon
 					}
 				}
 			}
-			//masternode collateral must be exact
-			$collateral = Block::getMasternodeCollateral($height);
-			if(!$in_collateral_change) {
-				if($transaction->val != $collateral) {
-					throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".$collateral);
-				}
-			} else {
-				$next_collateral = Block::getMasternodeCollateral($height, true);
-				if($transaction->val != $collateral && $transaction->val != $next_collateral) {
-					throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".$collateral. " or ".$next_collateral);
-				}
+			//masternode collateral must be exact as when created
+			$collateral = $masternode['collateral'];
+			if($transaction->val != $collateral) {
+				throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".$collateral);
 			}
 			return true;
 
@@ -412,24 +398,23 @@ class Masternode extends Daemon
 		}
 
 		$id = Account::getAddress($publicKey);
-		$collateral = Masternode::getCollateralForCreate(Block::getHeight()+1);
 		$sql="select max(t.height) as create_height, count(t.id) as created
 			from transactions t
-			where t.type = :create and t.dst = :id and t.val=:collateral";
-		$res = $db->row($sql, [":create"=>TX_TYPE_MN_CREATE, ":id"=>$id, ":collateral"=>$collateral]);
+			where t.type = :create and t.dst = :id";
+		$res = $db->row($sql, [":create"=>TX_TYPE_MN_CREATE, ":id"=>$id]);
 		$created = $res['created'];
 		$create_height = $res['create_height'];
 
 		$sql="select max(t.height), count(t.id) as removed
-		from transactions t where t.public_key = :public_key and t.type = :remove and t.val=:collateral;
+		from transactions t where t.public_key = :public_key and t.type = :remove;
 		";
-		$res = $db->row($sql, [":remove"=>TX_TYPE_MN_REMOVE, ":public_key"=>$publicKey, ":collateral"=>$collateral]);
+		$res = $db->row($sql, [":remove"=>TX_TYPE_MN_REMOVE, ":public_key"=>$publicKey]);
 		$removed = $res['removed'];
 		if($created == $removed ) {
 			_log("Masternode: No new masternode to create created=$created removed=$removed");
 			return;
 		}
-		Masternode::create($publicKey, $create_height, $collateral);
+		Masternode::create($publicKey, $create_height);
 	}
 
 	static function checkExistsMasternode($id, $height = null) {
@@ -645,7 +630,13 @@ class Masternode extends Daemon
 			_log("Masternode: not found winner");
 			$mn_count = Masternode::getCount();
 			if($mn_count > 0 && $height > UPDATE_5_NO_MASTERNODE) {
-				return false;
+				$collateral = Block::getMasternodeCollateral($height);
+				$cnt = Masternode::getCountByCollateral($collateral);
+				if($cnt > 0) {
+					return false;
+				} else {
+					$dst = $generator;
+				}
 			} else {
 				$dst = $generator;
 			}
@@ -977,7 +968,7 @@ class Masternode extends Daemon
 
 	static function getMasternodesForPublicKey($public_key) {
 		global $db;
-		$sql="select t.dst as masternode_address, a.balance as masternode_balance
+		$sql="select t.dst as masternode_address, a.balance as masternode_balance, t.val
 			from transactions t
 			left join masternode m on (m.id = t.dst)
 			left join accounts a on (m.id = a.id)
@@ -1027,23 +1018,6 @@ class Masternode extends Daemon
 		$db->run($sql, [":ip"=>$ip, ":public_key"=>$public_key]);
 	}
 
-	static function isInCollateralChangeWindow($height) {
-		$heights = array_keys(COLLATERAL_SCHEME);
-		foreach ($heights as $index => $h) {
-			if(isset($heights[$index+1]) && $height >= $heights[$index] && $height < $heights[$index+1]) {
-				$collateral_height = $heights[$index+1];
-				break;
-			}
-		}
-
-		if(empty($collateral_height)) {
-			$collateral_height = PHP_INT_MAX;
-		}
-
-		return $height > $collateral_height - COLLATERAL_CHANGE_WINDOW && $height <= $collateral_height;
-
-	}
-
 	static function checkCollateral($masternode, $height) {
 		global $db;
 		$collateral = Block::getMasternodeCollateral($height);
@@ -1058,15 +1032,6 @@ class Masternode extends Daemon
 		$sql="select * from transactions t where t.type = :type and t.val =:collateral";
 		$row = $db->row($sql, [":type"=>TX_TYPE_MN_CREATE, ":collateral"=>$collateral]);
 		return $row;
-	}
-
-
-	static function getCollateralForCreate($height) {
-		if(Masternode::isInCollateralChangeWindow($height)) {
-			return Block::getMasternodeCollateral($height, true);
-		} else {
-			return Block::getMasternodeCollateral($height);
-		}
 	}
 
 }
