@@ -611,6 +611,7 @@ class Masternode extends Daemon
 			$mn_ip = Masternode::getByIp($ip);
 			if($mn_ip && $mn_ip['public_key']!=$masternode['public_key']) {
 				_log("Masternode: invalid IP address $ip for public_key ".$masternode['public_key']);
+				Masternode::deleteInvalid($ip, $masternode['public_key']);
 				return true;
 			}
 
@@ -1000,7 +1001,6 @@ class Masternode extends Daemon
 		}
 		Masternode::checkLocalMasternode();
 		Masternode::processBlock();
-
 	}
 
 	static function checkSynced($signature, $public_key) {
@@ -1060,5 +1060,11 @@ class Masternode extends Daemon
 			$sql = "truncate table masternode";
 			$db->run($sql);
 		});
+	}
+
+	static function deleteInvalid($ip, $public_key) {
+		global $db;
+		$sql="delete from masternode where ip=:ip or public_key=:public_key";
+		$db->run($sql, [":ip"=>$ip, ":public_key"=>$public_key]);
 	}
 }

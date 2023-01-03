@@ -381,7 +381,7 @@ class Sync extends Daemon
 
 		Minepool::deleteOldEntries();
 
-		Masternode::emptyList();
+//		Masternode::emptyList();
 
 		Cache::clearOldFiles();
 
