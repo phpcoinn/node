@@ -67,7 +67,8 @@ if (empty($dbversion)) {
 		vote_key varchar(128) null,
 		cold_last_won int default 0 not null,
 		voted tinyint default 0 not null,
-		collateral int default 10000 not null
+		collateral int default 10000 not null,
+		verified int default 0 not null
 	)");
 
 	$db->run("create table mempool
