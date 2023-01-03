@@ -1054,7 +1054,7 @@ class Masternode extends Daemon
 	}
 
 	static function emptyList() {
-		Daemon::runAtInterval("empty-mn-list", 5, function() {
+		Daemon::runAtInterval("empty-mn-list", 60, function() {
 			_log("MNC: emptyList");
 			global $db;
 			$sql = "truncate table masternode";
