@@ -1053,4 +1053,12 @@ class Masternode extends Daemon
 		$db->run("update masternode set verified = 0");
 	}
 
+	static function emptyList() {
+		Daemon::runAtInterval("empty-mn-list", 5, function() {
+			_log("MNC: emptyList");
+			global $db;
+			$sql = "truncate table masternode";
+			$db->run($sql);
+		});
+	}
 }

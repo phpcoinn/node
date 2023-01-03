@@ -49,7 +49,7 @@ if (Nodeutil::miningEnabled() && $minepool_enabled) {
 $mnEnabled = Masternode::allowedMasternodes($blockCount);
 
 //TODO: replace with Masternode:getActiveCount();
-$sql="select count(1) from masternode m where m.signature is not null";
+$sql="select count(1) from masternode m where m.signature is not null and m.verified =1";
 $masternodeActiveCount = $db->single($sql);
 
 

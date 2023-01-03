@@ -107,12 +107,7 @@ class Sync extends Daemon
 			}
 		}
 
-		$min = intval(date("i"));
-		$run_get_more_peers = $min % 5 == 0;
-
-		_log("Sync: check run_get_more_peers=$run_get_more_peers", 5);
-
-		if($run_get_more_peers) {
+		Daemon::runAtInterval("gmp", 5, function() {
 			$dir = ROOT."/cli";
 			$cmd = "$dir/util.php get-more-peers";
 			$res = shell_exec("ps uax | grep '$cmd' | grep -v grep");
@@ -120,7 +115,7 @@ class Sync extends Daemon
 				$exec_cmd = "php $cmd > /dev/null 2>&1  &";
 				system($exec_cmd);
 			}
-		}
+		});
 
 		NodeSync::recheckLastBlocks();
 
@@ -385,6 +380,8 @@ class Sync extends Daemon
 		Nodeutil::cleanTmpFiles();
 
 		Minepool::deleteOldEntries();
+
+		Masternode::emptyList();
 
 		Cache::clearOldFiles();
 
