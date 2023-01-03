@@ -12,7 +12,7 @@ const COIN_PORT = "";
 const VERSION = "1.1.3";
 const BUILD_VERSION = 170;
 const MIN_VERSION = "1.1.3";
-const DEVELOPMENT = false;
+const DEVELOPMENT = true;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
 

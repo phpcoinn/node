@@ -141,6 +141,7 @@ require_once __DIR__. '/../common/include/top.php';
                 <th>Status</th>
 	            <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'inet_aton(m.ip)', 'IP' ,'') ?>
                 <th>Signature</th>
+	            <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'collateral', 'Collateral' ,'') ?>
 	            <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'height', 'Height' ,'') ?>
                 <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'win_height', 'Win Height', '') ?>
             </tr>
@@ -165,6 +166,7 @@ require_once __DIR__. '/../common/include/top.php';
                         <?php } ?>
                     </td>
                     <td><?php echo display_short($masternode['signature']) ?></td>
+                    <td><?php echo $masternode['collateral'] ?></td>
                     <td>
                         <a href="/apps/explorer/block.php?height=<?php echo $masternode['height'] ?>">
 			                <?php echo $masternode['height'] ?>

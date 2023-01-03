@@ -1094,4 +1094,8 @@ class Block
 			return Block::getHeight();
 		});
 	}
+
+	static function getMasternodeCollateral($height, $next=false) {
+		return MN_COLLATERAL;
+	}
 }

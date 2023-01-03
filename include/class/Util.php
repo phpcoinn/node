@@ -1184,5 +1184,11 @@ class Util
 			api_err($err);
 		}
 	}
+
+	static function emptyMasternodes() {
+		global $db;
+		$sql="delete from masternode";
+		$db->run($sql);
+	}
 	
 }
