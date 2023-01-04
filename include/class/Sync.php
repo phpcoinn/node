@@ -166,6 +166,11 @@ class Sync extends Daemon
 			}
 			$data = $res['block'];
 			$info = $res['info'];
+			if(version_compare($info['version'], MIN_VERSION) < 0) {
+				_log("PeerSync: Peer $hostname blacklisted beacuse of version ".$info['version']);
+				Peer::blacklist($peer['id'], "Invalid version ".$_POST['version']);
+				continue;
+			}
 
 			// peer was responsive, mark it as good
 			if ($peer['fails'] > 0) {
