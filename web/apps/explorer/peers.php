@@ -5,6 +5,27 @@ define("APP_NAME", "Explorer");
 
 $peers = Peer::getAll();
 
+global $db;
+$sql="select p.height, count(distinct p.block_id) as block_cnt
+from peers p
+group by p.height, p.block_id
+having block_cnt > 1
+order by p.height desc";
+$forked_peers = $db->run($sql);
+
+$sql="select p.height, count(p.id) as peer_cnt
+from peers p
+where p.blacklisted < UNIX_TIMESTAMP()
+group by p.height
+order by p.height desc;";
+$peers_by_height = $db->run($sql);
+
+$sql="select p.version, count(p.id) as peer_cnt
+from peers p
+where p.blacklisted < UNIX_TIMESTAMP()
+group by p.version
+order by p.version desc";
+$peers_by_version = $db->run($sql);
 ?>
 
 <?php
@@ -93,6 +114,68 @@ require_once __DIR__. '/../common/include/top.php';
 <?php } ?>
 
 <div>Node score: <?php echo round($_config['node_score'],2); ?>%</div>
+
+<hr/>
+<div class="row">
+    <div class="col-4">
+        <h4>Forked peers</h4>
+        <table class="table table-sm table-striped">
+            <thead class="table-light">
+            <tr>
+                <th>Height</th>
+                <th>Different Blocks</th>
+            </tr>
+            </thead>
+            <tbody>
+			<?php foreach ($forked_peers as $forked_peer) { ?>
+                <tr>
+                    <td><?php echo $forked_peer['height'] ?></td>
+                    <td><?php echo $forked_peer['block_count'] ?></td>
+                </tr>
+			<?php } ?>
+            </tbody>
+        </table>
+    </div>
+    <div class="col-4">
+        <h4>Peers by height</h4>
+        <table class="table table-sm table-striped">
+            <thead class="table-light">
+            <tr>
+                <th>Height</th>
+                <th>Peers</th>
+            </tr>
+            </thead>
+            <tbody>
+			<?php foreach ($peers_by_height as $peer) { ?>
+                <tr>
+                    <td><?php echo $peer['height'] ?></td>
+                    <td><?php echo $peer['peer_cnt'] ?></td>
+                </tr>
+			<?php } ?>
+            </tbody>
+        </table>
+    </div>
+    <div class="col-4">
+        <h4>Peers by version</h4>
+        <table class="table table-sm table-striped">
+            <thead class="table-light">
+            <tr>
+                <th>Version</th>
+                <th>Peers</th>
+            </tr>
+            </thead>
+            <tbody>
+			<?php foreach ($peers_by_version as $peer) { ?>
+                <tr>
+                    <td><?php echo $peer['version'] ?></td>
+                    <td><?php echo $peer['peer_cnt'] ?></td>
+                </tr>
+			<?php } ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
 
 <?php
 require_once __DIR__ . '/../common/include/bottom.php';
