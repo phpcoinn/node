@@ -9,10 +9,10 @@ if($_config['chain_id'] != DEFAULT_CHAIN_ID) {
 const NETWORK = "mainnet-alpha";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
-const VERSION = "1.1.3";
-const BUILD_VERSION = 170;
-const MIN_VERSION = "1.1.3";
-const DEVELOPMENT = true;
+const VERSION = "1.1.5";
+const BUILD_VERSION = 174;
+const MIN_VERSION = "1.1.4";
+const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
 
@@ -109,7 +109,7 @@ const UPDATE_5_NO_MASTERNODE = 290000;
 const UPDATE_6_CHAIN_ID = 460000;
 const UPDATE_7_MINER_CHAIN_ID = 480000;
 const UPDATE_8_FIX_CHECK_BURN_TX_DST_NULL = [441381, 479168];
-const UPDATE_9_ADD_MN_COLLATERAL_TO_SIGNATURE = 517620;
+const UPDATE_9_ADD_MN_COLLATERAL_TO_SIGNATURE = 538000;
 
 const DEV_PUBLIC_KEY = "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCyao5hHHJd9axKhC1c5emTgT4hT7k7EvXiZrjTJSGEPmz9K1swEDQi8j14vCRwUisMsvHr4P5kirrDawM3NJiknWR";
 const FEATURE_APPS = false;
