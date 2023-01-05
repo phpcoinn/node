@@ -543,7 +543,7 @@ class Masternode extends Daemon
 			$mn->height = $masternode['height'];
 			$mn->signature = $masternode['signature'];
 			$mn->win_height = $masternode['win_height'];
-			$mn->collateral = $masternode['collateral'];
+			$mn->collateral = Block::getMasternodeCollateral($mn->height);
 			$res = $mn->add();
 			if(!$res) {
 				_log("Masternode: Can not add masternode");
