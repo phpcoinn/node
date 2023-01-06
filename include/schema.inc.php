@@ -466,14 +466,14 @@ if($dbversion < 31) {
 	$dbversion = 31;
 }
 
-if($dbversion < 32) {
+if($dbversion < 34) {
 	if(!$was_empty) {
 		$db->run("alter table masternode
 			add collateral int default 10000 not null;");
 		$db->run("alter table masternode
 			add verified int default 0 not null;");
 	}
-	$dbversion = 33;
+	$dbversion = 34;
 }
 
 // update the db version to the latest one
