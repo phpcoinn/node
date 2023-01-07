@@ -356,7 +356,7 @@ class Daemon
 		$min = intval(date("i"));
 		$key = "{$name}-{$min}";
 		$run = $min % $interval == 0 && !$executed[$key];
-		_log("MNC: runAtInterval min=$min run=$run");
+		_log("MNC: runAtInterval min=$min run=$run", 5);
 		if($run) {
 			if(is_callable($callable)) {
 				call_user_func($callable);

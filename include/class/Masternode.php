@@ -502,7 +502,7 @@ class Masternode extends Daemon
 	}
 
 	static function propagate($id) {
-		global $_config;
+		global $_config, $db;
 		$height = Block::getHeight();
 		if(!Masternode::allowedMasternodes($height)) {
 			return;
@@ -515,7 +515,7 @@ class Masternode extends Daemon
 		$masternode = Masternode::get($public_key);
 
 		if(Propagate::PROPAGATE_BY_FORKING && $id === "local") {
-			_log("PF: start propagate");
+			_log("PF: start propagate", 5);
 			$start = microtime(true);
 			$peers = Peer::getPeersForMasternode();
 			$info = Peer::getInfo();
@@ -529,14 +529,14 @@ class Masternode extends Daemon
 					$hostname = $peer['hostname'];
 					$url = $hostname."/peer.php?q=updateMasternode";
 					$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 5, $err, $info);
-					_log("PF: Propagating to peer: ".$hostname." res=".json_encode($res). " err=$err");
-					_log("PF: child $cpid $hostname end response=$res time=".(microtime(true) - $start));
+					_log("PF: Propagating to peer: ".$hostname." res=".json_encode($res). " err=$err", 5);
+					_log("PF: child $cpid $hostname end response=$res time=".(microtime(true) - $start), 5);
 					exit();
 				}
 			}
 			while (pcntl_waitpid(0, $status) != -1) ;
-			_log("PF: Total time = ".(microtime(true)-$start));
-			_log("PF: process " . getmypid() . " exit");
+			_log("PF: Total time = ".(microtime(true)-$start), 5);
+			_log("PF: process " . getmypid() . " exit", 5);
 		} else {
 
 			if ($id === "local") {
@@ -1080,7 +1080,7 @@ class Masternode extends Daemon
 
 	static function emptyList() {
 		Daemon::runAtInterval("empty-mn-list", 60, function() {
-			_log("MNC: emptyList");
+			_log("MNC: emptyList", 5);
 			global $db;
 			$sql = "truncate table masternode";
 			$db->run($sql);

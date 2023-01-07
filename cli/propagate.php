@@ -70,14 +70,14 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 				$cpid = getmypid();
 				$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
 				$response = peer_post($hostname . "/peer.php?q=submitBlock", $data, 5, $err, $info);
-				_log("PropagateFork: forking child $cpid $hostname end response=$response time=".(microtime(true) - $start));
+				_log("PropagateFork: forking child $cpid $hostname end response=$response time=".(microtime(true) - $start),5);
 				Propagate::processBlockPropagateResponse($hostname, $ip, $id, $response, $err);
 				exit();
 			}
 		}
 		while (pcntl_waitpid(0, $status) != -1) ;
-		_log("PropagateFork: Total time = ".(microtime(true)-$start));
-		_log("PropagateFork: process " . getmypid() . " exit");
+		_log("PropagateFork: Total time = ".(microtime(true)-$start),5);
+		_log("PropagateFork: process " . getmypid() . " exit",5);
 		exit;
 	} else {
 		Cache::set("block_export_$id", $data);
@@ -150,7 +150,7 @@ if ($type == "transaction") {
 				$url = $hostname."/peer.php?q=submitTransaction";
 				$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
 				$res = peer_post($url, $data, 5, $err, $info);
-				_log("PropagateFork: forking child $cpid $hostname end response=$response time=".(microtime(true) - $start));
+				_log("PropagateFork: forking child $cpid $hostname end response=$response time=".(microtime(true) - $start),5);
 				if (!$res) {
 					_log("Transaction $id to $hostname - Transaction not accepted: $err");
 				} else {
@@ -160,8 +160,8 @@ if ($type == "transaction") {
 			}
 		}
 		while (pcntl_waitpid(0, $status) != -1) ;
-		_log("PropagateFork: Total time = ".(microtime(true)-$start));
-		_log("PropagateFork: process " . getmypid() . " exit");
+		_log("PropagateFork: Total time = ".(microtime(true)-$start),5);
+		_log("PropagateFork: process " . getmypid() . " exit",5);
 		exit;
 	} else {
 	    if (!$data) {

@@ -107,14 +107,10 @@ class Sync extends Daemon
 			}
 		}
 
-		Daemon::runAtInterval("gmp", 5, function() {
+		Daemon::runAtInterval("gmp", 30, function() {
 			$dir = ROOT."/cli";
-			$cmd = "$dir/util.php get-more-peers";
-			$res = shell_exec("ps uax | grep '$cmd' | grep -v grep");
-			if(!$res) {
-				$exec_cmd = "php $cmd > /dev/null 2>&1  &";
-				system($exec_cmd);
-			}
+			$cmd = "php $dir/util.php get-more-peers";
+			Nodeutil::runSingleProcess($cmd);
 		});
 
 		NodeSync::recheckLastBlocks();

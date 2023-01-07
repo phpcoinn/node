@@ -3,7 +3,7 @@
 class Propagate
 {
 
-	public const PROPAGATE_BY_FORKING = false;
+	public const PROPAGATE_BY_FORKING = true;
 
 	static function blockToAll($id) {
 		_log("Propagate: block to all id=$id", 4);
