@@ -138,8 +138,36 @@ class Dapps extends Daemon
 				_log("Dapps: No peers to propagate", 5);
 			} else {
 				_log("Dapps: Found ".count($peers)." to propagate", 5);
-				foreach ($peers as $peer) {
-					self::propagateToPeer($peer);
+				if(Propagate::PROPAGATE_BY_FORKING) {
+					$start = microtime(true);
+					$dapps_signature = ec_sign($dapps_hash, $dapps_private_key);
+					$data = [
+						"dapps_id"=>$dapps_id,
+						"dapps_hash"=>$dapps_hash,
+						"dapps_signature"=>$dapps_signature,
+					];
+					$info = Peer::getInfo();
+					foreach ($peers as $peer) {
+						$pid = pcntl_fork();
+						if ($pid == -1) {
+							die('could not fork');
+						} else if ($pid == 0) {
+							$cpid = getmypid();
+							$hostname = $peer['hostname'];
+							$url = $hostname."/peer.php?q=updateDapps";
+							$res = peer_post($url, $data, 30, $err, $info);
+							_log("Dapps: forking child $cpid $hostname end response=$res time=".(microtime(true) - $start));
+							exit;
+						}
+					}
+					while (pcntl_waitpid(0, $status) != -1) ;
+					_log("Dapps: Total time = ".(microtime(true)-$start));
+					_log("Dapps: process " . getmypid() . " exit");
+					exit;
+				} else {
+					foreach ($peers as $peer) {
+						self::propagateToPeer($peer);
+					}
 				}
 			}
 		} else {

@@ -40,9 +40,9 @@ class Masternode extends Daemon
 				throw new Exception("Masternode signature not valid");
 			}
 			$collateral = Block::getMasternodeCollateral($height);
-			_log("Masternode: verify collateral mn=".$this->collateral." valid=".$collateral);
+			_log("Masternode: verify collateral mn=".$this->collateral." valid=".$collateral, 5);
 			if($this->collateral != $collateral) {
-				throw new Exception("Masternode collateral not valid");
+				throw new Exception("Masternode collateral not valid: expected=$collateral received=".$this->collateral. " version=".PeerRequest::$info['version']. " ip=".PeerRequest::$ip);
 			}
 			$this->verified = 1;
 		} catch (Exception $e) {
@@ -514,23 +514,49 @@ class Masternode extends Daemon
 		$public_key = $_config['masternode_public_key'];
 		$masternode = Masternode::get($public_key);
 
-		if($id === "local") {
-			//start propagate to each peer
+		if(Propagate::PROPAGATE_BY_FORKING && $id === "local") {
+			_log("PF: start propagate");
+			$start = microtime(true);
 			$peers = Peer::getPeersForMasternode();
-			if(count($peers)==0) {
-				_log("Masternode: No peers to propagate");
-			} else {
-				foreach ($peers as $peer) {
-					Propagate::masternodeToPeer($peer['hostname']);
+			$info = Peer::getInfo();
+			foreach ($peers as $peer) {
+				$pid = pcntl_fork();
+				if ($pid == -1) {
+					die('could not fork');
+				} else if ($pid == 0) {
+					$cpid = getmypid();
+					$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
+					$hostname = $peer['hostname'];
+					$url = $hostname."/peer.php?q=updateMasternode";
+					$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 5, $err, $info);
+					_log("PF: Propagating to peer: ".$hostname." res=".json_encode($res). " err=$err");
+					_log("PF: child $cpid $hostname end response=$res time=".(microtime(true) - $start));
+					exit();
 				}
 			}
+			while (pcntl_waitpid(0, $status) != -1) ;
+			_log("PF: Total time = ".(microtime(true)-$start));
+			_log("PF: process " . getmypid() . " exit");
 		} else {
-			//propagate to single peer
-			$peer = base64_decode($id);
-			_log("Masternode: propagating masternode to $peer pid=".getmypid(), 5);
-			$url = $peer."/peer.php?q=updateMasternode";
-			$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 30, $err);
-			_log("Masternode: Propagating to peer: ".$peer." res=".json_encode($res). " err=$err",5);
+
+			if ($id === "local") {
+				//start propagate to each peer
+				$peers = Peer::getPeersForMasternode();
+				if (count($peers) == 0) {
+					_log("Masternode: No peers to propagate");
+				} else {
+					foreach ($peers as $peer) {
+						Propagate::masternodeToPeer($peer['hostname']);
+					}
+				}
+			} else {
+				//propagate to single peer
+				$peer = base64_decode($id);
+				_log("Masternode: propagating masternode to $peer pid=" . getmypid(), 5);
+				$url = $peer . "/peer.php?q=updateMasternode";
+				$res = peer_post($url, ["height" => $height, "masternode" => $masternode], 30, $err);
+				_log("Masternode: Propagating to peer: " . $peer . " res=" . json_encode($res) . " err=$err", 5);
+			}
 		}
 	}
 
@@ -577,7 +603,6 @@ class Masternode extends Daemon
 			$masternode=$data['masternode'];
 			$mn_height=$data['height'];
 			$height = Block::getHeight();
-
 			_log("Masternode: updateMasternode ip=$ip mn_height=$mn_height height=$height masternode=" . $masternode['public_key']. " win_height=".$masternode['win_height']. " signature=".$masternode['signature'], 5);
 
 			if(!Masternode::allowedMasternodes($height)) {
