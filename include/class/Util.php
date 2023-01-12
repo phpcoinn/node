@@ -953,57 +953,50 @@ class Util
 
 		_log("Sync: Util: get-more-peers", 5);
 		$peers=Peer::getPeersForSync();
-
 		$peered = [];
-		$peer_cnt = 0;
-		foreach ($peers as $peer) {
-			$url = $peer['hostname']."/peer.php?q=";
-			$data = peer_post($url."getPeers", []);
+
+		foreach ($peers as $ix => $peer) {
+			$hostname = $peer['hostname'];
+			$peered[$hostname]=true;
+		}
+
+		foreach ($peers as $ix => $peer) {
+			$hostname = $peer['hostname'];
+			$url = $hostname."/peer.php?q=";
+			$data = peer_post($url."getPeers", [], 5);
 			if ($data === false) {
-				_log("Peer $peer[hostname] unresponsive data=".json_encode($data), 2);
-				// if the peer is unresponsive, mark it as failed and blacklist it for a while
 				Peer::blacklist($peer['id'], "Unresponsive");
+				continue;
 			}
 			if(is_array($data) && count($data)==0) {
 				Peer::blacklist($peer['id'], "No peers");
-				return;
+				continue;
 			}
-			foreach ($data as $peer) {
-				// store the hostname as md5 hash, for easier checking
-				$peer['hostname'] = san_host($peer['hostname']);
-				$peer['ip'] = san_ip($peer['ip']);
-				$pid = md5($peer['hostname']);
-				// do not peer if we are already peered
-				if ($peered[$pid] == 1) {
-					continue;
-				}
-				$peered[$pid] = 1;
 
-				if(!Peer::validate($peer['hostname'])) {
+			$new_peers = [];
+			foreach ($data as $ix1 => $peer1) {
+				$hostname1 = $peer1['hostname'];
+				// do not peer if we are already peered
+				if ($peered[$hostname1]) {
+					continue;
+				} else {
+					$new_peers[]=$peer1;
+				}
+				$peered[$hostname1] = true;
+			}
+
+			foreach ($new_peers as $ix1 => $new_peer)  {
+				if(!Peer::validate($new_peer['hostname'])) {
 					continue;
 				}
-				// if it's our hostname, ignore
-				if ($peer['hostname'] == $_config['hostname']) {
+				if ($new_peer['hostname'] == $_config['hostname']) {
 					continue;
 				}
-				// make sure there's no peer in db with this ip or hostname
-				$single = Peer::getSingle($peer['hostname'], $peer['ip']);
+				$single = Peer::getSingle($new_peer['hostname'], $new_peer['ip']);
 				if (!$single) {
-					$peer_cnt++;
-					// check a max_test_peers number of peers from each peer
-					if ($peer_cnt > $_config['max_test_peers']) {
-						break;
-					}
-					$peer['hostname'] = filter_var($peer['hostname'], FILTER_SANITIZE_URL);
-					// peer with each one
-					_log("Trying to peer with recommended peer: $peer[hostname]", 4);
-					$test = peer_post($peer['hostname']."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1]);
-					if ($test !== false) {
-						_log("GMP: Peered with: $peer[hostname]");
-//				// a single new peer per sync
-//				$_config['get_more_peers']=false;
-					} else {
-						_log("Can not peer with ".$peer["hostname"]);
+					$res = peer_post($new_peer['hostname']."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1], 30, $err);
+					if($res !== false ){
+						_log("GMP: peered new peer ". $new_peer['hostname']);
 					}
 				}
 			}
@@ -1183,6 +1176,12 @@ class Util
 		} else {
 			api_err($err);
 		}
+	}
+
+	static function emptyMasternodes() {
+		global $db;
+		$sql="delete from masternode";
+		$db->run($sql);
 	}
 	
 }

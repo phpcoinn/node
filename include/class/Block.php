@@ -132,6 +132,8 @@ class Block
 		        throw new Exception("Block DB insert failed");
 	        }
 
+			Masternode::resetVerified();
+
 	        // parse the block's transactions and insert them to db
 	        $res = $this->parse_block(false, $perr);
 			if ($res == false) {
@@ -640,6 +642,7 @@ class Block
 				}
 			}
 
+			Masternode::resetVerified();
 			Config::setSync(0);
 			if($db->inTransaction()) {
 				$db->commit();

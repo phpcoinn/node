@@ -181,7 +181,7 @@ function isValidURL($url)
 }
 
 // POST data to an URL (usualy peer). The data is an array, json encoded with is sent as $_POST['data']
-function peer_post($url, $data = [], $timeout = 30, &$err= null)
+function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
 {
     global $_config;
 
@@ -203,7 +203,7 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null)
 	        "network"=>NETWORK,
 	        "chain_id"=>CHAIN_ID,
 	        "requestId" => uniqid(),
-	        "info"=>Peer::getInfo()
+	        "info"=>empty($info) ? Peer::getInfo() : $info
         ]
     );
 

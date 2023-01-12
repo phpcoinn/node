@@ -107,20 +107,11 @@ class Sync extends Daemon
 			}
 		}
 
-		$min = intval(date("i"));
-		$run_get_more_peers = $min % 5 == 0;
-
-		_log("Sync: check run_get_more_peers=$run_get_more_peers", 5);
-
-		if($run_get_more_peers) {
+		Daemon::runAtInterval("gmp", 30, function() {
 			$dir = ROOT."/cli";
-			$cmd = "$dir/util.php get-more-peers";
-			$res = shell_exec("ps uax | grep '$cmd' | grep -v grep");
-			if(!$res) {
-				$exec_cmd = "php $cmd > /dev/null 2>&1  &";
-				system($exec_cmd);
-			}
-		}
+			$cmd = "php $dir/util.php get-more-peers";
+			Nodeutil::runSingleProcess($cmd);
+		});
 
 		NodeSync::recheckLastBlocks();
 
@@ -166,6 +157,11 @@ class Sync extends Daemon
 			}
 			$data = $res['block'];
 			$info = $res['info'];
+			if(version_compare($info['version'], MIN_VERSION) < 0) {
+				_log("PeerSync: Peer $hostname blacklisted beacuse of version ".$info['version']);
+				Peer::blacklist($peer['id'], "Invalid version ".$_POST['version']);
+				continue;
+			}
 
 			// peer was responsive, mark it as good
 			if ($peer['fails'] > 0) {
@@ -385,6 +381,8 @@ class Sync extends Daemon
 		Nodeutil::cleanTmpFiles();
 
 		Minepool::deleteOldEntries();
+
+//		Masternode::emptyList();
 
 		Cache::clearOldFiles();
 

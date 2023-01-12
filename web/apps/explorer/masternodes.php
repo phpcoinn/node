@@ -48,7 +48,7 @@ $inactive = 0;
 $filtered_mns = [];
 foreach($masternodes as $masternode) {
 	$dbMasternode = Masternode::fromDB($masternode);
-	$verified = $dbMasternode->verify($height+1);
+	$verified = $dbMasternode->verified;
 	$next_winner = $winner['public_key'] == $masternode['public_key'];
 	$row_class="";
     $status = "";
@@ -141,7 +141,8 @@ require_once __DIR__. '/../common/include/top.php';
                 <th>Status</th>
 	            <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'inet_aton(m.ip)', 'IP' ,'') ?>
                 <th>Signature</th>
-	            <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'collateral', 'collateral' ,'') ?>
+                <th>Verified</th>
+	            <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'collateral', 'Collateral' ,'') ?>
 	            <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'height', 'Height' ,'') ?>
                 <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'win_height', 'Win Height', '') ?>
             </tr>
@@ -166,6 +167,7 @@ require_once __DIR__. '/../common/include/top.php';
                         <?php } ?>
                     </td>
                     <td><?php echo display_short($masternode['signature']) ?></td>
+                    <td><?php echo $masternode['verified'] ?></td>
                     <td><?php echo $masternode['collateral'] ?></td>
                     <td>
                         <a href="/apps/explorer/block.php?height=<?php echo $masternode['height'] ?>">

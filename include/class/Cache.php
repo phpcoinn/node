@@ -25,7 +25,7 @@ class Cache
 
 	static function get($key, $default = null) {
 		$cache_file = self::getCacheFile($key);
-		_log("Cache:get $key file=$cache_file exists=".file_exists($cache_file)." callable=".is_callable($default), 5);
+//		_log("Cache:get $key file=$cache_file exists=".file_exists($cache_file)." callable=".is_callable($default), 5);
 		if(file_exists($cache_file)) {
 			$content = file_get_contents($cache_file);
 			$res = json_decode($content, true);
@@ -45,7 +45,7 @@ class Cache
 		$cache_file = self::getCacheFile($key);
 		$value = json_encode($value);
 		$res = file_put_contents($cache_file, $value);
-		_log("Cache:set $key file=$cache_file value=$value res=$res", 5);
+//		_log("Cache:set $key file=$cache_file value=$value res=$res", 5);
 	}
 
 	static function exists ($key) {

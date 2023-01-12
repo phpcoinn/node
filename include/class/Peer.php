@@ -171,7 +171,7 @@ class Peer
 		$dapps_data = Cache::get("dapps_data", function() {
 			return Dapps::getLocalData();
 		});
-		_log("Cache: dapps_data = ".json_encode($dapps_data), 5);
+//		_log("Cache: dapps_data = ".json_encode($dapps_data), 5);
 		return [
 			"height" => $current['height'],
 			"appshash" => $appsHash,

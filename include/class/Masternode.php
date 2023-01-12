@@ -16,6 +16,7 @@ class Masternode extends Daemon
 	public $signature;
 	public $ip;
 	public $collateral;
+	public $verified;
 
 	function __construct()
 	{
@@ -25,11 +26,13 @@ class Masternode extends Daemon
 	function sign($height, $private_key) {
 		$base = self::getSignatureBase($this->public_key, $height);
 		$this->signature = ec_sign($base, $private_key);
+		$this->verified = !empty($this->signature);
 		return $this->signature;
 	}
 
 	function verify($height, &$error = null) {
 		try {
+			$this->verified = 0;
 			$base = self::getSignatureBase($this->public_key, $height);
 			$chain_id = Block::getChainId($height);
 			$res = ec_verify($base, $this->signature, $this->public_key, $chain_id);
@@ -37,10 +40,11 @@ class Masternode extends Daemon
 				throw new Exception("Masternode signature not valid");
 			}
 			$collateral = Block::getMasternodeCollateral($height);
-			_log("Masternode: verify collateral mn=".$this->collateral." valid=".$collateral);
+			_log("Masternode: verify collateral mn=".$this->collateral." valid=".$collateral, 5);
 			if($this->collateral != $collateral) {
-				throw new Exception("Masternode collateral not valid");
+				throw new Exception("Masternode collateral not valid: expected=$collateral received=".$this->collateral. " version=".PeerRequest::$info['version']. " ip=".PeerRequest::$ip);
 			}
+			$this->verified = 1;
 		} catch (Exception $e) {
 			$error = $e->getMessage();
 			_log("Error: $error", 5);
@@ -71,8 +75,8 @@ class Masternode extends Daemon
 
 	function storeSignature() {
 		global $db;
-		$sql = "update masternode set signature = :signature where public_key = :public_key";
-		$res = $db->run($sql, [":signature" => $this->signature, ":public_key"=>$this->public_key]);
+		$sql = "update masternode set signature = :signature, verified=:verified where public_key = :public_key";
+		$res = $db->run($sql, [":signature" => $this->signature, ":public_key"=>$this->public_key, ":verified" => $this->verified]);
 		return $res;
 	}
 
@@ -92,6 +96,7 @@ class Masternode extends Daemon
 		$masternode->id = $row['id'];
 		$masternode->ip = $row['ip'];
 		$masternode->collateral = $row['collateral'];
+		$masternode->verified = $row['verified'];
 		return $masternode;
 	}
 
@@ -120,13 +125,15 @@ class Masternode extends Daemon
 	function update() {
 		global $db;
 		_log("Masternode update win_height=".$this->win_height." public_key=".$this->public_key, 5);
-		$sql="update masternode set height=:height,  signature=:signature, win_height=:win_height, ip=:ip where public_key=:public_key";
+		$sql="update masternode set height=:height,  signature=:signature, win_height=:win_height, ip=:ip , verified=:verified
+			where public_key=:public_key";
 		$res = $db->run($sql, [
 			":public_key" => $this->public_key,
 			":height"=>$this->height,
 			":signature"=>$this->signature,
 			":win_height"=>$this->win_height,
 			":ip"=>$this->ip,
+			":verified"=>$this->verified
 		]);
 		return $res;
 	}
@@ -213,7 +220,7 @@ class Masternode extends Daemon
 			where b.masternode is not null
 			group by b.masternode
 			    ) as masternode_height on (masternode_height.masternode = m.id)
-			where m.height <= :height and m.collateral = :collateral
+			where m.height <= :height and m.collateral = :collateral and m.verified = 1
 			group by m.id, m.signature, m.public_key, masternode_height.last_win_height
 			order by masternode_height.last_win_height, md5(m.signature), m.height";
 		$rows = $db->run($sql, [":height"=>$height, ":collateral"=>$collateral]);
@@ -437,6 +444,7 @@ class Masternode extends Daemon
 
 	static function processBlock() {
 		global $_config;
+
 		$height = Block::getHeight();
 		if(!Masternode::allowedMasternodes($height)) {
 			_log("Masternode: not enabled", 5);
@@ -461,8 +469,9 @@ class Masternode extends Daemon
 		}
 
 		$sign = false;
+		$was_verified = $masternode->verified;
 		if($masternode->signature) {
-			$res = $masternode->verify($height+1);
+			$res = $masternode->verify($height+1, $err);
 			if($res) {
 				_log("Masternode: Local signature verified", 5);
 			} else {
@@ -473,7 +482,7 @@ class Masternode extends Daemon
 			$sign = true;
 		}
 
-		if($sign) {
+		if($sign || $was_verified == 0) {
 			$res = $masternode->sign($height + 1, $_config['masternode_private_key']);
 			if (!$res) {
 				_log("Masternode: Error signing masternode row");
@@ -492,7 +501,7 @@ class Masternode extends Daemon
 	}
 
 	static function propagate($id) {
-		global $_config;
+		global $_config, $db;
 		$height = Block::getHeight();
 		if(!Masternode::allowedMasternodes($height)) {
 			return;
@@ -504,23 +513,49 @@ class Masternode extends Daemon
 		$public_key = $_config['masternode_public_key'];
 		$masternode = Masternode::get($public_key);
 
-		if($id === "local") {
-			//start propagate to each peer
+		if(Propagate::PROPAGATE_BY_FORKING && $id === "local") {
+			_log("PF: start propagate", 5);
+			$start = microtime(true);
 			$peers = Peer::getPeersForMasternode();
-			if(count($peers)==0) {
-				_log("Masternode: No peers to propagate");
-			} else {
-				foreach ($peers as $peer) {
-					Propagate::masternodeToPeer($peer['hostname']);
+			$info = Peer::getInfo();
+			foreach ($peers as $peer) {
+				$pid = pcntl_fork();
+				if ($pid == -1) {
+					die('could not fork');
+				} else if ($pid == 0) {
+					$cpid = getmypid();
+					$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
+					$hostname = $peer['hostname'];
+					$url = $hostname."/peer.php?q=updateMasternode";
+					$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 5, $err, $info);
+					_log("PF: Propagating to peer: ".$hostname." res=".json_encode($res). " err=$err", 5);
+					_log("PF: child $cpid $hostname end response=$res time=".(microtime(true) - $start), 5);
+					exit();
 				}
 			}
+			while (pcntl_waitpid(0, $status) != -1) ;
+			_log("PF: Total time = ".(microtime(true)-$start), 5);
+			_log("PF: process " . getmypid() . " exit", 5);
 		} else {
-			//propagate to single peer
-			$peer = base64_decode($id);
-			_log("Masternode: propagating masternode to $peer pid=".getmypid(), 5);
-			$url = $peer."/peer.php?q=updateMasternode";
-			$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 30, $err);
-			_log("Masternode: Propagating to peer: ".$peer." res=".json_encode($res). " err=$err",5);
+
+			if ($id === "local") {
+				//start propagate to each peer
+				$peers = Peer::getPeersForMasternode();
+				if (count($peers) == 0) {
+					_log("Masternode: No peers to propagate");
+				} else {
+					foreach ($peers as $peer) {
+						Propagate::masternodeToPeer($peer['hostname']);
+					}
+				}
+			} else {
+				//propagate to single peer
+				$peer = base64_decode($id);
+				_log("Masternode: propagating masternode to $peer pid=" . getmypid(), 5);
+				$url = $peer . "/peer.php?q=updateMasternode";
+				$res = peer_post($url, ["height" => $height, "masternode" => $masternode], 30, $err);
+				_log("Masternode: Propagating to peer: " . $peer . " res=" . json_encode($res) . " err=$err", 5);
+			}
 		}
 	}
 
@@ -533,6 +568,7 @@ class Masternode extends Daemon
 			$mn->height = $masternode['height'];
 			$mn->signature = $masternode['signature'];
 			$mn->win_height = $masternode['win_height'];
+			$mn->collateral = Block::getMasternodeCollateral($mn->height);
 			$res = $mn->add();
 			if(!$res) {
 				_log("Masternode: Can not add masternode");
@@ -547,6 +583,7 @@ class Masternode extends Daemon
 			$savedMasternode->signature = $masternode['signature'];
 			$savedMasternode->win_height = $masternode['win_height'];
 			$savedMasternode->ip=$masternode['ip'];
+			$savedMasternode->verified = $masternode['verified'];
 			$res = $savedMasternode->update();
 			if($res === false) {
 				_log("Masternode: Can not update masternode = ".json_encode($masternode));
@@ -565,7 +602,6 @@ class Masternode extends Daemon
 			$masternode=$data['masternode'];
 			$mn_height=$data['height'];
 			$height = Block::getHeight();
-
 			_log("Masternode: updateMasternode ip=$ip mn_height=$mn_height height=$height masternode=" . $masternode['public_key']. " win_height=".$masternode['win_height']. " signature=".$masternode['signature'], 5);
 
 			if(!Masternode::allowedMasternodes($height)) {
@@ -582,8 +618,8 @@ class Masternode extends Daemon
 				throw new Exception("Masternode: Can not update local masternode");
 			}
 
-
-			$res = Masternode::fromDB($masternode)->check($height, $err);
+			$mn = Masternode::fromDB($masternode);
+			$res = $mn->check($height, $err);
 			if(!$res) {
 				throw new Exception("Masternode: check failed: $err");
 			}
@@ -599,11 +635,13 @@ class Masternode extends Daemon
 			$mn_ip = Masternode::getByIp($ip);
 			if($mn_ip && $mn_ip['public_key']!=$masternode['public_key']) {
 				_log("Masternode: invalid IP address $ip for public_key ".$masternode['public_key']);
+				Masternode::deleteInvalid($ip, $masternode['public_key']);
 				return true;
 			}
 
 //		    _log("Masternode: synced ".$masternode['public_key']." win_height=".$masternode['win_height']);
 			$masternode['ip']=$ip;
+			$masternode['verified']=$mn->verified;
 			$res = Masternode::sync($masternode);
 			if(!$res) {
 				throw new Exception("Masternode: Can not sync local with remote masternode");
@@ -987,12 +1025,11 @@ class Masternode extends Daemon
 		}
 		Masternode::checkLocalMasternode();
 		Masternode::processBlock();
-
 	}
 
 	static function checkSynced($signature, $public_key) {
 		global $db;
-		$sql = "select 1 from masternode m where m.signature = :signature and m.public_key = :public_key";
+		$sql = "select 1 from masternode m where m.signature = :signature and m.public_key = :public_key and m.ip is not null";
 		$res = $db->single($sql, [":signature"=>$signature, ":public_key"=>$public_key]);
 		return $res == 1;
 	}
@@ -1034,4 +1071,32 @@ class Masternode extends Daemon
 		return $row;
 	}
 
+	static function checkAnyCollateral($height) {
+		global $db;
+		$collateral = Block::getMasternodeCollateral($height);
+		$sql="select * from transactions t where t.type = :type and t.val =:collateral";
+		$row = $db->row($sql, [":type"=>TX_TYPE_MN_CREATE, ":collateral"=>$collateral]);
+		return $row;
+	}
+
+	static function resetVerified() {
+		global $db;
+		_log("MN: reset verified");
+		$db->run("update masternode set verified = 0");
+	}
+
+	static function emptyList() {
+		Daemon::runAtInterval("empty-mn-list", 60, function() {
+			_log("MNC: emptyList", 5);
+			global $db;
+			$sql = "truncate table masternode";
+			$db->run($sql);
+		});
+	}
+
+	static function deleteInvalid($ip, $public_key) {
+		global $db;
+		$sql="delete from masternode where ip=:ip or public_key=:public_key";
+		$db->run($sql, [":ip"=>$ip, ":public_key"=>$public_key]);
+	}
 }
