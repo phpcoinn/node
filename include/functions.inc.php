@@ -263,7 +263,17 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
 	    $err = $res['data'];
         return false;
     } else {
-    	Peer::storePing($url, $curl_info);
+	    $info = parse_url($url);
+	    $hostname = $info['host'];
+	    $connect_time = $curl_info["connect_time"];
+		if(!defined("FORKED_PROCESS")) {
+    	    Peer::storeResponseTime($hostname, $connect_time);
+		} else {
+			$key = "fork_".FORKED_PROCESS;
+			$responses = Cache::get($key, []);
+			$responses[$hostname]=$connect_time;
+			Cache::set($key, $responses);
+		}
     }
     return $res['data'];
 }

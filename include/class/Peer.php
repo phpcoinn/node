@@ -302,10 +302,7 @@ class Peer
 				':block_id' => $info['block'], ":hostname"=>$info['hostname'], ":dapps_id"=>$info['dapps_id'], ":dapps_hash"=>$info['dapps_hash']]);
 	}
 
-	static function storePing($url, $curl_info) {
-		$info = parse_url($url);
-		$hostname = $info['host'];
-		$connect_time = $curl_info["connect_time"];
+	static function storeResponseTime($hostname, $connect_time) {
 		global $db;
 		$res = $db->run("update peers set 
 			response_cnt=response_cnt+1, response_time=response_time+:time 
