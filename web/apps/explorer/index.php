@@ -48,15 +48,7 @@ if (Nodeutil::miningEnabled() && $minepool_enabled) {
 
 $mnEnabled = Masternode::allowedMasternodes($blockCount);
 
-$sql="select count(*) from (
-  select m.win_height,
-         row_number() over () as rn,
-         m.win_height + (row_number() over ()) - 1 as c,
-         max(m.win_height) over () as mwh
-  from masternode m
-  order by m.win_height desc
-) as mm
-where mm.c = mm.mwh;";
+$sql="select count(1) from masternode m where m.signature is not null and m.verified =1";
 $masternodeActiveCount = $db->single($sql);
 
 
