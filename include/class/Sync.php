@@ -38,6 +38,7 @@ class Sync extends Daemon
 
 		// delete the dead peers
 		Peer::deleteDeadPeers();
+		Peer::resetResponseTimes();
 
 		$total_peers = Peer::getCount(false);
 		_log("Total peers: ".$total_peers, 3);

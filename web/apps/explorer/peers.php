@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__)."/apps.inc.php";
+require_once ROOT. '/web/apps/explorer/include/functions.php';
 define("PAGE", true);
 define("APP_NAME", "Explorer");
 
@@ -26,6 +27,7 @@ where p.blacklisted < UNIX_TIMESTAMP()
 group by p.version
 order by p.version desc";
 $peers_by_version = $db->run($sql);
+$show_all = isset($_GET['show_all']);
 ?>
 
 <?php
@@ -51,6 +53,10 @@ require_once __DIR__. '/../common/include/top.php';
                 <?php if(FEATURE_APPS) { ?>
                     <th>Apps hash</th>
                 <?php } ?>
+                <?php if($show_all) { ?>
+                    <th>Blacklisted</th>
+                    <th>Blacklist reason</th>
+                <?php } ?>
                 <th>Score</th>
             </tr>
         </thead>
@@ -61,7 +67,7 @@ require_once __DIR__. '/../common/include/top.php';
                 $blacklisted = $peer['blacklisted'] > time();
                 if($blacklisted) {
 	                $blacklisted_cnt++;
-                    if(!isset($_GET['show_all'])) {
+                    if(!$show_all) {
                     continue;
                 }
                 }
@@ -69,8 +75,10 @@ require_once __DIR__. '/../common/include/top.php';
                 $latest_version = version_compare($peer['version'], VERSION.".".BUILD_VERSION) >= 0;
                 $blocked_version = version_compare($peer['version'], MIN_VERSION) < 0;
                 $color = $latest_version ? 'success' : ($blocked_version ? 'danger' : '');
+                $live = (time() - $peer['ping']) < Peer::PEER_PING_MAX_MINUTES * 60;
+                $bg_color = $blacklisted ? 'table-danger' : ($live ? 'table-success' : '') ;
                 ?>
-                <tr class="<?php if($blacklisted) { ?>bg-danger<?php } ?>">
+                <tr class="<?php echo $show_all ? $bg_color : '' ?>">
                     <td>
                         <a href="/apps/explorer/peer.php?id=<?php echo $peer['id'] ?>"><?php echo $peer['hostname'] ?></a>
                         <a href="<?php echo $peer['hostname'] ?>" target="_blank" class="float-end"
@@ -79,7 +87,10 @@ require_once __DIR__. '/../common/include/top.php';
                         </a>
                     </td>
                     <td><?php echo $peer['ip'] ?></td>
-                    <td><?php echo display_date($peer['ping']) ?></td>
+                    <td>
+                        <?php echo display_date($peer['ping']) ?>
+                        <?php echo $show_all ? " | " .durationFormat(time() - $peer['ping']) : ''?>
+                    </td>
                     <td><?php echo $peer['height'] ?></td>
                     <td>
                         <span class="<?php if (!empty($color)) { ?>text-<?php echo $color ?><?php } ?>"><?php echo $peer['version'] ?></span>
@@ -94,6 +105,15 @@ require_once __DIR__. '/../common/include/top.php';
                             <?php } ?>
                         </td>
 	                <?php } ?>
+	                <?php if($show_all) { ?>
+                        <td>
+                            <?php echo display_date($peer['blacklisted']) ?>
+                            <?php if ($peer['blacklisted'] > time()) {
+                                echo " | " . durationFormat($peer['blacklisted']-time());
+                            } ?>
+                        </td>
+                        <td><?php echo $peer['blacklist_reason'] ?></td>
+                    <?php } ?>
                     <td>
                         <?php if ($peer['score']) { ?>
                             <div class="ns">

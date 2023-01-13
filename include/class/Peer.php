@@ -5,6 +5,7 @@ class Peer
 {
 
 	public const PRELOAD_LIST = REMOTE_PEERS_LIST_URL;
+	public const PEER_PING_MAX_MINUTES = 2;
 	public const MINIMUM_PEERS_REQUIRED = 2;
 
 	static function getCount($live=false) {
@@ -42,7 +43,7 @@ class Peer
 		global $db;
 		$sql="select * from peers 
 			where blacklisted < ".DB::unixTimeStamp()."
-			  and ping > ".DB::unixTimeStamp()."- 60*2
+			  and ping > ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES."
 			  and response_cnt>0 ";
 		if($random) {
 			$sql.=" order by ".DB::random();
@@ -59,7 +60,7 @@ class Peer
 	static function getPeersForMasternode($limit = null) {
 		global $db;
 		$sql="select * from peers p WHERE (p.blacklisted < ".DB::unixTimeStamp()." or p.generator is not null or p.miner is not null )
-			and ping > ".DB::unixTimeStamp()."- 60*2
+			and ping > ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES."
 			order by ".DB::random();
 		if(!empty($limit)) {
 			$sql.= " limit $limit";
@@ -192,7 +193,7 @@ class Peer
 		$hostname = $db->single("select hostname from peers where id = :id", [":id"=>$id]);
 		_log("Blacklist peer $hostname reason=$reason");
 		$db->run(
-			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*5), 
+			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*1), 
 				blacklist_reason=:blacklist_reason WHERE id=:id",
 			[":id" => $id, ':blacklist_reason'=>$reason]
 		);
@@ -244,7 +245,12 @@ class Peer
 
 	static function deleteDeadPeers() {
 		global $db;
-		$db->run("DELETE from peers WHERE fails>100 OR stuckfail>100");
+		$db->run("DELETE from peers WHERE fails>100 OR stuckfail>100 OR (".DB::unixTimeStamp()."- ping > 60*60*24)");
+	}
+
+	static function resetResponseTimes() {
+		global $db;
+		$db->run("update peers set response_cnt = 0, response_time = 0 where response_cnt > 1000 or response_time > 3600");
 	}
 
 	static function clearStuck($id) {
