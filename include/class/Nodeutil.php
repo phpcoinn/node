@@ -347,7 +347,7 @@ class Nodeutil
 		if(isset($GLOBALS['start_time'])) {
 			$GLOBALS['end_time']=microtime(true);
 			$time = $GLOBALS['end_time'] - $GLOBALS['start_time'];
-			if($time > 0.1) {
+			if($time > 1) {
 				_log("Time: url=".$_SERVER['REQUEST_URI']." time=$time HTTP_USER_AGENT=".$_SERVER['HTTP_USER_AGENT']);
 				$prev_time = $GLOBALS['start_time'];
 				foreach($GLOBALS['measure'] as $section => $t) {

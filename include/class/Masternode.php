@@ -26,7 +26,6 @@ class Masternode extends Daemon
 	function sign($height, $private_key) {
 		$base = self::getSignatureBase($this->public_key, $height);
 		$this->signature = ec_sign($base, $private_key);
-		$this->verified = !empty($this->signature);
 		return $this->signature;
 	}
 
@@ -76,8 +75,7 @@ class Masternode extends Daemon
 	function storeSignature() {
 		global $db;
 		$sql = "update masternode set signature = :signature, verified=:verified where public_key = :public_key";
-		$res = $db->run($sql, [":signature" => $this->signature, ":public_key"=>$this->public_key, ":verified" => $this->verified]);
-		return $res;
+		$db->run($sql, [":signature" => $this->signature, ":public_key"=>$this->public_key, ":verified" => $this->verified]);
 	}
 
 	function storeWinHeight() {
@@ -124,7 +122,7 @@ class Masternode extends Daemon
 
 	function update() {
 		global $db;
-		_log("Masternode update win_height=".$this->win_height." public_key=".$this->public_key, 5);
+		_log("Masternode update win_height=".$this->win_height." public_key=".$this->public_key." verified=".$this->verified, 5);
 		$sql="update masternode set height=:height,  signature=:signature, win_height=:win_height, ip=:ip , verified=:verified
 			where public_key=:public_key";
 		$res = $db->run($sql, [
@@ -468,35 +466,23 @@ class Masternode extends Daemon
 			$masternode->storeWinHeight();
 		}
 
-		$sign = false;
-		$was_verified = $masternode->verified;
-		if($masternode->signature) {
-			$res = $masternode->verify($height+1, $err);
-			if($res) {
-				_log("Masternode: Local signature verified", 5);
-			} else {
-				_log("Masternode: Signature not verified for height ".($height+1), 5);
-				$sign = true;
-			}
-		} else {
-			$sign = true;
+		$res = $masternode->sign($height + 1, $_config['masternode_private_key']);
+		if (!$res) {
+			_log("Masternode: Error signing masternode row");
+			return;
 		}
 
-		if($sign || $was_verified == 0) {
-			$res = $masternode->sign($height + 1, $_config['masternode_private_key']);
-			if (!$res) {
-				_log("Masternode: Error signing masternode row");
-				return;
-			}
-			$res = $masternode->storeSignature();
-			if (!$res) {
-				_log("Masternode: Error saving masternode signature");
-				return;
-			}
+		$res = $masternode->verify($height+1, $err);
+		if(!$res) {
+			$masternode->signature = null;
 		}
 
-		_log("Masternode: Call propagate local mastenode win_height={$masternode->win_height} blockchain height=$height", 5);
-		Propagate::masternode();
+		$masternode->storeSignature();
+
+		if(!empty($masternode->signature) && $masternode->verified) {
+			_log("Masternode: Call propagate local mastenode win_height={$masternode->win_height} blockchain height=$height", 5);
+			Propagate::masternode();
+		}
 
 	}
 
@@ -1060,14 +1046,6 @@ class Masternode extends Daemon
 		$collateral = Block::getMasternodeCollateral($height);
 		$sql="select * from transactions t where t.dst = :dst and t.type = :type and t.val =:collateral and t.height <= :height";
 		$row = $db->row($sql, [":dst"=>$masternode, ":type"=>TX_TYPE_MN_CREATE, ":collateral"=>$collateral, ":height"=>$height]);
-		return $row;
-	}
-
-	static function checkAnyCollateral($height) {
-		global $db;
-		$collateral = Block::getMasternodeCollateral($height);
-		$sql="select * from transactions t where t.type = :type and t.val =:collateral";
-		$row = $db->row($sql, [":type"=>TX_TYPE_MN_CREATE, ":collateral"=>$collateral]);
 		return $row;
 	}
 
