@@ -329,6 +329,7 @@ class Wallet
 		if(DEVELOPMENT) {
 			return "http://spectre:8000";
 		} else {
+			echo "Connected to peer: $peer".PHP_EOL;
 			return $peer;
 		}
 	}
@@ -414,15 +415,16 @@ class Wallet
 			exit;
 		}
 
-		$collateral = $this->wallet_peer_post("/api.php?q=getCollateral");
-
+		$res = $this->wallet_peer_post("/api.php?q=getCollateral");
+		$this->checkApiResponse($res);
+		$collateral = $res['data'];
 		$date=time();
 		$msg = "mncreate";
 		$tx = new Transaction($this->public_key, $mnAddress, $collateral, TX_TYPE_MN_CREATE, $date, $msg);
 		$signature = $tx->sign($this->private_key);
 
 		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
-			array("dst" => $mnAddress, "val" => $collateral, "signature" => $signature,
+			array("dst" => $mnAddress, "val" => $collateral, "fee"=>0,  "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_MN_CREATE,
 				"message" => $msg, "date" => $date));
 		$this->checkApiResponse($res);
@@ -431,15 +433,16 @@ class Wallet
 
 	function removeMasternode($payoutAddress) {
 		$mn_address = Account::getAddress($this->public_key);
-		$mnData = $this->wallet_peer_post("/api.php?q=getMasternode&address=$mn_address");
-		$collateral = $mnData['collateral'];
+		$res = $this->wallet_peer_post("/api.php?q=getMasternode" , ["address"=>$mn_address]);
+		$this->checkApiResponse($res);
+		$collateral = $res['data']['collateral'];
 		$date=time();
 		$msg = "mnremove";
 		$tx = new Transaction($this->public_key, $payoutAddress, $collateral, TX_TYPE_MN_REMOVE, $date, $msg);
 		$signature = $tx->sign($this->private_key);
 
 		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
-			array("dst" => $payoutAddress, "val" => $collateral, "signature" => $signature,
+			array("dst" => $payoutAddress, "val" => $collateral, "fee"=>0,  "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_MN_REMOVE,
 				"message" => $msg, "date" => $date));
 		$this->checkApiResponse($res);
