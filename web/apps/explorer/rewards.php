@@ -32,6 +32,7 @@ require_once __DIR__. '/../common/include/top.php';
             <th>Generator</th>
             <th>Staker</th>
             <th>Masternode</th>
+            <th>Collateral</th>
             <th>Days duration</th>
             <th>Projected time start</th>
             <th>Real/Calculated time start</th>
@@ -61,6 +62,7 @@ require_once __DIR__. '/../common/include/top.php';
                     <td><?php echo $row['gen'] ?></td>
                     <td><?php echo $row['staker'] ?></td>
                     <td><?php echo $row['mn'] ?></td>
+                    <td><?php echo Block::getMasternodeCollateral($row['block']) ?></td>
                     <td><?php if($has_reward) echo $days==null ? null : round($days, 2) ?></td>
                     <td><?php echo display_date($row['time']) ?></td>
                     <td><?php echo display_date($row['real_start_time'])  ?></td>
