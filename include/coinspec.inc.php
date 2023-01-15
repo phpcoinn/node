@@ -9,9 +9,9 @@ if($_config['chain_id'] != DEFAULT_CHAIN_ID) {
 const NETWORK = "mainnet-alpha";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
-const VERSION = "1.1.6";
-const BUILD_VERSION = 178;
-const MIN_VERSION = "1.1.5";
+const VERSION = "1.1.7";
+const BUILD_VERSION = 179;
+const MIN_VERSION = "1.1.6";
 const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
@@ -81,7 +81,14 @@ const REWARD_SCHEME = [
 
 const COLLATERAL_SCHEME = [
 	1 => 10000,
-	PHP_INT_MAX => 15000
+	560001 => 12000,
+	570001 => 14000,
+	580001 => 16000,
+	610001 => 20000,
+	660001 => 25000,
+	760001 => 30000,
+	860001 => 35000,
+	960001 => 40000,
 ];
 
 const MIN_NODE_SCORE = 80;
