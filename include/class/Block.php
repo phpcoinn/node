@@ -1121,4 +1121,13 @@ class Block
 
 		return $collateral;
 	}
+
+	static function getNextCollateralHeight($height) {
+		$heights = array_keys(COLLATERAL_SCHEME);
+		foreach ($heights as $index => $h) {
+			if(isset($heights[$index+1]) && $height >= $heights[$index] && $height < $heights[$index+1]) {
+				return $heights[$index+1];
+			}
+		}
+	}
 }
