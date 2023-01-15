@@ -47,12 +47,15 @@ if (Nodeutil::miningEnabled() && $minepool_enabled) {
 }
 
 $mnEnabled = Masternode::allowedMasternodes($blockCount);
-
-$sql="select count(1) from masternode m where m.signature is not null and m.verified =1";
-$masternodeActiveCount = $db->single($sql);
-
-
 $masternodesCount = Masternode::getCount();
+
+$sql="select count(distinct b.masternode)
+from blocks b
+where b.height > :height";
+$masternodeActiveCount = $db->single($sql, [":height"=>$blockCount - $masternodesCount]);
+$collateral = Block::getMasternodeCollateral($blockCount);
+$next_collateral = Block::getMasternodeCollateral($blockCount, true);
+$next_collateral_height = Block::getNextCollateralHeight($blockCount);
 $fee = Blockchain::getFee();
 
 ?>
@@ -66,7 +69,7 @@ $fee = Blockchain::getFee();
 
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
-            <div class="card-body">
+            <div class="card-body p-3">
                 <div class="row align-items-center">
                     <div class="col-12">
                         <i class="fas fa-database me-1 h4"></i>
@@ -86,7 +89,7 @@ $fee = Blockchain::getFee();
 
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
-            <div class="card-body">
+            <div class="card-body p-3">
                 <div class="row align-items-center">
                     <div class="col-12">
                         <i class="fas fa-clock me-1 h4"></i>
@@ -117,7 +120,7 @@ $fee = Blockchain::getFee();
 
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
-            <div class="card-body">
+            <div class="card-body p-3">
                 <div class="row align-items-center">
                     <div class="col-12">
                         <i class="fas fa-hammer me-1 h4"></i>
@@ -148,7 +151,7 @@ $fee = Blockchain::getFee();
 
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
-            <div class="card-body">
+            <div class="card-body p-3">
                 <div class="row align-items-center">
                     <div class="col-12">
                         <i class="fas fa-coins me-1 h4"></i>
@@ -171,7 +174,7 @@ $fee = Blockchain::getFee();
 
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
-            <div class="card-body">
+            <div class="card-body p-3">
                 <div class="row align-items-center">
                     <div class="col-12">
                         <i class="fas fa-exchange-alt me-1 h4"></i>
@@ -192,7 +195,7 @@ $fee = Blockchain::getFee();
 
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
-            <div class="card-body">
+            <div class="card-body p-3">
                 <div class="row align-items-center">
                     <div class="col-6">
                         <i class="fas fa-hourglass-start  me-1 h4"></i>
@@ -221,7 +224,7 @@ $fee = Blockchain::getFee();
 
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
-            <div class="card-body">
+            <div class="card-body p-3">
                 <div class="row align-items-center">
                     <div class="col-6">
                         <i class="fas fa-users  me-1 h4"></i>
@@ -248,10 +251,10 @@ $fee = Blockchain::getFee();
 
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
-            <div class="card-body">
+            <div class="card-body p-3">
                 <div class="row align-items-center">
                     <?php if (Masternode::allowedMasternodes($blockCount)){ ?>
-                        <div class="col-12">
+                        <div class="col-6">
                             <i class="fas fa-boxes me-1 h4"></i>
                             <span class="text-muted mb-3 lh-1 text-truncate h4">
                                 <a href="/apps/explorer/masternodes.php">Masternodes</a>
@@ -260,7 +263,27 @@ $fee = Blockchain::getFee();
                                 <?php echo $masternodeActiveCount ?>
                             </h2>
                             <div class="text-nowrap">
-                                <span class="text-muted font-size-13">Total <strong><?php echo $masternodesCount ?></strong> masternodes</span>
+                                <span class="text-muted font-size-13">
+                                    Total <strong><?php echo $masternodesCount ?></strong> masternodes
+                                    <br/>
+                                    &nbsp;
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <i class=" fas fa-hand-holding-usd me-1 h4"></i>
+                            <span class="text-muted mb-3 lh-1 text-truncate h4">
+                                Collateral
+                            </span>
+                            <h2 class="my-2">
+		                        <?php echo $collateral ?>
+                            </h2>
+                            <div class="text-nowrap">
+                                <span class="text-muted font-size-13">
+                                    Next collateral: <strong><?php echo $next_collateral ?></strong>
+                                    <br/>
+                                    at block <strong><?php echo $next_collateral_height ?></strong>
+                                </span>
                             </div>
                         </div>
                     <?php } ?>
