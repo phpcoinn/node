@@ -1005,7 +1005,7 @@ class Masternode extends Daemon
 			left join accounts a on (m.id = a.id)
 			where t.type = :mn_create and t.public_key = :public_key
 			and m.id is not null
-			group by m.id";
+			group by m.id, t.id";
 		return $db->run($sql, [":mn_create" => TX_TYPE_MN_CREATE, ":public_key" => $public_key]);
 	}
 
