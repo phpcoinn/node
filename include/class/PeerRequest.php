@@ -175,7 +175,7 @@ class PeerRequest
 		}
 
 		// validate transaction data
-		if (!$tx->verify(null, $txerr)) {
+		if (!$tx->check(null, false, $txerr)) {
 			api_err("Invalid transaction: $txerr");
 		}
 		$hash = $tx->id;
