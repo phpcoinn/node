@@ -32,73 +32,6 @@ $ip=$sel_peer['ip'];
 $url = "https://node1.phpcoin.net/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/nodemap/api.php?q=getLocationInfo&ip=$ip";
 $locationData = json_decode(file_get_contents($url), true);
 
-
-
-function durationFormat2($seconds)
-{
-	$a_sec=1;
-	$a_min=$a_sec*60;
-	$an_hour=$a_min*60;
-	$a_day=$an_hour*24;
-	$a_week=$a_day*52;
-	//$a_month=$a_day*(floor(365/12));
-	$a_month=$a_day*30;
-	$a_year=$a_day*365;
-
-	$params=2;
-	$text='';
-	if($seconds>$a_year)
-	{
-		$years=floor($seconds/$a_year);
-		$text.=$years.' years ';
-		$seconds=$seconds-($years*$a_year);
-		$params--;
-	}
-	if($params==0) return $text;
-	if($seconds>$a_month)
-	{
-		$months=floor($seconds/$a_month);
-		$text.=$months.' months ';
-		$seconds=$seconds-($months*$a_month);
-		$params--;
-	}
-	if($params==0) return $text;
-	if($seconds>$a_week)
-	{
-		$weeks=floor($seconds/$a_week);
-		$text.=$weeks.' weeks ';
-		$seconds=$seconds-($months*$a_week);
-		$params--;
-	}
-	if($params==0) return $text;
-	if($seconds>$a_day)
-	{
-		$days=floor($seconds/$a_day);
-		$text.=$days.' days ';
-		$seconds=$seconds-($days*$a_day);
-		$params--;
-	}
-	if($params==0) return $text;
-	$H=gmdate("H", $seconds);
-	if($H>0)
-	{
-		$text.=$H.' hours ';
-		$params--;
-	}
-	if($params==0) return $text;
-	$M=gmdate("i", $seconds);
-	if($M>0)
-	{
-		$text.=$M.' minutes ';
-		$params--;
-	}
-	if($params==0) return $text;
-	$S=gmdate("s", $seconds);
-	$text.=$S.' seconds ';
-
-	return $text;
-}
-
 $color = '';
 $latest_version = version_compare($sel_peer['version'], VERSION.".".BUILD_VERSION) >= 0;
 $blocked_version = version_compare($sel_peer['version'], MIN_VERSION) < 0;
@@ -148,14 +81,20 @@ $peer = $sel_peer;
             <td>
                 <?php if($peer['blacklisted'] > time()) { ?>
                     <div class="badge rounded-pill bg-danger font-size-12">Blacklisted</div>
+                    <span class="text-muted ps-2">Blacklisted until <?php echo display_date($peer['blacklisted']) ?>
+                        (for <?php echo durationFormat($peer['blacklisted'] - time()) ?>)</span>
+	                <?php if (!empty($peer['blacklist_reason'])) { ?>
+                        <span class="text-muted ps-2"><?php echo $peer['blacklist_reason'] ?></span>
+	                <?php } ?>
                 <?php } else {?>
                     <div class="badge rounded-pill bg-success font-size-12">Active</div>
-                <?php } ?>
-                <?php if (!empty($peer['blacklisted'])) { ?>
-                    <span class="text-muted ps-2">Last blacklisted <?php echo display_date($peer['blacklisted']) ?> (<?php echo durationFormat2(time()-$peer['blacklisted']) ?> ago)</span>
-                <?php } ?>
-                <?php if (!empty($peer['blacklist_reason'])) { ?>
-                    <span class="text-muted ps-2"><?php echo $peer['blacklist_reason'] ?></span>
+	                <?php if (!empty($peer['blacklisted'])) { ?>
+                        <span class="text-muted ps-2">Last blacklisted <?php echo display_date($peer['blacklisted']) ?>
+                        (<?php echo durationFormat(time()-$peer['blacklisted']) ?> ago)</span>
+	                <?php } ?>
+	                <?php if (!empty($peer['blacklist_reason'])) { ?>
+                        <span class="text-muted ps-2"><?php echo $peer['blacklist_reason'] ?></span>
+	                <?php } ?>
                 <?php } ?>
                 <br/>
                 <strong>Reserved: </strong>
@@ -211,7 +150,7 @@ $peer = $sel_peer;
             <td><strong>Ping</strong></td>
             <td>
                 <?php echo display_date($peer['ping']) ?>
-                (<?php echo durationFormat2(time()-$peer['ping']) ?> ago)
+                (<?php echo durationFormat(time()-$peer['ping']) ?> ago)
             </td>
         </tr>
         <tr>

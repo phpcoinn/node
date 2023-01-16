@@ -621,23 +621,34 @@ require_once __DIR__. '/../common/include/top.php';
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'height', 'Height' ,'') ?>
                         <th>Ip</th>
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'version', 'Version' ,'') ?>
-                        <th>Fails</th>
+	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'fails', 'Fails' ,'') ?>
                         <th>Stuckfail</th>
                         <th>Reason</th>
                         <th>Miner</th>
                         <th>Generator</th>
                         <th>Masternode</th>
-                        <th>Response time</th>
+	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'response_time', 'Response time' ,'') ?>
+	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'response_cnt', 'Response count' ,'') ?>
+	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'response_time/response_cnt', 'Response avg' ,'') ?>
                         <th></th>
                     </tr>
                     </thead>
                     <tbody>
-                    <?php foreach ($peers as $peer) { ?>
-                        <tr  class="<?php if ($peer['blacklisted'] > time()) { ?>table-danger<?php } ?>">
+                    <?php foreach ($peers as $peer) {
+                        $live = time() - $peer['ping'] < Peer::PEER_PING_MAX_MINUTES*60;
+                        $table_class = $peer['blacklisted'] > time() ? "table-danger" : ($live ? "table-success" : "");
+                        ?>
+                        <tr  class="<?php echo $table_class ?>">
                             <td><?php echo $peer['id'] ?></td>
                             <td><?php echo $peer['hostname'] ?></td>
-                            <td><?php echo display_date($peer['blacklisted']) ?></td>
-                            <td><?php echo display_date($peer['ping']) ?></td>
+                            <td nowrap="nowrap">
+                                <?php echo display_date($peer['blacklisted']) ?>
+                                <?php if($peer['blacklisted'] > time()) {
+                                    echo " | " .durationFormat($peer['blacklisted'] - time());
+
+                                }?>
+                            </td>
+                            <td nowrap="nowrap"><?php echo display_date($peer['ping']) . " | " . durationFormat(time() - $peer['ping']) ?></td>
                             <td><?php echo $peer['height'] ?></td>
                             <td><?php echo $peer['ip'] ?></td>
                             <td><?php echo $peer['version'] ?></td>
@@ -647,6 +658,8 @@ require_once __DIR__. '/../common/include/top.php';
                             <td><?php echo $peer['miner'] ?></td>
                             <td><?php echo $peer['generator'] ?></td>
                             <td><?php echo $peer['masternode'] ?></td>
+                            <td><?php echo $peer['response_time'] ?></td>
+                            <td><?php echo $peer['response_cnt'] ?></td>
                             <td>
                                 <?php
                                 $total = $peer['response_time'];

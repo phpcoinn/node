@@ -77,7 +77,14 @@ class PeerRequest
 				_log("PRC: ip=$ip hostname=$hostname mn=".$info['masternode']." found_peer=".$peer['hostname'],5);
 			}
 			Peer::updatePeerInfo($ip, $info);
+			if($peer['blacklisted'] < time() && $peer['fails']>0) {
+				Peer::clearFails($peer['id']);
+				Peer::clearStuck($peer['id']);
+			}
 		}
+
+
+
 
 		self::$ip=$ip;
 		self::$data=$data;

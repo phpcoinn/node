@@ -147,6 +147,7 @@ class Dapps extends Daemon
 						"dapps_signature"=>$dapps_signature,
 					];
 					$info = Peer::getInfo();
+					define("FORKED_PROCESS", true);
 					foreach ($peers as $peer) {
 						$pid = pcntl_fork();
 						if ($pid == -1) {
@@ -161,6 +162,13 @@ class Dapps extends Daemon
 						}
 					}
 					while (pcntl_waitpid(0, $status) != -1) ;
+					$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
+					$key = "fork_".FORKED_PROCESS;
+					$responses = Cache::get($key, []);
+					foreach ($responses as $hostname => $connect_time) {
+						Peer::storeResponseTime($hostname, $connect_time);
+					}
+					Cache::remove($key);
 					_log("Dapps: Total time = ".(microtime(true)-$start));
 					_log("Dapps: process " . getmypid() . " exit");
 					exit;

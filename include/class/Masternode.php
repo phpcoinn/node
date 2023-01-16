@@ -441,7 +441,7 @@ class Masternode extends Daemon
 	}
 
 	static function processBlock() {
-		global $_config;
+		global $_config, $db;
 
 		$height = Block::getHeight();
 		if(!Masternode::allowedMasternodes($height)) {
@@ -504,13 +504,13 @@ class Masternode extends Daemon
 			$start = microtime(true);
 			$peers = Peer::getPeersForMasternode();
 			$info = Peer::getInfo();
+			define("FORKED_PROCESS", getmypid());
 			foreach ($peers as $peer) {
 				$pid = pcntl_fork();
 				if ($pid == -1) {
 					die('could not fork');
 				} else if ($pid == 0) {
 					$cpid = getmypid();
-					$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
 					$hostname = $peer['hostname'];
 					$url = $hostname."/peer.php?q=updateMasternode";
 					$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 5, $err, $info);
@@ -520,6 +520,13 @@ class Masternode extends Daemon
 				}
 			}
 			while (pcntl_waitpid(0, $status) != -1) ;
+			$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
+			$key = "fork_".FORKED_PROCESS;
+			$responses = Cache::get($key, []);
+			foreach ($responses as $hostname => $connect_time) {
+				Peer::storeResponseTime($hostname, $connect_time);
+			}
+			Cache::remove($key);
 			_log("PF: Total time = ".(microtime(true)-$start), 5);
 			_log("PF: process " . getmypid() . " exit", 5);
 		} else {

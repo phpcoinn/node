@@ -25,7 +25,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 OR OTHER DEALINGS IN THE SOFTWARE.
 */
 set_time_limit(30);
-global $db, $_config;
+global $_config;
 
 require_once dirname(__DIR__).'/include/init.inc.php';
 
@@ -59,6 +59,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 		global $_config, $db;
 		$start = microtime(true);
 		$info = Peer::getInfo();
+		define("FORKED_PROCESS", true);
 		foreach ($r as $peer) {
 			$hostname = $peer['hostname'];
 			$ip = $peer['ip'];
@@ -68,7 +69,6 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 				die('could not fork');
 			} else if ($pid == 0) {
 				$cpid = getmypid();
-				$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
 				$response = peer_post($hostname . "/peer.php?q=submitBlock", $data, 5, $err, $info);
 				_log("PropagateFork: forking child $cpid $hostname end response=$response time=".(microtime(true) - $start),5);
 				Propagate::processBlockPropagateResponse($hostname, $ip, $id, $response, $err);
@@ -76,6 +76,13 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 			}
 		}
 		while (pcntl_waitpid(0, $status) != -1) ;
+		$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
+		$key = "fork_".FORKED_PROCESS;
+		$responses = Cache::get($key, []);
+		foreach ($responses as $hostname => $connect_time) {
+			Peer::storeResponseTime($hostname, $connect_time);
+		}
+		Cache::remove($key);
 		_log("PropagateFork: Total time = ".(microtime(true)-$start),5);
 		_log("PropagateFork: process " . getmypid() . " exit",5);
 		exit;
@@ -138,8 +145,10 @@ if ($type == "transaction") {
 	_log("PropagateFork: Transaction propagate peers: ".count($r),3);
 
 	if(Propagate::PROPAGATE_BY_FORKING) {
+		global $db;
 		$info = Peer::getInfo();
 		$start = microtime(true);
+		define("FORKED_PROCESS", true);
 		foreach ($r as $peer) {
 			$pid = pcntl_fork();
 			if ($pid == -1) {
@@ -148,7 +157,6 @@ if ($type == "transaction") {
 				$hostname = $peer['hostname'];
 				$cpid = getmypid();
 				$url = $hostname."/peer.php?q=submitTransaction";
-				$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
 				$res = peer_post($url, $data, 5, $err, $info);
 				_log("PropagateFork: forking child $cpid $hostname end response=$response time=".(microtime(true) - $start),5);
 				if (!$res) {
@@ -160,6 +168,13 @@ if ($type == "transaction") {
 			}
 		}
 		while (pcntl_waitpid(0, $status) != -1) ;
+		$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
+		$key = "fork_".FORKED_PROCESS;
+		$responses = Cache::get($key, []);
+		foreach ($responses as $hostname => $connect_time) {
+			Peer::storeResponseTime($hostname, $connect_time);
+		}
+		Cache::remove($key);
 		_log("PropagateFork: Total time = ".(microtime(true)-$start),5);
 		_log("PropagateFork: process " . getmypid() . " exit",5);
 		exit;

@@ -44,7 +44,7 @@ class Cache
 	static function set($key, $value) {
 		$cache_file = self::getCacheFile($key);
 		$value = json_encode($value);
-		$res = file_put_contents($cache_file, $value);
+		$res = file_put_contents($cache_file, $value, LOCK_EX);
 //		_log("Cache:set $key file=$cache_file value=$value res=$res", 5);
 	}
 
