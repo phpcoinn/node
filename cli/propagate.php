@@ -182,6 +182,7 @@ if ($type == "transaction") {
 		}
 		Cache::remove($key);
 		$tx_responses = Cache::get($fork_tx_key);
+		Cache::remove($fork_tx_key);
 		$count = $tx_responses['count'];
 		$error = $tx_responses['error'];
 		if($error < 1/3 * $count) {
