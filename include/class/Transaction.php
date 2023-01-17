@@ -1214,10 +1214,19 @@ class Transaction
 
     static function getCount() {
     	global $db, $_config;
-	    $db_name=substr($_config['db_connect'], strrpos($_config['db_connect'], "dbname=")+7);
-    	$sql="select TABLE_ROWS as cnt from information_schema.TABLES where TABLE_SCHEMA = :dbname and TABLE_NAME = 'transactions'";
-		$row = $db->row($sql,[":dbname"=>$db_name]);
-		return $row['cnt'];
+		$arr = explode(";", $_config['db_connect']);
+		foreach($arr as $item) {
+			$arr2=explode("=", $item);
+			if($arr2[0]=="dbname") {
+				$db_name = $arr2[1];
+				break;
+			}
+		}
+		if($db_name) {
+	        $sql="select TABLE_ROWS as cnt from information_schema.TABLES where TABLE_SCHEMA = :dbname and TABLE_NAME = 'transactions'";
+			$row = $db->row($sql,[":dbname"=>$db_name]);
+			return $row['cnt'];
+		}
     }
 
     static function getMempoolCount() {
