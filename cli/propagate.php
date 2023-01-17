@@ -59,7 +59,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 		global $_config, $db;
 		$start = microtime(true);
 		$info = Peer::getInfo();
-		define("FORKED_PROCESS", true);
+		define("FORKED_PROCESS", getmypid());
 		foreach ($r as $peer) {
 			$hostname = $peer['hostname'];
 			$ip = $peer['ip'];
@@ -148,7 +148,8 @@ if ($type == "transaction") {
 		global $db;
 		$info = Peer::getInfo();
 		$start = microtime(true);
-		define("FORKED_PROCESS", true);
+		define("FORKED_PROCESS", getmypid());
+		$fork_tx_key = "tx_{$id}_res_".FORKED_PROCESS;
 		foreach ($r as $peer) {
 			$pid = pcntl_fork();
 			if ($pid == -1) {
@@ -159,11 +160,16 @@ if ($type == "transaction") {
 				$url = $hostname."/peer.php?q=submitTransaction";
 				$res = peer_post($url, $data, 5, $err, $info);
 				_log("PropagateFork: forking child $cpid $hostname end response=$response time=".(microtime(true) - $start),5);
+				$tx_responses = Cache::get($fork_tx_key, []);
+				$tx_responses['count']++;
 				if (!$res) {
 					_log("Transaction $id to $hostname - Transaction not accepted: $err");
+					$tx_responses['error']++;
 				} else {
 					_log("Transaction $id to $hostname - Transaction accepted",2);
+					$tx_responses['ok']++;
 				}
+				Cache::set($fork_tx_key, $tx_responses);
 				exit();
 			}
 		}
@@ -175,6 +181,13 @@ if ($type == "transaction") {
 			Peer::storeResponseTime($hostname, $connect_time);
 		}
 		Cache::remove($key);
+		$tx_responses = Cache::get($fork_tx_key);
+		$count = $tx_responses['count'];
+		$error = $tx_responses['error'];
+		if($error < 1/3 * $count) {
+			$current = Block::current();
+			Mempool::updateMempool($id, $current['height']);
+		}
 		_log("PropagateFork: Total time = ".(microtime(true)-$start),5);
 		_log("PropagateFork: process " . getmypid() . " exit",5);
 		exit;

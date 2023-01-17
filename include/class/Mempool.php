@@ -6,7 +6,7 @@ class Mempool
 	static function deleteOldMempool() {
 		global $db;
 		$height = Block::getHeight();
-		$height = $height - 100;
+		$height = $height - 60;
 		$db->run("DELETE FROM `mempool` WHERE height < :height", [":height"=>$height]);
 	}
 

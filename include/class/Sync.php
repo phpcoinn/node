@@ -361,7 +361,6 @@ class Sync extends Daemon
 			_log("Rebroadcasting local transactions - ".count($r), 1);
 			foreach ($r as $x) {
 				Propagate::transactionToAll($x['id']);
-				Mempool::updateMempool($x['id'], $current['height']);
 			}
 		}
 
@@ -374,7 +373,6 @@ class Sync extends Daemon
 
 			foreach ($r as $x) {
 				Propagate::transactionToAll($x['id']);
-				Mempool::updateMempool($x['id'], $current['height']);
 			}
 		}
 

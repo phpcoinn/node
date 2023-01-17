@@ -147,7 +147,7 @@ class Dapps extends Daemon
 						"dapps_signature"=>$dapps_signature,
 					];
 					$info = Peer::getInfo();
-					define("FORKED_PROCESS", true);
+					define("FORKED_PROCESS", getmypid());
 					foreach ($peers as $peer) {
 						$pid = pcntl_fork();
 						if ($pid == -1) {
