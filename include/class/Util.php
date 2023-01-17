@@ -856,6 +856,7 @@ class Util
 			$res = shell_exec($cmd);
 			_log("cmd=$cmd res=$res", 5);
 
+			Util::recalculateMasternodes();
 
 //			$cmd="cd ".ROOT." && chown -R www-data:www-data web";
 //			$res = shell_exec($cmd);
@@ -872,9 +873,6 @@ class Util
 		Peer::deleteWrongHostnames();
 		Dapps::createDir();
 		$mnCount = Masternode::getCount();
-		if($mnCount < 349) {
-			Util::recalculateMasternodes();
-		}
 		echo "Finished".PHP_EOL;
 	}
 
