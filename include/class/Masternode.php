@@ -339,11 +339,11 @@ class Masternode extends Daemon
 						throw new Exception("Destination address $dst can not be masternode");
 					}
 				}
-			}
-			//masternode collateral must be exact as when created
-			$collateral = $masternode['collateral'];
-			if($transaction->val != $collateral) {
-				throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".$collateral);
+				//masternode collateral must be exact as when created
+				$collateral = $masternode['collateral'];
+				if($transaction->val != $collateral) {
+					throw new Exception("Invalid masternode collateral {$transaction->val}, must be ".$collateral);
+				}
 			}
 			return true;
 

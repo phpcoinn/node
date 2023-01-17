@@ -27,7 +27,7 @@ if(isset($_GET['action'])) {
 		    $tx = Transaction::getById($id);
         }
         $block = Block::getFromArray(Block::get($tx_height));
-	    $res = $tx->verify($tx_height, $err);
+	    $res = $tx->verify($block, $err);
 	    if($res) {
 	        die("Transaction valid");
         } else {

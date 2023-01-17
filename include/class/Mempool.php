@@ -29,15 +29,10 @@ class Mempool
 
 	static function getForgotten($forgotten) {
 		global $db;
-		$r1 = $db->run(
-			"SELECT id FROM mempool WHERE height<:forgotten ORDER by val DESC LIMIT 10",
+		$r = $db->run(
+			"SELECT id FROM mempool WHERE height<:forgotten ORDER by val, ".DB::random()." LIMIT 10",
 			[":forgotten" => $forgotten]
 		);
-		$r2 = $db->run(
-			"SELECT id FROM mempool WHERE height<:forgotten ORDER by ".DB::random()." LIMIT 10",
-			[":forgotten" => $forgotten]
-		);
-		$r=array_merge($r1, $r2);
 		return $r;
 	}
 
