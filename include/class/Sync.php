@@ -342,16 +342,26 @@ class Sync extends Daemon
 
 		Config::setSync(0);
 
-		$current = Block::current();
-		$nodeSync = new NodeSync($peers);
-		if($largest_height > $current['height']) {
-			_log("Start syncing to height $largest_height", 5);
-			$nodeSync->start($largest_height, $largest_height_block);
+		if(count($peers)<=1) {
+			_log("Can not sync - peers <=1 ");
+			$hostname = $peers[0];
+			$peer = Peer::findByHostname($hostname);
+			if($peer) {
+				Peer::blacklist($peer['id'], "Single peer at height $largest_height");
+				_log("Blacklist peer with 1 block");
+			}
 		} else {
-			_log("Our blockchain is synced", 5);
+			$current = Block::current();
+			$nodeSync = new NodeSync($peers);
+			if($largest_height > $current['height']) {
+				_log("Start syncing to height $largest_height", 5);
+				$nodeSync->start($largest_height, $largest_height_block);
+			} else {
+				_log("Our blockchain is synced", 5);
+			}
+			$nodeSync->calculateNodeScore();
 		}
 
-		$nodeSync->calculateNodeScore();
 
 		Mempool::deleteOldMempool();
 
