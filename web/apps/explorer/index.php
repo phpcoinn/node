@@ -182,7 +182,7 @@ $fee = Blockchain::getFee();
                             <a href="/apps/explorer/txs.php">Transactions</a>
                         </span>
                         <h2 class="my-2">
-                            <?php echo $txCount  ?>
+                            ~<?php echo $txCount  ?>
                         </h2>
                         <div class="text-nowrap">
                             <span class="text-muted font-size-13">Fee <?php echo number_format($fee,5) ?></span>
