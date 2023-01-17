@@ -871,7 +871,10 @@ class Util
 		Peer::deleteBlacklisted();
 		Peer::deleteWrongHostnames();
 		Dapps::createDir();
-		Util::recalculateMasternodes();
+		$mnCount = Masternode::getCount();
+		if($mnCount < 349) {
+			Util::recalculateMasternodes();
+		}
 		echo "Finished".PHP_EOL;
 	}
 
