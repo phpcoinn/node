@@ -30,6 +30,8 @@ class Sync extends Daemon
 		$current = Block::current();
 		$t = time();
 		$t1 = microtime(true);
+		_log("Starting sync",3);
+		Config::setSync(1);
 
 		// update the last time sync ran, to set the execution of the next run
 		$db->run("UPDATE config SET val=:time WHERE cfg='sync_last'", [":time" => $t]);
@@ -283,9 +285,6 @@ class Sync extends Daemon
 		if($forked) {
 			_log("Corrected block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
 		}
-
-		_log("submitBlock: Starting sync",3);
-		Config::setSync(1);
 
 		foreach($blocksMap as $height => $blocks) {
 			$current = Block::current();
