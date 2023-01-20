@@ -51,12 +51,10 @@ class DB extends PDO
                 }
             }
         }
-        $msg = "";
-        $msg .= "SQL Error\n".str_repeat("-", 50);
+        _log("SQL ERROR:".str_repeat("-", 50), 5);
         foreach ($error as $key => $val) {
-            $msg .= "\n\n$key:\n$val";
+	        _log("SQL ERROR:" . "$key:$val", 5);
         }
-        _log($msg, 5);
         _log("SQL ERROR:" . json_encode($this->sql));
         _log("SQL ERROR:" . json_encode($this->error));
     }
@@ -183,6 +181,14 @@ class DB extends PDO
 		    $this->exec("UNLOCK TABLES");
 	    }
     }
+
+	function if() {
+		if(!$this->isSqlite()) {
+			return "iif";
+		} else {
+			return "if";
+		}
+	}
 
     function fkCheck($enable = true) {
 	    if($this->isSqlite()) {

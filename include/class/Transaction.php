@@ -1261,10 +1261,10 @@ class Transaction
 	static function getAddressStat($address) {
 		global $db;
 		$res = $db->row(
-			"select sum(if(t.src=a.id, t.val + t.fee, 0)) as total_sent,
-			       sum(if(t.dst = a.id , t.val, 0)) as total_received,
-			       sum(if(t.src= a.id, 1, 0)) as count_sent,
-			       sum(if(t.dst = a.id , 1, 0)) as count_received
+			"select sum(".$db->if()."(t.src=a.id, t.val + t.fee, 0)) as total_sent,
+			       sum(".$db->if()."(t.dst = a.id , t.val, 0)) as total_received,
+			       sum(".$db->if()."(t.src= a.id, 1, 0)) as count_sent,
+			       sum(".$db->if()."(t.dst = a.id , 1, 0)) as count_received
 				from accounts a
 				left join transactions t on (a.id = t.src or a.id = t.dst)
 				where a.id = :address;",

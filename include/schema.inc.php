@@ -33,7 +33,7 @@ if (empty($dbversion)) {
 		block varchar(128) not null,
 		balance decimal(20,8) not null,
 		alias varchar(32) null,
-		last_height int null,
+		height int null,
 		constraint accounts
 			foreign key (block) references blocks (id)
 				on delete cascade

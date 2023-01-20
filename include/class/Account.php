@@ -287,7 +287,7 @@ class Account
 			$maturity = STAKING_COIN_MATURITY;
 			$min_balance = STAKING_MIN_BALANCE;
 			$sql="select *, ($height - a.height) as maturity,
-       			if($height - a.height >= $maturity and a.balance >= $min_balance, ($height - a.height)*a.balance, 0) as weight
+       			case when $height - a.height >= $maturity and a.balance >= $min_balance then ($height - a.height)*a.balance else 0 end as weight
 				from accounts a $sorting limit $start, $limit";
 			return $db->run($sql);
 		}
@@ -329,7 +329,7 @@ class Account
 			$height = null;
 		}
 		$res=$db->run(
-			"UPDATE accounts SET balance=balance+:val, height=:height WHERE id=:id",
+			"UPDATE accounts SET balance=round(balance+:val,8), height=:height WHERE id=:id",
 			[":id" => $id, ":val" => $val, ":height"=>$height]
 		);
 		return $res !== false;
