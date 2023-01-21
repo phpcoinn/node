@@ -114,7 +114,7 @@ class Sync extends Daemon
 			Nodeutil::runSingleProcess($cmd);
 		});
 
-		NodeSync::recheckLastBlocks();
+		NodeSync::recheckLastBlocks(200);
 
 		$peers = Peer::getPeersForSync();
 		$peerData = [];

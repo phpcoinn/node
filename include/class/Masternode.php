@@ -359,19 +359,19 @@ class Masternode extends Daemon
 
 	static function checkIsSendFromMasternode($height, Transaction $transaction, &$error, $verify) {
 		try {
-			if(!$verify) {
-				//check if source address is masternode
-				if (Masternode::allowedMasternodes($height)) {
-					$masternode = Masternode::get($transaction->publicKey);
-					if($masternode) {
-						$balance = Account::getBalanceByPublicKey($transaction->publicKey);
-						$collateral = Block::getMasternodeCollateral($height);
-						if(floatval($balance) - $transaction->val < $collateral) {
-							throw new Exception("Can not spent more than collateral. Balance=$balance amount=".$transaction->val);
-						}
-					}
+
+			$masternode_id = Account::getAddress($transaction->publicKey);
+			$masternode_existing = Masternode::isExisting($masternode_id, $height);
+			if($masternode_existing) {
+				$total_sent = Transaction::getTotalSent($masternode_id);
+				$total_received = Transaction::getTotalReceived($masternode_id);
+				$balance = $total_received - $total_sent;
+				$collateral = Block::getMasternodeCollateral($height);
+				if(floatval($balance) - $transaction->val < $collateral) {
+					throw new Exception("Can not spent more than collateral. Balance=$balance amount=".$transaction->val);
 				}
 			}
+
 			return true;
 		} catch (Exception $e) {
 			$error = $e->getMessage();
@@ -1066,7 +1066,7 @@ class Masternode extends Daemon
 
 	static function resetVerified() {
 		global $db;
-		_log("MN: reset verified");
+		_log("MN: reset verified", 5);
 		$db->run("update masternode set verified = 0");
 	}
 
@@ -1083,5 +1083,20 @@ class Masternode extends Daemon
 		global $db;
 		$sql="delete from masternode where ip=:ip or public_key=:public_key";
 		$db->run($sql, [":ip"=>$ip, ":public_key"=>$public_key]);
+	}
+
+	static function isExisting($id, $height) {
+		global $db;
+		$sql="select count(t.id) as cnt_create from transactions t where t.dst = :id and t.type = :type
+			and t.height < :height";
+		$cnt_created = $db->single($sql, [":id"=>$id, ":type"=>TX_TYPE_MN_CREATE, ":height"=>$height]);
+		$sql="select count(t.id) as cnt_remove from transactions t where t.src = :id and t.type = :type
+			and t.height < :height";
+		$cnt_removed = $db->single($sql, [":id"=>$id, ":type"=>TX_TYPE_MN_REMOVE, ":height"=>$height]);
+		if($cnt_created - $cnt_removed > 0) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 }

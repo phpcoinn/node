@@ -1273,6 +1273,18 @@ class Transaction
 		return $res;
 	}
 
+	static function getTotalSent($address) {
+		global $db;
+		$sql="select sum(t.val + t.fee) from transactions t where t.src= :address";
+		return $db->single($sql, [":address"=>$address]);
+	}
+
+	static function getTotalReceived($address) {
+		global $db;
+		$sql="select sum(t.val) from transactions t where t.dst= :address";
+		return $db->single($sql, [":address"=>$address]);
+	}
+
 	static function processFee(&$transactions, $public_key, $private_key, $miner, $date, $height=null) {
 		$fee = 0;
 		foreach($transactions as $tx_id => $transaction) {

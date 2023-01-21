@@ -67,9 +67,8 @@ class Block
         global $db;
 
 		try {
-			
-		throw new Exception("Blockchain invalid - Can not add block");
-			
+
+			//throw new Exception("Blockchain invalid - Can not add block");
 
 	        if(empty($this->generator)) {
 		        $this->generator = Account::getAddress($this->publicKey);
