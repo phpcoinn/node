@@ -279,17 +279,14 @@ class NodeSync
 		}
 	}
 
-	static function recheckLastBlocks($num=null) {
+	static function recheckLastBlocks() {
 		global $_config, $db;
 		$current = Block::current();
-		if(empty($num)) {
-			$num = $_config['sync_recheck_blocks'];
-		}
-		if ($num > 0) {
+		if ($_config['sync_recheck_blocks'] > 0) {
 			_log("Rechecking blocks",3);
 			$blocks = [];
 			$all_blocks_ok = true;
-			$start = $current['height'] - $num;
+			$start = $current['height'] - $_config['sync_recheck_blocks'];
 			if ($start < 2) {
 				$start = 2;
 			}
@@ -320,7 +317,24 @@ class NodeSync
 					Block::delete($i);
 					break;
 				}
+			}
+			if ($all_blocks_ok) {
+				_log("All checked blocks are ok", 3);
+			}
+		}
+	}
 
+	static function verifyLastBlocks($num=10) {
+		$current = Block::current();
+		if ($num > 0) {
+			_log("Rechecking blocks",3);
+			$all_blocks_ok = true;
+			$start = $current['height'] - $num;
+			if ($start < 2) {
+				$start = 2;
+			}
+			$max_height = $current['height'];
+			for ($i = $start + 1; $i <= $max_height; $i++) {
 				$block = Block::export("",$i);
 				$res = Block::getFromArray($block)->verifyBlock($error);
 				if(!$res) {

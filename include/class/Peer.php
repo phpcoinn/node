@@ -248,6 +248,15 @@ class Peer
 		$db->run("DELETE from peers WHERE fails>100 OR stuckfail>100 OR (".DB::unixTimeStamp()."- ping > 60*60*24)");
 	}
 
+	static function blackclistInactivePeers() {
+		global $db;
+		$db->run(
+			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*1), 
+				blacklist_reason=:blacklist_reason where unix_timestamp()-ping > 60*60*2",
+			[':blacklist_reason'=>'Inactive']
+		);
+	}
+
 	static function resetResponseTimes() {
 		global $db;
 		$db->run("update peers set response_cnt = 0, response_time = 0 where response_cnt > 1000 or response_time > 3600");

@@ -9,7 +9,7 @@ $peers = Peer::getAll();
 global $db;
 $sql="select p.height, count(distinct p.block_id) as block_cnt
 from peers p
-group by p.height, p.block_id
+group by p.height
 having block_cnt > 1
 order by p.height desc";
 $forked_peers = $db->run($sql);
@@ -150,7 +150,7 @@ require_once __DIR__. '/../common/include/top.php';
 			<?php foreach ($forked_peers as $forked_peer) { ?>
                 <tr>
                     <td><?php echo $forked_peer['height'] ?></td>
-                    <td><?php echo $forked_peer['block_count'] ?></td>
+                    <td><?php echo $forked_peer['block_cnt'] ?></td>
                 </tr>
 			<?php } ?>
             </tbody>

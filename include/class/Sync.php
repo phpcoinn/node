@@ -38,6 +38,7 @@ class Sync extends Daemon
 
 		// delete the dead peers
 		Peer::deleteDeadPeers();
+		Peer::blackclistInactivePeers();
 		Peer::resetResponseTimes();
 
 		$total_peers = Peer::getCount(false);
@@ -114,7 +115,7 @@ class Sync extends Daemon
 			Nodeutil::runSingleProcess($cmd);
 		});
 
-		NodeSync::recheckLastBlocks(200);
+		NodeSync::recheckLastBlocks();
 
 		$peers = Peer::getPeersForSync();
 		$peerData = [];
@@ -228,6 +229,7 @@ class Sync extends Daemon
 			if(count($blocks)>1) {
 				_log("Start checking blocks time and difficulty", 5);
 				$forkedBlocksMap = [];
+				$forkedBlocksPeers = [];
 				foreach ($blocks as $block_id => $peers) {
 					_log("Checking block $block_id count=" . count($peers), 5);
 					foreach ($peers as $peer) {
@@ -249,6 +251,7 @@ class Sync extends Daemon
 						$difficulty = $peer_block['difficulty'];
 						_log("Read block at height $height from peer $peer elapsed=$elapsed diff=$difficulty", 5);
 						$forkedBlocksMap[$block_id] = $peer_block;
+						$forkedBlocksPeers[$block_id]=$peer;
 						break;
 					}
 				}
@@ -275,6 +278,16 @@ class Sync extends Daemon
 					_log("Forked block winner at height $height is block " . $winForkedBlock['id']);
 					$winPeers = $blocksMap[$height][$winForkedBlock['id']];
 					$blocksMap[$height] = [$winForkedBlock['id'] => $winPeers];
+					foreach($forkedBlocksPeers as $block_id => $hostname) {
+						$winner = $block_id == $winForkedBlock['id'];
+						_log("Check forked peer $hostname block=$block_id winner=$winner", 5);
+						if(!$winner) {
+							$peer = Peer::findByHostname($hostname);
+							if($peer) {
+								Peer::blacklist($peer['id'], "Forked block $height", 5);
+							}
+						}
+					}
 				}
 			}
 			if(!$forked) {
