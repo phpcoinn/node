@@ -1133,7 +1133,7 @@ class Util
                     (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
                     (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
                     (select a.public_key from accounts a where a.id = t.dst) as public_key,
-                    (select ts.val from transactions ts where ts.id = min(t.id)) as collateral
+                    (select tc.val from transactions tc where tc.dst = t.dst and tc.type = 2 and tc.height = max(t.height)) as collateral
              from transactions t where t.type = 2
              group by t.dst
              having created - removed > 0
