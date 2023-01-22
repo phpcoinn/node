@@ -90,6 +90,7 @@ class PeerRequest
 		self::$data=$data;
 		self::$requestId=$requestId;
 		self::$info = $info;
+		self::$peer = $peer;
 	}
 
 	static function peer() {

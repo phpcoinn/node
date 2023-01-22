@@ -5,6 +5,7 @@ define("PAGE", true);
 define("APP_NAME", "Explorer");
 
 $peers = Peer::getAll();
+$current_height = Block::getHeight();
 
 global $db;
 $sql="select p.height, count(distinct p.block_id) as block_cnt
@@ -168,8 +169,10 @@ require_once __DIR__. '/../common/include/top.php';
             </thead>
             <tbody>
 			<?php foreach ($peers_by_height as $peer) { ?>
-                <tr>
-                    <td><?php echo $peer['height'] ?></td>
+                <tr class="<?php if ($peer['height'] == $current_height) { ?>table-success<?php } ?>">
+                    <td>
+                        <?php echo $peer['height'] ?>
+                    </td>
                     <td><?php echo $peer['peer_cnt'] ?></td>
                 </tr>
 			<?php } ?>

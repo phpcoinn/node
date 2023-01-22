@@ -143,6 +143,7 @@ class Sync extends Daemon
 		//Then get all other peers
 		$peers = Peer::getActive($live_peers_count * 2);
 		_log("PeerSync: get active peers ".count($peers), 5);
+		$peerInfo = Peer::getInfo();
 		foreach($peers as $peer) {
 			$hostname = $peer['hostname'];
 			if(isset($peerData[$hostname])) {
@@ -150,7 +151,7 @@ class Sync extends Daemon
 			}
 			_log("PeerSync: Contacting peer $hostname", 5);
 			$url = $hostname."/peer.php?q=";
-			$res = peer_post($url."currentBlock", [], 5);
+			$res = peer_post($url."currentBlock", [], 5, $err, $peerInfo);
 			if ($res === false) {
 				//		_log("Peer $hostname unresponsive url={$url}currentBlock response=$res");
 				// if the peer is unresponsive, mark it as failed and blacklist it for a while

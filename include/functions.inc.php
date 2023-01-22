@@ -267,6 +267,11 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
 	    $hostname = $info['host'];
 	    $connect_time = $curl_info["connect_time"];
 		if(!defined("FORKED_PROCESS")) {
+			$peerInfo = $res['data']['info'];
+			$ip = $curl_info['primary_ip'];
+			if(!empty($peerInfo) && !empty($ip)) {
+				Peer::updatePeerInfo($ip, $peerInfo);
+			}
     	    Peer::storeResponseTime($hostname, $connect_time);
 		} else {
 			$key = "fork_".FORKED_PROCESS;
