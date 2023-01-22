@@ -1125,7 +1125,7 @@ class Util
 
 	static function recalculateMasternodes() {
 		global $db;
-		$db->exec("lock tables masternode write, transactions t write, transactions tr write, transactions ts write, blocks b write, accounts a write;");
+		$db->exec("lock tables masternode write, transactions t write, transactions tr write, transactions ts write, transactions tc write, blocks b write, accounts a write;");
 		$db->exec("delete from masternode;");
 		$db->exec("insert into masternode (public_key,height,win_height, id, verified, collateral)
         	select public_key,height,win_height, id, 0, collateral from (
