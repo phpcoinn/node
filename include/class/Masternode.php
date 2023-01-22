@@ -158,10 +158,10 @@ class Masternode extends Daemon
 	}
 
 
-	static function getCountForCollateral($collateral) {
+	static function getCountForCollateral($collateral, $height) {
 		global $db;
-		$sql="select count(1) from masternode where collateral = :collateral";
-		return $db->single($sql, [":collateral"=>$collateral]);
+		$sql="select count(1) from masternode where collateral = :collateral and height < :height";
+		return $db->single($sql, [":collateral"=>$collateral, ":height"=>$height]);
 	}
 
 	static function getActiveCount() {
@@ -789,7 +789,7 @@ class Masternode extends Daemon
 
 			if(empty($block->masternode) && $block->height > UPDATE_5_NO_MASTERNODE) {
 				$collateral = Block::getMasternodeCollateral($block->height);
-				$mn_count = Masternode::getCountForCollateral($collateral);
+				$mn_count = Masternode::getCountForCollateral($collateral, $block->height);
 				_log("check collateral : $collateral count=$mn_count", 5);
 				if($mn_count > 0) {
 					throw new Exception("Masternode: not found winner for block");

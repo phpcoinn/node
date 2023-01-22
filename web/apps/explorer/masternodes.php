@@ -141,7 +141,7 @@ require_once __DIR__. '/../common/include/top.php';
                 <th>Status</th>
 	            <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'inet_aton(m.ip)', 'IP' ,'') ?>
                 <th>Signature</th>
-                <th>Verified</th>
+	            <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'verified', 'Verified' ,'') ?>
 	            <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'collateral', 'Collateral' ,'') ?>
 	            <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'height', 'Height' ,'') ?>
                 <?php echo sort_column("/apps/explorer/masternodes.php?", $dm, 'win_height', 'Win Height', '') ?>
