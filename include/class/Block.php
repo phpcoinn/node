@@ -68,7 +68,9 @@ class Block
 
 		try {
 
-		throw new Exception("Blockchain invalid - Can not add block");
+			if($this->height > STOP_CHAIN_HEIGHT) {
+				throw new Exception("Blockchain stopped at height " .  STOP_CHAIN_HEIGHT . " - Can not add block");
+			}
 
 	        if(empty($this->generator)) {
 		        $this->generator = Account::getAddress($this->publicKey);

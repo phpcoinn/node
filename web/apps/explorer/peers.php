@@ -9,6 +9,7 @@ $peers = Peer::getAll();
 global $db;
 $sql="select p.height, count(distinct p.block_id) as block_cnt
 from peers p
+where p.blacklisted < UNIX_TIMESTAMP()
 group by p.height
 having block_cnt > 1
 order by p.height desc";
