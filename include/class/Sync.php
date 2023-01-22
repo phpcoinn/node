@@ -28,6 +28,14 @@ class Sync extends Daemon
 		global $db, $_config;
 		ini_set('memory_limit', '2G');
 		$current = Block::current();
+
+		$sql="select max(height) from peers";
+		$max_height = $db->single($sql);
+		_log("Max peers height = ".$max_height. " current=".$current['height']);
+		if($max_height == $current['height']) {
+			_log("No need to sync");
+			return;
+		}
 		$t = time();
 		$t1 = microtime(true);
 		_log("Starting sync",3);
