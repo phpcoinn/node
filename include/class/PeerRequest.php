@@ -7,6 +7,7 @@ class PeerRequest
 	public static $data;
 	public static $requestId;
 	public static $info;
+	public static $peer;
 
 	static function processRequest() {
 		global $_config;
