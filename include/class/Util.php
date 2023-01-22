@@ -830,13 +830,14 @@ class Util
 		}
 		$currentVersion = BUILD_VERSION;
 		echo "Checking node update current version = ".BUILD_VERSION.PHP_EOL;
+		$build_number = Peer::getMaxBuildNumber();
 		$cmd= "curl -H 'Cache-Control: no-cache, no-store' -s https://raw.githubusercontent.com/phpcoinn/node/$branch/include/coinspec.inc.php | grep BUILD_VERSION";
 		$res = shell_exec($cmd);
 		$arr= explode(" ", $res);
 		$version = $arr[3];
 		$version = str_replace(";", "", $version);
 		$version = intval($version);
-		if($version > $currentVersion || !empty($force)) {
+		if($version > $currentVersion || $build_number > $currentVersion || !empty($force)) {
 			echo "There is new version: $version - updating node".PHP_EOL;
 			//temp fix apps
 //			$cmd="cd ".ROOT." && rm -rf web/apps";

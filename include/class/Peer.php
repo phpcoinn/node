@@ -407,4 +407,13 @@ class Peer
 		return $row;
 	}
 
+
+	static function getMaxBuildNumber() {
+		global $db;
+		$sql="select max(version) from peers";
+		$max_version = $db->single($sql);
+		$arr = explode(".",$max_version);
+		$build_number = array_pop($arr);
+		return $build_number;
+	}
 }
