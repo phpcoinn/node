@@ -31,7 +31,7 @@ require_once dirname(__DIR__).'/include/init.inc.php';
 
 $type = san($argv[1]);
 $id = san($argv[2]);
-$peer = san(trim($argv[3]));
+$peer = trim($argv[3]);
 
 _log("Calling propagate.php",5);
 // broadcasting a block to all peers
@@ -123,7 +123,11 @@ if ($type == "block") {
             exit;
         }
     }
-    $hostname = base58_decode($peer);
+	if(strpos($peer, "http")==0) {
+		$hostname = $peer;
+	} else {
+        $hostname = base58_decode($peer);
+	}
     // send the block as POST to the peer
     _log("Block sent to $hostname:\n".print_r($data,1), 5);
     $response = peer_post($hostname."/peer.php?q=submitBlock", $data, 30, $err);

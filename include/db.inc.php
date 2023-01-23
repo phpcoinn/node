@@ -51,12 +51,10 @@ class DB extends PDO
                 }
             }
         }
-        $msg = "";
-        $msg .= "SQL Error\n".str_repeat("-", 50);
+        _log("SQL ERROR:".str_repeat("-", 50));
         foreach ($error as $key => $val) {
-            $msg .= "\n\n$key:\n$val";
+	        _log("SQL ERROR:" . "$key:$val");
         }
-        _log($msg, 5);
         _log("SQL ERROR:" . json_encode($this->sql));
         _log("SQL ERROR:" . json_encode($this->error));
     }

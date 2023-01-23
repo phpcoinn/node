@@ -233,44 +233,29 @@ class PeerRequest
 	static function submitBlock() {
 		$ip = self::$ip;
 		$data = self::$data;
-		global $_config;
 
 		$current = Block::current();
 
-		// receive a  new block from a peer
-		_log("Sync: Receive new block from a peer $ip : id=".$data['id']." height=".$data['height']." current=".$current['height'], 5);
-//		$logData = [
-//			"height"=>$data['height'],
-//			"id"=>$data['id'],
-//			"ip"=>self::$ip,
-//			"dst"=>$_config['hostname']
-//		];
-//		peer_post("https://node1.phpcoin.net/peer.php?q=logSubmitBlock", base64_encode(json_encode($logData)));
+		$microsync = isset($data['microsync']);
+		_log("submitBlock: ".($microsync ? "[microsync] " : "")."Receive new block from a peer $ip : id=".$data['id']." height=".$data['height']." current=".$current['height'], 5);
 
-//		Peer::updateHeight($ip, $data);
 
-		// if sync, refuse all
-		if (Config::isSync()) {
-			_log('['.$ip."] Block rejected due to sync", 5);
-			api_err("sync");
-		}
+
 		$data['id'] = san($data['id']);
-		// block already in the blockchain
-		if ($current['id'] == $data['id']) {
-			_log("block-ok",3);
+		if ($current['id'] == $data['id'] && $current['height']==$data['height']) {
+			_log("submitBlock: We have this block - OK",3);
 			api_echo("block-ok");
 		}
 		if ($data['date'] > time() + 30) {
-			_log("block in the future");
+			_log("submitBlock: block in the future");
 			api_err("block in the future");
 		}
 
-		//_log("DFSH: current_height=".$current['height']." data_height=".$data['height']." current_id=".$current['id']." data_id=".$data['id']);
+		//_log("submitBlock: current_height=".$current['height']." data_height=".$data['height']." current_id=".$current['id']." data_id=".$data['id']);
 
 		if ($current['height'] == $data['height'] && $current['id'] != $data['id']) {
-			// different forks, same height
 			$accept_new = false;
-			//_log("DFSH: DIFFERENT FORKS SAME HEIGHT", 3);
+			_log("submitBlock:: DIFFERENT FORKS SAME HEIGHT", 3);
 			_log("data ".json_encode($data),3);
 			_log("current ".json_encode($current),3);
 
@@ -306,19 +291,19 @@ class PeerRequest
 
 			if ($accept_new) {
 				// if the new block is accepted, run a microsync to sync it
-				_log('['.$ip."] Starting microsync - $data[height]",1);
+				_log('submitBlock: ['.$ip."] Starting microsync - $data[height]",1);
 				$ip=escapeshellarg($ip);
 				$dir = ROOT."/cli";
 				system(  "php $dir/microsync.php '$ip'  > /dev/null 2>&1  &");
 				api_echo("microsync");
 			} else {
-				_log('['.$ip."] suggesting reverse-microsync - $data[height]",1);
+				_log('submitBlock: ['.$ip."] suggesting reverse-microsync - $data[height]",1);
 				api_echo("reverse-microsync"); // if it's not, suggest to the peer to get the block from us
 			}
 		}
 		// if it's not the next block
 		if ($current['height'] != $data['height'] - 1) {
-			//_log("DFSH: if it's not the next block",1);
+			_log("submitBlock:: if it's not the next block",1);
 			// if the height of the block submitted is lower than our current height, send them our current block
 			if ($data['height'] < $current['height']) {
 				//_log("DFSH: Our height is higher");
@@ -328,44 +313,46 @@ class PeerRequest
 					api_err("block-too-old");
 				}
 				Propagate::blockToPeer($pr['hostname'], $pr['ip'], "current");
-				_log('['.$ip."] block too old, sending our current block - $current[height]",3);
+				_log('submitBlock: ['.$ip."] block too old, sending our current block - $current[height]",3);
 				//_log("DFSH: Send our block to peer ".$pr['hostname']);
 				api_err("block-too-old");
 			}
 			// if the block difference is bigger than 150, nothing should be done. They should sync
 			if ($data['height'] - $current['height'] > 150) {
-				_log('['.$ip."] block-out-of-sync - $data[height]",2);
+				_log('submitBlock: ['.$ip."] block-out-of-sync - $data[height]",2);
 				//_log("DFSH: block difference higher than 150");
 				api_err("block-out-of-sync");
 			}
 			// request them to send us a microsync with the latest blocks
-			//_log('DFSH: ['.$ip."] requesting microsync - $current[height] - $data[height]",2);
+			$pr = Peer::getByIp($ip);
+			$hostname = $pr['hostname'];
+			_log('submitBlock:: ['.$hostname."] requesting microsync - $current[height] - $data[height]",2);
 			api_echo(["request" => "microsync", "height" => $current['height'], "block" => $current['id']]);
 		}
 		// check block data
 		$block = Block::getFromArray($data);
 		if (!$block->check()) {
-			_log('['.$ip."] invalid block - $data[height]",1);
+			_log('submitBlock: ['.$ip."] invalid block - $data[height]",1);
 			api_err("invalid-block");
 		}
 		$block->prevBlockId = $current['id'];
 
-		if (Config::isSync()) {
-			//_log('DFSH: ['.$ip."] Block rejected due to sync", 5);
-			api_err("sync");
-		}
-
 		$current = Block::current();
 		//_log("DFSH: check add BLOCK ".$block->height. " current=".$current['height']);
 		if($block->height == $current['height']) {
+			_log("submitBlock: our block still ok", 5);
 			api_echo("block-ok");
 		}
 
 		$lock_file = ROOT . "/tmp/lock-block-".$block->height;
 		_log("Check lock file $lock_file", 5);
 		if (!mkdir($lock_file, 0700)) {
-			_log("Lock file exists $lock_file", 3);
+			_log("submitBlock: Lock file exists $lock_file", 3);
 			api_echo("sync");
+		}
+
+		if (Config::isSync()) {
+			api_err("submitBlock: sync");
 		}
 
 		//_log("DFSH: ADD BLOCK ".$block->height);
@@ -376,7 +363,7 @@ class PeerRequest
 
 		if (!$res) {
 			//_log('DFSH: ['.$ip."] invalid block data - $data[height] Error:$error",1);
-			api_err("invalid-block-data $error");
+			api_err("submitBlock: invalid-block-data $error");
 		}
 
 		$last_block = Block::export("", $data['height']);
@@ -385,10 +372,10 @@ class PeerRequest
 
 		if (!$res) {
 			//_log("DFSH: Can not verify added block",1);
-			api_err("invalid-block-data");
+			api_err("submitBlock: invalid-block-data");
 		}
 
-		//_log('DFSH: ['.$ip."] block ok, repropagating - $data[height]",1);
+		_log('submitBlock: ['.$ip."] block ok, repropagating - $data[height]",1);
 
 		Propagate::blockToAll($data['id']);
 		api_echo("block-ok");

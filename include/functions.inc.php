@@ -223,7 +223,7 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
 
 //    $context = stream_context_create($opts);
 
-    _log("Posting to $url data ".$postdata." timeout=$timeout", 5);
+//    _log("Posting to $url data ".$postdata." timeout=$timeout", 5);
 
 	$ch = curl_init();
 
@@ -267,10 +267,14 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
 	    $hostname = $info['host'];
 	    $connect_time = $curl_info["connect_time"];
 		if(!defined("FORKED_PROCESS")) {
-			$peerInfo = $res['data']['info'];
-			$ip = $curl_info['primary_ip'];
-			if(!empty($peerInfo) && !empty($ip)) {
-				Peer::updatePeerInfo($ip, $peerInfo);
+			//_log("Peer res = ".json_encode($res));
+			if(isset($res['data']) && isset($res['data']['info'])) {
+				$peerInfo = @$res['data']['info'];
+				$ip = $curl_info['primary_ip'];
+				if(!empty($peerInfo) && !empty($ip)) {
+					//_log("updatePeerInfo peerInfo=".json_encode($peerInfo)." ip=$ip");
+					Peer::updatePeerInfo($ip, $peerInfo);
+				}
 			}
     	    Peer::storeResponseTime($hostname, $connect_time);
 		} else {

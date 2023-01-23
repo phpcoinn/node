@@ -228,22 +228,22 @@ class Sync extends Daemon
 			return $k1 - $k2;
 		});
 
-		_log("Block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
+//		_log("Block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
 
 		$forked = false;
 		$not_forked_heights = [];
 		_log("Checking blocks map for forks", 5);
 		foreach($blocksMap as $height => $blocks) {
-			_log("Checking height=$height blocks=".count($blocks), 3);
+			_log("Blocks map: height=$height blocks=".count($blocks) ." id=".array_keys($blocks)[0], 3);
 			if(count($blocks)>1) {
-				_log("Start checking blocks time and difficulty", 5);
+//				_log("Start checking blocks time and difficulty", 5);
 				$forkedBlocksMap = [];
 				$forkedBlocksPeers = [];
 				foreach ($blocks as $block_id => $peers) {
-					_log("Checking block $block_id count=" . count($peers), 5);
+//					_log("Checking block $block_id count=" . count($peers), 5);
 					foreach ($peers as $peer) {
 						$url = $peer . "/peer.php?q=";
-						$peer_blocks = peer_post($url . "getBlocks", ["height" => $height -1] );
+						$peer_blocks = peer_post($url . "getBlocks", ["height" => $height -1], 30, $err, $peerInfo );
 						if (!$peer_blocks) {
 							continue;
 						}
@@ -258,7 +258,7 @@ class Sync extends Daemon
 						$elapsed = $peer_block['date'] - $peer_prev_block['date'];
 						$peer_block['elapsed'] = $elapsed;
 						$difficulty = $peer_block['difficulty'];
-						_log("Read block at height $height from peer $peer elapsed=$elapsed diff=$difficulty", 5);
+						_log("Forked block $block_id at height $height from peer $peer elapsed=$elapsed diff=$difficulty", 5);
 						$forkedBlocksMap[$block_id] = $peer_block;
 						$forkedBlocksPeers[$block_id]=$peer;
 						break;
@@ -282,7 +282,7 @@ class Sync extends Daemon
 							}
 						});
 					}
-					_log("Forked blocks " . json_encode($forkedBlocksMap, JSON_PRETTY_PRINT), 5);
+					_log("Forked blocks peers " . json_encode($forkedBlocksPeers, JSON_PRETTY_PRINT), 5);
 					$winForkedBlock = array_shift($forkedBlocksMap);
 					_log("Forked block winner at height $height is block " . $winForkedBlock['id']);
 					$winPeers = $blocksMap[$height][$winForkedBlock['id']];
@@ -305,18 +305,18 @@ class Sync extends Daemon
 		}
 
 		if($forked) {
-			_log("Corrected block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
+//			_log("Corrected block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
 		}
 
 		foreach($blocksMap as $height => $blocks) {
 			$current = Block::current();
-			_log("Checking height=$height blocks=".count($blocks), 3);
 			$block_id =  array_keys($blocks)[0];
+			_log("Corrected block map: height=$height blocks=".count($blocks)." block_id=".$block_id, 3);
 			_log("Check height $height block_id = $block_id", 5);
 			if($height > $current['height']) {
 				_log("Not top block - need sync", 5);
 			} else if ($height == $current['height']) {
-				_log("Check top block", 5);
+				_log("Check top block id=".$current['id'], 5);
 				if($block_id == $current['id']) {
 					_log("Our top block is ok", 5);
 				} else {

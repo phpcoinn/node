@@ -106,17 +106,15 @@ class Propagate
 	}
 
 	static function processBlockPropagateResponse($hostname, $ip, $id, $response, $err) {
+		//_log("processBlockPropagateResponse response=".json_encode($response));
 		if ($response == "block-ok") {
-			_log("Block $id accepted. Exiting", 5);
-			echo "Block $id accepted. Exiting.\n";
-			return;
-		} elseif ($response['request'] == "microsync") {
+			_log("Block $id accepted", 5);
+		} elseif (is_array($response) && $response['request'] == "microsync") {
 			// the peer requested us to send more blocks, as it's behind
-			echo "Microsync request\n";
-			_log("Microsync request",1);
 			$height = intval($response['height']);
 			$bl = san($response['block']);
 			$current = Block::current();
+			_log("Microsync request current_height=".$current['height']. " requested_height=".$height,1);
 			// maximum microsync is 10 blocks, for more, the peer should sync
 			if ($current['height'] - $height > 10) {
 				_log("Height Differece too high", 1);
@@ -128,14 +126,13 @@ class Propagate
 				_log("Last block does not match", 1);
 				return;
 			}
-			echo "Sending the requested blocks\n";
 			_log("Sending the requested blocks",2);
-			//start sending the requested block
+			$peerInfo = Peer::getInfo();
 			for ($i = $height + 1; $i <= $current['height']; $i++) {
 				$data = Block::export("", $i);
-				$response = peer_post($hostname."/peer.php?q=submitBlock", $data);
+				$data['microsync']=true;
+				$response = peer_post($hostname."/peer.php?q=submitBlock", $data, 30, $err, $peerInfo);
 				if ($response != "block-ok") {
-					echo "Block $i not accepted. Exiting.\n";
 					_log("Block $i not accepted. Exiting", 5);
 					return;
 				}
@@ -156,8 +153,7 @@ class Propagate
 			_log("caliing propagate: php $dir/microsync.php '$ip'  > /dev/null 2>&1  &",3);
 			system("php $dir/microsync.php '$ip'  > /dev/null 2>&1  &");
 		} else {
-			_log("Block not accepted ".$response." err=".$err, 5);
-			echo "Block not accepted!\n";
+			_log("Block not accepted response=".$response." err=".$err, 5);
 		}
 	}
 }
