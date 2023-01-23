@@ -144,20 +144,17 @@ class Propagate
 			}
 		} elseif ($response == "reverse-microsync") {
 			// the peer informe us that we should run a microsync
-			echo "Running microsync\n";
-			_log("Running microsync",1);
-			$ip = Peer::validateIp($ip);
-			_log("Filtered ip=".$ip,3);
-			if ($ip === false) {
-				_log("Invalid IP");
-				die("Invalid IP");
+			_log("Microsync: reverse",1);
+			$ip2 = Peer::validateIp($ip);
+			if ($ip2 === false) {
+				_log("Microsync: Invalid IP $ip");
 			}
 			// fork a microsync in a new process
 			$dir = ROOT . "/cli";
-			_log("caliing propagate: php $dir/microsync.php '$ip'  > /dev/null 2>&1  &",3);
-			system("php $dir/microsync.php '$ip'  > /dev/null 2>&1  &");
+			_log("Microsync: caliing php $dir/microsync.php '$ip2'  > /dev/null 2>&1  &",3);
+			system("php $dir/microsync.php '$ip2'  > /dev/null 2>&1  &");
 		} else {
-			_log("Block not accepted response=".$response." err=".$err, 5);
+			_log("Microsync: Block not accepted response=".$response." err=".$err, 5);
 		}
 	}
 }

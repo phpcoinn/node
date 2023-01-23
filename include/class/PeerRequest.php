@@ -256,36 +256,50 @@ class PeerRequest
 		if ($current['height'] == $data['height'] && $current['id'] != $data['id']) {
 			$accept_new = false;
 			_log("submitBlock:: DIFFERENT FORKS SAME HEIGHT", 3);
-			_log("data ".json_encode($data),3);
-			_log("current ".json_encode($current),3);
+			_log("submitBlock: id= ".json_encode($data),3);
+			$ourblock = Block::export("", $current['height']);
+			_log("submitBlock:our ".json_encode($ourblock),3);
 
-			//wins block with lowest elapsed time - highest difficulty
-			$difficulty1 = $current['difficulty'];
-			$difficulty2 = $data['difficulty'];
-			//_log("DFSH: compare difficulty: difficulty1=$difficulty1 difficulty2=$difficulty2");
-			if($difficulty1 > $difficulty2) {
-				$accept_new = true;
-			}  else if ($difficulty1 == $difficulty2) {
-				$date1 = $current['date'];
-				$date2 = $data['date'];
-				//_log("DFSH: compare date: date1=$date1 date2=$date2");
-				if($date1 > $date2) {
-					$accept_new = true;
-				} else if ($date1 == $date2) {
-					$miner1=$current['miner'];
-					$miner2=$data['miner'];
-					$generator1=$current['generator'];
-					$generator2=$data['generator'];
-					//_log("DFSH: compare miners: miner1=$miner1 miner2=$miner2");
-					//_log("DFSH: compare generator: generator1=$generator1 generator2=$generator2");
-					$id1=$current['id'];
-					$id2=$data['id'];
-					//_log("DFSH: compare ids: id1=$id1 id2=$id2");
-					if(strcmp($id1, $id2)) {
-						$accept_new = true;
-					}
+			//compare two blocks
+			_log("submitBlock: compare  blocks data -> our: id=".$data['id']." -> ".$ourblock['id']." elapsed=".$data['elapsed']." -> ".$ourblock['elapsed']." date=".$data['date']." -> ".$ourblock['date'], 5);
+			if($data['elapsed']==$ourblock['elapsed']) {
+				if($data['date']==$ourblock['date']) {
+					$accept_new = strcmp($data['id'], $ourblock['id']);
+				} else {
+					$accept_new = $data['date'] < $ourblock['date'];
 				}
+			} else {
+				$accept_new = $data['elapsed'] < $ourblock['elapsed'];
 			}
+			_log("submitBlock: accept_new=$accept_new");
+
+//			//wins block with lowest elapsed time - highest difficulty
+//			$difficulty1 = $current['difficulty'];
+//			$difficulty2 = $data['difficulty'];
+//			//_log("DFSH: compare difficulty: difficulty1=$difficulty1 difficulty2=$difficulty2");
+//			if($difficulty1 > $difficulty2) {
+//				$accept_new = true;
+//			}  else if ($difficulty1 == $difficulty2) {
+//				$date1 = $current['date'];
+//				$date2 = $data['date'];
+//				//_log("DFSH: compare date: date1=$date1 date2=$date2");
+//				if($date1 > $date2) {
+//					$accept_new = true;
+//				} else if ($date1 == $date2) {
+//					$miner1=$current['miner'];
+//					$miner2=$data['miner'];
+//					$generator1=$current['generator'];
+//					$generator2=$data['generator'];
+//					//_log("DFSH: compare miners: miner1=$miner1 miner2=$miner2");
+//					//_log("DFSH: compare generator: generator1=$generator1 generator2=$generator2");
+//					$id1=$current['id'];
+//					$id2=$data['id'];
+//					//_log("DFSH: compare ids: id1=$id1 id2=$id2");
+//					if(strcmp($id1, $id2)) {
+//						$accept_new = true;
+//					}
+//				}
+//			}
 
 			//_log("DFSH: Accept new = ".$accept_new);
 
@@ -362,8 +376,8 @@ class PeerRequest
 		}
 
 		if (!$res) {
-			//_log('DFSH: ['.$ip."] invalid block data - $data[height] Error:$error",1);
-			api_err("submitBlock: invalid-block-data $error");
+			_log('submitBlock: ['.$ip."] invalid block data - $data[height] Error:$error",1);
+			api_err("invalid-block-data $error");
 		}
 
 		$last_block = Block::export("", $data['height']);
@@ -371,8 +385,8 @@ class PeerRequest
 		$res = $bl->verifyBlock();
 
 		if (!$res) {
-			//_log("DFSH: Can not verify added block",1);
-			api_err("submitBlock: invalid-block-data");
+			_log("submitBlock: Can not verify added block",1);
+			api_err("invalid-block-data");
 		}
 
 		_log('submitBlock: ['.$ip."] block ok, repropagating - $data[height]",1);
