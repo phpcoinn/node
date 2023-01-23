@@ -70,7 +70,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 			} else if ($pid == 0) {
 				$cpid = getmypid();
 				$response = peer_post($hostname . "/peer.php?q=submitBlock", $data, 5, $err, $info);
-				_log("PropagateFork: forking child $cpid $hostname end response=$response time=".(microtime(true) - $start),5);
+				_log("PropagateFork: forking child $cpid $hostname end response=".json_encode($response)." err=$err time=".(microtime(true) - $start),5);
 				Propagate::processBlockPropagateResponse($hostname, $ip, $id, $response, $err);
 				exit();
 			}
@@ -101,7 +101,8 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 
 // broadcast a block to a single peer (usually a forked process from above)
 if ($type == "block") {
-	_log("Propagate block $id", 5);
+	$ip = trim($argv[4]);
+	_log("Propagate block $id peer=$peer ip=$ip", 5);
     // current block or read cache
     if ($id == "current") {
 		$data = Cache::get("current_export", function () {
@@ -123,7 +124,7 @@ if ($type == "block") {
             exit;
         }
     }
-	if(strpos($peer, "http")==0) {
+	if(strpos($peer, "http")===0) {
 		$hostname = $peer;
 	} else {
         $hostname = base58_decode($peer);
@@ -132,7 +133,6 @@ if ($type == "block") {
     _log("Block sent to $hostname:\n".print_r($data,1), 5);
     $response = peer_post($hostname."/peer.php?q=submitBlock", $data, 30, $err);
     _log("Propagating block to $hostname - [result: ".json_encode($response)."] $data[height] - $data[id]",3);
-	$ip = trim($argv[4]);
 	Propagate::processBlockPropagateResponse($hostname, $ip, $id, $response, $err);
 }
 // broadcast a transaction to some peers

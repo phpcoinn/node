@@ -21,7 +21,7 @@ class Propagate
 		$id=escapeshellcmd(san($id));
 		$dir = ROOT . "/cli";
 		$cmd = "php $dir/propagate.php block '$id' '$host' '$ip'";
-		_log("Propagate cmd: $cmd",5);
+		_log("Propagate: cmd: $cmd",5);
 		Nodeutil::runSingleProcess($cmd);
 	}
 
@@ -118,29 +118,29 @@ class Propagate
 			$height = intval($response['height']);
 			$bl = san($response['block']);
 			$current = Block::current();
-			_log("Microsync request current_height=".$current['height']. " requested_height=".$height,1);
+			_log("Microsync: Microsync request current_height=".$current['height']. " requested_height=".$height,1);
 			// maximum microsync is 10 blocks, for more, the peer should sync
 			if ($current['height'] - $height > 10) {
-				_log("Height Differece too high", 1);
+				_log("Microsync: Height Differece too high", 1);
 				return;
 			}
 			$last_block = Block::get($height);
 			// if their last block does not match our blockchain/fork, ignore the request
 			if ($last_block['id'] != $bl) {
-				_log("Last block does not match", 1);
+				_log("Microsync: Last block does not match", 1);
 				return;
 			}
-			_log("Sending the requested blocks",2);
 			$peerInfo = Peer::getInfo();
 			for ($i = $height + 1; $i <= $current['height']; $i++) {
 				$data = Block::export("", $i);
 				$data['microsync']=true;
+				_log("Microsync: Sending  blocks to $hostname",2);
 				$response = peer_post($hostname."/peer.php?q=submitBlock", $data, 30, $err, $peerInfo);
 				if ($response != "block-ok") {
-					_log("Block $i not accepted. Exiting", 5);
+					_log("Microsync: Block $i not accepted. res=$response Exiting", 5);
 					return;
 				}
-				_log("Block\t$i\t accepted", 3);
+				_log("Microsync: Block\t$i\t accepted", 3);
 			}
 		} elseif ($response == "reverse-microsync") {
 			// the peer informe us that we should run a microsync

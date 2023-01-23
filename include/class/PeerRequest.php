@@ -340,7 +340,7 @@ class PeerRequest
 		$current = Block::current();
 		//_log("DFSH: check add BLOCK ".$block->height. " current=".$current['height']);
 		if($block->height == $current['height']) {
-			_log("submitBlock: our block still ok", 5);
+			_log("submitBlock: block checked ok", 5);
 			api_echo("block-ok");
 		}
 
