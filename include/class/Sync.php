@@ -38,8 +38,8 @@ class Sync extends Daemon
 		}
 		$t = time();
 		$t1 = microtime(true);
-		_log("Starting sync",3);
-		Config::setSync(1);
+//		_log("Starting sync",3);
+//		Config::setSync(1);
 
 		// update the last time sync ran, to set the execution of the next run
 		$db->run("UPDATE config SET val=:time WHERE cfg='sync_last'", [":time" => $t]);
@@ -362,7 +362,7 @@ class Sync extends Daemon
 			return $t2 - $t1;
 		});
 
-		Config::setSync(0);
+//		Config::setSync(0);
 
 		if(count($peers)<=1) {
 			_log("Can not sync - peers <=1 ");

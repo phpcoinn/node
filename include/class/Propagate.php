@@ -134,10 +134,10 @@ class Propagate
 			for ($i = $height + 1; $i <= $current['height']; $i++) {
 				$data = Block::export("", $i);
 				$data['microsync']=true;
-				_log("Microsync: Sending  blocks to $hostname",2);
+				_log("Microsync: Sending  block height=$i to $hostname",2);
 				$response = peer_post($hostname."/peer.php?q=submitBlock", $data, 30, $err, $peerInfo);
 				if ($response != "block-ok") {
-					_log("Microsync: Block $i not accepted. res=$response Exiting", 5);
+					_log("Microsync: Block $i not accepted. res=$response err=$err Exiting", 5);
 					return;
 				}
 				_log("Microsync: Block\t$i\t accepted", 3);
