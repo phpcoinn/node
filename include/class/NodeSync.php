@@ -282,11 +282,15 @@ class NodeSync
 	static function recheckLastBlocks() {
 		global $_config, $db;
 		$current = Block::current();
-		if ($_config['sync_recheck_blocks'] > 0) {
+		$num = $_config['sync_recheck_blocks'];
+		if(empty($num)) {
+			$num = 10;
+		}
+		if ($num > 0) {
 			_log("Rechecking blocks",3);
 			$blocks = [];
 			$all_blocks_ok = true;
-			$start = $current['height'] - $_config['sync_recheck_blocks'];
+			$start = $current['height'] - $num;
 			if ($start < 2) {
 				$start = 2;
 			}
