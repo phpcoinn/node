@@ -738,6 +738,13 @@ class Block
 //            [":block" => $block['id']]
 //        );
         $block['public_key'] = Account::publicKey($block['generator']);
+		if($block['height'] > 1) {
+		    $prev_block = Block::get($block['height']-1);
+		    $prev_block_date = $prev_block['date'];
+			$elapsed = $block['date'] - $prev_block_date;
+		    $block['elapsed']=$elapsed;
+			_log("ExportBlock id = ".$block['id']." height=".$block['height']." elapsed=$elapsed", 5);
+		}
 //        $bl = new Block();
 //	    $prev = $bl->get($block['height']-1);
 //	    $block['prev_block_id']=$prev['id'];
