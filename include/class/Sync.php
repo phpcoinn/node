@@ -37,10 +37,7 @@ class Sync extends Daemon
 		$sql="select max(height) from peers";
 		$max_height = $db->single($sql);
 		_log("Max peers height = ".$max_height. " current=".$current['height']);
-		if($max_height == $current['height']) {
-			_log("No need to sync");
-			return;
-		}
+
 		$t = time();
 		$t1 = microtime(true);
 //		_log("Starting sync",3);

@@ -389,10 +389,10 @@ class PeerRequest
 
 		$last_block = Block::export("", $data['height']);
 		$bl = Block::getFromArray($last_block);
-		$res = $bl->verifyBlock();
+		$res = $bl->verifyBlock($err);
 
 		if (!$res) {
-			_log("submitBlock: Can not verify added block",1);
+			_log("Can not verify added block err=$err",1);
 			api_err("invalid-block-data");
 		}
 
