@@ -111,6 +111,10 @@ class Propagate
 			_log("Block $id accepted", 5);
 		} elseif (is_array($response) && $response['request'] == "microsync") {
 			// the peer requested us to send more blocks, as it's behind
+			if(defined("FORKED_PROCESS")) {
+				global $_config, $db;
+				$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
+			}
 			$height = intval($response['height']);
 			$bl = san($response['block']);
 			$current = Block::current();

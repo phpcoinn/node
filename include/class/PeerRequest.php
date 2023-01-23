@@ -351,15 +351,15 @@ class PeerRequest
 			api_echo("sync");
 		}
 
-		if (Config::isSync()) {
-			api_err("submitBlock: sync");
-		}
-
 		//_log("DFSH: ADD BLOCK ".$block->height);
 		$res = $block->add($error);
 
 		_log("Remove lock file $lock_file", 5);
 		@rmdir($lock_file);
+
+		if (Config::isSync()) {
+			api_err("submitBlock: sync");
+		}
 
 		if (!$res) {
 			//_log('DFSH: ['.$ip."] invalid block data - $data[height] Error:$error",1);
