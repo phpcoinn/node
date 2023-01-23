@@ -29,6 +29,11 @@ class Sync extends Daemon
 		ini_set('memory_limit', '2G');
 		$current = Block::current();
 
+		Peer::deleteDeadPeers();
+		Peer::blackclistInactivePeers();
+		Peer::resetResponseTimes();
+		NodeSync::recheckLastBlocks();
+
 		$sql="select max(height) from peers";
 		$max_height = $db->single($sql);
 		_log("Max peers height = ".$max_height. " current=".$current['height']);
@@ -43,11 +48,6 @@ class Sync extends Daemon
 
 		// update the last time sync ran, to set the execution of the next run
 		$db->run("UPDATE config SET val=:time WHERE cfg='sync_last'", [":time" => $t]);
-
-		// delete the dead peers
-		Peer::deleteDeadPeers();
-		Peer::blackclistInactivePeers();
-		Peer::resetResponseTimes();
 
 		$total_peers = Peer::getCount(false);
 		_log("Total peers: ".$total_peers, 3);
@@ -122,8 +122,6 @@ class Sync extends Daemon
 			$cmd = "php $dir/util.php get-more-peers";
 			Nodeutil::runSingleProcess($cmd);
 		});
-
-		NodeSync::recheckLastBlocks();
 
 		$peers = Peer::getPeersForSync();
 		$peerData = [];

@@ -49,7 +49,8 @@ class NodeSync
 			$ok_block = 0;
 			$height = $current['height'];
 			$peers_count = 0;
-			$min_ok_blocks = 1;
+			$min_ok_blocks = count($this->peers)*2/3;
+			$min_failed_blocks =count($this->peers)*1/3;
 			$good_peers = [];
 			foreach ($this->peers as $host) {
 				$peers_count++;
@@ -60,6 +61,9 @@ class NodeSync
 						$failed_block++;
 						$failed_peer++;
 						_log("We have wrong block $height failed_block=$failed_block");
+						if($failed_peer >= $min_failed_blocks) {
+							break;
+						}
 					} else {
 						$ok_block++;
 						$good_peers[]=$host;
@@ -70,6 +74,9 @@ class NodeSync
 					}
 				} else {
 					$failed_peer++;
+					if($failed_peer >= $min_failed_blocks) {
+						break;
+					}
 				}
 
 			}
