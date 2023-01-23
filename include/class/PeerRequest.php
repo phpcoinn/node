@@ -317,7 +317,14 @@ class PeerRequest
 		}
 		// if it's not the next block
 		if ($current['height'] != $data['height'] - 1) {
-			_log("submitBlock:: if it's not the next block",1);
+			_log("Not next block - exit", 5);
+			api_err("not-next-block");
+
+//			if($microsync) {
+//				_logf("already in microsync", 5);
+//				api_err("already-microsync");
+//			}
+//			_log("if it's not the next block",1);
 			// if the height of the block submitted is lower than our current height, send them our current block
 			if ($data['height'] < $current['height']) {
 				//_log("DFSH: Our height is higher");
