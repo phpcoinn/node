@@ -194,20 +194,16 @@ class Block
         }
     }
 
-	public static function difficulty($height = 0)
+	public static function difficulty($height = null)
 	{
 		global $db;
 
 		// if no block height is specified, use the current block.
-		if ($height == 0) {
-			$current = Block::current();
-		} else {
-			$current = Block::getAtHeight($height);
+		if ($height === null) {
+			$height = Block::getHeight();
 		}
 
-
-		$height = $current['height'];
-
+		$current = Block::getAtHeight($height);
 		if($height < 10 + 2) {
 			return BLOCK_START_DIFFICULTY;
 		}
@@ -346,7 +342,7 @@ class Block
 		}
 	}
 
-	public function check($new=true)
+	public function check()
 	{
 
 		_log("Block check ".json_encode($this->toArray()),4);
@@ -362,14 +358,9 @@ class Block
 			return false;
 		}
 
-		//difficulty should be the same as our calculation
-		if($new) {
-			$calcDifficulty = Block::difficulty();
-		} else {
-			$calcDifficulty = Block::difficulty($this->height-1);
-		}
+		$calcDifficulty = Block::difficulty($this->height-1);
 		if ($this->difficulty != $calcDifficulty) {
-			_log("Invalid difficulty - {$this->difficulty} - ".$calcDifficulty);
+			_log("Invalid difficulty - {$this->difficulty} - ".$calcDifficulty. " height=".$this->height. " current=".Block::getHeight());
 			return false;
 		}
 
@@ -407,10 +398,6 @@ class Block
 			$prev_date = $prev['date'];
 			$elapsed = $this->date - $prev_date;
 			_log("Current date = {$this->date} prev date = $prev_date elapsed = $elapsed", 4);
-			// get the current difficulty if empty
-			if (empty($this->difficulty)) {
-				$this->difficulty = Block::difficulty();
-			}
 
 			if($elapsed <=0 && $this->height > UPDATE_1_BLOCK_ZERO_TIME) {
 				throw new Exception("Block time zero");
@@ -917,6 +904,12 @@ class Block
 			$expected_version = Block::versionCode($this->height);
 			if($expected_version != $version) {
 				throw new Exception("Block check: invalid version $version - expected $expected_version");
+			}
+
+			$difficulty = $this->difficulty;
+			$calculated_difficulty = Block::difficulty($this->height-1);
+			if($difficulty != $calculated_difficulty) {
+				throw new Exception("Block check: invalid difficulty $difficulty - expected $calculated_difficulty");
 			}
 
 			$prev_block = Block::getAtHeight($height - 1);
