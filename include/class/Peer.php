@@ -239,12 +239,6 @@ class Peer
 		return $db->run("SELECT ip,hostname,height FROM peers WHERE blacklisted<".DB::unixTimeStamp()." ORDER by ".DB::random());
 	}
 
-	static function getPeersForPropagate() {
-		global $db;
-		$r = $db->run("SELECT * FROM peers WHERE blacklisted < ".DB::unixTimeStamp());
-		return $r;
-	}
-
 	static function findByIp($ip) {
 		global $db;
 		$x = $db->row(
