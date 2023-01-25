@@ -47,11 +47,12 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
     	_log("Could not export block");
         die("Could not export block");
     }
-	$peers_limit = $_config['peers_limit'];
-	if(empty($peers_limit)) {
-		$peers_limit = 30;
-	}
-    $r = Peer::getPeersForSync($peers_limit);
+//	$peers_limit = $_config['peers_limit'];
+//	if(empty($peers_limit)) {
+//		$peers_limit = 30;
+//	}
+//    $r = Peer::getPeersForSync($peers_limit);
+	$r = Peer::getPeersForPropagate();
 
 	if(Propagate::PROPAGATE_BY_FORKING) {
 		_log("PropagateFork: start propagate block id=$id peer=$peer", 5);
