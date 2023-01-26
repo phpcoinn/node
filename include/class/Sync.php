@@ -28,26 +28,20 @@ class Sync extends Daemon
 		global $db, $_config;
 		ini_set('memory_limit', '2G');
 		$current = Block::current();
-
-		Peer::deleteDeadPeers();
-		Peer::blackclistInactivePeers();
-		Peer::resetResponseTimes();
-		NodeSync::recheckLastBlocks();
-
-		$sql="select max(height) from peers";
-		$max_height = $db->single($sql);
-		_log("Max peers height = ".$max_height. " current=".$current['height']);
-
 		$t = time();
 		$t1 = microtime(true);
-//		_log("Starting sync",3);
-//		Config::setSync(1);
+		_log("Starting sync",3);
+		Config::setSync(1);
 
 		// update the last time sync ran, to set the execution of the next run
 		$db->run("UPDATE config SET val=:time WHERE cfg='sync_last'", [":time" => $t]);
 
-		$total_peers = Peer::getCount(false);
-		_log("Total peers: ".$total_peers, 3);
+		// delete the dead peers
+		Peer::deleteDeadPeers();
+		Peer::resetResponseTimes();
+
+			$total_peers = Peer::getCount(false);
+			_log("Total peers: " . $total_peers, 3);
 
 		$peered = [];
 		// if we have no peers, get the seed list from the official site
@@ -120,54 +114,55 @@ class Sync extends Daemon
 			Nodeutil::runSingleProcess($cmd);
 		});
 
-		$peers = Peer::getPeersForSync();
-		$peerData = [];
-		$peerResponseTimes = [];
-		foreach($peers as $peer) {
-			$hostname = $peer['hostname'];
-			if(empty($peer['block_id']) || empty($peer['height'])) {
-		//		_log("PeerSync: skip live peer $hostname block_id=".$peer['block_id']." height=".$peer['height']." version=".$peer['version']);
-				continue;
+		NodeSync::recheckLastBlocks();
+
+			$peers = Peer::getPeersForSync();
+			$peerData = [];
+			$peerResponseTimes = [];
+			foreach ($peers as $peer) {
+				$hostname = $peer['hostname'];
+				if (empty($peer['block_id']) || empty($peer['height'])) {
+					//		_log("PeerSync: skip live peer $hostname block_id=".$peer['block_id']." height=".$peer['height']." version=".$peer['version']);
+					continue;
+				}
+				$peerData[$hostname] = [
+					"peer" => $peer,
+					"id" => $peer["block_id"],
+					"height" => $peer["height"]
+				];
+				if ($peer['response_cnt'] == 0) {
+					$responseTime = PHP_INT_MAX;
+				} else {
+					$responseTime = $peer['response_time'] / $peer['response_cnt'];
+				}
+				$peerResponseTimes[$hostname] = $responseTime;
+				//	_log("PeerSync: add live peer data $hostname block_id=".$peer["block_id"]." height=".$peer["height"]);
 			}
-			$peerData[$hostname]=[
-				"peer"=>$peer,
-				"id"=>$peer["block_id"],
-				"height"=>$peer["height"]
-			];
-			if($peer['response_cnt']==0) {
-				$responseTime = PHP_INT_MAX;
-			} else {
-				$responseTime = $peer['response_time'] / $peer['response_cnt'];
-			}
-			$peerResponseTimes[$hostname] = $responseTime;
-		//	_log("PeerSync: add live peer data $hostname block_id=".$peer["block_id"]." height=".$peer["height"]);
-		}
-		$live_peers_count = count($peerData);
-		//Then get all other peers
-		$peers = Peer::getActive($live_peers_count * 2);
-		_log("PeerSync: get active peers ".count($peers), 5);
-		$peerInfo = Peer::getInfo();
-		foreach($peers as $peer) {
-			$hostname = $peer['hostname'];
-			if(isset($peerData[$hostname])) {
-				continue;
-			}
-			_log("PeerSync: Contacting peer $hostname", 5);
-			$url = $hostname."/peer.php?q=";
-			$res = peer_post($url."currentBlock", [], 5, $err, $peerInfo);
-			if ($res === false) {
-				//		_log("Peer $hostname unresponsive url={$url}currentBlock response=$res");
-				// if the peer is unresponsive, mark it as failed and blacklist it for a while
-				Peer::blacklist($peer['id'],"Unresponsive");
-				continue;
-			}
-			$data = $res['block'];
-			$info = $res['info'];
-			if(version_compare($info['version'], MIN_VERSION) < 0) {
-				_log("PeerSync: Peer $hostname blacklisted beacuse of version ".$info['version']);
-				Peer::blacklist($peer['id'], "Invalid version ".$_POST['version']);
-				continue;
-			}
+			$live_peers_count = count($peerData);
+			//Then get all other peers
+			$peers = Peer::getActive($live_peers_count * 2);
+			_log("PeerSync: get active peers " . count($peers), 5);
+			foreach ($peers as $peer) {
+				$hostname = $peer['hostname'];
+				if (isset($peerData[$hostname])) {
+					continue;
+				}
+				_log("PeerSync: Contacting peer $hostname", 5);
+				$url = $hostname . "/peer.php?q=";
+			$res = peer_post($url."currentBlock", [], 5);
+				if ($res === false) {
+					//		_log("Peer $hostname unresponsive url={$url}currentBlock response=$res");
+					// if the peer is unresponsive, mark it as failed and blacklist it for a while
+					Peer::blacklist($peer['id'], "Unresponsive");
+					continue;
+				}
+				$data = $res['block'];
+				$info = $res['info'];
+				if (version_compare($info['version'], MIN_VERSION) < 0) {
+					_log("PeerSync: Peer $hostname blacklisted beacuse of version " . $info['version']);
+					Peer::blacklist($peer['id'], "Invalid version " . $_POST['version']);
+					continue;
+				}
 
 			// peer was responsive, mark it as good
 			if ($peer['fails'] > 0) {
@@ -223,101 +218,89 @@ class Sync extends Daemon
 			return $k1 - $k2;
 		});
 
-//		_log("Block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
+		_log("Block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
 
-		$forked = false;
-		$not_forked_heights = [];
-		_log("Checking blocks map for forks", 5);
-		foreach($blocksMap as $height => $blocks) {
-			_log("Blocks map: height=$height blocks=".count($blocks) ." id=".array_keys($blocks)[0], 3);
-			if(count($blocks)>1) {
-//				_log("Start checking blocks time and difficulty", 5);
-				$forkedBlocksMap = [];
-				$forkedBlocksPeers = [];
-				foreach ($blocks as $block_id => $peers) {
-//					_log("Checking block $block_id count=" . count($peers), 5);
-					foreach ($peers as $peer) {
-						$url = $peer . "/peer.php?q=";
-						$peer_blocks = peer_post($url . "getBlocks", ["height" => $height -1], 30, $err, $peerInfo );
-						if (!$peer_blocks) {
-							continue;
+			$forked = false;
+			$not_forked_heights = [];
+			_log("Checking blocks map for forks", 5);
+			foreach ($blocksMap as $height => $blocks) {
+			_log("Checking height=$height blocks=".count($blocks), 3);
+				if (count($blocks) > 1) {
+				_log("Start checking blocks time and difficulty", 5);
+					$forkedBlocksMap = [];
+					foreach ($blocks as $block_id => $peers) {
+					_log("Checking block $block_id count=" . count($peers), 5);
+						foreach ($peers as $peer) {
+							$url = $peer . "/peer.php?q=";
+						$peer_blocks = peer_post($url . "getBlocks", ["height" => $height -1] );
+							if (!$peer_blocks) {
+								continue;
+							}
+							$peer_prev_block = array_shift($peer_blocks);
+							$peer_block = array_shift($peer_blocks);
+							if (!$peer_prev_block || !$peer_block) {
+								continue;
+							}
+							if ($peer_block['id'] != $block_id) {
+								continue;
+							}
+							$elapsed = $peer_block['date'] - $peer_prev_block['date'];
+							$peer_block['elapsed'] = $elapsed;
+							$difficulty = $peer_block['difficulty'];
+						_log("Read block at height $height from peer $peer elapsed=$elapsed diff=$difficulty", 5);
+							$forkedBlocksMap[$block_id] = $peer_block;
+							break;
 						}
-						$peer_prev_block = array_shift($peer_blocks);
-						$peer_block = array_shift($peer_blocks);
-						if (!$peer_prev_block || !$peer_block) {
-							continue;
-						}
-						if($peer_block['id']!=$block_id) {
-							continue;
-						}
-						$elapsed = $peer_block['date'] - $peer_prev_block['date'];
-						$peer_block['elapsed'] = $elapsed;
-						$difficulty = $peer_block['difficulty'];
-						_log("Forked block $block_id at height $height from peer $peer elapsed=$elapsed diff=$difficulty", 5);
-						$forkedBlocksMap[$block_id] = $peer_block;
-						$forkedBlocksPeers[$block_id]=$peer;
-						break;
 					}
-				}
 
-				if(count($forkedBlocksMap) === 0) {
-					unset($blocksMap[$height]);
-				} else {
-					if(count(array_keys($forkedBlocksMap))>1) {
-						$forked = true;
-						uasort($forkedBlocksMap, function ($b1, $b2) {
-							if($b1['elapsed'] == $b2['elapsed']) {
-								if($b1['date'] == $b2['date']) {
-									return strcmp($b1['id'], $b2['id']);
+					if (count($forkedBlocksMap) === 0) {
+						unset($blocksMap[$height]);
+					} else {
+						if (count(array_keys($forkedBlocksMap)) > 1) {
+							$forked = true;
+							uasort($forkedBlocksMap, function ($b1, $b2) {
+								if ($b1['elapsed'] == $b2['elapsed']) {
+									if ($b1['date'] == $b2['date']) {
+										return strcmp($b1['id'], $b2['id']);
+									} else {
+										return $b1['date'] - $b2['date'];
+									}
 								} else {
-									return $b1['date'] - $b2['date'];
+									return $b1['elapsed'] - $b2['elapsed'];
 								}
-							} else {
-								return $b1['elapsed'] - $b2['elapsed'];
-							}
-						});
-					}
-					_log("Forked blocks peers " . json_encode($forkedBlocksPeers, JSON_PRETTY_PRINT), 5);
-					$winForkedBlock = array_shift($forkedBlocksMap);
-					_log("Forked block winner at height $height is block " . $winForkedBlock['id']);
-					$winPeers = $blocksMap[$height][$winForkedBlock['id']];
-					$blocksMap[$height] = [$winForkedBlock['id'] => $winPeers];
-					foreach($forkedBlocksPeers as $block_id => $hostname) {
-						$winner = $block_id == $winForkedBlock['id'];
-						_log("Check forked peer $hostname block=$block_id winner=$winner", 5);
-						if(!$winner) {
-							$peer = Peer::findByHostname($hostname);
-							if($peer) {
-								Peer::blacklist($peer['id'], "Forked block $height", 5);
-							}
+							});
 						}
+					_log("Forked blocks " . json_encode($forkedBlocksMap, JSON_PRETTY_PRINT), 5);
+						$winForkedBlock = array_shift($forkedBlocksMap);
+						_log("Forked block winner at height $height is block " . $winForkedBlock['id']);
+						$winPeers = $blocksMap[$height][$winForkedBlock['id']];
+						$blocksMap[$height] = [$winForkedBlock['id'] => $winPeers];
 					}
 				}
+				if (!$forked) {
+					$not_forked_heights[] = $height;
+				}
 			}
-			if(!$forked) {
-				$not_forked_heights[] = $height;
+
+			if ($forked) {
+			_log("Corrected block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
 			}
-		}
 
-		if($forked) {
-//			_log("Corrected block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
-		}
-
-		foreach($blocksMap as $height => $blocks) {
-			$current = Block::current();
-			$block_id =  array_keys($blocks)[0];
-			_log("Corrected block map: height=$height blocks=".count($blocks)." block_id=".$block_id, 3);
-			_log("Check height $height block_id = $block_id", 5);
-			if($height > $current['height']) {
-				_log("Not top block - need sync", 5);
-			} else if ($height == $current['height']) {
-				_log("Check top block id=".$current['id'], 5);
-				if($block_id == $current['id']) {
-					_log("Our top block is ok", 5);
-				} else {
-					_log("We have wrong top block $height - pop it", 5);
-					Block::pop();
-					break;
+			foreach ($blocksMap as $height => $blocks) {
+				$current = Block::current();
+			_log("Checking height=$height blocks=".count($blocks), 3);
+				$block_id = array_keys($blocks)[0];
+				_log("Check height $height block_id = $block_id", 5);
+				if ($height > $current['height']) {
+					_log("Not top block - need sync", 5);
+				} else if ($height == $current['height']) {
+				_log("Check top block", 5);
+					if ($block_id == $current['id']) {
+						_log("Our top block is ok", 5);
+					} else {
+						_log("We have wrong top block $height - pop it", 5);
+						Block::pop();
+						break;
 //					Config::setSync(0);
 //					return;
 				}
@@ -357,7 +340,7 @@ class Sync extends Daemon
 			return $t2 - $t1;
 		});
 
-//		Config::setSync(0);
+		Config::setSync(0);
 
 		if(count($peers)<=1) {
 			_log("Can not sync - peers <=1 ");
