@@ -370,8 +370,8 @@ class Masternode extends Daemon
 			$masternode_id = Account::getAddress($transaction->publicKey);
 			$masternode_existing = Masternode::isExisting($masternode_id, $height);
 			if($masternode_existing) {
-				$total_sent = Transaction::getTotalSent($masternode_id);
-				$total_received = Transaction::getTotalReceived($masternode_id);
+				$total_sent = Transaction::getTotalSent($masternode_id, $height);
+				$total_received = Transaction::getTotalReceived($masternode_id, $height);
 				$balance = $total_received - $total_sent;
 				$collateral = Block::getMasternodeCollateral($height);
 				if(floatval($balance) - $transaction->val < $collateral) {
