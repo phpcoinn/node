@@ -527,6 +527,8 @@ class NodeSync
 					_log("Syncing current_height= ".$current['height']." best_height=$best_height current_id=".$current['id']." block_id=$block_id");
 					$limit_peers = 10;
 					$peers_cnt = 0;
+					$added = false;
+//					_log("hostnames".print_r($hostnames,1));
 					foreach($hostnames as $hostname => $peer) {
 						$peers_cnt++;
 						if($peers_cnt > $limit_peers) {
