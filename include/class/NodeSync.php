@@ -434,8 +434,9 @@ class NodeSync
 						_log("   block_id=$block_id elapsed=".$block['elapsed']." date=".$block['date']. " difficulty=".$block['difficulty']. " tx_cnt=".count($block['data']));
 					}
 					uasort($forked_blocks, function ($b1, $b2) {
-						return NodeSync::compareBlocks($b1, $b2);
+						return NodeSync::compareBlocks($b2, $b1);
 					});
+					_log("forked_blocks sorted:".print_r($forked_blocks, 1));
 					$forked_block_winner = array_shift($forked_blocks);
 					$our_block = Block::get($height);
 					_log("forked_block_winner=".$forked_block_winner['id']." our block_id=".$our_block['id']);
