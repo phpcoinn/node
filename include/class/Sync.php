@@ -31,6 +31,8 @@ class Sync extends Daemon
 		Peer::deleteDeadPeers();
 		Peer::blackclistInactivePeers();
 		Peer::resetResponseTimes();
+		NodeSync::recheckLastBlocks();
+
 		$res = NodeSync::checkBlocks();
 		if(!$res) {
 			_log("Block database is invalid");
@@ -45,7 +47,6 @@ class Sync extends Daemon
 		}
 		Config::setVal("blockchain_invalid", 0);
 
-		NodeSync::recheckLastBlocks();
 		NodeSync::checkForkedBlocks();
 		NodeSync::syncBlocks();
 		$peersForSync = Peer::getValidPeersForSync();
