@@ -303,6 +303,13 @@ class Sync extends Daemon
 //			_log("Corrected block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
 		}
 
+		$peersforSync = [];
+		$peerSyncHeight = null;
+		$peerSyncBlockId = null;
+
+		_log("blocksMap:".print_r($blocksMap, 1));
+//		return;
+
 		foreach($blocksMap as $height => $blocks) {
 			$current = Block::current();
 			$block_id =  array_keys($blocks)[0];
@@ -310,6 +317,11 @@ class Sync extends Daemon
 			_log("Check height $height block_id = $block_id", 5);
 			if($height > $current['height']) {
 				_log("Not top block - need sync", 5);
+				$peersforSync = array_keys($blocks[$block_id]);
+				$peerSyncHeight = $height;
+				$peerSyncBlockId = $block_id;
+				_log("peersforSync:".print_r($peersforSync,1));
+				break;
 			} else if ($height == $current['height']) {
 				_log("Check top block id=".$current['id'], 5);
 				if($block_id == $current['id']) {
@@ -349,9 +361,9 @@ class Sync extends Daemon
 		_log( "Longest chain height: $largest_height",5);
 
 
-		$peers = array_keys($blocksMap[$largest_height][$largest_height_block]);
+//		$peers = array_keys($blocksMap[$largest_height][$largest_height_block]);
 
-		usort($peers, function($p1, $p2) use ($peerResponseTimes) {
+		usort($peersforSync, function($p1, $p2) use ($peerResponseTimes) {
 			$t1 = isset($peerResponseTimes[$p1]) ? $peerResponseTimes[$p1] : PHP_INT_MAX;
 			$t2 = isset($peerResponseTimes[$p2]) ? $peerResponseTimes[$p2] : PHP_INT_MAX;
 			return $t2 - $t1;
@@ -359,25 +371,25 @@ class Sync extends Daemon
 
 //		Config::setSync(0);
 
-		if(count($peers)<=1) {
-			_log("Can not sync - peers <=1 ");
-			$hostname = $peers[0];
-			$peer = Peer::findByHostname($hostname);
-			if($peer) {
-				Peer::blacklist($peer['id'], "Single peer at height $largest_height");
-				_log("Blacklist peer with 1 block");
-			}
+//		if(count($peers)<=1) {
+//			_log("Can not sync - peers <=1 ");
+//			$hostname = $peers[0];
+//			$peer = Peer::findByHostname($hostname);
+//			if($peer) {
+//				Peer::blacklist($peer['id'], "Single peer at height $largest_height");
+//				_log("Blacklist peer with 1 block");
+//			}
+//		} else {
+		$current = Block::current();
+		$nodeSync = new NodeSync($peersforSync);
+		if($largest_height > $current['height']) {
+			_log("Start syncing to height $peerSyncHeight", 5);
+			$nodeSync->start($peerSyncHeight, $peerSyncBlockId);
 		} else {
-			$current = Block::current();
-			$nodeSync = new NodeSync($peers);
-			if($largest_height > $current['height']) {
-				_log("Start syncing to height $largest_height", 5);
-				$nodeSync->start($largest_height, $largest_height_block);
-			} else {
-				_log("Our blockchain is synced", 5);
-			}
-			$nodeSync->calculateNodeScore();
+			_log("Our blockchain is synced", 5);
 		}
+		$nodeSync->calculateNodeScore();
+//		}
 
 
 		Mempool::deleteOldMempool();
