@@ -342,42 +342,45 @@ class Block
 		}
 	}
 
-	public function check()
+	public function check(&$err = null)
 	{
 
 		_log("Block check ".json_encode($this->toArray()),4);
 
-		if ($this->date>time()+30) {
-			_log("Future block - {$this->date} {$this->publicKey}");
+		try {
+			if ($this->date>time()+30) {
+				throw new Exception("Future block - {$this->date} {$this->publicKey}");
+			}
+
+			// generator's public key must be valid
+			if (!Account::validKey($this->publicKey)) {
+				throw new Exception("Invalid public key - {$this->publicKey}");
+			}
+
+			$calcDifficulty = Block::difficulty($this->height-1);
+			if ($this->difficulty != $calcDifficulty) {
+				throw new Exception("Invalid difficulty - {$this->difficulty} - ".$calcDifficulty. " height=".$this->height. " current=".Block::getHeight());
+			}
+
+			$version = $this->version;
+			$expected_version = Block::versionCode($this->height);
+			if($expected_version != $version) {
+				throw new Exception("Block check height ".$this->height.": invalid version - expected $expected_version got $version");
+			}
+
+			//check the argon hash and the nonce to produce a valid block
+			if (!$this->mine()) {
+				throw new Exception("Mine check failed");
+			}
+
+			return true;
+		} catch (Exception $e) {
+			$err = $e->getMessage();
+			_log("Error check block: $err");
 			return false;
 		}
 
-		// generator's public key must be valid
-		if (!Account::validKey($this->publicKey)) {
-			_log("Invalid public key - {$this->publicKey}");
-			return false;
-		}
 
-		$calcDifficulty = Block::difficulty($this->height-1);
-		if ($this->difficulty != $calcDifficulty) {
-			_log("Invalid difficulty - {$this->difficulty} - ".$calcDifficulty. " height=".$this->height. " current=".Block::getHeight());
-			return false;
-		}
-
-		$version = $this->version;
-		$expected_version = Block::versionCode($this->height);
-		if($expected_version != $version) {
-			_log("Block check height ".$this->height.": invalid version - expected $expected_version got $version");
-			return false;
-		}
-
-		//check the argon hash and the nonce to produce a valid block
-		if (!$this->mine()) {
-			_log("Mine check failed");
-			return false;
-		}
-
-		return true;
 	}
 
     public function mine(&$err=null)
