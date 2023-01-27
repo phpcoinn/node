@@ -39,7 +39,7 @@ class Peer
 		return $rows;
 	}
 
-	static function getPeersForSync($limit = null, $random=false) {
+	static function getPeersForSync($limit = null, $random=false, $order="response_time/response_cnt") {
 		global $db;
 		$sql="select * from peers 
 			where blacklisted < ".DB::unixTimeStamp()."
@@ -48,7 +48,7 @@ class Peer
 		if($random) {
 			$sql.=" order by ".DB::random();
 		} else {
-			$sql.=" order by response_time/response_cnt";
+			$sql.=" order by $order";
 		}
 		if(!empty($limit)) {
 			$sql.=" limit $limit";
@@ -318,7 +318,7 @@ class Peer
 
 	static function updatePeerInfo($ip, $info) {
 		global $db;
-		_log("PeerSync: Peer request: update info from $ip ".json_encode($info), 3);
+//		_log("PeerSync: Peer request: update info from $ip ".json_encode($info), 3);
 		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, block_id=:block_id, appshash=:appshash, score=:score, version=:version,  
 				miner=:miner, generator=:generator, masternode=:masternode, hostname=:hostname, dapps_id =:dapps_id, dappshash =:dapps_hash
 				WHERE ip=:ip",

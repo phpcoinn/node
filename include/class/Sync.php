@@ -152,7 +152,7 @@ class Sync extends Daemon
 			if(isset($peerData[$hostname])) {
 				continue;
 			}
-			_log("PeerSync: Contacting peer $hostname", 5);
+//			_log("PeerSync: Contacting peer $hostname", 5);
 			$url = $hostname."/peer.php?q=";
 			$res = peer_post($url."currentBlock", [], 5, $err, $peerInfo);
 			if ($res === false) {

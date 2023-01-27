@@ -800,4 +800,13 @@ class PeerRequest
 		}
 	}
 
+	static function deepCheck() {
+		$hostname = self::$peer['hostname'];
+		_log("Start run deepCheck",4);
+		$dir = ROOT."/cli";
+		$cmd = "php $dir/deepcheck.php $hostname";
+		Nodeutil::runSingleProcess($cmd);
+		api_echo(["stratus"=>"started","hostname"=>$hostname]);
+	}
+
 }

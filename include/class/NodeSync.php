@@ -545,7 +545,7 @@ class NodeSync
 							continue;
 						}
 						_log("We got ok block - go to next");
-						$next_block = getPeerBlock($hostname, $current['height']+1);
+						$next_block = self::staticGetPeerBlock($hostname, $current['height']+1);
 						if(!$next_block) {
 							_log("Not get next block for peer - check other peer");
 							continue;
@@ -570,8 +570,16 @@ class NodeSync
 							break 2;
 						}
 						_log("Block verified");
+						$added = true;
 						break;
 					}
+
+					if(!$added) {
+						_log("Can not add new block");
+						$syncing = false;
+						break;
+					}
+
 				}
 			}
 		}
@@ -581,12 +589,15 @@ class NodeSync
 	static function compareBlocks($block1, $block2) {
 		if($block1['elapsed'] == $block2['elapsed']) {
 			if($block1['date'] == $block2['date']) {
-				return strcmp($block1['id'], $block2['id']);
+				//wins block with lower id
+				return strcmp($block2['id'], $block1['id']);
 			} else {
-				return $block1['date'] - $block2['date'];
+				//wind block with prev date
+				return $block2['date'] - $block1['date'];
 			}
 		} else {
-			return $block1['elapsed'] - $block2['elapsed'];
+			//wins faster block
+			return $block2['elapsed'] - $block1['elapsed'];
 		}
 	}
 
