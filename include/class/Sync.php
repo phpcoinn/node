@@ -24,7 +24,72 @@ class Sync extends Daemon
 		$db->setConfig("sync_disabled", 1);
 	}
 
+	static function processNew() {
+		global $db, $_config;
+		ini_set('memory_limit', '2G');
+		$t1 = microtime(true);
+		Peer::deleteDeadPeers();
+		Peer::blackclistInactivePeers();
+		Peer::resetResponseTimes();
+		$res = NodeSync::checkBlocks();
+		if(!$res) {
+			_log("Block database is invalid");
+			Config::setVal("blockchain_invalid", 1);
+			return;
+		}
+		$res = NodeSync::compareCheckPoints();
+		if(!$res) {
+			_log("Blockchain is invalid - checkpoints are not correct");
+			Config::setVal("blockchain_invalid", 1);
+			return;
+		}
+		Config::setVal("blockchain_invalid", 0);
+
+		NodeSync::recheckLastBlocks();
+		NodeSync::checkForkedBlocks();
+		NodeSync::syncBlocks();
+		$peersForSync = Peer::getValidPeersForSync();
+		$nodeSync = new NodeSync($peersForSync);
+		$nodeSync->calculateNodeScoreNew();
+
+		Mempool::deleteOldMempool();
+
+		//rebroadcasting local transactions
+		$current = Block::current();
+		if ($_config['sync_rebroadcast_locals'] == true && $_config['disable_repropagation'] == false) {
+			$r = Mempool::getForRebroadcast($current['height']);
+			_log("Rebroadcasting local transactions - ".count($r), 1);
+			foreach ($r as $x) {
+				Propagate::transactionToAll($x['id']);
+			}
+		}
+
+		//rebroadcasting transactions
+		if ($_config['disable_repropagation'] == false) {
+			$forgotten = $current['height'] - $_config['sync_rebroadcast_height'];
+			$r=Mempool::getForgotten($forgotten);
+
+			_log("Rebroadcasting external transactions - ".count($r),1);
+
+			foreach ($r as $x) {
+				Propagate::transactionToAll($x['id']);
+			}
+		}
+
+
+		Nodeutil::cleanTmpFiles();
+		Minepool::deleteOldEntries();
+		Cache::clearOldFiles();
+		_log("Finishing sync",3);
+		$t2 = microtime(true);
+		_log("Sync process finished in time ".round($t2-$t1, 3));
+	}
+
 	static function process() {
+		self::processNew();
+	}
+
+	static function processOld() {
 		global $db, $_config;
 		ini_set('memory_limit', '2G');
 		$current = Block::current();

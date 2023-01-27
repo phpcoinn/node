@@ -122,6 +122,15 @@ if ($q == "info") {
 		api_err("sync");
 	}
 
+	if(Config::getVal("blockchain_invalid") == 1) {
+		$l .= " invalid chain ";
+		_log($l);
+		$generator_stat['rejected']++;
+		@$generator_stat['reject-reasons']['invalid-chain']++;
+		saveGeneratorStat($generator_stat);
+		api_err("invalid-chain");
+	}
+
 	$peers = Peer::getCount();
 	_log("Getting peers count = " . $peers, 5);
 	if ($peers < 3 && !DEVELOPMENT) {

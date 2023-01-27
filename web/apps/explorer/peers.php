@@ -23,6 +23,17 @@ group by p.height
 order by p.height desc;";
 $peers_by_height = $db->run($sql);
 
+$peers_by_height_map = [];
+foreach($peers_by_height as $peer) {
+	$peers_by_height_map[$peer['height']]=$peer['peer_cnt'];
+}
+
+if(!isset($peers_by_height_map[$current_height])) {
+	$peers_by_height_map[$current_height]="current";
+}
+
+krsort($peers_by_height_map);
+
 $sql="select p.version, count(p.id) as peer_cnt
 from peers p
 where p.blacklisted < UNIX_TIMESTAMP()
@@ -168,12 +179,12 @@ require_once __DIR__. '/../common/include/top.php';
             </tr>
             </thead>
             <tbody>
-			<?php foreach ($peers_by_height as $peer) { ?>
-                <tr class="<?php if ($peer['height'] == $current_height) { ?>table-success<?php } ?>">
+			<?php foreach ($peers_by_height_map as $height => $cnt) { ?>
+                <tr class="<?php if ($height == $current_height) { ?>table-success<?php } ?>">
                     <td>
-                        <?php echo $peer['height'] ?>
+                        <?php echo $height ?>
                     </td>
-                    <td><?php echo $peer['peer_cnt'] ?></td>
+                    <td><?php echo $cnt ?></td>
                 </tr>
 			<?php } ?>
             </tbody>

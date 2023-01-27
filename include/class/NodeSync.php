@@ -194,6 +194,23 @@ class NodeSync
 
 	}
 
+	function calculateNodeScoreNew() {
+		global $db;
+		$sql="select sum(if(p.ok=1, 1, 0)) / count(*) as node_score
+		from (
+		         select p.id,
+		                (p.height <= (select max(height) from blocks) and
+		                 p.block_id = (select b.id from blocks b where b.height = p.height)) as ok
+		         from peers p
+		         where p.blacklisted < unix_timestamp()
+		           and unix_timestamp() - p.ping < 2 * 60
+		     ) as p";
+		$res = $db->single($sql);
+		$node_score = round($res * 100, 2);
+		$db->setConfig('node_score', $node_score);
+		_log("Node score: $node_score");
+	}
+
 	function calculateNodeScore() {
 		global $db;
 		$skipped_peer = 0;
@@ -266,13 +283,14 @@ class NodeSync
 	}
 
 	function getPeerBlock($host, $height) {
+
 		if(isset($this->peerBlocks[$host][$height])) {
 			return $this->peerBlocks[$host][$height];
 		} else {
 			$limit = 10;
 			$url = $host."/peer.php?q=";
 			_log("Reading blocks from $height from peer $host", 3);
-			$peer_blocks = peer_post($url."getBlocks", ["height" => $height - $limit], 5);
+			$peer_blocks = peer_post($url."getBlocks", ["height" => $height - $limit]);
 			if ($peer_blocks === false) {
 				_log("Could not get block from $host - " . $height, 3);
 			} else {
@@ -416,15 +434,7 @@ class NodeSync
 						_log("   block_id=$block_id elapsed=".$block['elapsed']." date=".$block['date']. " difficulty=".$block['difficulty']. " tx_cnt=".count($block['data']));
 					}
 					uasort($forked_blocks, function ($b1, $b2) {
-						if($b1['elapsed'] == $b2['elapsed']) {
-							if($b1['date'] == $b2['date']) {
-								return strcmp($b1['id'], $b2['id']);
-							} else {
-								return $b1['date'] - $b2['date'];
-							}
-						} else {
-							return $b1['elapsed'] - $b2['elapsed'];
-						}
+						return NodeSync::compareBlocks($b1, $b2);
 					});
 					$forked_block_winner = array_shift($forked_blocks);
 					$our_block = Block::get($height);
@@ -473,30 +483,13 @@ class NodeSync
 
 	static function syncBlocks() {
 
-		$blocksMap = self::getPeerBlocksMap();
-		$best_height = 0;
-
-		foreach ($blocksMap as $height=>$blocks) {
-			$diff_blocks = count($blocks);
-			$peerInfo = Peer::getInfo();
-//	        _log("Checking height=$height diff_blocks=".count($blocks));
-			if(count($blocks)>1) {
-				_log("There are still forks at height $height");
-
-				break;
-			} else {
-				foreach ($blocks as $block_id => $hostnames) {
-					$hostname_count = count($hostnames);
-					_log(" Found ".count($hostnames)." peers with height=$height and block_id=$block_id");
-					if(count($hostnames) > 1) {
-						$best_height = $height;
-					}
-				}
-			}
-		}
-
+		$peersForSync = Peer::getValidPeersForSync();
+		$best_height = $peersForSync[0]['height'];
+		$block_id = $peersForSync[0]['block_id'];
 
 		$current_height = Block::getHeight();
+
+
 		_log("Get best height = $best_height our height=$current_height");
 
 		if($current_height == $best_height) {
@@ -505,15 +498,12 @@ class NodeSync
 			_log("We are ahead of peers");
 		} else {
 			_log("Need to sync blokchain");
-			$peerInfo = Peer::getInfo();
-			foreach ($blocksMap[$best_height] as $block_id => $hostnames) {
-				_log("Sync height $best_height");
 
 				$syncing = true;
 				$limit_cnt = 0;
 				while($syncing) {
 					$limit_cnt++;
-					if($limit_cnt > 10) {
+					if($limit_cnt > 1000) {
 						break;
 					}
 					$current = Block::current();
@@ -529,7 +519,8 @@ class NodeSync
 					$peers_cnt = 0;
 					$added = false;
 //					_log("hostnames".print_r($hostnames,1));
-					foreach($hostnames as $hostname => $peer) {
+					foreach($peersForSync as $peer) {
+						$hostname = $peer['hostname'];
 						$peers_cnt++;
 						if($peers_cnt > $limit_peers) {
 							$syncing = false;
@@ -583,7 +574,6 @@ class NodeSync
 					}
 
 				}
-			}
 		}
 
 	}
@@ -601,6 +591,31 @@ class NodeSync
 			//wins faster block
 			return $block2['elapsed'] - $block1['elapsed'];
 		}
+	}
+
+	static function compareCheckPoints() {
+		global $checkpoints;
+		require_once ROOT . "/include/checkpoints.php";
+		foreach($checkpoints as $height => $block_id) {
+			$block = Block::get($height);
+			if(!empty($block)) {
+				$block_ok = $block['id'] == $block_id;
+				_log("Compare checkpoint $height - $block_id block_ok=$block_ok");
+				if(!$block_ok) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	static function checkBlocks() {
+		global $db;
+		$sql="select count(id) from blocks";
+		$count = $db->single($sql);
+		$sql="select max(height) from blocks";
+		$max = $db->single($sql);
+		return $count == $max;
 	}
 
 

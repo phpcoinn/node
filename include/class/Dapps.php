@@ -23,7 +23,7 @@ class Dapps extends Daemon
 			$res = shell_exec($cmd);
 			$arr = explode(" ", $res);
 			$appsHash = trim($arr[0]);
-			_log("Executing calcAppsHash appsHash=$appsHash", 5);
+//			_log("Executing calcAppsHash appsHash=$appsHash", 5);
 		}
 		return $appsHash;
 	}

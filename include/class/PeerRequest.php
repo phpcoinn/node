@@ -170,6 +170,9 @@ class PeerRequest
 		// receive a new transaction from a peer
 //    $current = $block->current();
 
+		if(Config::getVal("blockchain_invalid") == 1) {
+			api_err("invalid-peer");
+		}
 
 		// no transactions accepted if the sync is running
 		if (Config::isSync()) {
@@ -231,6 +234,11 @@ class PeerRequest
 	}
 
 	static function submitBlock() {
+
+		self::submitBlockNew();
+		return;
+
+
 		$ip = self::$ip;
 		$data = self::$data;
 
@@ -696,6 +704,10 @@ class PeerRequest
 		$data = self::$data;
 		global $_config;
 
+		if(Config::getVal("blockchain_invalid") == 1) {
+			api_err("invalid-peer");
+		}
+
 		$current = Block::current();
 
 		$diff = $current['height']-$data['height'];
@@ -761,7 +773,7 @@ class PeerRequest
 					$cmd = "php $dir/peercheck.php ".self::$peer['hostname']. " ".$data['height'];
 					$check_cmd = "php $dir/peercheck.php";
 					_log("submitBlock: run peer check with ".self::$peer['hostname']);
-//					Nodeutil::runSingleProcess($cmd, $check_cmd);
+					Nodeutil::runSingleProcess($cmd, $check_cmd);
 				}
 				api_err("block-ok");
 			} else {

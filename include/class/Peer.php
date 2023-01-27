@@ -427,4 +427,40 @@ class Peer
 		$build_number = array_pop($arr);
 		return $build_number;
 	}
+
+	static function getValidPeersForSync() {
+		global $db;
+		$sql="select p.*
+		from peers p
+		where p.height > (select max(height) from blocks)
+		  and p.blacklisted < unix_timestamp()
+		  and unix_timestamp() - p.ping < 2 * 60
+		  and p.height not in (
+		    select fp.height
+		    from peers fp
+		    group by fp.height
+		    having count(distinct fp.block_id) > 1
+		)
+		  and p.height in (
+		    select mp.height
+		    from peers mp
+		    group by mp.height
+		    having count(mp.id) > 1
+		)
+		  and (p.height < (
+		    select p.height
+		    from peers p
+		    group by p.height
+		    having count(distinct p.block_id) > 1
+		      order by p.height limit 1
+		) or (
+		    select p.height
+		    from peers p
+		    group by p.height
+		    having count(distinct p.block_id) > 1
+		    order by p.height limit 1
+		       ) is null)
+		order by p.height asc, p.response_time / p.response_cnt asc";
+		return $db->run($sql);
+	}
 }
