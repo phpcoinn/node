@@ -367,9 +367,10 @@ class Nodeutil
 		$GLOBALS['measure'][$name]=microtime(true);
 	}
 
-	static function runSingleProcess($cmd) {
+	static function runSingleProcess($cmd, $check_cmd = null) {
 		_log("runSingleProcess $cmd", 5);
-		$res = shell_exec("ps uax | grep '$cmd' | grep -v grep");
+		if(empty($check_cmd)) $check_cmd = $cmd;
+		$res = shell_exec("ps uax | grep '$check_cmd' | grep -v grep");
 		if(!$res) {
 			$exec_cmd = "$cmd > /dev/null 2>&1  &";
 			system($exec_cmd);
