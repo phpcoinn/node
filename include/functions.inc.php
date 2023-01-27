@@ -108,6 +108,18 @@ function _log($data, $verbosity = 0)
 
 }
 
+function _logp($log, $v = null) {
+	if(!isset($GLOBALS['log'])) {
+		$GLOBALS['log']="";
+	}
+	$GLOBALS['log'].=" > " . $log;
+}
+
+function _logf($log) {
+	$GLOBALS['log'].=" > " . $log;
+	_log($GLOBALS['log']);
+}
+
 // converts PEM key to hex
 function pem2hex($data)
 {
