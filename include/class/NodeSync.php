@@ -380,7 +380,11 @@ class NodeSync
 	}
 
 	static function getPeerBlocksMap() {
-		$peers = Peer::getPeersForSync();
+		global $db;
+		$sql="select * from peers p where
+			p.blacklisted < unix_timestamp()
+			order by response_time/response_cnt";
+		$peers = $db->run($sql);
 		_log("Sync: Found ".count($peers)." to sync");
 		$blocksMap = [];
 		foreach ($peers as $peer) {
@@ -430,13 +434,12 @@ class NodeSync
 				}
 				if(count($forked_blocks)>1) {
 					_log("Forked blocks for height $height:");
-					foreach($forked_blocks as $block_id => $block) {
-						_log("   block_id=$block_id elapsed=".$block['elapsed']." date=".$block['date']. " difficulty=".$block['difficulty']. " tx_cnt=".count($block['data']));
-					}
 					uasort($forked_blocks, function ($b1, $b2) {
 						return NodeSync::compareBlocks($b2, $b1);
 					});
-					_log("forked_blocks sorted:".print_r($forked_blocks, 1));
+					foreach($forked_blocks as $block_id => $block) {
+						_log("   block_id=$block_id elapsed=".$block['elapsed']." date=".$block['date']. " difficulty=".$block['difficulty']. " tx_cnt=".count($block['data']));
+					}
 					$forked_block_winner = array_shift($forked_blocks);
 					$our_block = Block::get($height);
 					_log("forked_block_winner=".$forked_block_winner['id']." our block_id=".$our_block['id']);
@@ -455,6 +458,8 @@ class NodeSync
 						Block::delete($height);
 						return;
 					}
+				} else {
+					_log("No forked blocks ".print_r($forked_blocks,1));
 				}
 			}
 		}
