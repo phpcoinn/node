@@ -374,7 +374,7 @@ class Masternode extends Daemon
 				$total_received = Transaction::getTotalReceived($masternode_id, $height);
 				$balance = $total_received - $total_sent;
 				$collateral = Block::getMasternodeCollateral($height);
-				if(floatval($balance) - $transaction->val < $collateral) {
+				if(round(floatval($balance) - $transaction->val,8) < $collateral) {
 					throw new Exception("Can not spent more than collateral. Balance=$balance amount=".$transaction->val);
 				}
 			}
