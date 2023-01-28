@@ -16,4 +16,6 @@ $checkpoints = [
 	561000 => "Gm1ZQU7qjwiZWX7q5QHZMkA5SPXuY9coeJeZVb5XjTsn",
 	562000 => "KMCes9LK16fcnmBtKufssYRSuMm9vFhSp1xGqsoUFrn",
 	563000 => "6EatKBVRkyqTu2cqJHJBcy3aYPdPHE5iEFCFxdzhZdpA",
+	564000 => "25kLGoY4xd6o72DKTXA77wmdZYAto1pcTk1rw2pK7EQm",
+	565000 => "FE1sfL3r6YN5z5nHpUimFpobiZ8jGRfykN6fmtCTehy5",
 ];

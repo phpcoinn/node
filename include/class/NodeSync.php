@@ -524,13 +524,14 @@ class NodeSync
 					$limit_peers = 10;
 					$peers_cnt = 0;
 					$added = false;
+					$peer_blocks = [];
 //					_log("hostnames".print_r($hostnames,1));
 					foreach($peersForSync as $peer) {
 						$hostname = $peer['hostname'];
 						$peers_cnt++;
 						if($peers_cnt > $limit_peers) {
 							$syncing = false;
-							break 2;
+							break;
 						}
 						_log("Get block ".$current['height']." from peer $hostname");
 						$peer_block = self::staticGetPeerBlock($hostname, $current['height']);
@@ -539,8 +540,9 @@ class NodeSync
 							_log("Not get block for peer - check other peer");
 							continue;
 						}
+						$peer_blocks[$peer_block['id']]=$peer_block;
 						if ($peer_block['id'] != $current['id']) {
-							_log("Invalid block get from peer");
+							_log("Invalid block get from peer ");
 							continue;
 						}
 						_log("We got ok block - go to next");
@@ -573,7 +575,21 @@ class NodeSync
 						break;
 					}
 
+					_log("Finish check peers");
+
 					if(!$added) {
+
+						_log("peer_blocks:".print_r($peer_blocks, 1));
+						uasort($peer_blocks, function ($b1, $b2) {
+							return NodeSync::compareBlocks($b2, $b1);
+						});
+						$winner = array_shift($peer_blocks);
+						$current = Block::export("", Block::getHeight());
+						if(NodeSync::compareBlocks($winner, $current)) {
+							_log("Our block is invalid");
+							Block::pop();
+						}
+
 						_log("Can not add new block");
 						$syncing = false;
 						break;
