@@ -31,6 +31,10 @@ class Sync extends Daemon
 		Peer::deleteDeadPeers();
 		Peer::blackclistInactivePeers();
 		Peer::resetResponseTimes();
+
+		self::checkPeers();
+		self::getMorePeers();
+
 		NodeSync::recheckLastBlocks();
 
 		$res = NodeSync::checkBlocks();
@@ -88,6 +92,83 @@ class Sync extends Daemon
 
 	static function process() {
 		self::processNew();
+	}
+
+	static function checkPeers() {
+		global $_config, $db;
+		$total_peers = Peer::getCount(false);
+		_log("Total peers: ".$total_peers, 3);
+		$peered = [];
+		// if we have no peers, get the seed list from the official site
+		if ($total_peers == 0) {
+			$i = 0;
+			$failed_peers = 0;
+			_log('No peers found. Attempting to get peers from the initial list');
+
+			$peers = Peer::getInitialPeers();
+
+			_log("Checking peers: ".print_r($peers, 1), 3);
+			foreach ($peers as $peer) {
+				// Peer with all until max_peers
+				// This will ask them to send a peering request to our peer.php where we add their peer to the db.
+				$peer = trim(san_host($peer));
+
+				if(!Peer::validate($peer)) {
+					continue;
+				}
+
+				_log("Process peer ".$peer, 4);
+
+				if($peer === $_config['hostname']) {
+					continue;
+				}
+
+				// store the hostname as md5 hash, for easier checking
+				$pid = md5($peer);
+				// do not peer if we are already peered
+				if ($peered[$pid] == 1) {
+					continue;
+				}
+				$peered[$pid] = 1;
+
+				if ($_config['passive_peering'] == true) {
+					// does not peer, just add it to DB in passive mode
+					$res=Peer::insert(md5($peer), $peer);
+				} else {
+					// forces the other node to peer with us.
+					$res = peer_post($peer."/peer.php?q=peer", ["hostname" => $_config['hostname'], "repeer" => 1], 30, $err);
+				}
+				if ($res !== false) {
+					$i++;
+					_log("Peering OK - $peer");
+				} else {
+					$failed_peers++;
+					_log("Peering FAIL - $peer Error: $err");
+					if($failed_peers > 10) {
+						break;
+					}
+				}
+				if ($i > $_config['max_peers']) {
+					break;
+				}
+			}
+			// count the total peers we have
+			$total_peers = Peer::getCountAll();
+			if ($total_peers == 0) {
+				// something went wrong, could not add any peers -> exit
+				_log("There are no active peers");
+				$db->setConfig('node_score', 0);
+				_log("There are no active peers!\n");
+			}
+		}
+	}
+
+	static function getMorePeers() {
+		Daemon::runAtInterval("gmp", 30, function() {
+			$dir = ROOT."/cli";
+			$cmd = "php $dir/util.php get-more-peers";
+			Nodeutil::runSingleProcess($cmd);
+		});
 	}
 
 	static function processOld() {
