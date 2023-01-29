@@ -1182,6 +1182,20 @@ class Util
 		}
 	}
 
+	static function refreshPeers() {
+		$peers = Peer::findPeers(false, false);
+		$cnt = count($peers);
+		foreach($peers as $ix=>$peer) {
+			$url = $peer['hostname']. "/peer.php?q=ping";
+			$err = null;
+			$res = peer_post($url, [], 30, $err);
+			_log("refreshPeers: ".($ix+1)."/$cnt hostname=".$peer['hostname']. " res=".json_encode($res). " err=$err");
+			if($res !== "pong") {
+				Peer::blacklist($peer['id'], "Unresponsive");
+			}
+		}
+	}
+
 //	static function emptyMasternodes() {
 //		global $db;
 //		$sql="delete from masternode";

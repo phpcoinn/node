@@ -593,7 +593,13 @@ require_once __DIR__. '/../common/include/top.php';
 
         <?php } ?>
 
-	    <?php if($view == "peers") { ?>
+	    <?php if($view == "peers") {
+
+            $total = count(Peer::findPeers(null, null));
+            $blacklisted = count(Peer::findPeers(true, null));
+            $live = count(Peer::findPeers(null, true));
+
+            ?>
 
             <div class="mt-4">
                 <form class="row gx-3 gy-2 align-items-center" method="post" action="">
@@ -608,6 +614,13 @@ require_once __DIR__. '/../common/include/top.php';
             </div>
 
             <hr/>
+
+            Total: <?php echo $total ?>
+
+            Blacklisted: <?php echo $blacklisted ?>
+
+            Live: <?php echo $live ?>
+
 
             <h4>Peers</h4>
             <div class="table-responsive">

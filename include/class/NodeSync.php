@@ -203,7 +203,6 @@ class NodeSync
 		                 p.block_id = (select b.id from blocks b where b.height = p.height)) as ok
 		         from peers p
 		         where p.blacklisted < unix_timestamp()
-		           and unix_timestamp() - p.ping < 2 * 60
 		     ) as p";
 		$res = $db->single($sql);
 		$node_score = round($res * 100, 2);

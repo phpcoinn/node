@@ -34,6 +34,7 @@ class Sync extends Daemon
 
 		self::checkPeers();
 		self::getMorePeers();
+//		self::refreshPeers();
 
 		NodeSync::recheckLastBlocks();
 
@@ -167,6 +168,14 @@ class Sync extends Daemon
 		Daemon::runAtInterval("gmp", 30, function() {
 			$dir = ROOT."/cli";
 			$cmd = "php $dir/util.php get-more-peers";
+			Nodeutil::runSingleProcess($cmd);
+		});
+	}
+
+	static function refreshPeers() {
+		Daemon::runAtInterval("refreshPeers", 45, function() {
+			$dir = ROOT."/cli";
+			$cmd = "php $dir/util.php refresh-peers";
 			Nodeutil::runSingleProcess($cmd);
 		});
 	}

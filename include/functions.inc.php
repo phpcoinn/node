@@ -115,9 +115,9 @@ function _logp($log, $v = null) {
 	$GLOBALS['log'].=" > " . $log;
 }
 
-function _logf($log) {
+function _logf($log, $level=5) {
 	$GLOBALS['log'].=" > " . $log;
-	_log($GLOBALS['log']);
+	_log($GLOBALS['log'], $level);
 }
 
 // converts PEM key to hex

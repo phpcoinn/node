@@ -57,6 +57,33 @@ class Peer
 		return $rows;
 	}
 
+	static function findPeers($blacklisted, $live, $limit = null, $order="response_time/response_cnt") {
+		global $db;
+
+		$sql="select * from peers where 1=1 ";
+		if($blacklisted === true) {
+			$sql.=" and blacklisted > ".DB::unixTimeStamp();
+		} else if ($blacklisted === false) {
+			$sql.=" and blacklisted < ".DB::unixTimeStamp();
+		}
+		if($live === true) {
+			$sql.= "and ping > ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES;
+		} else {
+			$sql.= "and ping < ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES;
+		}
+
+		if(!empty($order)) {
+			$sql.=" order by $order";
+		}
+
+		if(!empty($limit)) {
+			$sql.=" limit $limit";
+		}
+
+		$rows = $db->run($sql);
+		return $rows;
+	}
+
 	static function getPeersForPropagate($limit = null, $random=false) {
 		global $db;
 		$sql="select * from peers 
