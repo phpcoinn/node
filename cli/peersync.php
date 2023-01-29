@@ -47,4 +47,6 @@ while($syncing) {
 	}
 }
 
+Propagate::blockToAll("current");
+
 _log("PeerSync: end");

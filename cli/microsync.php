@@ -65,6 +65,8 @@ if (!empty($ip)) {
 
 		_log("Microsync: Synced block from ".$peer['hostname']." - {$b['height']} {$b['difficulty']}", 2);
 	} while (0);
+	
+	Propagate::blockToAll("current");
 
 	Config::setSync(0);
 	_log("Microsync: finished");

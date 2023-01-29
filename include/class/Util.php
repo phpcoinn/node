@@ -807,6 +807,7 @@ class Util
 					$imported++;
 				}
 			}
+			Propagate::blockToAll('current');
 			fclose($handle);
 			echo "Successfully imported $imported blocks from height $start_height".PHP_EOL;
 		}

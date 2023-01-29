@@ -595,6 +595,8 @@ class NodeSync
 					}
 
 				}
+				
+				Propagate::blockToAll('currrent');
 		}
 
 	}
