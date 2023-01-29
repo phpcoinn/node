@@ -770,10 +770,10 @@ class PeerRequest
 				_log("submitBlock: other block is winner");
 				if(self::$peer) {
 					$dir = ROOT."/cli";
-					$cmd = "php $dir/peercheck.php ".self::$peer['hostname']. " ".$data['height'];
-					$check_cmd = "php $dir/peercheck.php";
-					_log("submitBlock: run peer check with ".self::$peer['hostname']);
-					Nodeutil::runSingleProcess($cmd, $check_cmd);
+//					$cmd = "php $dir/peercheck.php ".self::$peer['hostname']. " ".$data['height'];
+//					$check_cmd = "php $dir/peercheck.php";
+//					_log("submitBlock: run peer check with ".self::$peer['hostname']);
+//					Nodeutil::runSingleProcess($cmd, $check_cmd);
 				}
 				api_err("block-ok");
 			} else {
@@ -799,10 +799,10 @@ class PeerRequest
 //				_log("submitBlock: other block is winner");
 				if(self::$peer) {
 					$dir = ROOT."/cli";
-					$cmd = "php $dir/peercheck.php ".self::$peer['hostname']. " ".$data['height'];
-					$check_cmd = "php $dir/peercheck.php";
-					_log("submitBlock: run peer check with ".self::$peer['hostname']);
-					Nodeutil::runSingleProcess($cmd, $check_cmd);
+//					$cmd = "php $dir/peercheck.php ".self::$peer['hostname']. " ".$data['height'];
+//					$check_cmd = "php $dir/peercheck.php";
+//					_log("submitBlock: run peer check with ".self::$peer['hostname']);
+//					Nodeutil::runSingleProcess($cmd, $check_cmd);
 				}
 				api_err("block-ok");
 			} else {
