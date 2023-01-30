@@ -232,12 +232,12 @@ class Peer
 		];
 	}
 
-	static function blacklist($id, $reason = '') {
+	static function blacklist($id, $reason = '', $min=10) {
 		global $db;
 		$hostname = $db->single("select hostname from peers where id = :id", [":id"=>$id]);
 		_log("Blacklist peer $hostname reason=$reason");
 		$db->run(
-			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*1), 
+			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*$min), 
 				blacklist_reason=:blacklist_reason WHERE id=:id",
 			[":id" => $id, ':blacklist_reason'=>$reason]
 		);
