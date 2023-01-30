@@ -461,10 +461,36 @@ require_once __DIR__. '/../common/include/top.php';
 	    <?php if($view == "php") {
 	        phpinfo();
         } ?>
-		<?php if($view == "db") { ?>
+		<?php if($view == "db") {
+
+			$sql="select count(id) from blocks";
+			$count = $db->single($sql);
+			$sql="select max(height) from blocks";
+			$max = $db->single($sql);
+
+            $blockchain_valid = ($count == $max);
+            if(!$blockchain_valid) {
+                $sql="select min(height) from (
+                select b.height, b.id, lead(b.height) over (),
+                       lead(b.height) over () - b.height as diff
+                from blocks b
+                order by b.height asc) as b
+                where diff <> 1";
+                $invalid_height = $db->single($sql);
+            }
+
+            ?>
+
 
             <div class="row">
                 <div class="col-lg-4 col-sm-6">
+                    <?php if (!$blockchain_valid) { ?>
+                        <div class="alert alert-danger">
+                            Blockchain is invalid.
+                            <br/>
+                            Blocks: <?php echo $count ?> - Max height: <?php echo $max ?> - Invalid height: <?php echo $invalid_height ?>
+                        </div>
+                    <?php } ?>
                     <div class="flex-row d-flex justify-content-between flex-wrap">
                         <label>Connection:</label>
                         <div><?php echo $dbData['connection'] ?></div>

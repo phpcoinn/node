@@ -598,11 +598,15 @@ class NodeSync
 					if(!$added) {
 
 						_log("peer_blocks:".print_r($peer_blocks, 1));
-						uasort($peer_blocks, function ($b1, $b2) {
-							return NodeSync::compareBlocks($b2, $b1);
-						});
+						if(count($peer_blocks)>1) {
+							uasort($peer_blocks, function ($b1, $b2) {
+								return NodeSync::compareBlocks($b2, $b1);
+							});
+						}
 						$winner = array_shift($peer_blocks);
 						$current = Block::export("", Block::getHeight());
+						_log("Compare blocks:  winner: elapsed=".$winner['elapsed']. " id=".$winner['id']);
+						_log("Compare blocks: current: elapsed=".$current['elapsed']. " id=".$current['id']);
 						if(NodeSync::compareBlocks($winner, $current)) {
 							_log("Our block is invalid");
 							Block::pop();

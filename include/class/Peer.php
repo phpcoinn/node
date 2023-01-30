@@ -68,7 +68,7 @@ class Peer
 		}
 		if($live === true) {
 			$sql.= "and ping > ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES;
-		} else {
+		} else if ($live === false) {
 			$sql.= "and ping < ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES;
 		}
 

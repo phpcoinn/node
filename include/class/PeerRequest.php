@@ -11,7 +11,11 @@ class PeerRequest
 
 	static function processRequest() {
 		global $_config;
+
+
+		_logp("PeerRequest: received peer request");
 		if(isset($_config) && $_config['offline']==true) {
+			_logf("Peer is set to offline");
 			api_err("Peer is set to offline");
 		}
 		if (!empty($_POST['data'])) {
@@ -19,15 +23,18 @@ class PeerRequest
 		}
 		global $_config;
 		if ($_POST['coin'] != COIN) {
+			_logf("Invalid coin request=".json_encode($_REQUEST)." server=".json_encode($_SERVER));
 			api_err("Invalid coin ".json_encode($_REQUEST), 3);
 		}
 		if(isset($_POST['network'])) {
 			if($_POST['network'] != NETWORK) {
+				_logf("Invalid network");
 				api_err("Invalid network ".$_POST['network']);
 			}
 		}
 		if(isset($_POST['chain_id']) && strlen($_POST['chain_id'])>0) {
 			if($_POST['chain_id'] != CHAIN_ID) {
+				_logf("Invalid chain ID");
 				api_err("Invalid chain ID ".$_POST['chain_id']);
 			}
 		}
@@ -37,10 +44,14 @@ class PeerRequest
 			if($peer) {
 				Peer::blacklist($peer['id'], "Invalid version ".$_POST['version']);
 			}
+			_logp("request=".json_encode($_REQUEST));
+			_logf("Invalid version ".$_POST['version']);
 			api_err("Invalid version ".$_POST['version']);
 		}
 		$requestId = $_POST['requestId'];
 		_log("Peer request from IP = $ip requestId=$requestId q=".$_GET['q']." chainId=".$_POST['chain_id'] ,4);
+
+		_logp("q=".$_GET['q']);
 
 		$info = $_POST['info'];
 
@@ -48,12 +59,15 @@ class PeerRequest
 		_log("Filtered IP = $ip",4);
 
 		if(($ip === false || strlen($ip)==0)) {
+			_logf("Invalid peer IP address");
 			api_err("Invalid peer IP address");
 		}
 
 		$ip = $ip . (empty(COIN_PORT) ? "" :  ":" . COIN_PORT);
+		_logp("ip=$ip");
 
 		if(!Blacklist::checkIp($ip)) {
+			_logf("blocked-ip");
 			api_err("blocked-ip");
 		}
 
@@ -63,6 +77,7 @@ class PeerRequest
 				$hostname=$info['hostname'];
 				_log("Peer request from blacklisted peer ip=$ip hostname=$hostname reason=".$peer['blacklist_reason']." info=".json_encode($info). "REMOTE_ADDR=".$_SERVER['REMOTE_ADDR'].
 				" HTTP_X_FORWARDED_FOR=".$_SERVER['HTTP_X_FORWARDED_FOR']);
+				_logf("blacklisted-peer");
 				api_err("blacklisted-peer SERVER=".json_encode($_SERVER). " peer=".json_encode($peer));
 			}
 		}
@@ -73,18 +88,21 @@ class PeerRequest
 				$peer=Peer::getByIp($ip);
 				if(!empty($peer['hostname']) && $peer['hostname'] != $hostname) {
 					Peer::blacklist($peer['id'], "Invalid hostname $hostname");
+					_logf("blocked-invalid-hostname");
 					api_err("blocked-invalid-hostname");
 				}
 				_log("PRC: ip=$ip hostname=$hostname mn=".$info['masternode']." found_peer=".$peer['hostname'],5);
 			}
+			_logp("update peer info");
 			Peer::updatePeerInfo($ip, $info);
 			if($peer['blacklisted'] < time() && $peer['fails']>0) {
+				_logp("clear blacklist");
 				Peer::clearFails($peer['id']);
 				Peer::clearStuck($peer['id']);
 			}
 		}
 
-
+		_logf("finish process");
 
 
 		self::$ip=$ip;

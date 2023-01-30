@@ -72,6 +72,10 @@ class Block
 				throw new Exception("Blockchain stopped at height " .  STOP_CHAIN_HEIGHT . " - Can not add block");
 			}
 
+			if(Config::getVal("blockchain_invalid") == 1) {
+				throw new Exception("Blockchain is invalid - please reimport");
+			}
+
 	        if(empty($this->generator)) {
 		        $this->generator = Account::getAddress($this->publicKey);
 	        }
