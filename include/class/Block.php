@@ -606,6 +606,13 @@ class Block
 
 	    Config::setSync(1);
 
+	    global $checkpoints;
+	    require_once ROOT . "/include/checkpoints.php";
+		$min_height = array_keys($checkpoints)[count($checkpoints)-1];
+		if($height < $min_height) {
+			$height = $min_height;
+		}
+
         $r = $db->run("SELECT * FROM blocks WHERE height>=:height ORDER by height DESC", [":height" => $height]);
 
         if (count($r) == 0) {

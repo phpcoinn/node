@@ -36,14 +36,10 @@ while(true) {
 			$min_height = $height;
 		} else {
 			_log("PeerCheck: we DO NOT HAVE SAME BLOCK");
+			$invalid_height = $height;
 			$max_height = $height;
 		}
 		if(abs($max_height - $min_height) <=1 ) {
-			if(!$blocks_ok) {
-				$invalid_height = $max_height;
-			} else {
-				$invalid_height = $min_height;
-			}
 			break;
 		}
 		$height =intval(($max_height - $min_height) / 2 + $min_height);
@@ -89,7 +85,7 @@ if($winner) {
 		$hostname = $peer['hostname'];
 		$url = $hostname . "/peer.php?q=getBlock";
 		$peer_block = peer_post($url, ["height" => $invalid_height]);
-		_log("Read block from peer " . ($ix + 1) . "/$count $hostname");
+		_log("Read block from peer " . ($ix + 1) . "/$count $hostname id=".$peer_block['id']. "elapsed=".$peer_block['elapsed']);
 		if (!$peer_block) {
 			$failed++;
 			continue;

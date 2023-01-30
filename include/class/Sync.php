@@ -52,13 +52,13 @@ class Sync extends Daemon
 		}
 		Config::setVal("blockchain_invalid", 0);
 
+		Mempool::deleteOldMempool();
 		NodeSync::checkForkedBlocks();
 		NodeSync::syncBlocks();
 		$peersForSync = Peer::getValidPeersForSync();
 		$nodeSync = new NodeSync($peersForSync);
 		$nodeSync->calculateNodeScoreNew();
 
-		Mempool::deleteOldMempool();
 
 		//rebroadcasting local transactions
 		$current = Block::current();

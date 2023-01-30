@@ -711,8 +711,11 @@ class PeerRequest
 		$current = Block::current();
 
 		$diff = $current['height']-$data['height'];
+		if(self::$peer) {
+			$hostname = self::$peer['hostname'];
+		}
 		// receive a  new block from a peer
-		_log("submitBlock: Receive new block from a peer $ip : id=".$data['id']." height=".$data['height']." current=".$current['height']. " diff=".$diff, 5);
+		_log("submitBlock: Receive new block from a peer $ip hostname=$hostname : id=".$data['id']." height=".$data['height']." current=".$current['height']. " diff=".$diff, 5);
 
 		if($diff < 0) {
 //			_log("submitBlock: current height is lower than received block");

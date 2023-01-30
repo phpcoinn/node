@@ -440,7 +440,7 @@ class NodeSync
 						_log("   block_id=$block_id elapsed=".$block['elapsed']." date=".$block['date']. " difficulty=".$block['difficulty']. " tx_cnt=".count($block['data']));
 					}
 					$forked_block_winner = array_shift($forked_blocks);
-					$our_block = Block::get($height);
+					$our_block = Block::export("", $height);
 					_log("forked_block_winner=".$forked_block_winner['id']." our block_id=".$our_block['id']);
 					foreach($forked_blocks as $block_id => $block) {
 						$forked_hostnames = $blocksMap[$height][$block_id];
@@ -453,8 +453,27 @@ class NodeSync
 						}
 					}
 					if(isset($our_block['id']) && $our_block['id']!=$forked_block_winner['id']) {
-						_log("Our block is forked - remove it");
-						Block::delete($height);
+						_log("Compare our block with winner our-other elapsed=".$our_block['elapsed']."-".$forked_block_winner['elapsed']);
+						$res = NodeSync::compareBlocks($our_block, $forked_block_winner);
+						if($res>0) {
+							_log("Our block is winner");
+						} else if ($res < 0) {
+							_log("Other block is winner");
+							$diff = Block::getHeight() - $height;
+							_log("Our block is forked  diff=$diff");
+							if($diff < 100) {
+								_log("Delete up to height $height");
+								Block::delete($height);
+							} else {
+								$peer_hostname = array_keys($blocks[$forked_block_winner['id']])[0];
+								_log("Diff to high - need full check with peer $peer_hostname");
+								$dir = ROOT."/cli";
+								$cmd = "php $dir/deepcheck.php ".$peer_hostname;
+								$check_cmd = "php $dir/deepcheck.php";
+								_log("submitBlock: run peer check with ".$peer_hostname);
+								Nodeutil::runSingleProcess($cmd, $check_cmd);
+							}
+						}
 						return;
 					}
 				} else {
