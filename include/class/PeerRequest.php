@@ -595,6 +595,9 @@ class PeerRequest
 	}
 
 	static function updateMasternode() {
+		if(Config::isSync()) {
+			api_err("sync");
+		}
 		$masternode = self::$data;
 		$ip = self::$ip;
 		Masternode::updateMasternode($masternode, $ip, $error);

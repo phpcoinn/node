@@ -51,6 +51,11 @@ while(true) {
 	}
 }
 
+
+if(empty($invalid_height)) {
+	_log("No invalid height");
+	exit;
+}
 _log("Invalid height = $invalid_height");
 
 $block = Block::export("",$invalid_height);
@@ -67,9 +72,9 @@ if($res>0) {
 	$my_winner = true;
 	$winner = $block;
 	Peer::blacklist($peer['id'], "Invalid block $height");
-//	$url = $peer['hostname'] . "/peer.php?q=deepCheck";
-//	$res = peer_post($url, [], 5, $err );
-//	_log("Requested deep check res=".json_encode($res));
+	$url = $peer['hostname'] . "/peer.php?q=deepCheck";
+	$res = peer_post($url, [], 5, $err );
+	_log("Requested deep check res=".json_encode($res));
 } else if ($res<0) {
 	_log("Other block is winner");
 	$my_winner = false;
@@ -79,7 +84,7 @@ if($res>0) {
 	$delete_height = $invalid_height;
 	if($diff > 100) {
 		_log("Delete only last 100 blocks");
-		$delete_height = $height - $diff;
+		$delete_height = $height - 100;
 	}
 	_log("Delete up to height $delete_height");
 	Block::delete($delete_height);

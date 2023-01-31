@@ -555,7 +555,6 @@ class NodeSync
 			$sync_block_id = $longest_block_id;
 		}
 
-
 		$sql="select * from peers p
 			where p.height = :height
 			  and p.block_id = :block_id
@@ -565,6 +564,8 @@ class NodeSync
 
 		$peersForSync = $db->run($sql, [":height"=>$sync_height, ":block_id"=>$sync_block_id]);
 		_log("Found ".count($peersForSync)." peer to sync");
+
+		_log("Sync height = $sync_height block=$sync_block_id peers=".count($peersForSync));
 
 
 //		return;
@@ -790,7 +791,30 @@ class NodeSync
 		$count = $db->single($sql);
 		$sql="select max(height) from blocks";
 		$max = $db->single($sql);
-		return $count == $max;
+		_log("checkBlocks count=$count max=$max");
+		if($count == $max) {
+			return true;
+		} else {
+			if(!Config::isSync()) {
+				$sql = "select min(height) from (
+                select b.height, b.id, lead(b.height) over (),
+                       lead(b.height) over () - b.height as diff
+                from blocks b
+                order by b.height asc) as b
+                where diff <> 1";
+				$invalid_height = $db->single($sql);
+				_log("checkBlocks invalid_height=$invalid_height");
+				$diff = Block::getHeight() - $invalid_height;
+				if($diff > 100) {
+					$diff = 100;
+				}
+				$dir = ROOT . "/cli";
+				$cmd = "php $dir/util.php pop $diff";
+				$check_cmd = "php $dir/util.php pop";
+				Nodeutil::runSingleProcess($cmd, $check_cmd);
+			}
+			return false;
+		}
 	}
 
 
