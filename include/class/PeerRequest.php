@@ -761,13 +761,13 @@ class PeerRequest
 				api_echo("block-ok");
 			} else {
 //				_log("submitBlock: we are on lower block");
-				if(self::$peer) {
-					$dir = ROOT."/cli";
-					$cmd = "php $dir/peersync.php ".self::$peer['hostname'];
-					$check_cmd = "php $dir/peersync.php";
+//				if(self::$peer) {
+//					$dir = ROOT."/cli";
+//					$cmd = "php $dir/peersync.php ".self::$peer['hostname'];
+//					$check_cmd = "php $dir/peersync.php";
 //					_log("submitBlock: run peer sync with ".self::$peer['hostname']);
-					Nodeutil::runSingleProcess($cmd, $check_cmd);
-				}
+//					Nodeutil::runSingleProcess($cmd, $check_cmd);
+//				}
 				api_echo("peer-sync");
 			}
 		} else if ($diff > 0) {

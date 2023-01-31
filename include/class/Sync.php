@@ -32,7 +32,8 @@ class Sync extends Daemon
 		$now = time();
 		$sync_last = Config::getVal('sync_last');
 		_log("Check sync last: $sync_last elapsed = ".($now - $sync_last));
-		if(Config::isSync() && $now - $sync_last > 60*60*2) {
+		if(Config::isSync() && ($now - $sync_last > 60*60*2)) {
+			_log("Set sync = 0");
 			Config::setSync(0);
 			return;
 		}
