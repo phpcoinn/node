@@ -795,22 +795,24 @@ class NodeSync
 		if($count == $max) {
 			return true;
 		} else {
-			$sql = "select min(height) from (
-            select b.height, b.id, lead(b.height) over (),
-                   lead(b.height) over () - b.height as diff
-            from blocks b
-            order by b.height asc) as b
-            where diff <> 1";
-			$invalid_height = $db->single($sql);
-			_log("checkBlocks invalid_height=$invalid_height");
-			$diff = Block::getHeight() - $invalid_height;
-			if($diff > 100) {
-				$diff = 100;
+			if(!Config::isSync()) {
+				$sql = "select min(height) from (
+                select b.height, b.id, lead(b.height) over (),
+                       lead(b.height) over () - b.height as diff
+                from blocks b
+                order by b.height asc) as b
+                where diff <> 1";
+				$invalid_height = $db->single($sql);
+				_log("checkBlocks invalid_height=$invalid_height");
+				$diff = Block::getHeight() - $invalid_height;
+				if($diff > 100) {
+					$diff = 100;
+				}
+				$dir = ROOT . "/cli";
+				$cmd = "php $dir/util.php pop $diff";
+				$check_cmd = "php $dir/util.php pop";
+				Nodeutil::runSingleProcess($cmd, $check_cmd);
 			}
-			$dir = ROOT . "/cli";
-			$cmd = "php $dir/util.php pop $diff";
-			$check_cmd = "php $dir/util.php pop";
-			Nodeutil::runSingleProcess($cmd, $check_cmd);
 			return false;
 		}
 	}

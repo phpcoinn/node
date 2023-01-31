@@ -28,6 +28,15 @@ class Sync extends Daemon
 		global $db, $_config;
 		ini_set('memory_limit', '2G');
 		$t1 = microtime(true);
+
+		$now = time();
+		$sync_last = Config::getVal('sync_last');
+		_log("Check sync last: $sync_last elapsed = ".($now - $sync_last));
+		if($now - $sync_last > 60*60*2) {
+			Config::setSync(0);
+			return;
+		}
+
 		Peer::deleteDeadPeers();
 		Peer::blackclistInactivePeers();
 		Peer::resetResponseTimes();
@@ -88,6 +97,7 @@ class Sync extends Daemon
 		Cache::clearOldFiles();
 		_log("Finishing sync",3);
 		$t2 = microtime(true);
+		Config::setVal("sync_last", time());
 		_log("Sync process finished in time ".round($t2-$t1, 3));
 	}
 
