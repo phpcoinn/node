@@ -620,6 +620,7 @@ class Block
         $r = $db->run("SELECT * FROM blocks WHERE height>=:height ORDER by height DESC", [":height" => $height]);
 
         if (count($r) == 0) {
+	        Config::setSync(0);
             return true;
         }
 	    $db->lockTables();

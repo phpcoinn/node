@@ -100,6 +100,11 @@ class PeerRequest
 				Peer::clearFails($peer['id']);
 				Peer::clearStuck($peer['id']);
 			}
+			_log("check peer height hostname=$hostname height=".$peer['height'], 5);
+			$current_height = Block::getHeight();
+			if(isset($peer['height']) && ($current_height - $peer['height'] > 100)) {
+				Peer::blacklist($peer['id'], "100 blocks behind");
+			}
 		}
 
 		_logf("finish process");
