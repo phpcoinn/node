@@ -45,7 +45,9 @@ while(true) {
 		$height =intval(($max_height - $min_height) / 2 + $min_height);
 	} else {
 		_log("PeerCheck: no block from peer");
-		sleep(1);
+		Peer::blacklist($peer['id'], "Invalid block $height");
+		_log("Peer is invalid");
+		exit;
 	}
 }
 
@@ -64,56 +66,69 @@ if($res>0) {
 	_log("My block is winner");
 	$my_winner = true;
 	$winner = $block;
+	Peer::blacklist($peer['id'], "Invalid block $height");
+//	$url = $peer['hostname'] . "/peer.php?q=deepCheck";
+//	$res = peer_post($url, [], 5, $err );
+//	_log("Requested deep check res=".json_encode($res));
 } else if ($res<0) {
 	_log("Other block is winner");
 	$my_winner = false;
 	$winner = $peer_block;
+	$height = Block::getHeight();
+	$diff = $height - $invalid_height;
+	$delete_height = $invalid_height;
+	if($diff > 100) {
+		_log("Delete only last 100 blocks");
+		$delete_height = $height - $diff;
+	}
+	_log("Delete up to height $delete_height");
+	Block::delete($delete_height);
 } else {
 	_log("Blocks are actually same");
 }
 
-if($winner) {
-	_log("Check other peers block");
-	$peers = Peer::findPeers(false, null);
-	$count = count($peers);
-	$total = 0;
-	$failed = 0;
-	$valid = 0;
-	$invalid = 0;
-	$counts = [];
-	foreach ($peers as $ix => $peer1) {
-		$total++;
-		$hostname = $peer1['hostname'];
-		$url = $hostname . "/peer.php?q=getBlock";
-		$peer_block = peer_post($url, ["height" => $invalid_height]);
-		_log("Read block from peer " . ($ix + 1) . "/$count $hostname id=".$peer_block['id']. " elapsed=".$peer_block['elapsed']);
-		if (!$peer_block) {
-			$failed++;
-			continue;
-		}
-		$counts[$peer_block['id']]++;
-	}
-
-	_log("counts=".print_r($counts, 1));
-	foreach ($counts as $block_id => $cnt) {
-		$perc = $cnt / ($total - $failed);
-		_log("block_id=$block_id perc = $perc");
-		if($perc > 2/3) {
-			if($block_id == $block['id']) {
-				_log("My block is still winner");
-				Peer::blacklist($peer['id'], "Invalid block $invalid_height");
-				$url = $peer['hostname'] . "/peer.php?q=deepCheck";
-				$res = peer_post($url, [], 5, $err );
-				_log("Requested deep check res=".json_encode($res));
-				break;
-			} else if ($block_id == $peer_block['id']) {
-				_log("My chain is wrong - deleting up to height $invalid_height");
-				Block::delete($invalid_height);
-				break;
-			}
-		} else {
-			_log("Consensys not reached");
-		}
-	}
-}
+//if($winner) {
+//	_log("Check other peers block");
+//	$peers = Peer::findPeers(false, null);
+//	$count = count($peers);
+//	$total = 0;
+//	$failed = 0;
+//	$valid = 0;
+//	$invalid = 0;
+//	$counts = [];
+//	foreach ($peers as $ix => $peer1) {
+//		$total++;
+//		$hostname = $peer1['hostname'];
+//		$url = $hostname . "/peer.php?q=getBlock";
+//		$peer_block = peer_post($url, ["height" => $invalid_height]);
+//		_log("Read block from peer " . ($ix + 1) . "/$count $hostname id=".$peer_block['id']. " elapsed=".$peer_block['elapsed']);
+//		if (!$peer_block) {
+//			$failed++;
+//			continue;
+//		}
+//		$counts[$peer_block['id']]++;
+//	}
+//
+//	_log("counts=".print_r($counts, 1));
+//	foreach ($counts as $block_id => $cnt) {
+//		$perc = $cnt / ($total - $failed);
+//		_log("block_id=$block_id perc = $perc");
+//		if($perc > 2/3) {
+//			if($block_id == $block['id']) {
+//				_log("My block is still winner");
+//				Peer::blacklist($peer['id'], "Invalid block $invalid_height");
+//				$url = $peer['hostname'] . "/peer.php?q=deepCheck";
+//				$res = peer_post($url, [], 5, $err );
+//				_log("Requested deep check res=".json_encode($res));
+//				break;
+//			} else if ($block_id == $peer_block['id']) {
+//				_log("My chain is wrong - deleting up to height $invalid_height");
+//				Block::delete($invalid_height);
+//				break;
+//			}
+//		} else {
+//			_log("Consensys not reached");
+//		}
+//	}
+//}
 _log("PeerCheck: end");

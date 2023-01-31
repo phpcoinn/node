@@ -508,74 +508,136 @@ class NodeSync
 
 	static function syncBlocks() {
 
-		$blocksMap = self::getPeerBlocksMap();
-		$heightsMap = [];
-		foreach ($blocksMap as $height=>$blocks) {
-			foreach($blocks as $block_id=>$hostnames) {
-				_log("blocksMap: height=$height cnt_blocks=".count($blocks)." cnt_hostnames=".count($hostnames)." block=$block_id");
-				if(count($blocks)>1) {
-					break 2;
-				}
+		global $db;
+		$sql="select p.height as best_height, count(p.id) as peers_cnt, count(distinct p.block_id) as unique_blocks,
+		       max(p.block_id) as best_block_id
+		from peers p
+		where
+		        p.blacklisted < unix_timestamp()
+		  and unix_timestamp() - p.ping < 2 * 60
+		group by p.height
+		having unique_blocks = 1
+		order by count(p.id) desc
+		limit 1";
+		$best_chain = $db->row($sql);
+		$best_height = $best_chain['best_height'];
+		$best_block_id = $best_chain['best_block_id'];
+		$best_peers_cnt =  $best_chain['peers_cnt'];
 
-				//check blocks
-				$our_block = Block::export("", $height);
-				if(!$our_block) {
-					break 2;
-				}
-				if($our_block['id']!=$block_id) {
-					_log("WE HAVE INVALID BLOCK AT HEIGHT $height our_id=".$our_block['id']. " block_id=".$block_id);
-					$hostname = array_keys($hostnames)[0];
-					_log("Check hostname ".$hostname);
-					$url = $hostname . "/peer.php?q=getBlock";
-					$peer_block = peer_post($url, ["height" => $height], 5, $err );
-					if($peer_block) {
-						$res = NodeSync::compareBlocks($our_block, $peer_block);
-						if($res>0) {
-							_log("Our block is winner");
-							$peer = $hostnames[$hostname];
-							if($peer) {
-								Peer::blacklist($peer['id'], "Invalid block $height");
-							}
-						} else if ($res < 0) {
-							_log("Other block is winner");
-							$diff = Block::getHeight() - $height;
-							_log("Our block is forked  diff=$diff");
-							if($diff < 100) {
-								_log("Delete up to height $height");
-								Block::delete($height);
-							} else {
-								_log("Diff to high - need full check with peer $hostname");
-								$dir = ROOT."/cli";
-								$cmd = "php $dir/deepcheck.php ".$hostname;
-								$check_cmd = "php $dir/deepcheck.php";
-								_log("submitBlock: run peer check with ".$hostname);
-								Nodeutil::runSingleProcess($cmd, $check_cmd);
-							}
-						}
-					} else {
-						_log("No block form peer");
-						$peer = $hostnames[$hostname];
-						Peer::blacklist($peer['id'], "Unresponsive");
-					}
-					break 2;
-				}
-				_log("our_block=".$our_block['id']);
+		_log("best chain height=".$best_height." block=".$best_block_id." peers=".$best_peers_cnt);
 
 
-				$heightsMap[$height]['count']=count($hostnames);
-				$heightsMap[$height]['block']=$block_id;
-			}
+		$sql="select max(p.height) as longest_height, count(p.id) as peers_cnt, count(distinct p.block_id) as unique_blocks,
+		       max(p.block_id) as longest_block_id
+		from peers p
+		where
+		        p.blacklisted < unix_timestamp()
+		  and unix_timestamp() - p.ping < 2 * 60
+		group by p.height
+		having unique_blocks = 1
+		order by p.height desc
+		limit 1";
+		$longest_chain = $db->row($sql);
+		$longest_height = $longest_chain['longest_height'];
+		$longest_block_id = $longest_chain['longest_block_id'];
+		$longest_peers_cnt =  $longest_chain['peers_cnt'];
+		_log("longest chain height=".$longest_height." block=".$longest_block_id." peers=".$longest_peers_cnt);
+
+
+		$current = Block::current();
+		$current_height = $current['height'];
+
+		$sync_height = $best_height;
+		$sync_block_id = $best_block_id;
+
+		if($longest_height > $best_height && $longest_peers_cnt > 1) {
+			$sync_height = $longest_height;
+			$sync_block_id = $longest_block_id;
 		}
 
-		$best_height = $height;
-		$current_height = Block::getHeight();
-		_log("Get best height = $best_height our height=$current_height");
 
-		$peersForSync=$blocksMap[$best_height][$block_id];
+		$sql="select * from peers p
+			where p.height = :height
+			  and p.block_id = :block_id
+			   and p.blacklisted < unix_timestamp()
+			  and unix_timestamp() - p.ping < 2 * 60
+			  order by p.response_time / p.response_cnt";
 
-		if($current_height == $best_height) {
+		$peersForSync = $db->run($sql, [":height"=>$sync_height, ":block_id"=>$sync_block_id]);
+		_log("Found ".count($peersForSync)." peer to sync");
+
+
+//		return;
+
+//		$blocksMap = self::getPeerBlocksMap();
+//		$heightsMap = [];
+//		foreach ($blocksMap as $height=>$blocks) {
+//			foreach($blocks as $block_id=>$hostnames) {
+//				_log("blocksMap: height=$height cnt_blocks=".count($blocks)." cnt_hostnames=".count($hostnames)." block=$block_id");
+//				if(count($blocks)>1) {
+//					break 2;
+//				}
+//
+//				//check blocks
+//				$our_block = Block::export("", $height);
+//				if(!$our_block) {
+//					break 2;
+//				}
+//				if($our_block['id']!=$block_id) {
+//					_log("WE HAVE INVALID BLOCK AT HEIGHT $height our_id=".$our_block['id']. " block_id=".$block_id);
+//					$hostname = array_keys($hostnames)[0];
+//					_log("Check hostname ".$hostname);
+//					$url = $hostname . "/peer.php?q=getBlock";
+//					$peer_block = peer_post($url, ["height" => $height], 5, $err );
+//					if($peer_block) {
+//						$res = NodeSync::compareBlocks($our_block, $peer_block);
+//						if($res>0) {
+//							_log("Our block is winner");
+//							$peer = $hostnames[$hostname];
+//							if($peer) {
+//								Peer::blacklist($peer['id'], "Invalid block $height");
+//							}
+//						} else if ($res < 0) {
+//							_log("Other block is winner");
+//							$diff = Block::getHeight() - $height;
+//							_log("Our block is forked  diff=$diff");
+//							if($diff < 100) {
+//								_log("Delete up to height $height");
+//								Block::delete($height);
+//							} else {
+//								_log("Diff to high - need full check with peer $hostname");
+//								$dir = ROOT."/cli";
+//								$cmd = "php $dir/deepcheck.php ".$hostname;
+//								$check_cmd = "php $dir/deepcheck.php";
+//								_log("submitBlock: run peer check with ".$hostname);
+//								Nodeutil::runSingleProcess($cmd, $check_cmd);
+//							}
+//						}
+//					} else {
+//						_log("No block form peer");
+//						$peer = $hostnames[$hostname];
+//						Peer::blacklist($peer['id'], "Unresponsive");
+//					}
+//					break 2;
+//				}
+//				_log("our_block=".$our_block['id']);
+//
+//
+//				$heightsMap[$height]['count']=count($hostnames);
+//				$heightsMap[$height]['block']=$block_id;
+//			}
+//		}
+
+//		$best_height = $height;
+//		_log("Get best height = $best_height our height=$current_height");
+
+//		$peersForSync=$blocksMap[$best_height][$block_id];
+
+		$start_height = $current_height;
+
+		if($current_height == $sync_height) {
 			_log("Blockchain is synced");
-		} else if ($best_height < $current_height) {
+		} else if ($sync_height < $current_height) {
 			_log("We are ahead of peers");
 		} else {
 			_log("Need to sync blokchain");
@@ -587,15 +649,15 @@ class NodeSync
 					if($limit_cnt > 1000) {
 						break;
 					}
-					$current = Block::current();
-					$syncing = (($current['height'] < $best_height && $best_height > 1)
-						|| ($current['height'] == $best_height && $current['id'] != $block_id));
+					$current = Block::export("", Block::getHeight());
+					$syncing = (($current['height'] < $sync_height && $sync_height > 1)
+						|| ($current['height'] == $sync_height && $current['id'] != $sync_block_id));
 
 					if (!$syncing) {
 						break;
 					}
 
-					_log("Syncing current_height= ".$current['height']." best_height=$best_height current_id=".$current['id']." block_id=$block_id");
+					_log("Syncing current_height= ".$current['height']." sync_height=$sync_height current_id=".$current['id']." block_id=$sync_block_id");
 					$limit_peers = 10;
 					$peers_cnt = 0;
 					$added = false;
@@ -616,8 +678,9 @@ class NodeSync
 							continue;
 						}
 						$peer_blocks[$peer_block['id']]=$peer_block;
+//						_log("Get peer block ".print_r($peer_block,1)." my=".print_r($current,1));
 						if ($peer_block['id'] != $current['id']) {
-							_log("Invalid block get from peer ");
+							_log("Blocks does not match");
 							continue;
 						}
 						_log("We got ok block - go to next");
@@ -654,29 +717,38 @@ class NodeSync
 
 					if(!$added) {
 
-						_log("peer_blocks:".print_r($peer_blocks, 1));
-						if(count($peer_blocks)>1) {
-							uasort($peer_blocks, function ($b1, $b2) {
-								return NodeSync::compareBlocks($b2, $b1);
-							});
-						}
-						$winner = array_shift($peer_blocks);
-						$current = Block::export("", Block::getHeight());
-						_log("Compare blocks:  winner: elapsed=".$winner['elapsed']. " id=".$winner['id']);
-						_log("Compare blocks: current: elapsed=".$current['elapsed']. " id=".$current['id']);
-						if(NodeSync::compareBlocks($winner, $current)) {
-							_log("Our block is invalid");
-							Block::pop();
-						}
+//						_log("peer_blocks:".print_r($peer_blocks, 1));
+//						if(count($peer_blocks)>1) {
+//							uasort($peer_blocks, function ($b1, $b2) {
+//								return NodeSync::compareBlocks($b2, $b1);
+//							});
+//						}
+//						$winner = array_shift($peer_blocks);
+//						$current = Block::export("", Block::getHeight());
+//						_log("Compare blocks:  winner: elapsed=".$winner['elapsed']. " id=".$winner['id']);
+//						_log("Compare blocks: current: elapsed=".$current['elapsed']. " id=".$current['id']);
+//						if(NodeSync::compareBlocks($winner, $current)) {
+//							_log("Our block is invalid");
+//							Block::pop();
+//						}
 
 						_log("Can not add new block");
+						$dir = ROOT."/cli";
+						$peer = $peersForSync[0];
+						_log("Trigger deep check with ".$peer['hostname']);
+						$cmd = "php $dir/deepcheck.php ".$peer['hostname'];
+						$check_cmd = "php $dir/deepcheck.php";
+						Nodeutil::runSingleProcess($cmd, $check_cmd);
 						$syncing = false;
 						break;
 					}
 
 				}
-				
-				Propagate::blockToAll('currrent');
+
+				$current_height = Block::getHeight();
+				if($current_height > $start_height) {
+					Propagate::blockToAll('currrent');
+				}
 		}
 
 	}
