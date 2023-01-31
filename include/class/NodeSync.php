@@ -810,6 +810,7 @@ class NodeSync
 				}
 				$dir = ROOT . "/cli";
 				$cmd = "php $dir/util.php pop $diff";
+				_log("Run cmd $cmd");
 				$check_cmd = "php $dir/util.php pop";
 				Nodeutil::runSingleProcess($cmd, $check_cmd);
 			}

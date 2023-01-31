@@ -643,7 +643,7 @@ class Block
 				if ($res != 1) {
 					throw new Exception("Delete block failed.");
 				} else {
-					_log("Deleted block id=".$x['id']." height=".$x['height'],1);
+					_log("Deleted block id=".$x['id']." height=".$x['height']);
 				}
 			}
 
