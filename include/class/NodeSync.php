@@ -534,7 +534,7 @@ class NodeSync
 		        p.blacklisted < unix_timestamp()
 		  and unix_timestamp() - p.ping < 2 * 60
 		group by p.height
-		having unique_blocks = 1
+		having unique_blocks = 1 and peers_cnt > 1
 		order by p.height desc
 		limit 1";
 		$longest_chain = $db->row($sql);
@@ -550,7 +550,7 @@ class NodeSync
 		$sync_height = $best_height;
 		$sync_block_id = $best_block_id;
 
-		if($longest_height > $best_height && $longest_peers_cnt > 1) {
+		if($longest_height > $best_height) {
 			$sync_height = $longest_height;
 			$sync_block_id = $longest_block_id;
 		}
@@ -795,24 +795,22 @@ class NodeSync
 		if($count == $max) {
 			return true;
 		} else {
-			if(!Config::isSync()) {
-				$sql = "select min(height) from (
-                select b.height, b.id, lead(b.height) over (),
-                       lead(b.height) over () - b.height as diff
-                from blocks b
-                order by b.height asc) as b
-                where diff <> 1";
-				$invalid_height = $db->single($sql);
-				_log("checkBlocks invalid_height=$invalid_height");
-				$diff = Block::getHeight() - $invalid_height;
-				if($diff > 100) {
-					$diff = 100;
-				}
-				$dir = ROOT . "/cli";
-				$cmd = "php $dir/util.php pop $diff";
-				$check_cmd = "php $dir/util.php pop";
-				Nodeutil::runSingleProcess($cmd, $check_cmd);
+			$sql = "select min(height) from (
+            select b.height, b.id, lead(b.height) over (),
+                   lead(b.height) over () - b.height as diff
+            from blocks b
+            order by b.height asc) as b
+            where diff <> 1";
+			$invalid_height = $db->single($sql);
+			_log("checkBlocks invalid_height=$invalid_height");
+			$diff = Block::getHeight() - $invalid_height;
+			if($diff > 100) {
+				$diff = 100;
 			}
+			$dir = ROOT . "/cli";
+			$cmd = "php $dir/util.php pop $diff";
+			$check_cmd = "php $dir/util.php pop";
+			Nodeutil::runSingleProcess($cmd, $check_cmd);
 			return false;
 		}
 	}

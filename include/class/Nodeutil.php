@@ -446,6 +446,8 @@ class Nodeutil
 		$data['git_status']=explode(PHP_EOL, $git_status);
 		$cron_list = shell_exec("crontab -l");
 		$data['cron_list']=explode(PHP_EOL, $cron_list);
+		$php_processes = shell_exec("ps aux | grep php");
+		$data['php_processes']=explode(PHP_EOL, $php_processes);
 		return $data;
 	}
 
