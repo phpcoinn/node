@@ -39,7 +39,8 @@ class Sync extends Daemon
 		}
 
 		Peer::deleteDeadPeers();
-		Peer::blackclistInactivePeers();
+		Peer::blacklistInactivePeers();
+		Peer::blacklistIncompletePeers();
 		Peer::resetResponseTimes();
 
 		self::checkPeers();
@@ -197,7 +198,7 @@ class Sync extends Daemon
 		$current = Block::current();
 
 		Peer::deleteDeadPeers();
-		Peer::blackclistInactivePeers();
+		Peer::blacklistInactivePeers();
 		Peer::resetResponseTimes();
 		NodeSync::recheckLastBlocks();
 

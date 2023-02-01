@@ -286,12 +286,21 @@ class Peer
 		$db->run("DELETE from peers WHERE fails>100 OR stuckfail>100 OR (".DB::unixTimeStamp()."- ping > 60*60*24)");
 	}
 
-	static function blackclistInactivePeers() {
+	static function blacklistInactivePeers() {
 		global $db;
 		$db->run(
 			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*1), 
 				blacklist_reason=:blacklist_reason where unix_timestamp()-ping > 60*60*2",
 			[':blacklist_reason'=>'Inactive']
+		);
+	}
+
+	static function blacklistIncompletePeers() {
+		global $db;
+		$db->run(
+			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*1), 
+				blacklist_reason=:blacklist_reason where height is null or block_id is null",
+			[':blacklist_reason'=>'Incomplete']
 		);
 	}
 
@@ -345,7 +354,10 @@ class Peer
 
 	static function updatePeerInfo($ip, $info) {
 		global $db;
-//		_log("PeerSync: Peer request: update info from $ip ".json_encode($info), 3);
+		_log("PeerSync: Peer request: update info from $ip ".json_encode($info), 3);
+		if(empty($info['height']) || empty($info['block'])) {
+			_log("updatePeerInfo: EMPTY HEIGHT or BLOCK - peer not updated ", 3);
+		}
 		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, block_id=:block_id, appshash=:appshash, score=:score, version=:version,  
 				miner=:miner, generator=:generator, masternode=:masternode, hostname=:hostname, dapps_id =:dapps_id, dappshash =:dapps_hash
 				WHERE ip=:ip",
