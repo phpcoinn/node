@@ -613,7 +613,8 @@ class Block
 	    global $checkpoints;
 	    require_once ROOT . "/include/checkpoints.php";
 		$min_height = array_keys($checkpoints)[count($checkpoints)-1];
-		if($height < $min_height) {
+		$current_height = Block::getHeight();
+		if($height < $min_height && $current_height > $min_height) {
 			$height = $min_height;
 		}
 
