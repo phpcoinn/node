@@ -85,20 +85,7 @@ class Peer
 	}
 
 	static function getPeersForPropagate($limit = null, $random=false) {
-		global $db;
-		$sql="select * from peers 
-			where ping > ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES."
-			  and response_cnt>0 ";
-		if($random) {
-			$sql.=" order by ".DB::random();
-		} else {
-			$sql.=" order by response_time/response_cnt";
-		}
-		if(!empty($limit)) {
-			$sql.=" limit $limit";
-		}
-		$rows = $db->run($sql);
-		return $rows;
+		return self::findPeers(false, null);
 	}
 
 	static function getPeersForMasternode($limit = null) {
