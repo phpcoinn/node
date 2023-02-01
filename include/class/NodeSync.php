@@ -772,17 +772,31 @@ class NodeSync
 	static function compareCheckPoints() {
 		global $checkpoints;
 		require_once ROOT . "/include/checkpoints.php";
+		$invalid_height = null;
 		foreach($checkpoints as $height => $block_id) {
 			$block = Block::get($height);
 			if(!empty($block)) {
 				$block_ok = $block['id'] == $block_id;
 				_log("Compare checkpoint $height - $block_id block_ok=$block_ok");
 				if(!$block_ok) {
-					return false;
+					$invalid_height = $height;
+					break;
 				}
 			}
 		}
-		return true;
+		_log("compareCheckPoints invalid_height=$invalid_height");
+		if(empty($invalid_height)) {
+			return true;
+		} else {
+			$diff = Block::getHeight() - $invalid_height;
+			_log("delete diff = $diff");
+			$dir = ROOT . "/cli";
+			$cmd = "php $dir/util.php pop $diff";
+			_log("Run cmd $cmd");
+			$check_cmd = "php $dir/util.php pop";
+			Nodeutil::runSingleProcess($cmd, $check_cmd);
+			return false;
+		}
 	}
 
 	static function checkBlocks() {

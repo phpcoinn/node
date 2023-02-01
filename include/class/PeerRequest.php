@@ -104,6 +104,7 @@ class PeerRequest
 			$current_height = Block::getHeight();
 			if(isset($peer['height']) && ($current_height - $peer['height'] > 100)) {
 				Peer::blacklist($peer['id'], "100 blocks behind");
+				api_err("block-too-old");
 			}
 		}
 
