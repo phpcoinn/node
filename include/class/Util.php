@@ -869,6 +869,7 @@ class Util
 		} else {
 			echo "There is no new version".PHP_EOL;
 		}
+		Job::runJobs();
 		Util::downloadDapps(null);
 		Cache::resetCache();
 		Peer::deleteBlacklisted();
@@ -1195,6 +1196,43 @@ class Util
 				Peer::blacklist($peer['id'], "Unresponsive");
 			}
 		}
+	}
+
+	static function correctAccounts() {
+		global $db;
+		Config::setSync(1);
+		$sql="update (
+	         select dst_txs.id,
+	                src_txs.public_key,
+	                b.id                                                                                as block,
+	                dst_txs.balance + src_txs.balance                                                   as balance,
+	                if(src_txs.max_height > dst_txs.max_height, src_txs.max_height, dst_txs.max_height) as height
+	         from (select t.dst         as id,
+	                      null          as public_key,
+	                      min(t.height) as min_height,
+	                      sum(t.val)    as balance,
+	                      max(height)   as max_height
+	               from transactions t
+	               where t.dst is not null
+	               group by t.dst) as dst_txs
+	                  left join (select t.src                       as id,
+	                                    max(t.public_key)           as public_key,
+	                                    min(t.height)               as min_height,
+	                                    sum((t.val + t.fee) * (-1)) as balance,
+	                                    max(height)                 as max_height
+	                             from transactions t
+	                             where t.src is not null
+	                             group by t.src) as src_txs on (src_txs.id = dst_txs.id)
+	                  left join blocks b on (b.height = dst_txs.min_height)
+	     ) as calc
+	         left join accounts a on (calc.id = a.id)
+	set a.public_key = calc.public_key, a.block = calc.block, a.balance = calc.balance, a.height = calc.height
+	where calc.public_key <> a.public_key
+	   or calc.block <> a.block
+	   or calc.balance <> a.balance
+	   or calc.height <> a.height;";
+		Config::setSync(0);
+		$res = $db->run($sql);
 	}
 
 //	static function emptyMasternodes() {

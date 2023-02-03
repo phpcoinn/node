@@ -317,7 +317,7 @@ if ($q == "info") {
 			saveGeneratorStat($generator_stat);
 			api_echo("accepted");
 		} else {
-			$l .= " REJECTED";
+			$l .= " $error - REJECTED ";
 			_log($l);
 			$generator_stat['rejected']++;
 			@$generator_stat['reject-reasons']['rejected - add']++;

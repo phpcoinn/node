@@ -19,6 +19,7 @@ $forked_peers = $db->run($sql);
 $sql="select p.height, count(p.id) as peer_cnt
 from peers p
 where p.blacklisted < UNIX_TIMESTAMP()
+and unix_timestamp()-p.ping < 60*60*2
 group by p.height
 order by p.height desc;";
 $peers_by_height = $db->run($sql);
