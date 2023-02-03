@@ -11,7 +11,7 @@ class Job
 		$min = date("i");
 
 		if($hour == "00") {
-			Nodeutil::runSingleProcess("php ".ROOT."cli/util.php correct-accounts");
+//			Nodeutil::runSingleProcess("php ".ROOT."cli/util.php correct-accounts");
 		}
 	}
 
