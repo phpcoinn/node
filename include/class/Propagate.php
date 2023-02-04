@@ -93,13 +93,12 @@ class Propagate
 
 	static function dappsToPeer($hostname) {
 		$dir = ROOT . "/cli";
-		$peer = base64_encode($hostname);
-		$cmd = "php $dir/propagate.php dapps $peer";
+		$cmd = "php $dir/propagate.php dapps $hostname";
 		Nodeutil::runSingleProcess($cmd);
 	}
 
 	static function dappsUpdateToPeer($hostname, $dapps_id) {
-		$peer = base64_encode($hostname);
+		$peer = $hostname;
 		$dir = ROOT . "/cli";
 		$cmd = "php $dir/propagate.php dapps-update $peer $dapps_id";
 		Nodeutil::runSingleProcess($cmd);

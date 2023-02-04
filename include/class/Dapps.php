@@ -90,10 +90,6 @@ class Dapps extends Daemon
 		}
 
 		$dapps_disable_auto_propagate = isset($_config['dapps_disable_auto_propagate']) && $_config['dapps_disable_auto_propagate'];
-		if($dapps_disable_auto_propagate && !$force) {
-			_log("Dapps: disabled auto propagate", 5);
-			return;
-		}
 
 		$saved_dapps_hash = $db->getConfig('dapps_hash');
 		_log("Dapps: hash from db = $saved_dapps_hash", 5);
@@ -104,10 +100,14 @@ class Dapps extends Daemon
 			Cache::remove("dapps_data");
 			$db->setConfig("dapps_hash", $dapps_hash);
 			Cache::set("dapps_data", Dapps::getLocalData());
-			_log("Dapps: trigger propagate");
+			_log("Dapps: build archive");
 			self::buildDappsArchive($dapps_id);
-			_log("Dapps: Propagating dapps",5);
-			Propagate::dappsLocal();
+			if(!$dapps_disable_auto_propagate || $force) {
+				_log("Dapps: Propagating dapps",5);
+				Propagate::dappsLocal();
+			} else {
+				_log("Dapps: disabled auto propagate", 5);
+			}
 		} else {
 			_log("Dapps: not changed dapps", 5);
 		}
@@ -180,7 +180,7 @@ class Dapps extends Daemon
 			}
 		} else {
 			//propagate to single peer
-			$peer = base64_decode($id);
+			$peer = $id;
 			_log("Dapps: propagating dapps to $peer pid=".getmypid(), 5);
 			$url = $peer."/peer.php?q=updateDapps";
 			$dapps_signature = ec_sign($dapps_hash, $dapps_private_key);
@@ -585,7 +585,7 @@ class Dapps extends Daemon
 
 	public static function propagateDappsUpdate($hash, $id)
 	{
-		$hostname = base64_decode($hash);
+		$hostname = decodeHostname($hash);
 		_log("Dapps: called propagate update apps id=$id to host=$hostname");
 		$url = $hostname."/peer.php?q=checkDapps";
 		$res = peer_post($url, ["dapps_id"=>$id], 30, $err);

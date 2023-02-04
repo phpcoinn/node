@@ -405,3 +405,12 @@ function load_db_config() {
 	}
 	return $_config;
 }
+
+function decodeHostname($hash) {
+	if(strpos($hash, "http")===0) {
+		$hostname = $hash;
+	} else {
+		$hostname = base58_decode($hash);
+	}
+	return $hostname;
+}

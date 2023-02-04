@@ -287,7 +287,8 @@ if($type == "message") {
 }
 
 if($type == "dapps") {
-	Dapps::propagate($id);
+	$hash = $argv[2];
+	Dapps::propagate($hash);
 }
 
 if($type == "dappsupdate") {

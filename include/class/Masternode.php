@@ -1008,13 +1008,13 @@ class Masternode extends Daemon
 
 	static function getMasternodesForPublicKey($public_key) {
 		global $db;
-		$sql="select t.dst as masternode_address, a.balance as masternode_balance, t.val
+		$sql="select m.id as masternode_address, a.balance as masternode_balance, m.collateral
 			from transactions t
 			left join masternode m on (m.id = t.dst)
 			left join accounts a on (m.id = a.id)
 			where t.type = :mn_create and t.public_key = :public_key
 			and m.id is not null
-			group by m.id, t.id";
+			group by m.id, m.collateral";
 		return $db->run($sql, [":mn_create" => TX_TYPE_MN_CREATE, ":public_key" => $public_key]);
 	}
 
