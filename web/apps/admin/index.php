@@ -679,7 +679,11 @@ require_once __DIR__. '/../common/include/top.php';
                         ?>
                         <tr  class="<?php echo $table_class ?>">
                             <td><?php echo $peer['id'] ?></td>
-                            <td><?php echo $peer['hostname'] ?></td>
+                            <td>
+                                <a href="<?php echo $peer['hostname'] ?>" target="_blank">
+                                    <?php echo $peer['hostname'] ?>
+                                </a>
+                            </td>
                             <td nowrap="nowrap">
                                 <?php echo display_date($peer['blacklisted']) ?>
                                 <?php if($peer['blacklisted'] > time()) {
