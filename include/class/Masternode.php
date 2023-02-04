@@ -157,6 +157,13 @@ class Masternode extends Daemon
 		return $db->single($sql);
 	}
 
+
+	static function getCountForCollateral($collateral, $height) {
+		global $db;
+		$sql="select count(1) from masternode where collateral = :collateral and height < :height";
+		return $db->single($sql, [":collateral"=>$collateral, ":height"=>$height]);
+	}
+
 	static function getActiveCount() {
 		global $db;
 		$sql="select count(1) from masternode m where m.signature is not null";
@@ -359,19 +366,19 @@ class Masternode extends Daemon
 
 	static function checkIsSendFromMasternode($height, Transaction $transaction, &$error, $verify) {
 		try {
-			if(!$verify) {
-				//check if source address is masternode
-				if (Masternode::allowedMasternodes($height)) {
-					$masternode = Masternode::get($transaction->publicKey);
-					if($masternode) {
-						$balance = Account::getBalanceByPublicKey($transaction->publicKey);
-						$collateral = Block::getMasternodeCollateral($height);
-						if(floatval($balance) - $transaction->val < $collateral) {
-							throw new Exception("Can not spent more than collateral. Balance=$balance amount=".$transaction->val);
-						}
-					}
+
+			$masternode_id = Account::getAddress($transaction->publicKey);
+			$masternode_existing = Masternode::isExisting($masternode_id, $height);
+			if($masternode_existing) {
+				$total_sent = Transaction::getTotalSent($masternode_id, $height);
+				$total_received = Transaction::getTotalReceived($masternode_id, $height);
+				$balance = $total_received - $total_sent;
+				$collateral = Block::getMasternodeCollateral($height);
+				if(round(floatval($balance) - $transaction->val,8) < $collateral) {
+					throw new Exception("Can not spent more than collateral. Balance=$balance amount=".$transaction->val);
 				}
 			}
+
 			return true;
 		} catch (Exception $e) {
 			$error = $e->getMessage();
@@ -781,7 +788,9 @@ class Masternode extends Daemon
 			}
 
 			if(empty($block->masternode) && $block->height > UPDATE_5_NO_MASTERNODE) {
-				$mn_count = Masternode::getCount();
+				$collateral = Block::getMasternodeCollateral($block->height);
+				$mn_count = Masternode::getCountForCollateral($collateral, $block->height);
+				_log("check collateral : $collateral count=$mn_count", 5);
 				if($mn_count > 0) {
 					throw new Exception("Masternode: not found winner for block");
 				}
@@ -999,13 +1008,13 @@ class Masternode extends Daemon
 
 	static function getMasternodesForPublicKey($public_key) {
 		global $db;
-		$sql="select t.dst as masternode_address, a.balance as masternode_balance, t.val
+		$sql="select m.id as masternode_address, a.balance as masternode_balance, m.collateral
 			from transactions t
 			left join masternode m on (m.id = t.dst)
 			left join accounts a on (m.id = a.id)
 			where t.type = :mn_create and t.public_key = :public_key
 			and m.id is not null
-			group by m.id, t.id";
+			group by m.id, m.collateral";
 		return $db->run($sql, [":mn_create" => TX_TYPE_MN_CREATE, ":public_key" => $public_key]);
 	}
 
@@ -1066,7 +1075,7 @@ class Masternode extends Daemon
 
 	static function resetVerified() {
 		global $db;
-		_log("MN: reset verified");
+		_log("MN: reset verified", 5);
 		$db->run("update masternode set verified = 0");
 	}
 
@@ -1083,5 +1092,20 @@ class Masternode extends Daemon
 		global $db;
 		$sql="delete from masternode where ip=:ip or public_key=:public_key";
 		$db->run($sql, [":ip"=>$ip, ":public_key"=>$public_key]);
+	}
+
+	static function isExisting($id, $height) {
+		global $db;
+		$sql="select count(t.id) as cnt_create from transactions t where t.dst = :id and t.type = :type
+			and t.height < :height";
+		$cnt_created = $db->single($sql, [":id"=>$id, ":type"=>TX_TYPE_MN_CREATE, ":height"=>$height]);
+		$sql="select count(t.id) as cnt_remove from transactions t where t.src = :id and t.type = :type
+			and t.height < :height";
+		$cnt_removed = $db->single($sql, [":id"=>$id, ":type"=>TX_TYPE_MN_REMOVE, ":height"=>$height]);
+		if($cnt_created - $cnt_removed > 0) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 }

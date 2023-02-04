@@ -7,10 +7,15 @@ class PeerRequest
 	public static $data;
 	public static $requestId;
 	public static $info;
+	public static $peer;
 
 	static function processRequest() {
 		global $_config;
+
+
+		_logp("PeerRequest: received peer request");
 		if(isset($_config) && $_config['offline']==true) {
+			_logf("Peer is set to offline");
 			api_err("Peer is set to offline");
 		}
 		if (!empty($_POST['data'])) {
@@ -18,15 +23,18 @@ class PeerRequest
 		}
 		global $_config;
 		if ($_POST['coin'] != COIN) {
+			_logf("Invalid coin request=".json_encode($_REQUEST)." server=".json_encode($_SERVER));
 			api_err("Invalid coin ".json_encode($_REQUEST), 3);
 		}
 		if(isset($_POST['network'])) {
 			if($_POST['network'] != NETWORK) {
+				_logf("Invalid network");
 				api_err("Invalid network ".$_POST['network']);
 			}
 		}
 		if(isset($_POST['chain_id']) && strlen($_POST['chain_id'])>0) {
 			if($_POST['chain_id'] != CHAIN_ID) {
+				_logf("Invalid chain ID");
 				api_err("Invalid chain ID ".$_POST['chain_id']);
 			}
 		}
@@ -36,10 +44,14 @@ class PeerRequest
 			if($peer) {
 				Peer::blacklist($peer['id'], "Invalid version ".$_POST['version']);
 			}
+			_logp("request=".json_encode($_REQUEST));
+			_logf("Invalid version ".$_POST['version']);
 			api_err("Invalid version ".$_POST['version']);
 		}
 		$requestId = $_POST['requestId'];
 		_log("Peer request from IP = $ip requestId=$requestId q=".$_GET['q']." chainId=".$_POST['chain_id'] ,4);
+
+		_logp("q=".$_GET['q']);
 
 		$info = $_POST['info'];
 
@@ -47,12 +59,15 @@ class PeerRequest
 		_log("Filtered IP = $ip",4);
 
 		if(($ip === false || strlen($ip)==0)) {
+			_logf("Invalid peer IP address");
 			api_err("Invalid peer IP address");
 		}
 
 		$ip = $ip . (empty(COIN_PORT) ? "" :  ":" . COIN_PORT);
+		_logp("ip=$ip");
 
 		if(!Blacklist::checkIp($ip)) {
+			_logf("blocked-ip");
 			api_err("blocked-ip");
 		}
 
@@ -62,6 +77,7 @@ class PeerRequest
 				$hostname=$info['hostname'];
 				_log("Peer request from blacklisted peer ip=$ip hostname=$hostname reason=".$peer['blacklist_reason']." info=".json_encode($info). "REMOTE_ADDR=".$_SERVER['REMOTE_ADDR'].
 				" HTTP_X_FORWARDED_FOR=".$_SERVER['HTTP_X_FORWARDED_FOR']);
+				_logf("blacklisted-peer");
 				api_err("blacklisted-peer SERVER=".json_encode($_SERVER). " peer=".json_encode($peer));
 			}
 		}
@@ -72,24 +88,33 @@ class PeerRequest
 				$peer=Peer::getByIp($ip);
 				if(!empty($peer['hostname']) && $peer['hostname'] != $hostname) {
 					Peer::blacklist($peer['id'], "Invalid hostname $hostname");
+					_logf("blocked-invalid-hostname");
 					api_err("blocked-invalid-hostname");
 				}
 				_log("PRC: ip=$ip hostname=$hostname mn=".$info['masternode']." found_peer=".$peer['hostname'],5);
 			}
+			_logp("update peer info");
 			Peer::updatePeerInfo($ip, $info);
 			if($peer['blacklisted'] < time() && $peer['fails']>0) {
+				_logp("clear blacklist");
 				Peer::clearFails($peer['id']);
 				Peer::clearStuck($peer['id']);
 			}
+			_log("check peer height hostname=$hostname height=".$peer['height'], 5);
+			$current_height = Block::getHeight();
+			if(isset($peer['height']) && ($current_height - $peer['height'] > 100)) {
+				Peer::blacklist($peer['id'], "100 blocks behind");
+			}
 		}
 
-
+		_logf("finish process");
 
 
 		self::$ip=$ip;
 		self::$data=$data;
 		self::$requestId=$requestId;
 		self::$info = $info;
+		self::$peer = $peer;
 	}
 
 	static function peer() {
@@ -168,6 +193,9 @@ class PeerRequest
 		// receive a new transaction from a peer
 //    $current = $block->current();
 
+		if(Config::getVal("blockchain_invalid") == 1) {
+			api_err("invalid-peer");
+		}
 
 		// no transactions accepted if the sync is running
 		if (Config::isSync()) {
@@ -229,94 +257,105 @@ class PeerRequest
 	}
 
 	static function submitBlock() {
+
+		self::submitBlockNew();
+		return;
+
+
 		$ip = self::$ip;
 		$data = self::$data;
-		global $_config;
 
 		$current = Block::current();
 
-		// receive a  new block from a peer
-		_log("Sync: Receive new block from a peer $ip : id=".$data['id']." height=".$data['height']." current=".$current['height'], 5);
-//		$logData = [
-//			"height"=>$data['height'],
-//			"id"=>$data['id'],
-//			"ip"=>self::$ip,
-//			"dst"=>$_config['hostname']
-//		];
-//		peer_post("https://node1.phpcoin.net/peer.php?q=logSubmitBlock", base64_encode(json_encode($logData)));
+		$microsync = isset($data['microsync']);
+		_log("submitBlock: ".($microsync ? "[microsync] " : "")."Receive new block from a peer $ip : id=".$data['id']." height=".$data['height']." current=".$current['height'], 5);
 
-//		Peer::updateHeight($ip, $data);
 
-		// if sync, refuse all
-		if (Config::isSync()) {
-			_log('['.$ip."] Block rejected due to sync", 5);
-			api_err("sync");
-		}
+
 		$data['id'] = san($data['id']);
-		// block already in the blockchain
-		if ($current['id'] == $data['id']) {
-			_log("block-ok",3);
+		if ($current['id'] == $data['id'] && $current['height']==$data['height']) {
+			_log("submitBlock: We have this block - OK",3);
 			api_echo("block-ok");
 		}
 		if ($data['date'] > time() + 30) {
-			_log("block in the future");
+			_log("submitBlock: block in the future");
 			api_err("block in the future");
 		}
 
-		//_log("DFSH: current_height=".$current['height']." data_height=".$data['height']." current_id=".$current['id']." data_id=".$data['id']);
+		//_log("submitBlock: current_height=".$current['height']." data_height=".$data['height']." current_id=".$current['id']." data_id=".$data['id']);
 
 		if ($current['height'] == $data['height'] && $current['id'] != $data['id']) {
-			// different forks, same height
 			$accept_new = false;
-			//_log("DFSH: DIFFERENT FORKS SAME HEIGHT", 3);
-			_log("data ".json_encode($data),3);
-			_log("current ".json_encode($current),3);
+			_log("submitBlock:: DIFFERENT FORKS SAME HEIGHT", 3);
+			_log("submitBlock: id= ".json_encode($data),3);
+			$ourblock = Block::export("", $current['height']);
+			_log("submitBlock:our ".json_encode($ourblock),3);
 
-			//wins block with lowest elapsed time - highest difficulty
-			$difficulty1 = $current['difficulty'];
-			$difficulty2 = $data['difficulty'];
-			//_log("DFSH: compare difficulty: difficulty1=$difficulty1 difficulty2=$difficulty2");
-			if($difficulty1 > $difficulty2) {
-				$accept_new = true;
-			}  else if ($difficulty1 == $difficulty2) {
-				$date1 = $current['date'];
-				$date2 = $data['date'];
-				//_log("DFSH: compare date: date1=$date1 date2=$date2");
-				if($date1 > $date2) {
-					$accept_new = true;
-				} else if ($date1 == $date2) {
-					$miner1=$current['miner'];
-					$miner2=$data['miner'];
-					$generator1=$current['generator'];
-					$generator2=$data['generator'];
-					//_log("DFSH: compare miners: miner1=$miner1 miner2=$miner2");
-					//_log("DFSH: compare generator: generator1=$generator1 generator2=$generator2");
-					$id1=$current['id'];
-					$id2=$data['id'];
-					//_log("DFSH: compare ids: id1=$id1 id2=$id2");
-					if(strcmp($id1, $id2)) {
-						$accept_new = true;
-					}
+			//compare two blocks
+			_log("submitBlock: compare  blocks data -> our: id=".$data['id']." -> ".$ourblock['id']." elapsed=".$data['elapsed']." -> ".$ourblock['elapsed']." date=".$data['date']." -> ".$ourblock['date'], 5);
+			if($data['elapsed']==$ourblock['elapsed']) {
+				if($data['date']==$ourblock['date']) {
+					$accept_new = strcmp($data['id'], $ourblock['id']);
+				} else {
+					$accept_new = $data['date'] < $ourblock['date'];
 				}
+			} else {
+				$accept_new = $data['elapsed'] < $ourblock['elapsed'];
 			}
+			_log("submitBlock: accept_new=$accept_new");
+
+//			//wins block with lowest elapsed time - highest difficulty
+//			$difficulty1 = $current['difficulty'];
+//			$difficulty2 = $data['difficulty'];
+//			//_log("DFSH: compare difficulty: difficulty1=$difficulty1 difficulty2=$difficulty2");
+//			if($difficulty1 > $difficulty2) {
+//				$accept_new = true;
+//			}  else if ($difficulty1 == $difficulty2) {
+//				$date1 = $current['date'];
+//				$date2 = $data['date'];
+//				//_log("DFSH: compare date: date1=$date1 date2=$date2");
+//				if($date1 > $date2) {
+//					$accept_new = true;
+//				} else if ($date1 == $date2) {
+//					$miner1=$current['miner'];
+//					$miner2=$data['miner'];
+//					$generator1=$current['generator'];
+//					$generator2=$data['generator'];
+//					//_log("DFSH: compare miners: miner1=$miner1 miner2=$miner2");
+//					//_log("DFSH: compare generator: generator1=$generator1 generator2=$generator2");
+//					$id1=$current['id'];
+//					$id2=$data['id'];
+//					//_log("DFSH: compare ids: id1=$id1 id2=$id2");
+//					if(strcmp($id1, $id2)) {
+//						$accept_new = true;
+//					}
+//				}
+//			}
 
 			//_log("DFSH: Accept new = ".$accept_new);
 
 			if ($accept_new) {
 				// if the new block is accepted, run a microsync to sync it
-				_log('['.$ip."] Starting microsync - $data[height]",1);
+				_log('submitBlock: ['.$ip."] Starting microsync - $data[height]",1);
 				$ip=escapeshellarg($ip);
 				$dir = ROOT."/cli";
 				system(  "php $dir/microsync.php '$ip'  > /dev/null 2>&1  &");
 				api_echo("microsync");
 			} else {
-				_log('['.$ip."] suggesting reverse-microsync - $data[height]",1);
+				_log('submitBlock: ['.$ip."] suggesting reverse-microsync - $data[height]",1);
 				api_echo("reverse-microsync"); // if it's not, suggest to the peer to get the block from us
 			}
 		}
 		// if it's not the next block
 		if ($current['height'] != $data['height'] - 1) {
-			//_log("DFSH: if it's not the next block",1);
+			_log("Not next block - exit", 5);
+			api_err("not-next-block");
+
+//			if($microsync) {
+//				_logf("already in microsync", 5);
+//				api_err("already-microsync");
+//			}
+//			_log("if it's not the next block",1);
 			// if the height of the block submitted is lower than our current height, send them our current block
 			if ($data['height'] < $current['height']) {
 				//_log("DFSH: Our height is higher");
@@ -326,43 +365,41 @@ class PeerRequest
 					api_err("block-too-old");
 				}
 				Propagate::blockToPeer($pr['hostname'], $pr['ip'], "current");
-				_log('['.$ip."] block too old, sending our current block - $current[height]",3);
+				_log('submitBlock: ['.$ip."] block too old, sending our current block - $current[height]",3);
 				//_log("DFSH: Send our block to peer ".$pr['hostname']);
 				api_err("block-too-old");
 			}
 			// if the block difference is bigger than 150, nothing should be done. They should sync
 			if ($data['height'] - $current['height'] > 150) {
-				_log('['.$ip."] block-out-of-sync - $data[height]",2);
+				_log('submitBlock: ['.$ip."] block-out-of-sync - $data[height]",2);
 				//_log("DFSH: block difference higher than 150");
 				api_err("block-out-of-sync");
 			}
 			// request them to send us a microsync with the latest blocks
-			//_log('DFSH: ['.$ip."] requesting microsync - $current[height] - $data[height]",2);
+			$pr = Peer::getByIp($ip);
+			$hostname = $pr['hostname'];
+			_log('submitBlock:: ['.$hostname."] requesting microsync - $current[height] - $data[height]",2);
 			api_echo(["request" => "microsync", "height" => $current['height'], "block" => $current['id']]);
 		}
 		// check block data
 		$block = Block::getFromArray($data);
 		if (!$block->check()) {
-			_log('['.$ip."] invalid block - $data[height]",1);
+			_log('submitBlock: ['.$ip."] invalid block - $data[height]",1);
 			api_err("invalid-block");
 		}
 		$block->prevBlockId = $current['id'];
 
-		if (Config::isSync()) {
-			//_log('DFSH: ['.$ip."] Block rejected due to sync", 5);
-			api_err("sync");
-		}
-
 		$current = Block::current();
 		//_log("DFSH: check add BLOCK ".$block->height. " current=".$current['height']);
 		if($block->height == $current['height']) {
+			_log("submitBlock: block checked ok", 5);
 			api_echo("block-ok");
 		}
 
 		$lock_file = ROOT . "/tmp/lock-block-".$block->height;
 		_log("Check lock file $lock_file", 5);
 		if (!mkdir($lock_file, 0700)) {
-			_log("Lock file exists $lock_file", 3);
+			_log("submitBlock: Lock file exists $lock_file", 3);
 			api_echo("sync");
 		}
 
@@ -372,21 +409,25 @@ class PeerRequest
 		_log("Remove lock file $lock_file", 5);
 		@rmdir($lock_file);
 
+		if (Config::isSync()) {
+			api_err("submitBlock: sync");
+		}
+
 		if (!$res) {
-			//_log('DFSH: ['.$ip."] invalid block data - $data[height] Error:$error",1);
+			_log('submitBlock: ['.$ip."] invalid block data - $data[height] Error:$error",1);
 			api_err("invalid-block-data $error");
 		}
 
 		$last_block = Block::export("", $data['height']);
 		$bl = Block::getFromArray($last_block);
-		$res = $bl->verifyBlock();
+		$res = $bl->verifyBlock($err);
 
 		if (!$res) {
-			//_log("DFSH: Can not verify added block",1);
+			_log("Can not verify added block err=$err",1);
 			api_err("invalid-block-data");
 		}
 
-		//_log('DFSH: ['.$ip."] block ok, repropagating - $data[height]",1);
+		_log('submitBlock: ['.$ip."] block ok, repropagating - $data[height]",1);
 
 		Propagate::blockToAll($data['id']);
 		api_echo("block-ok");
@@ -559,6 +600,9 @@ class PeerRequest
 	}
 
 	static function updateMasternode() {
+		if(Config::isSync()) {
+			api_err("sync");
+		}
 		$masternode = self::$data;
 		$ip = self::$ip;
 		Masternode::updateMasternode($masternode, $ip, $error);
@@ -679,6 +723,131 @@ class PeerRequest
 		$log = ["type"=>$type, "data"=>$data];
 		$res = peer_post("http://node1.phpcoin.net:3000/emit", $log);
 		api_echo("OK");
+	}
+
+	static function submitBlockNew() {
+		$ip = self::$ip;
+		$data = self::$data;
+		global $_config;
+
+		if(Config::getVal("blockchain_invalid") == 1) {
+			api_err("invalid-peer");
+		}
+
+		$current = Block::current();
+
+		$diff = $current['height']-$data['height'];
+		if(self::$peer) {
+			$hostname = self::$peer['hostname'];
+		}
+		// receive a  new block from a peer
+		_log("submitBlock: Receive new block from a peer $ip hostname=$hostname : id=".$data['id']." height=".$data['height']." current=".$current['height']. " diff=".$diff, 5);
+
+		if($diff < 0) {
+			_log("submitBlock: current height is lower than received block", 5);
+			if($diff == -1) {
+//				api_echo("block-ok");
+				_log("submitBlock: we received next block current=".$current['height']. " height=".$data['height']. " diff=".$diff, 5);
+				$peer_block = Block::getFromArray($data);
+				$res = $peer_block->check($err);
+				if(!$res) {
+					_log("submitBlock: block check failed: $err", 5);
+					api_err("invalid-block");
+				}
+				_log("submitBlock: received block is checked ok", 5);
+				$peer_block->prevBlockId = $current['id'];
+				$res = $peer_block->add($err);
+				if(!$res) {
+					_log("submitBlock: Error adding block: $err", 5);
+					api_err("invalid-block");
+				}
+				_log("submitBlock: added block - ok", 5);
+				Propagate::blockToAll($data['id']);
+				api_echo("block-ok");
+			} else {
+				_log("submitBlock: we are on lower block", 5);
+//				if(self::$peer) {
+//					$dir = ROOT."/cli";
+//					$cmd = "php $dir/peersync.php ".self::$peer['hostname'];
+//					$check_cmd = "php $dir/peersync.php";
+//					_log("submitBlock: run peer sync with ".self::$peer['hostname']);
+//					Nodeutil::runSingleProcess($cmd, $check_cmd);
+//				}
+				api_echo("peer-sync");
+			}
+		} else if ($diff > 0) {
+			_log("submitBlock: current height is higher than received block");
+			$block=Block::export("",$data['height']);
+			if(!$block) {
+				_log("submitBlock: we do not have block at height ".$data['height']);
+				api_err("peer-error");
+			}
+			_log("submitBlock: compare blocks our=".$block['id']." remote=".$data['id']);
+			if($block['id'] == $data['id']) {
+				_log("submitBlock: blocks are same");
+				api_echo("block-ok");
+			}
+			_log("submitBlock: BLOCKS ARE NOT SAME elapsed=".$block['elapsed'].",".$data['elapsed'], 5);
+			$res = NodeSync::compareBlocks($block, $data);
+			if($res>0) {
+				_log("submitBlock: my block is winner");
+				if(self::$peer) {
+					Propagate::blockToPeer(self::$peer['hostname'], self::$peer['ip'], $block['id']);
+				}
+				api_err("block-not-ok");
+			} else if ($res<0) {
+				_log("submitBlock: other block is winner");
+				if(self::$peer) {
+					$dir = ROOT."/cli";
+//					$cmd = "php $dir/peercheck.php ".self::$peer['hostname']. " ".$data['height'];
+//					$check_cmd = "php $dir/peercheck.php";
+//					_log("submitBlock: run peer check with ".self::$peer['hostname']);
+//					Nodeutil::runSingleProcess($cmd, $check_cmd);
+				}
+				api_err("block-ok");
+			} else {
+				_log("submitBlock: blocks are actually same");
+				api_err("block-ok");
+			}
+		} else {
+			_log("submitBlock: heights are equal", 5);
+			if($current['id']==$data['id']) {
+				_log("submitBlock: blocks are same on same height");
+				api_echo("block-ok");
+			}
+			_log("submitBlock: BLOCKS ARE NOT SAME ON SAME HEIGHT", 5);
+			$current = Block::export($current['id']);
+			$res = NodeSync::compareBlocks($current, $data);
+			if($res>0) {
+				_log("submitBlock: my block is winner", 5);
+				if(self::$peer) {
+					Propagate::blockToPeer(self::$peer['hostname'], self::$peer['ip'], $current['id']);
+				}
+				api_err("block-not-ok");
+			} else if ($res<0) {
+				_log("submitBlock: other block is winner", 5);
+				if(self::$peer) {
+					$dir = ROOT."/cli";
+					$cmd = "php $dir/deepcheck.php ".self::$peer['hostname']. " ".$data['height'];
+					$check_cmd = "php $dir/deepcheck.php";
+					_log("submitBlock: run deep check with ".self::$peer['hostname'], 5);
+					Nodeutil::runSingleProcess($cmd, $check_cmd);
+				}
+				api_err("block-not-ok");
+			} else {
+				_log("submitBlock: blocks are actually same", 5);
+				api_err("block-ok");
+			}
+		}
+	}
+
+	static function deepCheck() {
+		$hostname = self::$peer['hostname'];
+		_log("Start run deepCheck",4);
+		$dir = ROOT."/cli";
+		$cmd = "php $dir/deepcheck.php $hostname";
+		Nodeutil::runSingleProcess($cmd);
+		api_echo(["stratus"=>"started","hostname"=>$hostname]);
 	}
 
 }

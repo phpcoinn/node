@@ -15,7 +15,7 @@ class Cache
 		} else {
 			self::$enabled = true;
 		}
-		_log("Cache: Init caching enabled=".self::$enabled, 5);
+//		_log("Cache: Init caching enabled=".self::$enabled, 5);
 	}
 
 	static function getCacheFile($key){

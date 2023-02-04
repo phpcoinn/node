@@ -185,8 +185,7 @@ class NodeMiner extends Daemon {
 				$res = $bl->add($err);
 
 				if ($res) {
-					$current = Block::current();
-					Propagate::blockToAll($current['id']);
+					Propagate::blockToAll('current');
 					_log("Block confirmed", 1);
 					$this->miningStat['accepted']++;
 				} else {

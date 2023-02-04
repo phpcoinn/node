@@ -68,6 +68,14 @@ class Block
 
 		try {
 
+			if($this->height > STOP_CHAIN_HEIGHT) {
+				throw new Exception("Blockchain stopped at height " .  STOP_CHAIN_HEIGHT . " - Can not add block");
+			}
+
+			if(Config::getVal("blockchain_invalid") == 1) {
+				throw new Exception("Blockchain is invalid - please reimport");
+			}
+
 	        if(empty($this->generator)) {
 		        $this->generator = Account::getAddress($this->publicKey);
 	        }
@@ -104,7 +112,8 @@ class Block
 	            throw new Exception("Block height failed");
             }
 	        // lock table to avoid race conditions on blocks
-	        $db->lockTables();
+			_log("LOCK: lock block add ".$this->id, 4);
+//	        $db->lockTables();
 	        $db->beginTransaction();
 	        $total = count($this->data);
 
@@ -128,7 +137,8 @@ class Block
 	        if ($res != 1) {
 	            // rollback and exit if it fails
 	            $db->rollback();
-	            $db->unlockTables();
+		        _log("LOCK: unlock 1 block add ".$this->id . " - insert failed", 4);
+//	            $db->unlockTables();
 		        throw new Exception("Block DB insert failed");
 	        }
 
@@ -142,7 +152,8 @@ class Block
 
 			_log("Inserted new block height={$this->height} id=$hash ");
             $db->commit();
-	        $db->unlockTables();
+			_log("LOCK: unlock 2 block add ".$this->id. " - ok", 4);
+//	        $db->unlockTables();
 			Cache::set("current", $this->toArray());
 			Cache::set("height", $this->height);
 			Cache::set("current_export", Block::export($hash));
@@ -152,7 +163,8 @@ class Block
 			$error = $e->getMessage();
 			if($db->inTransaction()) {
 				$db->rollback();
-				$db->unlockTables();
+				_log("LOCK: unlock 3 block add ".$this->id. " ".$error, 4);
+//				$db->unlockTables();
 			}
 			_log($error);
 			return false;
@@ -190,20 +202,16 @@ class Block
         }
     }
 
-	public static function difficulty($height = 0)
+	public static function difficulty($height = null)
 	{
 		global $db;
 
 		// if no block height is specified, use the current block.
-		if ($height == 0) {
-			$current = Block::current();
-		} else {
-			$current = Block::getAtHeight($height);
+		if ($height === null) {
+			$height = Block::getHeight();
 		}
 
-
-		$height = $current['height'];
-
+		$current = Block::getAtHeight($height);
 		if($height < 10 + 2) {
 			return BLOCK_START_DIFFICULTY;
 		}
@@ -342,47 +350,45 @@ class Block
 		}
 	}
 
-	public function check($new=true)
+	public function check(&$err = null)
 	{
 
 		_log("Block check ".json_encode($this->toArray()),4);
 
-		if ($this->date>time()+30) {
-			_log("Future block - {$this->date} {$this->publicKey}");
-			return false;
-		}
+		try {
+			if ($this->date>time()+30) {
+				throw new Exception("Future block - {$this->date} {$this->publicKey}");
+			}
 
-		// generator's public key must be valid
-		if (!Account::validKey($this->publicKey)) {
-			_log("Invalid public key - {$this->publicKey}");
-			return false;
-		}
+			// generator's public key must be valid
+			if (!Account::validKey($this->publicKey)) {
+				throw new Exception("Invalid public key - {$this->publicKey}");
+			}
 
-		//difficulty should be the same as our calculation
-		if($new) {
-			$calcDifficulty = Block::difficulty();
-		} else {
 			$calcDifficulty = Block::difficulty($this->height-1);
-		}
-		if ($this->difficulty != $calcDifficulty) {
-			_log("Invalid difficulty - {$this->difficulty} - ".$calcDifficulty);
+			if ($this->difficulty != $calcDifficulty) {
+				throw new Exception("Invalid difficulty - {$this->difficulty} - ".$calcDifficulty. " height=".$this->height. " current=".Block::getHeight());
+			}
+
+			$version = $this->version;
+			$expected_version = Block::versionCode($this->height);
+			if($expected_version != $version) {
+				throw new Exception("Block check height ".$this->height.": invalid version - expected $expected_version got $version");
+			}
+
+			//check the argon hash and the nonce to produce a valid block
+			if (!$this->mine()) {
+				throw new Exception("Mine check failed");
+			}
+
+			return true;
+		} catch (Exception $e) {
+			$err = $e->getMessage();
+			_log("Error check block: $err");
 			return false;
 		}
 
-		$version = $this->version;
-		$expected_version = Block::versionCode($this->height);
-		if($expected_version != $version) {
-			_log("Block check height ".$this->height.": invalid version - expected $expected_version got $version");
-			return false;
-		}
 
-		//check the argon hash and the nonce to produce a valid block
-		if (!$this->mine()) {
-			_log("Mine check failed");
-			return false;
-		}
-
-		return true;
 	}
 
     public function mine(&$err=null)
@@ -403,10 +409,6 @@ class Block
 			$prev_date = $prev['date'];
 			$elapsed = $this->date - $prev_date;
 			_log("Current date = {$this->date} prev date = $prev_date elapsed = $elapsed", 4);
-			// get the current difficulty if empty
-			if (empty($this->difficulty)) {
-				$this->difficulty = Block::difficulty();
-			}
 
 			if($elapsed <=0 && $this->height > UPDATE_1_BLOCK_ZERO_TIME) {
 				throw new Exception("Block time zero");
@@ -612,12 +614,21 @@ class Block
 
 	    Config::setSync(1);
 
+	    global $checkpoints;
+	    require_once ROOT . "/include/checkpoints.php";
+		$min_height = array_keys($checkpoints)[count($checkpoints)-1];
+		$current_height = Block::getHeight();
+		if($height < $min_height && $current_height > $min_height) {
+			$height = $min_height;
+		}
+
         $r = $db->run("SELECT * FROM blocks WHERE height>=:height ORDER by height DESC", [":height" => $height]);
 
         if (count($r) == 0) {
+	        Config::setSync(0);
             return true;
         }
-	    $db->lockTables();
+//	    $db->lockTables();
         $db->beginTransaction();
 
 		try {
@@ -638,7 +649,7 @@ class Block
 				if ($res != 1) {
 					throw new Exception("Delete block failed.");
 				} else {
-					_log("Deleted block id=".$x['id']." height=".$x['height'],1);
+					_log("Deleted block id=".$x['id']." height=".$x['height']);
 				}
 			}
 
@@ -646,7 +657,7 @@ class Block
 			Config::setSync(0);
 			if($db->inTransaction()) {
 				$db->commit();
-				$db->unlockTables();
+//				$db->unlockTables();
 			}
 			Cache::remove("current");
 			Cache::remove("height");
@@ -656,7 +667,7 @@ class Block
 			Config::setSync(0);
 			if($db->inTransaction()) {
 				$db->rollback();
-				$db->unlockTables();
+//				$db->unlockTables();
 			}
 			return false;
 		}
@@ -734,6 +745,13 @@ class Block
 //            [":block" => $block['id']]
 //        );
         $block['public_key'] = Account::publicKey($block['generator']);
+		if($block['height'] > 1) {
+		    $prev_block = Block::get($block['height']-1);
+		    $prev_block_date = $prev_block['date'];
+			$elapsed = $block['date'] - $prev_block_date;
+		    $block['elapsed']=$elapsed;
+			_log("ExportBlock id = ".$block['id']." height=".$block['height']." elapsed=$elapsed", 5);
+		}
 //        $bl = new Block();
 //	    $prev = $bl->get($block['height']-1);
 //	    $block['prev_block_id']=$prev['id'];
@@ -906,6 +924,12 @@ class Block
 			$expected_version = Block::versionCode($this->height);
 			if($expected_version != $version) {
 				throw new Exception("Block check: invalid version $version - expected $expected_version");
+			}
+
+			$difficulty = $this->difficulty;
+			$calculated_difficulty = Block::difficulty($this->height-1);
+			if($difficulty != $calculated_difficulty) {
+				throw new Exception("Block check: invalid difficulty $difficulty - expected $calculated_difficulty");
 			}
 
 			$prev_block = Block::getAtHeight($height - 1);

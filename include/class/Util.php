@@ -807,6 +807,7 @@ class Util
 					$imported++;
 				}
 			}
+			Propagate::blockToAll('current');
 			fclose($handle);
 			echo "Successfully imported $imported blocks from height $start_height".PHP_EOL;
 		}
@@ -830,13 +831,14 @@ class Util
 		}
 		$currentVersion = BUILD_VERSION;
 		echo "Checking node update current version = ".BUILD_VERSION.PHP_EOL;
+		$build_number = Peer::getMaxBuildNumber();
 		$cmd= "curl -H 'Cache-Control: no-cache, no-store' -s https://raw.githubusercontent.com/phpcoinn/node/$branch/include/coinspec.inc.php | grep BUILD_VERSION";
 		$res = shell_exec($cmd);
 		$arr= explode(" ", $res);
 		$version = $arr[3];
 		$version = str_replace(";", "", $version);
 		$version = intval($version);
-		if($version > $currentVersion || !empty($force)) {
+		if($version > $currentVersion || $build_number > $currentVersion || !empty($force)) {
 			echo "There is new version: $version - updating node".PHP_EOL;
 			//temp fix apps
 //			$cmd="cd ".ROOT." && rm -rf web/apps";
@@ -856,7 +858,7 @@ class Util
 			$res = shell_exec($cmd);
 			_log("cmd=$cmd res=$res", 5);
 
-			Util::recalculateMasternodes();
+//			Util::recalculateMasternodes();
 
 //			$cmd="cd ".ROOT." && chown -R www-data:www-data web";
 //			$res = shell_exec($cmd);
@@ -867,6 +869,7 @@ class Util
 		} else {
 			echo "There is no new version".PHP_EOL;
 		}
+		Job::runJobs();
 		Util::downloadDapps(null);
 		Cache::resetCache();
 		Peer::deleteBlacklisted();
@@ -1125,20 +1128,104 @@ class Util
 
 	static function recalculateMasternodes() {
 		global $db;
-		$db->exec("lock tables masternode write, transactions t write, transactions tr write, transactions ts write, blocks b write, accounts a write;");
-		$db->exec("delete from masternode;");
-		$db->exec("insert into masternode (public_key,height,win_height, id, verified, collateral)
+		_log("start recalculateMasternodes");
+		$db->beginTransaction();
+
+		try {
+			$sql="select count(*) from (
+			select t.dst, count(t.id) as created,
+			       (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed
+			from transactions t where t.type = 2
+			group by t.dst
+			having created - removed > 0) as mnc";
+
+			$calc_mn_count = $db->single($sql);
+			$sql="select count(*) from masternode";
+			$real_mn_count = $db->single($sql);
+
+			_log("calc_mn_count=$calc_mn_count real_mn_count=$real_mn_count");
+
+			if($calc_mn_count != $real_mn_count) {
+				_log("Different number of masternodes - recreate");
+//			$db->exec("lock tables masternode write, transactions t write, transactions tr write, transactions ts write, transactions tc write, blocks b write, accounts a write;");
+				$db->exec("delete from masternode");
+				$db->exec("insert into masternode (public_key,height,win_height, id, verified, collateral)
         	select public_key,height,win_height, id, 0, collateral from (
-             select t.dst as id, min(t.height) as height, count(t.id) as created,
+             select t.dst as id, max(t.height) as height, count(t.id) as created,
                     (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
                     (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
                     (select a.public_key from accounts a where a.id = t.dst) as public_key,
-                    (select ts.val from transactions ts where ts.id = min(t.id)) as collateral
+                    (select tc.val from transactions tc where tc.dst = t.dst and tc.type = 2 and tc.height = max(t.height)) as collateral
              from transactions t where t.type = 2
              group by t.dst
              having created - removed > 0
              ) as calc_mn");
-		$db->exec("unlock tables;");
+//			$db->exec("unlock tables;");
+			} else {
+				$sql="select calc_mn.*, m.*
+				from (
+				    select t.dst as id, max(t.height) as height, count(t.id) as created,
+				           (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
+				           (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
+				           (select a.public_key from accounts a where a.id = t.dst) as public_key,
+				           (select tc.val from transactions tc where tc.dst = t.dst and tc.type = 2 and tc.height = max(t.height)) as collateral
+				    from transactions t where t.type = 2
+				    group by t.dst
+				    having created - removed > 0
+				) as calc_mn
+				left join masternode m on (calc_mn.id = m.id)
+				where calc_mn.height <> m.height
+				or calc_mn.win_height <> m.win_height
+				or calc_mn.collateral <> m.collateral";
+				$rows = $db->run($sql);
+				$diff_rows = count($rows);
+				_log("Check different rows = $diff_rows");
+				if($diff_rows > 0) {
+					$sql="update (
+				         select t.dst as id, max(t.height) as height, count(t.id) as created,
+				                (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
+				                (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
+				                (select a.public_key from accounts a where a.id = t.dst) as public_key,
+				                (select tc.val from transactions tc where tc.dst = t.dst and tc.type = 2 and tc.height = max(t.height)) as collateral
+				         from transactions t where t.type = 2
+				         group by t.dst
+				         having created - removed > 0
+				     ) as calc_mn
+				         left join masternode m on (calc_mn.id = m.id)
+				set m.height = calc_mn.height, m.win_height = calc_mn.win_height, m.collateral = calc_mn.collateral
+				where calc_mn.height <> m.height
+				   or calc_mn.win_height <> m.win_height
+				   or calc_mn.collateral <> m.collateral";
+					$db->run($sql);
+					_log("Updated masternodes");
+				} else {
+					_log("No need to update masternodes");
+				}
+			}
+			_log("finish recalculateMasternodes");
+			$db->commit();
+		} catch (Exception $e) {
+			_log("error recalculateMasternodes");
+			$db->rollBack();
+		}
+
+
+
+
+//		$db->exec("lock tables masternode write, transactions t write, transactions tr write, transactions ts write, transactions tc write, blocks b write, accounts a write;");
+//		$db->exec("delete from masternode;");
+//		$db->exec("insert into masternode (public_key,height,win_height, id, verified, collateral)
+//        	select public_key,height,win_height, id, 0, collateral from (
+//             select t.dst as id, max(t.height) as height, count(t.id) as created,
+//                    (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
+//                    (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
+//                    (select a.public_key from accounts a where a.id = t.dst) as public_key,
+//                    (select tc.val from transactions tc where tc.dst = t.dst and tc.type = 2 and tc.height = max(t.height)) as collateral
+//             from transactions t where t.type = 2
+//             group by t.dst
+//             having created - removed > 0
+//             ) as calc_mn");
+//		$db->exec("unlock tables;");
 	}
 
 	static function propagateApps($argv) {
@@ -1179,6 +1266,194 @@ class Util
 		} else {
 			api_err($err);
 		}
+	}
+
+	static function refreshPeers() {
+		$peers = Peer::findPeers(false, false);
+		$cnt = count($peers);
+		foreach($peers as $ix=>$peer) {
+			$url = $peer['hostname']. "/peer.php?q=ping";
+			$err = null;
+			$res = peer_post($url, [], 30, $err);
+			_log("refreshPeers: ".($ix+1)."/$cnt hostname=".$peer['hostname']. " res=".json_encode($res). " err=$err");
+			if($res !== "pong") {
+				Peer::blacklist($peer['id'], "Unresponsive");
+			}
+		}
+	}
+
+	static function checkAccounts() {
+		global $db;
+		Config::setSync(1);
+
+		try {
+			_log("start check accounts");
+			$db->beginTransaction();
+
+			$sql="select count(*) from (
+			 select distinct t.src as id
+			 from transactions t
+			 where t.src is not null
+			 union
+			 select distinct t.dst as id
+			 from transactions t
+			 where t.dst is not null) as ids";
+			$calc_acc_cnt = $db->single($sql);
+
+			$sql="select count(*) from accounts";
+			$real_acc_cnt = $db->single($sql);
+
+			$sql= "select sum(val) from (
+		 select sum((t.val+t.fee)*(-1)) as val
+		 from transactions t
+		 where t.src is not null
+		 union
+		 select sum(t.val) as val
+		 from transactions t
+		 where t.dst is not null) as vals";
+
+			$calc_acc_sum = $db->single($sql);
+
+			$sql= "select sum(a.balance) from accounts a";
+			$real_acc_sum = $db->single($sql);
+
+			_log("calc_acc_cnt=$calc_acc_cnt real_acc_cnt=$real_acc_cnt calc_acc_sum=$calc_acc_sum real_acc_sum=$real_acc_sum");
+
+			if($calc_acc_cnt <>  $real_acc_cnt) {
+				_log("Accounts rows are different");
+				_log("delete accounts");
+//				$db->exec("lock tables transactions t write, transactions ts write, blocks b write, accounts write");
+				$sql="delete from accounts";
+				$db->exec($sql);
+				$sql="insert into accounts (id, public_key, block, balance, height)
+			select id, public_key, block, balance, height
+			from (
+			         select ids.id,
+		                (select case when tp.public_key is null then '' else tp.public_key end from transactions tp where tp.src = ids.id limit 1) as public_key,
+		                (select b.id from blocks b where b.height = min(min_height)) as block,
+		                sum(val) as balance,
+		                max(max_height) as height
+		         from (
+		                  select t.dst as id, max(t.height) as max_height, sum(t.val) as val, min(t.height) as min_height
+		                  from transactions t
+		                  where t.dst is not null
+		                  group by t.dst
+		                  union
+		                  select t.src as id, max(t.height) as max_height, sum((t.val + t.fee)*(-1)) as val, min(t.height) as min_height
+		                  from transactions t
+		                  where t.src is not null
+		                  group by t.src
+		              ) as ids
+		         group by ids.id
+			     ) as calc";
+				$db->exec($sql);
+//				$db->exec("unlock tables");
+			}
+
+			_log("Check differences");
+			$sql="select calc.*, a.*
+				from (
+		         select ids.id,
+		                (select case when tp.public_key is null then '' else tp.public_key end from transactions tp where tp.src = ids.id limit 1) as public_key,
+		                (select b.id from blocks b where b.height = min(min_height)) as block,
+		                sum(val) as balance,
+		                max(max_height) as height
+		         from (
+		                  select t.dst as id, max(t.height) as max_height, sum(t.val) as val, min(t.height) as min_height
+		                  from transactions t
+		                  where t.dst is not null
+		                  group by t.dst
+		                  union
+		                  select t.src as id, max(t.height) as max_height, sum((t.val + t.fee)*(-1)) as val, min(t.height) as min_height
+		                  from transactions t
+		                  where t.src is not null
+		                  group by t.src
+		              ) as ids
+		         group by ids.id
+				     ) as calc
+				         left join accounts a on (calc.id = a.id)
+				where calc.public_key <> a.public_key
+				   or calc.block <> a.block
+				   or calc.balance <> a.balance
+				   or calc.height <> a.height";
+			$res = $db->run($sql);
+			$diff_rows = count($res);
+			_log("Found $diff_rows different rows");
+
+			if($diff_rows > 0) {
+				_log("Update accounts table");
+				$sql="update (
+			         select ids.id,
+			                (select case when tp.public_key is null then '' else tp.public_key end from transactions tp where tp.src = ids.id limit 1) as public_key,
+			                (select b.id from blocks b where b.height = min(min_height)) as block,
+			                sum(val) as balance,
+			                max(max_height) as height
+			         from (
+			                  select t.dst as id, max(t.height) as max_height, sum(t.val) as val, min(t.height) as min_height
+			                  from transactions t
+			                  where t.dst is not null
+			                  group by t.dst
+			                  union
+			                  select t.src as id, max(t.height) as max_height, sum((t.val + t.fee)*(-1)) as val, min(t.height) as min_height
+			                  from transactions t
+			                  where t.src is not null
+			                  group by t.src
+			              ) as ids
+			         group by ids.id
+			) as calc
+			    left join accounts a on (calc.id = a.id)
+			set a.public_key = calc.public_key, a.block = calc.block, a.balance = calc.balance, a.height = calc.height
+			where calc.public_key <> a.public_key
+			   or calc.block <> a.block
+			   or calc.balance <> a.balance
+			   or calc.height <> a.height";
+				$res=$db->run($sql);
+				_log("Accounts updated res=$res");
+			} else {
+				_log("No need to update accounts");
+			}
+			$db->commit();
+			Config::setSync(0);
+		} catch (Exception $e) {
+			_log("Error checking accounts ".$e->getMessage());
+			$db->rollBack();
+			Config::setSync(0);
+		}
+
+
+
+//		$sql="update (
+//	         select dst_txs.id,
+//	                src_txs.public_key,
+//	                b.id                                                                                as block,
+//	                dst_txs.balance + src_txs.balance                                                   as balance,
+//	                if(src_txs.max_height > dst_txs.max_height, src_txs.max_height, dst_txs.max_height) as height
+//	         from (select t.dst         as id,
+//	                      null          as public_key,
+//	                      min(t.height) as min_height,
+//	                      sum(t.val)    as balance,
+//	                      max(height)   as max_height
+//	               from transactions t
+//	               where t.dst is not null
+//	               group by t.dst) as dst_txs
+//	                  left join (select t.src                       as id,
+//	                                    max(t.public_key)           as public_key,
+//	                                    min(t.height)               as min_height,
+//	                                    sum((t.val + t.fee) * (-1)) as balance,
+//	                                    max(height)                 as max_height
+//	                             from transactions t
+//	                             where t.src is not null
+//	                             group by t.src) as src_txs on (src_txs.id = dst_txs.id)
+//	                  left join blocks b on (b.height = dst_txs.min_height)
+//	     ) as calc
+//	         left join accounts a on (calc.id = a.id)
+//	set a.public_key = calc.public_key, a.block = calc.block, a.balance = calc.balance, a.height = calc.height
+//	where calc.public_key <> a.public_key
+//	   or calc.block <> a.block
+//	   or calc.balance <> a.balance
+//	   or calc.height <> a.height;";
+//		Config::setSync(0);
+//		$res = $db->run($sql);
 	}
 
 //	static function emptyMasternodes() {

@@ -21,7 +21,7 @@ class Propagate
 		$id=escapeshellcmd(san($id));
 		$dir = ROOT . "/cli";
 		$cmd = "php $dir/propagate.php block '$id' '$host' '$ip'";
-		_log("Propagate cmd: $cmd",5);
+		_log("Propagate: cmd: $cmd",5);
 		Nodeutil::runSingleProcess($cmd);
 	}
 
@@ -93,71 +93,67 @@ class Propagate
 
 	static function dappsToPeer($hostname) {
 		$dir = ROOT . "/cli";
-		$peer = base64_encode($hostname);
-		$cmd = "php $dir/propagate.php dapps $peer";
+		$cmd = "php $dir/propagate.php dapps $hostname";
 		Nodeutil::runSingleProcess($cmd);
 	}
 
 	static function dappsUpdateToPeer($hostname, $dapps_id) {
-		$peer = base64_encode($hostname);
+		$peer = $hostname;
 		$dir = ROOT . "/cli";
 		$cmd = "php $dir/propagate.php dapps-update $peer $dapps_id";
 		Nodeutil::runSingleProcess($cmd);
 	}
 
 	static function processBlockPropagateResponse($hostname, $ip, $id, $response, $err) {
+		//_log("processBlockPropagateResponse response=".json_encode($response));
 		if ($response == "block-ok") {
-			_log("Block $id accepted. Exiting", 5);
-			echo "Block $id accepted. Exiting.\n";
-			return;
-		} elseif ($response['request'] == "microsync") {
+			_log("Block $id accepted", 5);
+		} elseif (is_array($response) && $response['request'] == "microsync") {
 			// the peer requested us to send more blocks, as it's behind
-			echo "Microsync request\n";
-			_log("Microsync request",1);
+			if(defined("FORKED_PROCESS")) {
+				global $_config, $db;
+				$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
+			}
 			$height = intval($response['height']);
 			$bl = san($response['block']);
 			$current = Block::current();
+			_log("Microsync: Microsync request current_height=".$current['height']. " requested_height=".$height,1);
 			// maximum microsync is 10 blocks, for more, the peer should sync
 			if ($current['height'] - $height > 10) {
-				_log("Height Differece too high", 1);
+				_log("Microsync: Height Differece too high", 1);
 				return;
 			}
 			$last_block = Block::get($height);
 			// if their last block does not match our blockchain/fork, ignore the request
 			if ($last_block['id'] != $bl) {
-				_log("Last block does not match", 1);
+				_log("Microsync: Last block does not match", 1);
 				return;
 			}
-			echo "Sending the requested blocks\n";
-			_log("Sending the requested blocks",2);
-			//start sending the requested block
+			$peerInfo = Peer::getInfo();
 			for ($i = $height + 1; $i <= $current['height']; $i++) {
 				$data = Block::export("", $i);
-				$response = peer_post($hostname."/peer.php?q=submitBlock", $data);
+				$data['microsync']=true;
+				_log("Microsync: Sending  block height=$i to $hostname",2);
+				$response = peer_post($hostname."/peer.php?q=submitBlock", $data, 30, $err, $peerInfo);
 				if ($response != "block-ok") {
-					echo "Block $i not accepted. Exiting.\n";
-					_log("Block $i not accepted. Exiting", 5);
+					_log("Microsync: Block $i not accepted. res=$response err=$err Exiting", 5);
 					return;
 				}
-				_log("Block\t$i\t accepted", 3);
+				_log("Microsync: Block\t$i\t accepted", 3);
 			}
 		} elseif ($response == "reverse-microsync") {
 			// the peer informe us that we should run a microsync
-			echo "Running microsync\n";
-			_log("Running microsync",1);
-			$ip = Peer::validateIp($ip);
-			_log("Filtered ip=".$ip,3);
-			if ($ip === false) {
-				_log("Invalid IP");
-				die("Invalid IP");
+			_log("Microsync: reverse",1);
+			$ip2 = Peer::validateIp($ip);
+			if ($ip2 === false) {
+				_log("Microsync: Invalid IP $ip");
 			}
 			// fork a microsync in a new process
 			$dir = ROOT . "/cli";
-			_log("caliing propagate: php $dir/microsync.php '$ip'  > /dev/null 2>&1  &",3);
-			system("php $dir/microsync.php '$ip'  > /dev/null 2>&1  &");
+			_log("Microsync: caliing php $dir/microsync.php '$ip2'  > /dev/null 2>&1  &",3);
+			system("php $dir/microsync.php '$ip2'  > /dev/null 2>&1  &");
 		} else {
-			_log("Block not accepted ".$response." err=".$err, 5);
-			echo "Block not accepted!\n";
+			_log("Microsync: Block not accepted response=".$response." err=".$err, 5);
 		}
 	}
 }

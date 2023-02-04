@@ -108,6 +108,18 @@ function _log($data, $verbosity = 0)
 
 }
 
+function _logp($log, $v = null) {
+	if(!isset($GLOBALS['log'])) {
+		$GLOBALS['log']="";
+	}
+	$GLOBALS['log'].=" > " . $log;
+}
+
+function _logf($log, $level=5) {
+	$GLOBALS['log'].=" > " . $log;
+	_log($GLOBALS['log'], $level);
+}
+
 // converts PEM key to hex
 function pem2hex($data)
 {
@@ -223,7 +235,7 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
 
 //    $context = stream_context_create($opts);
 
-    _log("Posting to $url data ".$postdata." timeout=$timeout", 5);
+//    _log("Posting to $url data ".$postdata." timeout=$timeout", 5);
 
 	$ch = curl_init();
 
@@ -245,6 +257,7 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
 		//6 - Could not resolve host: miner1.phpcoin.net
 		//7 - Failed to connect to miner1.phpcoin.net port 80: Connection refused
 		//28 - Connection timed out after 5001 milliseconds
+		$err = $error_msg;
 		return false;
 	}
 
@@ -267,6 +280,15 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
 	    $hostname = $info['host'];
 	    $connect_time = $curl_info["connect_time"];
 		if(!defined("FORKED_PROCESS")) {
+			//_log("Peer res = ".json_encode($res));
+			if(isset($res['data']) && isset($res['data']['info'])) {
+				$peerInfo = @$res['data']['info'];
+				$ip = $curl_info['primary_ip'];
+				if(!empty($peerInfo) && !empty($ip)) {
+					//_log("updatePeerInfo peerInfo=".json_encode($peerInfo)." ip=$ip");
+					Peer::updatePeerInfo($ip, $peerInfo);
+				}
+			}
     	    Peer::storeResponseTime($hostname, $connect_time);
 		} else {
 			$key = "fork_".FORKED_PROCESS;
@@ -382,4 +404,13 @@ function load_db_config() {
 		}
 	}
 	return $_config;
+}
+
+function decodeHostname($hash) {
+	if(strpos($hash, "http")===0) {
+		$hostname = $hash;
+	} else {
+		$hostname = base58_decode($hash);
+	}
+	return $hostname;
 }

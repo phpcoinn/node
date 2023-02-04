@@ -367,9 +367,10 @@ class Nodeutil
 		$GLOBALS['measure'][$name]=microtime(true);
 	}
 
-	static function runSingleProcess($cmd) {
+	static function runSingleProcess($cmd, $check_cmd = null) {
 		_log("runSingleProcess $cmd", 5);
-		$res = shell_exec("ps uax | grep '$cmd' | grep -v grep");
+		if(empty($check_cmd)) $check_cmd = $cmd;
+		$res = shell_exec("ps uax | grep '$check_cmd' | grep -v grep");
 		if(!$res) {
 			$exec_cmd = "$cmd > /dev/null 2>&1  &";
 			system($exec_cmd);
@@ -445,6 +446,8 @@ class Nodeutil
 		$data['git_status']=explode(PHP_EOL, $git_status);
 		$cron_list = shell_exec("crontab -l");
 		$data['cron_list']=explode(PHP_EOL, $cron_list);
+		$php_processes = shell_exec("ps aux | grep php");
+		$data['php_processes']=explode(PHP_EOL, $php_processes);
 		return $data;
 	}
 

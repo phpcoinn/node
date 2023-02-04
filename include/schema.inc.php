@@ -96,7 +96,7 @@ if (empty($dbversion)) {
 		ping int not null,
 		reserve tinyint default 1 not null,
 		ip varchar(45) not null,
-		fails tinyint default 0 not null,
+		fails int default 0 not null,
 		stuckfail tinyint default 0 not null,
 		height int,
 		appshash varchar(250),
@@ -474,6 +474,13 @@ if($dbversion < 34) {
 			add verified int default 0 not null;");
 	}
 	$dbversion = 34;
+}
+
+if($dbversion < 35) {
+	if(!$was_empty) {
+		$db->run("alter table peers modify fails int default 0 not null");
+	}
+	$dbversion = 35;
 }
 
 // update the db version to the latest one

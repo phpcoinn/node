@@ -5,11 +5,13 @@ define("PAGE", true);
 define("APP_NAME", "Explorer");
 
 $peers = Peer::getAll();
+$current_height = Block::getHeight();
 
 global $db;
 $sql="select p.height, count(distinct p.block_id) as block_cnt
 from peers p
-group by p.height, p.block_id
+where p.blacklisted < UNIX_TIMESTAMP()
+group by p.height
 having block_cnt > 1
 order by p.height desc";
 $forked_peers = $db->run($sql);
@@ -17,9 +19,21 @@ $forked_peers = $db->run($sql);
 $sql="select p.height, count(p.id) as peer_cnt
 from peers p
 where p.blacklisted < UNIX_TIMESTAMP()
+and unix_timestamp()-p.ping < 60*60*2
 group by p.height
 order by p.height desc;";
 $peers_by_height = $db->run($sql);
+
+$peers_by_height_map = [];
+foreach($peers_by_height as $peer) {
+	$peers_by_height_map[$peer['height']]=$peer['peer_cnt'];
+}
+
+if(!isset($peers_by_height_map[$current_height])) {
+	$peers_by_height_map[$current_height]="current";
+}
+
+krsort($peers_by_height_map);
 
 $sql="select p.version, count(p.id) as peer_cnt
 from peers p
@@ -150,7 +164,7 @@ require_once __DIR__. '/../common/include/top.php';
 			<?php foreach ($forked_peers as $forked_peer) { ?>
                 <tr>
                     <td><?php echo $forked_peer['height'] ?></td>
-                    <td><?php echo $forked_peer['block_count'] ?></td>
+                    <td><?php echo $forked_peer['block_cnt'] ?></td>
                 </tr>
 			<?php } ?>
             </tbody>
@@ -166,10 +180,12 @@ require_once __DIR__. '/../common/include/top.php';
             </tr>
             </thead>
             <tbody>
-			<?php foreach ($peers_by_height as $peer) { ?>
-                <tr>
-                    <td><?php echo $peer['height'] ?></td>
-                    <td><?php echo $peer['peer_cnt'] ?></td>
+			<?php foreach ($peers_by_height_map as $height => $cnt) { ?>
+                <tr class="<?php if ($height == $current_height) { ?>table-success<?php } ?>">
+                    <td>
+                        <?php echo $height ?>
+                    </td>
+                    <td><?php echo $cnt ?></td>
                 </tr>
 			<?php } ?>
             </tbody>

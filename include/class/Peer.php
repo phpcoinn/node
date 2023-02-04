@@ -39,7 +39,7 @@ class Peer
 		return $rows;
 	}
 
-	static function getPeersForSync($limit = null, $random=false) {
+	static function getPeersForSync($limit = null, $random=false, $order="response_time/response_cnt") {
 		global $db;
 		$sql="select * from peers 
 			where blacklisted < ".DB::unixTimeStamp()."
@@ -48,13 +48,44 @@ class Peer
 		if($random) {
 			$sql.=" order by ".DB::random();
 		} else {
-			$sql.=" order by response_time/response_cnt";
+			$sql.=" order by $order";
 		}
 		if(!empty($limit)) {
 			$sql.=" limit $limit";
 		}
 		$rows = $db->run($sql);
 		return $rows;
+	}
+
+	static function findPeers($blacklisted, $live, $limit = null, $order="response_time/response_cnt") {
+		global $db;
+
+		$sql="select * from peers where 1=1 ";
+		if($blacklisted === true) {
+			$sql.=" and blacklisted > ".DB::unixTimeStamp();
+		} else if ($blacklisted === false) {
+			$sql.=" and blacklisted < ".DB::unixTimeStamp();
+		}
+		if($live === true) {
+			$sql.= "and ping > ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES;
+		} else if ($live === false) {
+			$sql.= "and ping < ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES;
+		}
+
+		if(!empty($order)) {
+			$sql.=" order by $order";
+		}
+
+		if(!empty($limit)) {
+			$sql.=" limit $limit";
+		}
+
+		$rows = $db->run($sql);
+		return $rows;
+	}
+
+	static function getPeersForPropagate($limit = null, $random=false) {
+		return self::findPeers(false, null);
 	}
 
 	static function getPeersForMasternode($limit = null) {
@@ -188,12 +219,12 @@ class Peer
 		];
 	}
 
-	static function blacklist($id, $reason = '') {
+	static function blacklist($id, $reason = '', $min=10) {
 		global $db;
 		$hostname = $db->single("select hostname from peers where id = :id", [":id"=>$id]);
 		_log("Blacklist peer $hostname reason=$reason");
 		$db->run(
-			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*1), 
+			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*$min), 
 				blacklist_reason=:blacklist_reason WHERE id=:id",
 			[":id" => $id, ':blacklist_reason'=>$reason]
 		);
@@ -222,12 +253,6 @@ class Peer
 		return $db->run("SELECT ip,hostname,height FROM peers WHERE blacklisted<".DB::unixTimeStamp()." ORDER by ".DB::random());
 	}
 
-	static function getPeersForPropagate() {
-		global $db;
-		$r = $db->run("SELECT * FROM peers WHERE blacklisted < ".DB::unixTimeStamp());
-		return $r;
-	}
-
 	static function findByIp($ip) {
 		global $db;
 		$x = $db->row(
@@ -246,6 +271,24 @@ class Peer
 	static function deleteDeadPeers() {
 		global $db;
 		$db->run("DELETE from peers WHERE fails>100 OR stuckfail>100 OR (".DB::unixTimeStamp()."- ping > 60*60*24)");
+	}
+
+	static function blacklistInactivePeers() {
+		global $db;
+		$db->run(
+			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*1), 
+				blacklist_reason=:blacklist_reason where unix_timestamp()-ping > 60*60*2",
+			[':blacklist_reason'=>'Inactive']
+		);
+	}
+
+	static function blacklistIncompletePeers() {
+		global $db;
+		$db->run(
+			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*1), 
+				blacklist_reason=:blacklist_reason where height is null or block_id is null",
+			[':blacklist_reason'=>'Incomplete']
+		);
 	}
 
 	static function resetResponseTimes() {
@@ -299,6 +342,9 @@ class Peer
 	static function updatePeerInfo($ip, $info) {
 		global $db;
 		_log("PeerSync: Peer request: update info from $ip ".json_encode($info), 3);
+		if(empty($info['height']) || empty($info['block'])) {
+			_log("updatePeerInfo: EMPTY HEIGHT or BLOCK - peer not updated ", 3);
+		}
 		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, block_id=:block_id, appshash=:appshash, score=:score, version=:version,  
 				miner=:miner, generator=:generator, masternode=:masternode, hostname=:hostname, dapps_id =:dapps_id, dappshash =:dapps_hash
 				WHERE ip=:ip",
@@ -398,4 +444,49 @@ class Peer
 		return $row;
 	}
 
+
+	static function getMaxBuildNumber() {
+		global $db;
+		$sql="select max(version) from peers";
+		$max_version = $db->single($sql);
+		$arr = explode(".",$max_version);
+		$build_number = array_pop($arr);
+		return $build_number;
+	}
+
+	static function getValidPeersForSync() {
+		global $db;
+		$sql="select p.*
+		from peers p
+		where p.height > (select max(height) from blocks)
+		  and p.blacklisted < unix_timestamp()
+		  and unix_timestamp() - p.ping < 2 * 60
+		  and p.height not in (
+		    select fp.height
+		    from peers fp
+		    group by fp.height
+		    having count(distinct fp.block_id) > 1
+		)
+		  and p.height in (
+		    select mp.height
+		    from peers mp
+		    group by mp.height
+		    having count(mp.id) > 1
+		)
+		  and (p.height < (
+		    select p.height
+		    from peers p
+		    group by p.height
+		    having count(distinct p.block_id) > 1
+		      order by p.height limit 1
+		) or (
+		    select p.height
+		    from peers p
+		    group by p.height
+		    having count(distinct p.block_id) > 1
+		    order by p.height limit 1
+		       ) is null)
+		order by p.height asc, p.response_time / p.response_cnt asc";
+		return $db->run($sql);
+	}
 }

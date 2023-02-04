@@ -24,21 +24,195 @@ class Sync extends Daemon
 		$db->setConfig("sync_disabled", 1);
 	}
 
+	static function processNew() {
+		global $db, $_config;
+		ini_set('memory_limit', '2G');
+		$t1 = microtime(true);
+
+		$now = time();
+		$sync_last = Config::getVal('sync_last');
+		_log("Check sync last: $sync_last elapsed = ".($now - $sync_last));
+		if(Config::isSync() && ($now - $sync_last > 60*60*2)) {
+			_log("Set sync = 0");
+			Config::setSync(0);
+			return;
+		}
+
+		Peer::deleteDeadPeers();
+		Peer::blacklistInactivePeers();
+		Peer::blacklistIncompletePeers();
+		Peer::resetResponseTimes();
+
+		self::checkPeers();
+		self::getMorePeers();
+//		self::refreshPeers();
+
+		NodeSync::recheckLastBlocks();
+
+		$res = NodeSync::checkBlocks();
+		if(!$res) {
+			_log("Block database is invalid");
+			Config::setVal("blockchain_invalid", 1);
+			return;
+		}
+		$res = NodeSync::compareCheckPoints();
+		if(!$res) {
+			_log("Blockchain is invalid - checkpoints are not correct");
+			Config::setVal("blockchain_invalid", 1);
+			return;
+		}
+		Config::setVal("blockchain_invalid", 0);
+
+		Mempool::deleteOldMempool();
+//		NodeSync::checkForkedBlocks();
+		NodeSync::syncBlocks();
+		$peersForSync = Peer::getValidPeersForSync();
+		$nodeSync = new NodeSync($peersForSync);
+		$nodeSync->calculateNodeScoreNew();
+
+
+		//rebroadcasting local transactions
+		$current = Block::current();
+		if ($_config['sync_rebroadcast_locals'] == true && $_config['disable_repropagation'] == false) {
+			$r = Mempool::getForRebroadcast($current['height']);
+			_log("Rebroadcasting local transactions - ".count($r), 1);
+			foreach ($r as $x) {
+				Propagate::transactionToAll($x['id']);
+			}
+		}
+
+		//rebroadcasting transactions
+		if ($_config['disable_repropagation'] == false) {
+			$forgotten = $current['height'] - $_config['sync_rebroadcast_height'];
+			$r=Mempool::getForgotten($forgotten);
+
+			_log("Rebroadcasting external transactions - ".count($r),1);
+
+			foreach ($r as $x) {
+				Propagate::transactionToAll($x['id']);
+			}
+		}
+
+
+		Nodeutil::cleanTmpFiles();
+		Minepool::deleteOldEntries();
+		Cache::clearOldFiles();
+		_log("Finishing sync",3);
+		$t2 = microtime(true);
+		Config::setVal("sync_last", time());
+		_log("Sync process finished in time ".round($t2-$t1, 3));
+	}
+
 	static function process() {
+		self::processNew();
+	}
+
+	static function checkPeers() {
+		global $_config, $db;
+		$total_peers = Peer::getCount(false);
+		_log("Total peers: ".$total_peers, 3);
+		$peered = [];
+		// if we have no peers, get the seed list from the official site
+		if ($total_peers == 0) {
+			$i = 0;
+			$failed_peers = 0;
+			_log('No peers found. Attempting to get peers from the initial list');
+
+			$peers = Peer::getInitialPeers();
+
+			_log("Checking peers: ".print_r($peers, 1), 3);
+			foreach ($peers as $peer) {
+				// Peer with all until max_peers
+				// This will ask them to send a peering request to our peer.php where we add their peer to the db.
+				$peer = trim(san_host($peer));
+
+				if(!Peer::validate($peer)) {
+					continue;
+				}
+
+				_log("Process peer ".$peer, 4);
+
+				if($peer === $_config['hostname']) {
+					continue;
+				}
+
+				// store the hostname as md5 hash, for easier checking
+				$pid = md5($peer);
+				// do not peer if we are already peered
+				if ($peered[$pid] == 1) {
+					continue;
+				}
+				$peered[$pid] = 1;
+
+				if ($_config['passive_peering'] == true) {
+					// does not peer, just add it to DB in passive mode
+					$res=Peer::insert(md5($peer), $peer);
+				} else {
+					// forces the other node to peer with us.
+					$res = peer_post($peer."/peer.php?q=peer", ["hostname" => $_config['hostname'], "repeer" => 1], 30, $err);
+				}
+				if ($res !== false) {
+					$i++;
+					_log("Peering OK - $peer");
+				} else {
+					$failed_peers++;
+					_log("Peering FAIL - $peer Error: $err");
+					if($failed_peers > 10) {
+						break;
+					}
+				}
+				if ($i > $_config['max_peers']) {
+					break;
+				}
+			}
+			// count the total peers we have
+			$total_peers = Peer::getCountAll();
+			if ($total_peers == 0) {
+				// something went wrong, could not add any peers -> exit
+				_log("There are no active peers");
+				$db->setConfig('node_score', 0);
+				_log("There are no active peers!\n");
+			}
+		}
+	}
+
+	static function getMorePeers() {
+		Daemon::runAtInterval("gmp", 30, function() {
+			$dir = ROOT."/cli";
+			$cmd = "php $dir/util.php get-more-peers";
+			Nodeutil::runSingleProcess($cmd);
+		});
+	}
+
+	static function refreshPeers() {
+		Daemon::runAtInterval("refreshPeers", 45, function() {
+			$dir = ROOT."/cli";
+			$cmd = "php $dir/util.php refresh-peers";
+			Nodeutil::runSingleProcess($cmd);
+		});
+	}
+
+	static function processOld() {
 		global $db, $_config;
 		ini_set('memory_limit', '2G');
 		$current = Block::current();
+
+		Peer::deleteDeadPeers();
+		Peer::blacklistInactivePeers();
+		Peer::resetResponseTimes();
+		NodeSync::recheckLastBlocks();
+
+		$sql="select max(height) from peers";
+		$max_height = $db->single($sql);
+		_log("Max peers height = ".$max_height. " current=".$current['height']);
+
 		$t = time();
 		$t1 = microtime(true);
-		_log("Starting sync",3);
-		Config::setSync(1);
+//		_log("Starting sync",3);
+//		Config::setSync(1);
 
 		// update the last time sync ran, to set the execution of the next run
 		$db->run("UPDATE config SET val=:time WHERE cfg='sync_last'", [":time" => $t]);
-
-		// delete the dead peers
-		Peer::deleteDeadPeers();
-		Peer::resetResponseTimes();
 
 		$total_peers = Peer::getCount(false);
 		_log("Total peers: ".$total_peers, 3);
@@ -114,8 +288,6 @@ class Sync extends Daemon
 			Nodeutil::runSingleProcess($cmd);
 		});
 
-		NodeSync::recheckLastBlocks();
-
 		$peers = Peer::getPeersForSync();
 		$peerData = [];
 		$peerResponseTimes = [];
@@ -142,14 +314,15 @@ class Sync extends Daemon
 		//Then get all other peers
 		$peers = Peer::getActive($live_peers_count * 2);
 		_log("PeerSync: get active peers ".count($peers), 5);
+		$peerInfo = Peer::getInfo();
 		foreach($peers as $peer) {
 			$hostname = $peer['hostname'];
 			if(isset($peerData[$hostname])) {
 				continue;
 			}
-			_log("PeerSync: Contacting peer $hostname", 5);
+//			_log("PeerSync: Contacting peer $hostname", 5);
 			$url = $hostname."/peer.php?q=";
-			$res = peer_post($url."currentBlock", [], 5);
+			$res = peer_post($url."currentBlock", [], 5, $err, $peerInfo);
 			if ($res === false) {
 				//		_log("Peer $hostname unresponsive url={$url}currentBlock response=$res");
 				// if the peer is unresponsive, mark it as failed and blacklist it for a while
@@ -218,21 +391,22 @@ class Sync extends Daemon
 			return $k1 - $k2;
 		});
 
-		_log("Block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
+//		_log("Block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
 
 		$forked = false;
 		$not_forked_heights = [];
 		_log("Checking blocks map for forks", 5);
 		foreach($blocksMap as $height => $blocks) {
-			_log("Checking height=$height blocks=".count($blocks), 3);
+			_log("Blocks map: height=$height blocks=".count($blocks) ." id=".array_keys($blocks)[0], 3);
 			if(count($blocks)>1) {
-				_log("Start checking blocks time and difficulty", 5);
+//				_log("Start checking blocks time and difficulty", 5);
 				$forkedBlocksMap = [];
+				$forkedBlocksPeers = [];
 				foreach ($blocks as $block_id => $peers) {
-					_log("Checking block $block_id count=" . count($peers), 5);
+//					_log("Checking block $block_id count=" . count($peers), 5);
 					foreach ($peers as $peer) {
 						$url = $peer . "/peer.php?q=";
-						$peer_blocks = peer_post($url . "getBlocks", ["height" => $height -1] );
+						$peer_blocks = peer_post($url . "getBlocks", ["height" => $height -1], 30, $err, $peerInfo );
 						if (!$peer_blocks) {
 							continue;
 						}
@@ -247,8 +421,9 @@ class Sync extends Daemon
 						$elapsed = $peer_block['date'] - $peer_prev_block['date'];
 						$peer_block['elapsed'] = $elapsed;
 						$difficulty = $peer_block['difficulty'];
-						_log("Read block at height $height from peer $peer elapsed=$elapsed diff=$difficulty", 5);
+						_log("Forked block $block_id at height $height from peer $peer elapsed=$elapsed diff=$difficulty", 5);
 						$forkedBlocksMap[$block_id] = $peer_block;
+						$forkedBlocksPeers[$block_id]=$peer;
 						break;
 					}
 				}
@@ -270,11 +445,21 @@ class Sync extends Daemon
 							}
 						});
 					}
-					_log("Forked blocks " . json_encode($forkedBlocksMap, JSON_PRETTY_PRINT), 5);
+					_log("Forked blocks peers " . json_encode($forkedBlocksPeers, JSON_PRETTY_PRINT), 5);
 					$winForkedBlock = array_shift($forkedBlocksMap);
 					_log("Forked block winner at height $height is block " . $winForkedBlock['id']);
 					$winPeers = $blocksMap[$height][$winForkedBlock['id']];
 					$blocksMap[$height] = [$winForkedBlock['id'] => $winPeers];
+					foreach($forkedBlocksPeers as $block_id => $hostname) {
+						$winner = $block_id == $winForkedBlock['id'];
+						_log("Check forked peer $hostname block=$block_id winner=$winner", 5);
+						if(!$winner) {
+							$peer = Peer::findByHostname($hostname);
+							if($peer) {
+								Peer::blacklist($peer['id'], "Forked block $height", 5);
+							}
+						}
+					}
 				}
 			}
 			if(!$forked) {
@@ -283,18 +468,30 @@ class Sync extends Daemon
 		}
 
 		if($forked) {
-			_log("Corrected block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
+//			_log("Corrected block map = ".json_encode($blocksMap, JSON_PRETTY_PRINT), 5);
 		}
+
+		$peersforSync = [];
+		$peerSyncHeight = null;
+		$peerSyncBlockId = null;
+
+		_log("blocksMap:".print_r($blocksMap, 1));
+//		return;
 
 		foreach($blocksMap as $height => $blocks) {
 			$current = Block::current();
-			_log("Checking height=$height blocks=".count($blocks), 3);
 			$block_id =  array_keys($blocks)[0];
+			_log("Corrected block map: height=$height blocks=".count($blocks)." block_id=".$block_id, 3);
 			_log("Check height $height block_id = $block_id", 5);
 			if($height > $current['height']) {
 				_log("Not top block - need sync", 5);
+				$peersforSync = array_keys($blocks[$block_id]);
+				$peerSyncHeight = $height;
+				$peerSyncBlockId = $block_id;
+				_log("peersforSync:".print_r($peersforSync,1));
+				break;
 			} else if ($height == $current['height']) {
-				_log("Check top block", 5);
+				_log("Check top block id=".$current['id'], 5);
 				if($block_id == $current['id']) {
 					_log("Our top block is ok", 5);
 				} else {
@@ -332,35 +529,35 @@ class Sync extends Daemon
 		_log( "Longest chain height: $largest_height",5);
 
 
-		$peers = array_keys($blocksMap[$largest_height][$largest_height_block]);
+//		$peers = array_keys($blocksMap[$largest_height][$largest_height_block]);
 
-		usort($peers, function($p1, $p2) use ($peerResponseTimes) {
+		usort($peersforSync, function($p1, $p2) use ($peerResponseTimes) {
 			$t1 = isset($peerResponseTimes[$p1]) ? $peerResponseTimes[$p1] : PHP_INT_MAX;
 			$t2 = isset($peerResponseTimes[$p2]) ? $peerResponseTimes[$p2] : PHP_INT_MAX;
 			return $t2 - $t1;
 		});
 
-		Config::setSync(0);
+//		Config::setSync(0);
 
-		if(count($peers)<=1) {
-			_log("Can not sync - peers <=1 ");
-			$hostname = $peers[0];
-			$peer = Peer::findByHostname($hostname);
-			if($peer) {
-				Peer::blacklist($peer['id'], "Single peer at height $largest_height");
-				_log("Blacklist peer with 1 block");
-			}
+//		if(count($peers)<=1) {
+//			_log("Can not sync - peers <=1 ");
+//			$hostname = $peers[0];
+//			$peer = Peer::findByHostname($hostname);
+//			if($peer) {
+//				Peer::blacklist($peer['id'], "Single peer at height $largest_height");
+//				_log("Blacklist peer with 1 block");
+//			}
+//		} else {
+		$current = Block::current();
+		$nodeSync = new NodeSync($peersforSync);
+		if($largest_height > $current['height']) {
+			_log("Start syncing to height $peerSyncHeight", 5);
+			$nodeSync->start($peerSyncHeight, $peerSyncBlockId);
 		} else {
-			$current = Block::current();
-			$nodeSync = new NodeSync($peers);
-			if($largest_height > $current['height']) {
-				_log("Start syncing to height $largest_height", 5);
-				$nodeSync->start($largest_height, $largest_height_block);
-			} else {
-				_log("Our blockchain is synced", 5);
-			}
-			$nodeSync->calculateNodeScore();
+			_log("Our blockchain is synced", 5);
 		}
+		$nodeSync->calculateNodeScore();
+//		}
 
 
 		Mempool::deleteOldMempool();

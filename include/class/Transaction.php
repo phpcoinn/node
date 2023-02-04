@@ -1260,17 +1260,26 @@ class Transaction
 
 	static function getAddressStat($address) {
 		global $db;
-		$res = $db->row(
-			"select sum(".$db->if()."(t.src=a.id, t.val + t.fee, 0)) as total_sent,
-			       sum(".$db->if()."(t.dst = a.id , t.val, 0)) as total_received,
-			       sum(".$db->if()."(t.src= a.id, 1, 0)) as count_sent,
-			       sum(".$db->if()."(t.dst = a.id , 1, 0)) as count_received
-				from accounts a
-				left join transactions t on (a.id = t.src or a.id = t.dst)
-				where a.id = :address;",
-			[":address" => $address]
-		);
-		return $res;
+		$data = [];
+		$res = $db->row("select sum(t.val + t.fee) as total_sent, count(t.id) as count_sent from transactions t where t.src = :address", [":address"=>$address]);
+		$data['total_sent']=$res['total_sent'];
+		$data['count_sent']=$res['count_sent'];
+		$res = $db->row("select sum(t.val) as total_received, count(t.id) as count_received from transactions t where t.dst = :address", [":address"=>$address]);
+		$data['total_received']=$res['total_received'];
+		$data['count_received']=$res['count_received'];
+		return $data;
+	}
+
+	static function getTotalSent($address, $height=PHP_INT_MAX) {
+		global $db;
+		$sql="select sum(t.val + t.fee) from transactions t where t.src= :address and t.height < :height";
+		return $db->single($sql, [":address"=>$address, ":height"=>$height]);
+	}
+
+	static function getTotalReceived($address, $height=PHP_INT_MAX) {
+		global $db;
+		$sql="select sum(t.val) from transactions t where t.dst= :address and t.height < :height";
+		return $db->single($sql, [":address"=>$address, ":height"=>$height]);
 	}
 
 	static function processFee(&$transactions, $public_key, $private_key, $miner, $date, $height=null) {
