@@ -11,10 +11,10 @@ class Job
 		$min = date("i");
 
 		if($min == "30") {
-			Nodeutil::runSingleProcess("php ".ROOT."cli/util.php check-accounts");
+			Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php check-accounts");
 		}
 		if($min == "15") {
-			Nodeutil::runSingleProcess("php ".ROOT."cli/util.php recalculate-masternodes");
+			Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php recalculate-masternodes");
 		}
 	}
 
