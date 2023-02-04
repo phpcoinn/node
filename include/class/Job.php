@@ -10,8 +10,11 @@ class Job
 		$hour = date("H");
 		$min = date("i");
 
-		if($hour == "00") {
-//			Nodeutil::runSingleProcess("php ".ROOT."cli/util.php correct-accounts");
+		if($min == "30") {
+			Nodeutil::runSingleProcess("php ".ROOT."cli/util.php check-accounts");
+		}
+		if($min == "15") {
+			Nodeutil::runSingleProcess("php ".ROOT."cli/util.php recalculate-masternodes");
 		}
 	}
 
