@@ -55,7 +55,7 @@ $sorting limit $start, $limit";
 $staking_stat = $db->run($sql, $params);
 
 $sql="select a1.id, a1.balance, a1.max_height - a1.height as maturity,
-       if(a1.max_height - a1.height >= 600, (a1.max_height - a1.height)*a1.balance, 0) as weight
+       case when a1.max_height - a1.height >= 600 then (a1.max_height - a1.height)*a1.balance else 0 end as weight
 from (
   select a.id,
          a.balance,

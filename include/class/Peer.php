@@ -277,7 +277,7 @@ class Peer
 		global $db;
 		$db->run(
 			"UPDATE peers SET fails=fails+1, blacklisted=".DB::unixTimeStamp()."+((fails+1)*60*1), 
-				blacklist_reason=:blacklist_reason where unix_timestamp()-ping > 60*60*2",
+				blacklist_reason=:blacklist_reason where ".DB::unixTimeStamp()."-ping > 60*60*2",
 			[':blacklist_reason'=>'Inactive']
 		);
 	}
@@ -405,7 +405,7 @@ class Peer
 	public static function updateDappsId($ip, $dapps_id, $dapps_hash)
 	{
 		global $db;
-		$sql = "update peers p set p.dapps_id = :dapps_id, p.dappshash = :dappshash where p.ip = :ip";
+		$sql = "update peers set dapps_id = :dapps_id, dappshash = :dappshash where ip = :ip";
 		return $db->run($sql, [":dapps_id"=>$dapps_id, ":ip"=>$ip, ":dappshash" => $dapps_hash]);
 	}
 
@@ -419,14 +419,14 @@ class Peer
 
 	public static function deleteBlacklisted() {
 		global $db;
-		$sql="delete from peers where blacklisted > unix_timestamp() and mid(blacklist_reason, 1, 16) = 'Invalid hostname'";
+		$sql="delete from peers where blacklisted > ".DB::unixTimeStamp()." and substr(blacklist_reason, 1, 16) = 'Invalid hostname'";
 		$db->run($sql);
 	}
 
 	static function deleteWrongHostnames() {
 		global $db;
-		$sql="delete from peers where hostname not like concat('%',ip,'%') 
-			and blacklisted > unix_timestamp() and mid(blacklist_reason, 1, 16) = 'Invalid hostname'";
+		$sql="delete from peers where hostname not like ".DB::concat("'%'", "ip", "'%'")."
+			and blacklisted > ".DB::unixTimeStamp()." and substr(blacklist_reason, 1, 16) = 'Invalid hostname'";
 		$db->run($sql);
 	}
 
@@ -459,8 +459,8 @@ class Peer
 		$sql="select p.*
 		from peers p
 		where p.height > (select max(height) from blocks)
-		  and p.blacklisted < unix_timestamp()
-		  and unix_timestamp() - p.ping < 2 * 60
+		  and p.blacklisted < ".DB::unixTimeStamp()."
+		  and ".DB::unixTimeStamp()." - p.ping < 2 * 60
 		  and p.height not in (
 		    select fp.height
 		    from peers fp

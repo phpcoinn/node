@@ -270,10 +270,10 @@ if($dbversion == 11) {
 		_log("DB Schema: Add index on src column");
 		$db->run("create index transactions_src_index on transactions (src)");
 		_log("DB Schema: Update src column");
-		$db->run("update transactions t set t.src = (
-		    select a.id from accounts a where a.public_key = t.public_key
+		$db->run("update transactions set transactions.src = (
+		    select accounts.id from accounts where accounts.public_key = transactions.public_key
 		    )
-		where t.type > 0 and t.src is null");
+		where transactions.type > 0 and transactions.src is null");
 		_log("DB Schema: Unlock transactions table");
 		$db->run("unlock tables");
 		_log("DB Schema: Update wrong balances");
@@ -455,7 +455,7 @@ if($dbversion < 28) {
 }
 
 if($dbversion < 29) {
-	$db->run("update transactions t set t.dst = null where t.dst = '' and t.type = 8;");
+	$db->run("update transactions set dst = null where dst = '' and type = 8;");
 	$dbversion = 29;
 }
 

@@ -196,13 +196,13 @@ class NodeSync
 
 	function calculateNodeScoreNew() {
 		global $db;
-		$sql="select sum(if(p.ok=1, 1, 0)) / count(*) as node_score
+		$sql="select sum(case when p.ok=1 then 1 else 0 end) / count(*) as node_score
 		from (
 		         select p.id,
 		                (p.height <= (select max(height) from blocks) and
 		                 p.block_id = (select b.id from blocks b where b.height = p.height)) as ok
 		         from peers p
-		         where p.blacklisted < unix_timestamp()
+		         where p.blacklisted < ".DB::unixTimeStamp()."
 		     ) as p";
 		$res = $db->single($sql);
 		$node_score = round($res * 100, 2);
@@ -381,7 +381,7 @@ class NodeSync
 	static function getPeerBlocksMap() {
 		global $db;
 		$sql="select * from peers p where
-			p.blacklisted < unix_timestamp()
+			p.blacklisted < ".DB::unixTimeStamp()."
 			order by response_time/response_cnt";
 		$peers = $db->run($sql);
 		_log("Sync: Found ".count($peers)." to sync");
@@ -513,8 +513,8 @@ class NodeSync
 		       max(p.block_id) as best_block_id
 		from peers p
 		where
-		        p.blacklisted < unix_timestamp()
-		  and unix_timestamp() - p.ping < 2 * 60
+		        p.blacklisted < ".DB::unixTimeStamp()."
+		  and ".DB::unixTimeStamp()." - p.ping < 2 * 60
 		group by p.height
 		having unique_blocks = 1
 		order by count(p.id) desc
@@ -531,8 +531,8 @@ class NodeSync
 		       max(p.block_id) as longest_block_id
 		from peers p
 		where
-		        p.blacklisted < unix_timestamp()
-		  and unix_timestamp() - p.ping < 2 * 60
+		        p.blacklisted < ".DB::unixTimeStamp()."
+		  and ".DB::unixTimeStamp()." - p.ping < 2 * 60
 		group by p.height
 		having unique_blocks = 1 and peers_cnt > 1
 		order by p.height desc
@@ -558,8 +558,8 @@ class NodeSync
 		$sql="select * from peers p
 			where p.height = :height
 			  and p.block_id = :block_id
-			   and p.blacklisted < unix_timestamp()
-			  and unix_timestamp() - p.ping < 2 * 60
+			   and p.blacklisted < ".DB::unixTimeStamp()."
+			  and ".DB::unixTimeStamp()." - p.ping < 2 * 60
 			  order by p.response_time / p.response_cnt";
 
 		$peersForSync = $db->run($sql, [":height"=>$sync_height, ":block_id"=>$sync_block_id]);

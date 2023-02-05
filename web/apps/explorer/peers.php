@@ -10,7 +10,7 @@ $current_height = Block::getHeight();
 global $db;
 $sql="select p.height, count(distinct p.block_id) as block_cnt
 from peers p
-where p.blacklisted < UNIX_TIMESTAMP()
+where p.blacklisted < ".DB::unixTimeStamp()."
 group by p.height
 having block_cnt > 1
 order by p.height desc";
@@ -18,8 +18,8 @@ $forked_peers = $db->run($sql);
 
 $sql="select p.height, count(p.id) as peer_cnt
 from peers p
-where p.blacklisted < UNIX_TIMESTAMP()
-and unix_timestamp()-p.ping < 60*60*2
+where p.blacklisted < ".DB::unixTimeStamp()."
+and ".DB::unixTimeStamp()."-p.ping < 60*60*2
 group by p.height
 order by p.height desc;";
 $peers_by_height = $db->run($sql);
@@ -37,7 +37,7 @@ krsort($peers_by_height_map);
 
 $sql="select p.version, count(p.id) as peer_cnt
 from peers p
-where p.blacklisted < UNIX_TIMESTAMP()
+where p.blacklisted < ".DB::unixTimeStamp()."
 group by p.version
 order by p.version desc";
 $peers_by_version = $db->run($sql);

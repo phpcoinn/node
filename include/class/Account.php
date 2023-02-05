@@ -439,7 +439,7 @@ class Account
 
 	static function getBalanceAtHeight($address, $height) {
 		global $db;
-		$sql= "select sum(if(t.src = :address,t.val*(-1),t.val))
+		$sql= "select sum(case when t.src = :address then t.val*(-1) else t.val end)
 			from transactions t where t.height < :height
     		and (t.src = :src or t.dst=:dst)";
 		return $db->single($sql, [":height"=>$height, ":src"=>$address, ":dst"=>$address,":address"=>$address]);
