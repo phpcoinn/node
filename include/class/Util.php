@@ -1402,7 +1402,7 @@ class Util
 			         group by ids.id
 			) as calc
 			    left join accounts a on (calc.id = a.id)
-			set a.public_key = calc.public_key, a.block = calc.block, a.balance = calc.balance, a.height = calc.height
+			set a.public_key = case when calc.public_key is null then '' else calc.public_key end, a.block = calc.block, a.balance = calc.balance, a.height = calc.height
 			where calc.public_key <> a.public_key
 			   or calc.block <> a.block
 			   or calc.balance <> a.balance
