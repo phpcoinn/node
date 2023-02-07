@@ -697,7 +697,7 @@ class NodeSync
 						}
 						_log("Block check ok");
 						$block->prevBlockId = $current['id'];
-						$res = $block->add($err);
+						$res = $block->add($err, true);
 						if(!$res) {
 							_log("Error adding block: $err");
 							continue;

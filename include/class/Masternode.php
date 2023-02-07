@@ -447,7 +447,7 @@ class Masternode extends Daemon
 		return ($created>0 && $created != $removed);
 	}
 
-	static function processBlock() {
+	static function processBlock($syncing = false) {
 		global $_config, $db;
 
 		$height = Block::getHeight();
@@ -486,7 +486,7 @@ class Masternode extends Daemon
 
 		$masternode->storeSignature();
 
-		if(!empty($masternode->signature) && $masternode->verified) {
+		if(!empty($masternode->signature) && $masternode->verified && !$syncing) {
 			_log("Masternode: Call propagate local mastenode win_height={$masternode->win_height} blockchain height=$height", 5);
 			Propagate::masternode();
 		}

@@ -62,7 +62,7 @@ class Block
 		return $data;
 	}
 
-	public function add(&$error = null)
+	public function add(&$error = null, $syncing=false)
     {
         global $db;
 
@@ -464,7 +464,7 @@ class Block
     }
 
     // parse the block transactions
-    public function parse_block($test = true, &$error = null)
+    public function parse_block($test = true, &$error = null, $syncing=false)
     {
         global $db;
 
@@ -549,7 +549,7 @@ class Block
 				}
 
 		        if(Masternode::isLocalMasternode()) {
-			        Masternode::processBlock();
+			        Masternode::processBlock($syncing);
 		        }
 
 	        }
