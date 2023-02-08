@@ -61,6 +61,12 @@ $db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $
 if (!$db) {
     die("Could not connect to the DB backend.");
 }
+if($db->isSqlite()) {
+    $db->exec('PRAGMA journal_mode=WAL;');
+    $db->exec("PRAGMA busy_timeout=5000");
+}
+$db->exec('set SESSION innodb_lock_wait_timeout=5');
+
 
 // checks for php version and extensions
 if (!extension_loaded("openssl") && !defined("OPENSSL_KEYTYPE_EC")) {

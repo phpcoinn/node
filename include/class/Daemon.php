@@ -127,10 +127,23 @@ class Daemon
 		$control_file_time = filemtime($control_file);
 		_log("Daemon: control_file=$control_file md5=$control_file_md5 time=$control_file_time", 5);
 
+        global $db;
+        $db = null;
+
 		_log("Daemon: $name - process started", 5);
 		while($running) {
 			_log("Daemon: $name - running loop", 5);
 			$t1 = microtime(true);
+
+            $db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
+            if (!$db) {
+                die("Could not connect to the DB backend.");
+            }
+            if($db->isSqlite()) {
+                $db->exec('PRAGMA journal_mode=WAL;');
+                $db->exec("PRAGMA busy_timeout=5000");
+            }
+            $db->exec('set SESSION innodb_lock_wait_timeout=5');
 
 			global $_config;
 			$_config = load_db_config();
@@ -138,6 +151,9 @@ class Daemon
 			try {
 				static::process();
 				self::clearError();
+
+                $db = null;
+
 			} catch (Exception $e) {
 				_log("Daemon: $name: error in process ".$e->getMessage());
 				self::writeError($e);
