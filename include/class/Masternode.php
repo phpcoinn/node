@@ -512,6 +512,7 @@ class Masternode extends Daemon
 			$peers = Peer::getPeersForMasternode();
 			$info = Peer::getInfo();
 			define("FORKED_PROCESS", getmypid());
+            $db = null;
 			foreach ($peers as $peer) {
 				$pid = pcntl_fork();
 				if ($pid == -1) {

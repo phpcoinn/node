@@ -61,6 +61,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 		$start = microtime(true);
 		$info = Peer::getInfo();
 		define("FORKED_PROCESS", getmypid());
+        $db = null;
 		foreach ($r as $peer) {
 			$hostname = $peer['hostname'];
 			$ip = $peer['ip'];
@@ -154,6 +155,7 @@ if ($type == "transaction") {
 		$info = Peer::getInfo();
 		$start = microtime(true);
 		define("FORKED_PROCESS", getmypid());
+        $db = null;
 		$fork_tx_key = "tx_{$id}_res_".FORKED_PROCESS;
 		foreach ($r as $peer) {
 			$pid = pcntl_fork();
