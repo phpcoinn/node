@@ -508,6 +508,8 @@ class NodeSync
 
 	static function syncBlocks() {
 
+        Config::setSync(1);
+
 		global $db;
 		$sql="select p.height as best_height, count(p.id) as peers_cnt, count(distinct p.block_id) as unique_blocks,
 		       max(p.block_id) as best_block_id
@@ -751,6 +753,8 @@ class NodeSync
 					Propagate::blockToAll('currrent');
 				}
 		}
+
+        Config::setSync(0);
 
 	}
 

@@ -112,8 +112,8 @@ class Block
 	            throw new Exception("Block height failed");
             }
 	        // lock table to avoid race conditions on blocks
-			_log("LOCK: lock block add ".$this->id, 4);
-//	        $db->lockTables();
+			_log("LOCK: lock block add ".$this->height." " . $this->id, 4);
+	        $db->lockTables();
 	        $db->beginTransaction();
 	        $total = count($this->data);
 
@@ -137,8 +137,8 @@ class Block
 	        if ($res != 1) {
 	            // rollback and exit if it fails
 	            $db->rollback();
-		        _log("LOCK: unlock 1 block add ".$this->id . " - insert failed", 4);
-//	            $db->unlockTables();
+		        _log("LOCK: unlock 1 block add ".$this->height." ".$this->id . " - insert failed", 4);
+	            $db->unlockTables();
 		        throw new Exception("Block DB insert failed");
 	        }
 
@@ -147,13 +147,13 @@ class Block
 	        // parse the block's transactions and insert them to db
 	        $res = $this->parse_block(false, $perr);
 			if ($res == false) {
-				throw new Exception("Parse block failed: $perr");
+				throw new Exception("Parse block failed ".$this->height." : $perr");
 			}
 
 			_log("Inserted new block height={$this->height} id=$hash ");
             $db->commit();
-			_log("LOCK: unlock 2 block add ".$this->id. " - ok", 4);
-//	        $db->unlockTables();
+			_log("LOCK: unlock 2 block add ".$this->height." ".$this->id. " - ok", 4);
+	        $db->unlockTables();
 			Cache::set("current", $this->toArray());
 			Cache::set("height", $this->height);
 			Cache::set("current_export", Block::export($hash));
@@ -161,10 +161,11 @@ class Block
 
 		} catch (Exception $e) {
 			$error = $e->getMessage();
+            _log("LOCK: Block ".$this->height." ".$this->id." add error: $error", 4);
 			if($db->inTransaction()) {
 				$db->rollback();
-				_log("LOCK: unlock 3 block add ".$this->id. " ".$error, 4);
-//				$db->unlockTables();
+				_log("LOCK: unlock 3 block ".$this->height."  add ".$this->id. " ".$error, 4);
+				$db->unlockTables();
 			}
 			_log($error);
 			return false;
@@ -628,10 +629,11 @@ class Block
 	        Config::setSync(0);
             return true;
         }
-//	    $db->lockTables();
-        $db->beginTransaction();
 
 		try {
+            _log("Lock delete blocks");
+            $db->lockTables();
+            $db->beginTransaction();
 
 			foreach ($r as $x) {
 				$res = Transaction::reverse($x, $err);
@@ -657,17 +659,19 @@ class Block
 			Config::setSync(0);
 			if($db->inTransaction()) {
 				$db->commit();
-//				$db->unlockTables();
+                _log("Unlock delete blocks");
+				$db->unlockTables();
 			}
 			Cache::remove("current");
 			Cache::remove("height");
 			Cache::remove("current_export");
 			return true;
 		} catch (Exception $e) {
+            _log("Error locking delete blocks ".$e->getMessage());
 			Config::setSync(0);
 			if($db->inTransaction()) {
 				$db->rollback();
-//				$db->unlockTables();
+				$db->unlockTables();
 			}
 			return false;
 		}
