@@ -24,5 +24,10 @@ $checkpoints = [
 	568000 => "XiwvDKLh86NAng7eFKa3bWyyKnb9aqtX9MwtmrNYdNj",
 	569000 => "5q3SYXWUxjmyJ5JK15dzBt5VKCyxuS6G1ECKPx9Hqdvd",
 	570000 => "G9hKpwDtcbHfoFLJQZNN1AV6MZ91jeaXguToYfsSpzE4",
-	571000 => "WGViLLXUjo9KEm8mRSAQpcopezW7G7azGYD22zsBEXR"
+	571000 => "WGViLLXUjo9KEm8mRSAQpcopezW7G7azGYD22zsBEXR",
+    572000 => "CM51q2ibqTB4PQHNyMXmUuqYi5ZkfG32QX5p87prgs8e",
+    573000 => "841T8wQtQX8zfMy6CLLWHTo3D2YFCswDPBLxYFRJ9iLJ",
+    574000 => "Fb8zJMtQbhV7dngp9uWgx6pxvRcqB72jLDMfudun13xm",
+    575000 => "3rPDbatdTQkaYEyCaWEm4QvQMezN6zRu5gEXhtqqkSez",
+    576000 => "Duyn2CvZRPWaTLCLbuUYkH399nKaQZuqbdirXB51g7pz",
 ];
