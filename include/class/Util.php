@@ -1326,7 +1326,7 @@ class Util
 				$sql="delete from accounts";
 				$db->exec($sql);
 				$sql="insert into accounts (id, public_key, block, balance, height)
-			select id, public_key, block, balance, height
+			select id, case when public_key is null then '' else public_key end, block, balance, height
 			from (
 			         select ids.id,
 		                (select case when tp.public_key is null then '' else tp.public_key end from transactions tp where tp.src = ids.id limit 1) as public_key,
