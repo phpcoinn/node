@@ -1326,7 +1326,7 @@ class Util
 				$sql="delete from accounts";
 				$db->exec($sql);
 				$sql="insert into accounts (id, public_key, block, balance, height)
-			select id, public_key, block, balance, height
+			select id, case when public_key is null then '' else public_key end, block, balance, height
 			from (
 			         select ids.id,
 		                (select case when tp.public_key is null then '' else tp.public_key end from transactions tp where tp.src = ids.id limit 1) as public_key,
@@ -1402,7 +1402,7 @@ class Util
 			         group by ids.id
 			) as calc
 			    left join accounts a on (calc.id = a.id)
-			set a.public_key = calc.public_key, a.block = calc.block, a.balance = calc.balance, a.height = calc.height
+			set a.public_key = case when calc.public_key is null then '' else calc.public_key end, a.block = calc.block, a.balance = calc.balance, a.height = calc.height
 			where calc.public_key <> a.public_key
 			   or calc.block <> a.block
 			   or calc.balance <> a.balance

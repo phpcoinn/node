@@ -148,6 +148,7 @@ class Dapps extends Daemon
 					];
 					$info = Peer::getInfo();
 					define("FORKED_PROCESS", getmypid());
+                    $db = null;
 					foreach ($peers as $peer) {
 						$pid = pcntl_fork();
 						if ($pid == -1) {
