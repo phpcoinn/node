@@ -89,6 +89,11 @@ if (!defined("PASSWORD_ARGON2I")) {
     api_err("The php version is not compiled with argon2i support");
 }
 
+$version = $db->getAttribute(PDO::ATTR_SERVER_VERSION);
+if(!$db->isSqlite() && floatval(substr($version, 0, 3)) < 8 && strpos($version, "MariaDB")===false) {
+    api_err("The minimum mysql version required is 8, current version is $version");
+}
+
 if (floatval(phpversion()) < 7.2) {
     api_err("The minimum php version required is 7.2");
 }
