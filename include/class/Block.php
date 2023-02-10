@@ -102,7 +102,7 @@ class Block
 	            throw new Exception("Block signature check failed info=$info signature={$this->signature} public_key={$this->publicKey}");
             }
 
-	            if (!$this->parse_block(true, $bl_error)) {
+	            if (!$this->parse_block(true, $bl_error, $syncing)) {
 		            throw new Exception("Parse block failed: ".$bl_error);
 	            }
 
@@ -145,7 +145,7 @@ class Block
 			Masternode::resetVerified();
 
 	        // parse the block's transactions and insert them to db
-	        $res = $this->parse_block(false, $perr);
+	        $res = $this->parse_block(false, $perr, $syncing);
 			if ($res == false) {
 				throw new Exception("Parse block failed ".$this->height." : $perr");
 			}

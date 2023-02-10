@@ -735,13 +735,19 @@ class NodeSync
 //							Block::pop();
 //						}
 
-						_log("Can not add new block");
-						$dir = ROOT."/cli";
-						$peer = $peersForSync[0];
-						_log("Trigger deep check with ".$peer['hostname']);
-						$cmd = "php $dir/deepcheck.php ".$peer['hostname'];
-						$check_cmd = "php $dir/deepcheck.php";
-						Nodeutil::runSingleProcess($cmd, $check_cmd);
+						_log("Can not add new block  sync_height=$sync_height height=".$current['height']);
+                        $diff = $sync_height - $current['height'];
+                        if($diff < 100) {
+                            $dir = ROOT."/cli";
+                            $peer = $peersForSync[0];
+                            _log("Trigger deep check with ".$peer['hostname']);
+                            $cmd = "php $dir/deepcheck.php ".$peer['hostname'];
+                            $check_cmd = "php $dir/deepcheck.php";
+                            Nodeutil::runSingleProcess($cmd, $check_cmd);
+                        } else {
+                            _log("We are $diff blocks behind best chain - pop last block");
+                            Block::pop();
+                        }
 						$syncing = false;
 						break;
 					}
@@ -788,10 +794,11 @@ class NodeSync
 				}
 			}
 		}
-		_log("compareCheckPoints invalid_height=$invalid_height");
 		if(empty($invalid_height)) {
+            _log("compareCheckPoints: no invalid height", 4);
 			return true;
 		} else {
+		    _log("compareCheckPoints: invalid_height=$invalid_height");
 			$diff = Block::getHeight() - $invalid_height;
 			_log("delete diff = $diff");
 			$dir = ROOT . "/cli";
