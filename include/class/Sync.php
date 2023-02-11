@@ -47,8 +47,6 @@ class Sync extends Daemon
 		self::getMorePeers();
 //		self::refreshPeers();
 
-		NodeSync::recheckLastBlocks();
-
 		$res = NodeSync::checkBlocks();
 		if(!$res) {
 			_log("Block database is invalid");
@@ -61,6 +59,7 @@ class Sync extends Daemon
 			Config::setVal("blockchain_invalid", 1);
 			return;
 		}
+        NodeSync::recheckLastBlocks();
 		Config::setVal("blockchain_invalid", 0);
 
 		Mempool::deleteOldMempool();

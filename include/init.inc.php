@@ -89,41 +89,26 @@ if (!defined("PASSWORD_ARGON2I")) {
     api_err("The php version is not compiled with argon2i support");
 }
 
+$version = $db->getAttribute(PDO::ATTR_SERVER_VERSION);
+if(!$db->isSqlite() && floatval(substr($version, 0, 3)) < 8 && strpos($version, "MariaDB")===false) {
+    api_err("The minimum mysql version required is 8, current version is $version");
+}
+
 if (floatval(phpversion()) < 7.2) {
     api_err("The minimum php version required is 7.2");
 }
-
-// Getting extra configs from the database
-$_config = load_db_config();
 
 //check db update
 _log("checking schema update", 5);
 require_once __DIR__.'/schema.inc.php';
 
+// Getting extra configs from the database
+$_config = load_db_config();
+
+
 // nothing is allowed while in maintenance
 if (isset($_config['maintenance']) && $_config['maintenance'] == 1) {
     api_err("under-maintenance");
-}
-
-$db_update_file = dirname(__DIR__)."/tmp/db-update";
-
-// update the db schema, on every git pull or initial install
-if (file_exists($db_update_file)) {
-    //checking if the server has at least 2GB of ram
-    $ram=file_get_contents("/proc/meminfo");
-    $ramz=explode("MemTotal:",$ram);
-    $ramb=explode("kB",$ramz[1]);
-    $ram=intval(trim($ramb[0]));
-    if($ram<1700000) {
-        die("The node requires at least 2 GB of RAM");
-    }
-    $res = unlink($db_update_file);
-    if ($res) {
-        echo "Updating db schema! Please refresh!\n";
-        require_once __DIR__.'/schema.inc.php';
-        exit;
-    }
-    echo "Could not access the tmp/db-update file. Please give full permissions to this file\n";
 }
 
 // current hostname

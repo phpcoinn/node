@@ -301,6 +301,11 @@ class Peer
 		$db->run("UPDATE peers SET stuckfail=0 WHERE id=:id", [":id" => $id]);
 	}
 
+	static function clearBlacklist($id) {
+		global $db;
+        $db->run("UPDATE peers SET fails=0, blacklisted=".DB::unixTimeStamp().", stuckfail=0, blacklist_reason = null WHERE id=:id", [":id" => $id]);
+	}
+
 	static function clearFails($id) {
 		global $db;
 		$db->run("UPDATE peers SET fails=0, blacklist_reason = null WHERE id=:id", [":id" => $id]);

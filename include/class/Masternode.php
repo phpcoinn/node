@@ -509,7 +509,7 @@ class Masternode extends Daemon
 		if(Propagate::PROPAGATE_BY_FORKING && $id === "local") {
 			_log("PF: start propagate", 5);
 			$start = microtime(true);
-			$peers = Peer::getPeersForMasternode();
+			$peers = Peer::getPeersForPropagate();
 			$info = Peer::getInfo();
 			define("FORKED_PROCESS", getmypid());
             $db = null;
