@@ -1,9 +1,11 @@
 <?php
-global $_config, $db;
+global $db;
 // when db schema modifications are done, this function is run.
-$dbversion = intval($_config['dbversion']);
+$saved_dbversion = intval(Config::getVal('dbversion'));
 
-$db->beginTransaction();
+$dbversion = $saved_dbversion;
+
+$db->beginTransaction();;
 $was_empty = false;
 if (empty($dbversion)) {
 	$was_empty = true;
@@ -486,7 +488,7 @@ if($dbversion < 35) {
 }
 
 // update the db version to the latest one
-if ($dbversion != $_config['dbversion']) {
+if ($dbversion != $saved_dbversion) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
 }
 $db->commit();
