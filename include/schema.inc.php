@@ -306,7 +306,6 @@ if($dbversion == 11) {
 	}
 	$dbversion = 12;
 }
-
 if ($dbversion == 12) {
 	$db->run("create table smart_contract_state
 	(
@@ -328,10 +327,14 @@ if ($dbversion == 12) {
 	$db->run("alter table transactions add data text null");
 	$db->run("alter table mempool add data text null");
 
-	$db->run("alter table smart_contract_state
-	add constraint smart_contract_state_smart_contracts_address_fk
-		foreign key (sc_address) references smart_contracts (address)
-			on update cascade on delete cascade");
+    $db->run("alter table smart_contracts
+    add constraint smart_contracts_pk
+        primary key (address)");
+
+    $db->run("alter table smart_contract_state
+    add constraint smart_contract_state_smart_contracts_address_fk
+    foreign key (sc_address) references smart_contracts (address)
+    on update cascade on delete cascade");
 
 	$db->run("create unique index smart_contracts_address_uindex
 	on smart_contracts (address)");
@@ -434,7 +437,6 @@ if($dbversion == 20) {
 }
 
 if($dbversion == 21) {
-	$db->run("alter table peers add dapps_id varchar(128) null");
 	$db->run("alter table peers add dappshash varchar(250) null");
 	$dbversion = 22;
 }

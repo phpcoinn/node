@@ -105,6 +105,13 @@ class PeerRequest
 			if(isset($peer['height']) && ($current_height - $peer['height'] > 100)) {
 				Peer::blacklist($peer['id'], "100 blocks behind");
 			}
+            if($peer['blacklisted'] > time() && $peer['blacklist_reason'] == "100 blocks behind") {
+                if($current_height - $peer['height'] < 10) {
+                _log("PBH: Check peer if is still blocks behind current_height = $current_height peer_height=".$peer['height']." blacklisted=".($peer['blacklisted'] > time()).
+                    " reason=".$peer['blacklist_reason']. " - remove form blacklist", 5);
+                    Peer::clearBlacklist($peer['id']);
+                }
+            }
 		}
 
 		_logf("finish process");

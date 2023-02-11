@@ -36,24 +36,38 @@ class DB extends PDO
 //            return;
         }
         $error = ["Error" => $this->error];
-        if (!empty($this->sql)) {
-            $error["SQL Statement"] = $this->sql;
-        }
         if (!empty($this->bind)) {
             $error["Bind Parameters"] = trim(print_r($this->bind, true));
         }
 
         $backtrace = debug_backtrace();
+	    $backtrace_str = [];
         if (!empty($backtrace)) {
             foreach ($backtrace as $info) {
                 if ($info["file"] != __FILE__) {
-                    $error["Backtrace"] = $info["file"]." at line ".$info["line"];
+	                $backtrace_str[] = $info["file"]." at line ".$info["line"];
                 }
             }
         }
         _log("SQL ERROR:".str_repeat("-", 50));
+        foreach ($backtrace_str as $line) {
+	        _log("SQL ERROR: BACKTRACE: " . $line);
+        }
         foreach ($error as $key => $val) {
-	        _log("SQL ERROR:" . "$key:$val");
+	        _log("SQL ERROR:" . $key.": ".$val);
+        }
+	    if (!empty($this->sql)) {
+		    $lines = explode(PHP_EOL, $this->sql);
+		    foreach ($lines as $line) {
+			    _log("SQL Statement:" . $line);
+		    }
+	    }
+	    if (!empty($this->bind)) {
+			$bind = print_r($this->bind, 1);
+		    $lines = explode(PHP_EOL, $bind);
+		    foreach ($lines as $line) {
+			    _log("SQL params:" . $line);
+		    }
         }
         _log("SQL ERROR:" . json_encode($this->sql));
         _log("SQL ERROR:" . json_encode($this->error));
