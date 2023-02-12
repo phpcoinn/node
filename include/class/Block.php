@@ -157,6 +157,7 @@ class Block
 			Cache::set("current", $this->toArray());
 			Cache::set("height", $this->height);
 			Cache::set("current_export", Block::export($hash));
+            Cache::set("mineInfo", Blockchain::getMineInfo());
 	        return true;
 
 		} catch (Exception $e) {
@@ -663,6 +664,7 @@ class Block
 				$db->unlockTables();
 			}
 			Cache::remove("current");
+			Cache::remove("mineInfo");
 			Cache::remove("height");
 			Cache::remove("current_export");
 			return true;

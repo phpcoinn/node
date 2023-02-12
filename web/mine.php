@@ -68,9 +68,15 @@ function saveGeneratorStat($generator_stat) {
 }
 
 if ($q == "info") {
-	$res = Blockchain::getMineInfo();
-    api_echo($res);
-    exit;
+    _logp("info:");
+    $mineInfo = Cache::get("mineInfo", function() {
+        return Blockchain::getMineInfo();
+    });
+    if(!$mineInfo) {
+        api_err("node-not-ok");
+    }
+    _logf(" height=".$mineInfo['height']);
+    api_echo($mineInfo);
 } elseif ($q == "stat") {
 	$generator_stat = readGeneratorStat();
 	api_echo($generator_stat);
