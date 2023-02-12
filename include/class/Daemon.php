@@ -70,15 +70,6 @@ class Daemon
 			if($elapsed > $max_run_time) {
 				_log("Daemon: $name - running more than $max_run_time - remove lock", 5);
 				self::unlock();
-			} else {
-                $cmd = "ps uax | grep '".ROOT."/cli/$name.php' | grep -v grep";
-                $res = shell_exec($cmd);
-                if(empty($res)) {
-                    if($elapsed > 2*60) {
-                        _log("Daemon: $name: lock exists without process - remove lock", 3);
-                        self::unlock();
-                    }
-                }
             }
 
 		}
