@@ -85,13 +85,12 @@ if ($q == "info") {
 
 	$generator_stat = readGeneratorStat();
 
-	$l = "submitHash ip=$ip";
+	_logp("submitHash ip=$ip");
 
 	$generator_stat['submits']++;
 
 	if (empty($_config['generator'])) {
-		$l .= " generator-disabled ";
-		_log($l);
+		_logf("generator-disabled");
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['generator-disabled']++;
 		saveGeneratorStat($generator_stat);
@@ -100,8 +99,7 @@ if ($q == "info") {
 
 	$nodeScore = $_config['node_score'];
 	if ($nodeScore < MIN_NODE_SCORE && !DEVELOPMENT) {
-		$l .= " node-not-ok nodeScore=$nodeScore ";
-		_log($l);
+		_logf("node-not-ok nodeScore=$nodeScore");
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['node-not-ok']++;
 		saveGeneratorStat($generator_stat);
@@ -109,8 +107,7 @@ if ($q == "info") {
 	}
 
 	if (empty($_config['generator_public_key']) && empty($_config['generator_private_key'])) {
-		$l .= " generator-not-configured ";
-		_log($l);
+		_logf("generator-not-configured");
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['generator-not-configured']++;
 		saveGeneratorStat($generator_stat);
@@ -120,8 +117,7 @@ if ($q == "info") {
 	$generator = Account::getAddress($_config['generator_public_key']);
 
 	if (Config::isSync()) {
-		$l .= " sync ";
-		_log($l);
+		_logf("sync");
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['sync']++;
 		saveGeneratorStat($generator_stat);
@@ -129,8 +125,7 @@ if ($q == "info") {
 	}
 
 	if(Config::getVal("blockchain_invalid") == 1) {
-		$l .= " invalid chain ";
-		_log($l);
+		_logf("invalid chain");
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['invalid-chain']++;
 		saveGeneratorStat($generator_stat);
@@ -140,8 +135,7 @@ if ($q == "info") {
 	$peers = Peer::getCount();
 	_log("Getting peers count = " . $peers, 5);
 	if ($peers < 3 && !DEVELOPMENT) {
-		$l .= " no-live-peers ";
-		_log($l);
+		_logf("no-live-peers");
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['no-live-peers']++;
 		saveGeneratorStat($generator_stat);
@@ -159,8 +153,7 @@ if ($q == "info") {
 	$height = san($_POST['height']);
 
 	if(empty($height) || empty($address)) {
-		$l .= " missing-parameters height=$height address=$address";
-		_log($l);
+		_logf("missing-parameters height=$height address=$address");
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['missing-parameters']++;
 		saveGeneratorStat($generator_stat);
@@ -172,17 +165,17 @@ if ($q == "info") {
 		$minerInfo = $_POST['minerInfo'];
 	}
 
-	$l.=" minerInfo=$minerInfo ";
+	_logp(" minerInfo=$minerInfo ");
 
 	$res = Minepool::checkIp($address, $ip);
 	if (!$res) {
-		$l .= " rejected - IP hash check not pass";
-		_log($l);
+		_log("IP hash check not pass");
 		$block_height = Block::getHeight();
 		if($block_height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 			$generator_stat['rejected']++;
 			@$generator_stat['reject-reasons']['iphash-check-failed']++;
 			saveGeneratorStat($generator_stat);
+            _logf("rejected");
 			api_err("iphash-check-failed");
 		}
 	}
@@ -194,18 +187,17 @@ if ($q == "info") {
 	$difficulty = san($_POST['difficulty']);
 	$argon = $_POST['argon'];
 
-	$l .= " height=$height address=$address elapsed=$elapsed argon=$argon";
+	_logp(" height=$height address=$address elapsed=$elapsed argon=$argon");
 
 	if ($elapsed == 0) {
-		$l .= " REQUEST=" . json_encode($_REQUEST);
+		_logp(" REQUEST=" . json_encode($_REQUEST));
 	}
 
 	_log("Submitted new hash from miner $ip height=$height", 4);
 
 	$blockchainHeight = Block::getHeight();
 	if ($blockchainHeight != $height - 1) {
-		$l .= " blockchainHeight=$blockchainHeight rejected - not top block";
-		_log($l);
+		_logf("blockchainHeight=$blockchainHeight rejected - not top block");
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['rejected - not top block']++;
 		saveGeneratorStat($generator_stat);
@@ -218,8 +210,7 @@ if ($q == "info") {
 
 	$public_key = Account::publicKey($address);
 	if (empty($public_key)) {
-		$l .= " rejected - no public key";
-		_log($l);
+		_logf("rejected - no public key");
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['rejected - no public key']++;
 		saveGeneratorStat($generator_stat);
@@ -227,8 +218,7 @@ if ($q == "info") {
 	}
 
 	if ($date <= $prev_block['date']) {
-		$l .= " rejected - date date=$date prev_block_date=" . $prev_block['date'];
-		_log($l);
+		_logf(" rejected - date date=$date prev_block_date=" . $prev_block['date']);
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['rejected - date']++;
 		saveGeneratorStat($generator_stat);
@@ -237,8 +227,7 @@ if ($q == "info") {
 
 	$res = Minepool::insert($address, $height, $minerInfo, $ip);
 	if (!$res) {
-		$l .= " rejected - Can not insert in minepool";
-		_log($l);
+		_logf(" rejected - Can not insert in minepool");
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['minepool-error']++;
 		api_err("minepool-error");
@@ -266,8 +255,7 @@ if ($q == "info") {
 	if(Masternode::allowedMasternodes($height)) {
 		$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $_config['generator_public_key'], $_config['generator_private_key'], $height, $mn_signature);
 		if (!$mn_reward_tx) {
-			$l .= " rejected - Not found masternode winner";
-			_log($l);
+			_logf(" rejected - Not found masternode winner");
 			$generator_stat['rejected']++;
 			@$generator_stat['reject-reasons']['Not found masternode winner']++;
 			api_err("Not found masternode winner");
@@ -284,8 +272,7 @@ if ($q == "info") {
 		$reward = num($rewardInfo['staker']);
 		$stake_reward_tx = Transaction::getStakeRewardTx($height, $generator, $_config['generator_public_key'], $_config['generator_private_key'], $reward, $new_block_date);
 		if(!$stake_reward_tx) {
-			$l .= " rejected - Not found stake winner";
-			_log($l);
+			_logf(" rejected - Not found stake winner");
 			api_err("No stake winner - mining dropped");
 			$generator_stat['rejected']++;
 			@$generator_stat['reject-reasons']['Not found masternode winner']++;
@@ -305,26 +292,24 @@ if ($q == "info") {
 	$signature = $block->sign($_config['generator_private_key']);
 	$result = $block->mine();
 
-	$l .= " mine=$result";
+	_logp(" mine=$result");
 
 	@$generator_stat['ips'][$ip][$address]=$address;
 
 	if ($result) {
 		$block->transactions = count($block->data);
 		$res = $block->add($error);
-		$l .= " add=$res";
+		_logp(" add=$res");
 		if ($res) {
 			Propagate::blockToAll("current");
 			_log("Accepted block from miner $ip address=$address block_height=$height elapsed=$elapsed block_id=" . $block->id);
-			$l .= " ACCEPTED";
-			_log($l);
+			_logf(" ACCEPTED");
 			$generator_stat['accepted']++;
 			$generator_stat['miners'][$address]++;
 			saveGeneratorStat($generator_stat);
 			api_echo("accepted");
 		} else {
-			$l .= " $error - REJECTED ";
-			_log($l);
+			_logf(" $error - REJECTED ");
 			$generator_stat['rejected']++;
 			@$generator_stat['reject-reasons']['rejected - add']++;
 			saveGeneratorStat($generator_stat);
@@ -332,8 +317,7 @@ if ($q == "info") {
 		}
 
 	} else {
-		$l .= " REJECTED";
-		_log($l);
+		_logf(" REJECTED");
 		$generator_stat['rejected']++;
 		@$generator_stat['reject-reasons']['rejected - mine']++;
 		saveGeneratorStat($generator_stat);
