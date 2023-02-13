@@ -161,6 +161,9 @@ class PeerRequest
 		_log("Inserting $hostname in peer db",3);
 		$res = Peer::insert($ip, $hostname);
 		_log("Inserted $hostname = $res",3);
+        if(isset($_REQUEST['info'])) {
+            Peer::updatePeerInfo($ip, $_REQUEST['info']);
+        }
 		// re-peer to make sure the peer is valid
 		if ($data['repeer'] == 1) {
 			_log("Repeer to $hostname",3);
