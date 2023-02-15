@@ -1416,7 +1416,7 @@ class Util
             //check generators without public_key
             $sql= "select gen.generator, a.public_key,
                    (select distinct tp.public_key
-                    from transactions tp where tp.dst = gen.generator and tp.type = 0 and (tp.message = '' or tp.message = 'generator')
+                    from transactions tp where tp.dst = gen.generator and tp.type = 0 and (tp.message = '' or tp.message = 'generator' or tp.message = 'nodeminer')
                                            and exists (select 1 from blocks b where b.height = tp.height and b.generator = tp.dst)) as fuund_public_key
             from (select distinct b.generator
             from blocks b
@@ -1430,7 +1430,7 @@ class Util
                 $sql="update(
                 select gen.generator, a.public_key,
                        (select distinct tp.public_key
-                        from transactions tp where tp.dst = gen.generator and tp.type = 0 and (tp.message = '' or tp.message = 'generator')
+                        from transactions tp where tp.dst = gen.generator and tp.type = 0 and (tp.message = '' or tp.message = 'generator' or tp.message = 'nodeminer')
                                                and exists (select 1 from blocks b where b.height = tp.height and b.generator = tp.dst)) as fuund_public_key
                 from (select distinct b.generator
                       from blocks b
