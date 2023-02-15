@@ -137,7 +137,8 @@ class Daemon
 
             $db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
             if (!$db) {
-                die("Could not connect to the DB backend.");
+                _log("Daemon: can not connect database");
+                break;
             }
             if($db->isSqlite()) {
                 $db->exec('PRAGMA journal_mode=WAL;');
