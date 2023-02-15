@@ -911,11 +911,6 @@ class Block
 
 		try {
 
-			$public_key = Account::publicKey($this->generator);
-			if(empty($public_key)) {
-				throw new Exception("No public key for block address");
-			}
-
 			if(count($data)==0 && $height>1) {
 				throw new Exception("No transactions");
 			}
