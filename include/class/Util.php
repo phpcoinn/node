@@ -1412,6 +1412,38 @@ class Util
 			} else {
 				_log("No need to update accounts");
 			}
+
+            //check generators without public_key
+            $sql= "select gen.generator, a.public_key,
+                   (select distinct tp.public_key
+                    from transactions tp where tp.dst = gen.generator and tp.type = 0 and (tp.message = '' or tp.message = 'generator')
+                                           and exists (select 1 from blocks b where b.height = tp.height and b.generator = tp.dst)) as fuund_public_key
+            from (select distinct b.generator
+            from blocks b
+            where b.generator is not null) as gen
+            left join accounts a on (gen.generator = a.id)
+            having a.public_key = '' and a.public_key != fuund_public_key;";
+            $res = $db->run($sql);
+            $diff_rows = count($res);
+            _log("Check generators public keys - found $diff_rows diffs");
+            if($diff_rows > 0) {
+                $sql="update(
+                select gen.generator, a.public_key,
+                       (select distinct tp.public_key
+                        from transactions tp where tp.dst = gen.generator and tp.type = 0 and (tp.message = '' or tp.message = 'generator')
+                                               and exists (select 1 from blocks b where b.height = tp.height and b.generator = tp.dst)) as fuund_public_key
+                from (select distinct b.generator
+                      from blocks b
+                      where b.generator is not null) as gen
+                         left join accounts a on (gen.generator = a.id)
+                having a.public_key = '' and a.public_key != fuund_public_key) as calc
+                    left join accounts a on (calc.generator = a.id)
+                set a.public_key = calc.fuund_public_key
+                where a.public_key = '' and a.public_key != calc.fuund_public_key;";
+                $res=$db->run($sql);
+                _log("Generators accounts updated res=$res");
+            }
+
 			$db->commit();
 			Config::setSync(0);
 		} catch (Exception $e) {

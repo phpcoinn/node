@@ -290,9 +290,9 @@ if ($q == "info") {
 
 	$block->data = $data;
 	$signature = $block->sign($_config['generator_private_key']);
-	$result = $block->mine();
+	$result = $block->mine($err);
 
-	_logp(" mine=$result");
+	_logp(" mine=$result err=$err");
 
 	@$generator_stat['ips'][$ip][$address]=$address;
 
