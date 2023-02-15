@@ -10,7 +10,7 @@ class Job
 		$hour = date("H");
 		$min = date("i");
 
-		if($hour == "19" && $min == "30") {
+		if($hour == "02" && $min == "30") {
 			Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php check-accounts");
 		}
 		if($min == "15") {
