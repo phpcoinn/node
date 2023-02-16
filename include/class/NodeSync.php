@@ -677,6 +677,7 @@ class NodeSync
 						$peer_block = self::staticGetPeerBlock($hostname, $current['height']);
 //				        _log("get peer block $hostname res=".json_encode($peer_block));
 						if(!$peer_block) {
+                            Peer::blacklist($peer['id'], "Unresponsive", 1);
 							_log("Not get block for peer - check other peer");
 							continue;
 						}
@@ -735,9 +736,9 @@ class NodeSync
 //							Block::pop();
 //						}
 
-						_log("Can not add new block  sync_height=$sync_height height=".$current['height']);
                         $diff = $sync_height - $current['height'];
-                        if($diff < 100) {
+						_log("Can not add new block  sync_height=$sync_height height=".$current['height']." diff=$diff");
+                        if($diff > 100) {
                             $dir = ROOT."/cli";
                             $peer = $peersForSync[0];
                             _log("Trigger deep check with ".$peer['hostname']);
