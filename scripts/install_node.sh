@@ -15,16 +15,13 @@ echo "==========================================================================
 apt update
 echo "install php with apache server"
 apt install apache2 php libapache2-mod-php php-mysql php-gmp php-bcmath php-curl unzip -y
-apt install mysql-server -y
+apt install mariadb-server -y
 
 echo "PHPCoin: create database and set user"
 echo "==================================================================================================="
 mysql -e "create database $DB_NAME;"
 mysql -e "create user '$DB_USER'@'localhost' identified by '$DB_PASS';"
 mysql -e "grant all privileges on $DB_NAME.* to '$DB_USER'@'localhost';"
-
-echo "disable_log_bin" >> /etc/mysql/mysql.conf.d/mysqld.cnf
-service mysql restart
 
 echo "PHPCoin: download node"
 echo "==================================================================================================="
