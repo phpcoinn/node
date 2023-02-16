@@ -853,8 +853,9 @@ class PeerRequest
 		_log("Start run deepCheck",4);
 		$dir = ROOT."/cli";
 		$cmd = "php $dir/deepcheck.php $hostname";
-		Nodeutil::runSingleProcess($cmd);
-		api_echo(["stratus"=>"started","hostname"=>$hostname]);
+        $check_cmd = "php $dir/deepcheck.php";
+		Nodeutil::runSingleProcess($cmd, $check_cmd);
+		api_echo(["status"=>"started","hostname"=>$hostname]);
 	}
 
 }
