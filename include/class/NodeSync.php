@@ -684,7 +684,7 @@ class NodeSync
 						$peer_blocks[$peer_block['id']]=$peer_block;
 //						_log("Get peer block ".print_r($peer_block,1)." my=".print_r($current,1));
 						if ($peer_block['id'] != $current['id']) {
-							_log("Blocks does not match");
+							_log("Blocks does not match peer=".$peer_block['id']. " my=".$current['id']);
 							continue;
 						}
 						_log("We got ok block - go to next");
@@ -738,6 +738,7 @@ class NodeSync
 
                         $diff = $sync_height - $current['height'];
 						_log("Can not add new block  sync_height=$sync_height height=".$current['height']." diff=$diff");
+                        Block::pop();
                         if($diff > 100) {
                             $dir = ROOT."/cli";
                             $peer = $peersForSync[0];
@@ -745,9 +746,6 @@ class NodeSync
                             $cmd = "php $dir/deepcheck.php ".$peer['hostname'];
                             $check_cmd = "php $dir/deepcheck.php";
                             Nodeutil::runSingleProcess($cmd, $check_cmd);
-                        } else {
-                            _log("We are $diff blocks behind best chain - pop last block");
-                            Block::pop();
                         }
 						$syncing = false;
 						break;
