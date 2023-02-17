@@ -218,26 +218,7 @@ if(isset($_GET['view'])) {
 	$view = "server";
 }
 if($view == "db") {
-	//TODO: replace @1.0.6.85
-    if(method_exists(Nodeutil::class, "getDbData")) {
-	    $dbData = Nodeutil::getDbData();
-    } else {
-        $dbData['connection']=$_config['db_connect'];
-        $dbData['driver'] = substr($_config['db_connect'], 0, strpos($_config['db_connect'], ":"));
-        $db_name=substr($_config['db_connect'], strrpos($_config['db_connect'], "dbname=")+7);
-        $dbData['db_name']=$db_name;
-        if($dbData['driver'] === "mysql") {
-            $dbData['server'] = shell_exec("mysql --version");
-        } else if ($dbData['driver'] === "sqlite") {
-            $version = $db->single("select sqlite_version();");
-            $dbData['server'] = $version;
-        }
-        $rowCounts = Nodeutil::getTableRowsCount();
-        foreach ($rowCounts as $table => $cnt) {
-            $dbData['tables'][$table]=$cnt;
-        }
-	    $dbData['dbversion']=$_config['dbversion'];
-    }
+    $dbData = Nodeutil::getDbData();
 }
 if($view == "utils") {
 

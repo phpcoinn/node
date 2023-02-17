@@ -517,7 +517,7 @@ class Nodeutil
 		$db_name=substr($_config['db_connect'], strrpos($_config['db_connect'], "dbname=")+7);
 		$dbData['db_name']=$db_name;
 		if($dbData['driver'] === "mysql") {
-			$dbData['server'] = shell_exec("mysql --version");
+            $dbData['server'] = $db->getAttribute(PDO::ATTR_SERVER_VERSION);
 		} else if ($dbData['driver'] === "sqlite") {
 			$version = $db->single("select sqlite_version();");
 			$dbData['server'] = $version;

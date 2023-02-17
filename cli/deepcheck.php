@@ -45,8 +45,7 @@ while(true) {
 		$height =intval(($max_height - $min_height) / 2 + $min_height);
 	} else {
 		_log("PeerCheck: no block from peer");
-		Peer::blacklist($peer['id'], "Invalid block $height");
-		_log("Peer is invalid");
+		Peer::blacklist($peer['id'], "Unresponsive");
 		exit;
 	}
 }
