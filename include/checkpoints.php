@@ -30,4 +30,16 @@ $checkpoints = [
     574000 => "Fb8zJMtQbhV7dngp9uWgx6pxvRcqB72jLDMfudun13xm",
     575000 => "3rPDbatdTQkaYEyCaWEm4QvQMezN6zRu5gEXhtqqkSez",
     576000 => "Duyn2CvZRPWaTLCLbuUYkH399nKaQZuqbdirXB51g7pz",
+    577000 => "HNWA8k5KdygAaptKDLGPw2cGF1GfSys3NdExpQ5cAKQe",
+    578000 => "EGZuDHivPjSweZQv6sYS3s5gVAunt3kAXesdXM1swy4K",
+    579000 => "8LhwEj2LocXvdGAaZ5wC54CsCcUwQZoqMPQZWZDppHds",
+    580000 => "8husyNntSF3tmXM6DYscqVSh3utn8EPJNaa6qnLbcLA4",
+    581000 => "3oDkX8kFv72sDTkkfbsusqcWHZkTNpQRJcfencAowQDT",
+    582000 => "DRTgaSrCVAjcF6tPX4DWresXbC4vdxfyHMU2GBCksoiP",
+    583000 => "5po2BDHCcTzXQ5D4fK3LzMa1xy3YELgqWcTcngjwdjS8",
+    584000 => "7vBBdnVnjWSpyph1TM8jc8eRhkj9DhuF97jnH7Xeps5F",
+    585000 => "EzhUQ7d9KWCoqLAkv2ssSwfQvnG1ZwMJvfKjedJZ6mjq",
+    586000 => "Ho8HdCje79XgtbmA12PFKMAZ91m3bUZD5GmeGJJo2e4b",
+    587000 => "Dm4ZMMogsE6dHX1ThWVAaAxz6XYu9M5yVVAwoD594cj1",
+    588000 => "HDZFNBTAgV5PmGymV3fRN2hZDB8feteUHpNGwTLkBeri"
 ];
