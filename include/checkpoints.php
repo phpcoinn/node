@@ -1,5 +1,11 @@
 <?php
 
+$chain_id = trim(@file_get_contents(dirname(__DIR__)."/chain_id"));
+if($chain_id != DEFAULT_CHAIN_ID) {
+    require_once __DIR__ . "/checkpoints.".$chain_id.".php";
+    return;
+}
+
 $checkpoints = [
 	1 => "9aeKHauMRjJC6GzXvjWpYfYcEA4vaFQLxDWitpVDReMQ",
 	100000 => "CdZWtDjL1gR8Trmr7AmZzr6NvWaL4YqU7fvMBi5aDvig",
