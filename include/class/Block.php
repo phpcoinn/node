@@ -1066,17 +1066,21 @@ class Block
 		if($height == null) {
 			$height = self::getHeight();
 		}
-		if($height < UPDATE_1_BLOCK_ZERO_TIME) {
-			return "010000";
-		} else if ($height >= UPDATE_1_BLOCK_ZERO_TIME && $height < UPDATE_2_BLOCK_CHECK_IMPROVED) {
-			return "010001";
-		} else if ($height >= UPDATE_2_BLOCK_CHECK_IMPROVED && $height < UPDATE_3_ARGON_HARD) {
-			return "010002";	
-		} else if ($height >= UPDATE_3_ARGON_HARD && $height < UPDATE_6_CHAIN_ID) {
-			return "010003";
-		} else {
-			return CHAIN_ID . "0004";
-		}
+        if(CHAIN_ID == "01") {
+            if ($height < UPDATE_1_BLOCK_ZERO_TIME) {
+                return "010000";
+            } else if ($height >= UPDATE_1_BLOCK_ZERO_TIME && $height < UPDATE_2_BLOCK_CHECK_IMPROVED) {
+                return "010001";
+            } else if ($height >= UPDATE_2_BLOCK_CHECK_IMPROVED && $height < UPDATE_3_ARGON_HARD) {
+                return "010002";
+            } else if ($height >= UPDATE_3_ARGON_HARD && $height < UPDATE_6_CHAIN_ID) {
+                return "010003";
+            } else {
+                return CHAIN_ID . "0004";
+            }
+        } else {
+            return CHAIN_ID . "0000";
+        }
 	}
 
 	static function hashingOptions($height=null) {
