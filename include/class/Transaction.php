@@ -737,7 +737,7 @@ class Transaction
 		        throw new Exception("{$this->id} - Date before genesis");
 	        }
 	        // no future transactions
-	        if ($this->date > time() + 86400) {
+	        if ($this->height > 1 && $this->date > time() + 86400) {
 		        throw new Exception("{$this->id} - Date in the future");
 	        }
 	        $thisId = $this->id;
@@ -828,7 +828,7 @@ class Transaction
 			}
 			if(!in_array($msg, ["nodeminer", "miner", "generator","masternode","stake"]) &&
 				!(substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING)
-				&& $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
+				&& $height>1 &&  $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 				throw new Exception("Reward transaction invalid message: $msg");
 			}
 			$miner = $reward['miner'];
@@ -850,7 +850,7 @@ class Transaction
 				}
 				$val_check = num($reward['staker']);
 			}
-			if(empty($val_check) && $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
+			if(empty($val_check) && $height>1 && $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 				throw new Exception("Reward transaction no value id=".$this->id, 5);
 			}
 			if(!empty($val_check) && num($this->val) != $val_check) {
