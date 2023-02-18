@@ -3,6 +3,7 @@
 if(php_sapi_name() !== 'cli') exit;
 require_once dirname(__DIR__).'/include/init.inc.php';
 $account = Account::generateAcccount();
+$save = false;
 
 print_r($account);
 
@@ -10,11 +11,8 @@ $public_key = $account['public_key'];
 $private_key = $account['private_key'];
 $wallet = COIN."\n".$private_key."\n".$public_key;
 
-$wallet_file = ROOT."/dist/genesis.dat";
-
-file_put_contents($wallet_file, $wallet);
-
-$block_date = time();
+//$block_date = time();
+$block_date = strtotime("2023-03-01 00:00:00");
 $elapsed = 0;
 
 $difficulty = BLOCK_START_DIFFICULTY;
@@ -60,9 +58,11 @@ $lines[]='const GENESIS_TIME = '.$block_date.';';
 
 $code = implode(PHP_EOL, $lines);
 
-$file = dirname(__DIR__)."/include/genesis.inc.php";
-
-echo $file;
-file_put_contents($file, $code);
-
 echo $code;
+
+if($save) {
+    $wallet_file = ROOT."/dist/genesis.dat";
+    file_put_contents($wallet_file, $wallet);
+    $file = dirname(__DIR__)."/include/genesis.inc.php";
+    file_put_contents($file, $code);
+}
