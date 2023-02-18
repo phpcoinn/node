@@ -400,7 +400,7 @@ class Block
 
 			// invalid future blocks
 			if ($this->date>time()+30) {
-				throw new Exception("Future block - invalid");
+				throw new Exception("Future block - invalid block date=".$this->date . " diff=".(time() - $this->date));
 			}
 
 			$prev = Block::get($this->height-1);
