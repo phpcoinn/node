@@ -368,7 +368,8 @@ class Dapps extends Daemon
 		header("X-Dapps-Id: $dapps_id");
 
 		$out = implode(PHP_EOL, $output2);
-//		_log("Dapps: Parsing output $out", 5);
+        $out = trim($out);
+		_log("Dapps: Parsing output $out", 5);
 
 		if(strpos($out, "action:")===0) {
 			self::processAction($out, $dapps_id);
@@ -416,7 +417,7 @@ class Dapps extends Daemon
 			if(!file_exists($dapps_fn_file)) {
 				die("Dapps local functions file not exists");
 			}
-			require_once $dapps_fn_file;
+                require_once $dapps_fn_file;
 			if(!function_exists($fn_name)) {
 				die("Called function $fn_name not exists");
 			}
