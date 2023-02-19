@@ -59,31 +59,27 @@ class Blockchain
 
 	}
 
-	static function getPhases() {
-		$phases = [];
-		$phases[] = ["name"=>"genesis", "blocks"=>1, "reward"=>REWARD_SCHEME['genesis']['reward']];
-		$phases[] = ["name"=>"launch", "blocks"=>REWARD_SCHEME['launch']['blocks'], "reward"=>REWARD_SCHEME['launch']['reward']];
-		foreach(REWARD_SCHEME['mining']['block_per_segment'] as $s => $segment_blocks) {
-			$phases[] = ["name"=>"mining","blocks"=>$segment_blocks, "reward"=>REWARD_SCHEME['mining']['reward_per_segment'][$s],"segment"=>$s+1];
-		}
-		foreach(REWARD_SCHEME['combined']['block_per_segment'] as $s => $segment_blocks) {
-			$phases[] = ["name"=>"combined","blocks"=>$segment_blocks, "reward"=>REWARD_SCHEME['combined']['reward'],"segment"=>$s+1];
-		}
-		foreach(REWARD_SCHEME['deflation']['block_per_segment'] as $s => $segment_blocks) {
-			$phases[] = ["name"=>"deflation","blocks"=>$segment_blocks, "reward"=>REWARD_SCHEME['deflation']['reward_per_segment'][$s],"segment"=>$s+1];
-		}
-		$total = 0;
-		$block = 0;
-		foreach($phases as &$phase) {
-			$block+=$phase['blocks'];
-			$phase['total_blocks']=$block;
-			$phase['start']=$block - $phase['blocks'] +1 ;
-			$phase['end']=$phase['start'] + $phase['blocks'] - 1 ;
-			$total += ($phase['blocks']*$phase['reward']);
-			$phase['total']=$total;
-		}
-		return $phases;
-	}
+    static function getPhases() {
+        require_once ROOT . "/include/rewards.inc.php";
+        $phases = [];
+        $block =0;
+        $total = 0;
+        foreach (REWARD_SCHEME as $line) {
+            $phase = [];
+            $phase["name"]=$line[0];
+            $phase["blocks"]=$line[3]-$line[2]+1;
+            $phase["reward"]=$line[4]+$line[5]+$line[6]+$line[7];
+            $phase["segment"]=$line[1];
+            $block+=$phase['blocks'];
+            $phase['total_blocks']=$block;
+            $phase["start"]=$line[2];
+            $phase["end"]=$line[3];
+            $total += ($phase['blocks']*$phase['reward']);
+            $phase['total']=$total;
+            $phases[]=$phase;
+        }
+        return $phases;
+    }
 
 	static function calculateRewardsScheme($real=true) {
 		$start_time = GENESIS_TIME;
