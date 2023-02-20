@@ -417,7 +417,7 @@ class Dapps extends Daemon
 			if(!file_exists($dapps_fn_file)) {
 				die("Dapps local functions file not exists");
 			}
-			require_once $dapps_fn_file;
+                require_once $dapps_fn_file;
 			if(!function_exists($fn_name)) {
 				die("Called function $fn_name not exists");
 			}
