@@ -368,7 +368,8 @@ class Dapps extends Daemon
 		header("X-Dapps-Id: $dapps_id");
 
 		$out = implode(PHP_EOL, $output2);
-//		_log("Dapps: Parsing output $out", 5);
+        $out = trim($out);
+		_log("Dapps: Parsing output $out", 5);
 
 		if(strpos($out, "action:")===0) {
 			self::processAction($out, $dapps_id);
