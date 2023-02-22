@@ -224,7 +224,7 @@ class SmartContract
 	}
 
 	static function cleanState($height, &$error = null) {
-		return try_catch(function () use ($height, $error) {
+		return try_catch(function () use ($height, &$error) {
 
 			global $db;
 			$sql="delete from smart_contract_state where height >= :height";

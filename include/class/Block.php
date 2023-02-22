@@ -64,113 +64,121 @@ class Block
 
 	public function add(&$error = null, $syncing=false)
     {
-        global $db;
+        return synchronized(function () use (&$error, $syncing) {
 
-		try {
+            try {
 
-			if($this->height > STOP_CHAIN_HEIGHT) {
-				throw new Exception("Blockchain stopped at height " .  STOP_CHAIN_HEIGHT . " - Can not add block");
-			}
+                global $db;
 
-			if(Config::getVal("blockchain_invalid") == 1) {
-				throw new Exception("Blockchain is invalid - please reimport");
-			}
+                $block = Block::get($this->height);
+                if($block && $block['height']=$this->height) {
+                    throw new Exception("Block already added");
+                }
 
-	        if(empty($this->generator)) {
-		        $this->generator = Account::getAddress($this->publicKey);
-	        }
+                $currentHeight = Block::getHeight();
+                _log("Checking block height currentHeight=$currentHeight height={$this->height}", 3);
+                if($this->height - $currentHeight != 1) {
+                    throw new Exception("Block height failed");
+                }
 
-	        // the transactions are always sorted in the same way, on all nodes, as they are hashed as json
-	        ksort($this->data);
+                if($this->height > STOP_CHAIN_HEIGHT) {
+                    throw new Exception("Blockchain stopped at height " .  STOP_CHAIN_HEIGHT . " - Can not add block");
+                }
 
-	        if(count($this->data)==0 && $this->height>1) {
-	            throw new Exception("No transactions");
-	        }
+                if(Config::getVal("blockchain_invalid") == 1) {
+                    throw new Exception("Blockchain is invalid - please reimport");
+                }
 
-	        if($this->version != Block::versionCode($this->height)) {
-		        throw new Exception("Wrong version code");
-	        }
+                if(empty($this->generator)) {
+                    $this->generator = Account::getAddress($this->publicKey);
+                }
 
-	        // create the hash / block id
-	        $hash = $this->hash();
+                // the transactions are always sorted in the same way, on all nodes, as they are hashed as json
+                ksort($this->data);
 
-	        // create the block data and check it against the signature
-	        $info = $this->getSignatureBase();
-	    // _log($info,3);
+                if(count($this->data)==0 && $this->height>1) {
+                    throw new Exception("No transactions");
+                }
 
-            if (!Account::checkSignature($info, $this->signature, $this->publicKey, $this->height)) {
-	            throw new Exception("Block signature check failed info=$info signature={$this->signature} public_key={$this->publicKey}");
+                if($this->version != Block::versionCode($this->height)) {
+                    throw new Exception("Wrong version code");
+                }
+
+                // create the hash / block id
+                $hash = $this->hash();
+
+                // create the block data and check it against the signature
+                $info = $this->getSignatureBase();
+                // _log($info,3);
+
+                if (!Account::checkSignature($info, $this->signature, $this->publicKey, $this->height)) {
+                    throw new Exception("Block signature check failed info=$info signature={$this->signature} public_key={$this->publicKey}");
+                }
+
+                // lock table to avoid race conditions on blocks
+                _log("LOCK: lock block add ".$this->height." " . $this->id, 4);
+//	        $db->lockTables();
+                $db->beginTransaction();
+                $total = count($this->data);
+
+
+                $bind = [
+                    ":id"           => $this->id,
+                    ":generator"    => $this->generator,
+                    ":miner"        => $this->miner,
+                    ":masternode"   => $this->masternode,
+                    ":signature"    => $this->signature,
+                    ":mn_signature" => $this->mn_signature,
+                    ":height"       => $this->height,
+                    ":date"         => $this->date,
+                    ":nonce"        => $this->nonce,
+                    ":difficulty"   => $this->difficulty,
+                    ":argon"        => $this->argon,
+                    ":version"        => $this->version,
+                    ":transactions" => $total,
+                ];
+                $res = Block::insert($bind);
+                if ($res != 1) {
+                    // rollback and exit if it fails
+                    $db->rollback();
+                    _log("LOCK: unlock 1 block add ".$this->height." ".$this->id . " - insert failed", 4);
+//	            $db->unlockTables();
+                    throw new Exception("Block DB insert failed");
+                }
+
+                Masternode::resetVerified();
+
+                // parse the block's transactions and insert them to db
+                $res = $this->parse_block(false, $perr, $syncing);
+                if ($res == false) {
+                    throw new Exception("Parse block failed ".$this->height." : $perr");
+                }
+
+                _log("Inserted new block height={$this->height} id=$hash ");
+                $db->commit();
+                _log("LOCK: unlock 2 block add ".$this->height." ".$this->id. " - ok", 4);
+//                $db->unlockTables();
+                Cache::set("current", $this->toArray());
+                Cache::set("height", $this->height);
+                Cache::set("current_export", Block::export($hash));
+                Cache::set("mineInfo", Blockchain::getMineInfo());
+                return true;
+
+            } catch (Exception $e) {
+                $error = $e->getMessage();
+                _log("LOCK: Block ".$this->height." ".$this->id." add error: $error", 4);
+                if($db->inTransaction()) {
+                    $db->rollback();
+                    _log("LOCK: unlock 3 block ".$this->height."  add ".$this->id. " ".$error, 4);
+//				$db->unlockTables();
+                }
+                _log($error);
+                return false;
             }
 
-	            if (!$this->parse_block(true, $bl_error, $syncing)) {
-		            throw new Exception("Parse block failed: ".$bl_error);
-	            }
-
-            $currentHeight = Block::getHeight();
-            _log("Checking block height currentHeight=$currentHeight height={$this->height}", 3);
-            if($this->height - $currentHeight != 1) {
-	            throw new Exception("Block height failed");
-            }
-	        // lock table to avoid race conditions on blocks
-			_log("LOCK: lock block add ".$this->height." " . $this->id, 4);
-	        $db->lockTables();
-	        $db->beginTransaction();
-	        $total = count($this->data);
+        });
 
 
-	        $bind = [
-	            ":id"           => $this->id,
-	            ":generator"    => $this->generator,
-	            ":miner"        => $this->miner,
-	            ":masternode"   => $this->masternode,
-	            ":signature"    => $this->signature,
-	            ":mn_signature" => $this->mn_signature,
-	            ":height"       => $this->height,
-	            ":date"         => $this->date,
-	            ":nonce"        => $this->nonce,
-	            ":difficulty"   => $this->difficulty,
-	            ":argon"        => $this->argon,
-	            ":version"        => $this->version,
-	            ":transactions" => $total,
-	        ];
-	        $res = Block::insert($bind);
-	        if ($res != 1) {
-	            // rollback and exit if it fails
-	            $db->rollback();
-		        _log("LOCK: unlock 1 block add ".$this->height." ".$this->id . " - insert failed", 4);
-	            $db->unlockTables();
-		        throw new Exception("Block DB insert failed");
-	        }
-
-			Masternode::resetVerified();
-
-	        // parse the block's transactions and insert them to db
-	        $res = $this->parse_block(false, $perr, $syncing);
-			if ($res == false) {
-				throw new Exception("Parse block failed ".$this->height." : $perr");
-			}
-
-			_log("Inserted new block height={$this->height} id=$hash ");
-            $db->commit();
-			_log("LOCK: unlock 2 block add ".$this->height." ".$this->id. " - ok", 4);
-	        $db->unlockTables();
-			Cache::set("current", $this->toArray());
-			Cache::set("height", $this->height);
-			Cache::set("current_export", Block::export($hash));
-            Cache::set("mineInfo", Blockchain::getMineInfo());
-	        return true;
-
-		} catch (Exception $e) {
-			$error = $e->getMessage();
-            _log("LOCK: Block ".$this->height." ".$this->id." add error: $error", 4);
-			if($db->inTransaction()) {
-				$db->rollback();
-				_log("LOCK: unlock 3 block ".$this->height."  add ".$this->id. " ".$error, 4);
-				$db->unlockTables();
-			}
-			_log($error);
-			return false;
-		}
     }
 
     static function getFromArray($b) {
@@ -575,52 +583,57 @@ class Block
             return true;
         }
 
-		try {
-            _log("Lock delete blocks");
-            $db->lockTables();
-            $db->beginTransaction();
+        return synchronized(function() use ($r) {
+            try {
+                global $db;
+                _log("Lock delete blocks");
+//            $db->lockTables();
+                $db->beginTransaction();
 
-			foreach ($r as $x) {
-				$res = Transaction::reverse($x, $err);
-				if ($res === false) {
-					_log("A transaction could not be reversed. Delete block failed.");
-					throw new Exception("A transaction could not be reversed");
-				}
+                foreach ($r as $x) {
+                    $res = Transaction::reverse($x, $err);
+                    if ($res === false) {
+                        _log("A transaction could not be reversed. Delete block failed.");
+                        throw new Exception("A transaction could not be reversed");
+                    }
 
-				$res = Masternode::reverseBlock($x, $merr);
-				if(!$res) {
-					throw new Exception("Reverse masternode winner failed. Error: $merr");
-				}
+                    $res = Masternode::reverseBlock($x, $merr);
+                    if(!$res) {
+                        throw new Exception("Reverse masternode winner failed. Error: $merr");
+                    }
 
-				$res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $x['id']]);
-				if ($res != 1) {
-					throw new Exception("Delete block failed.");
-				} else {
-					_log("Deleted block id=".$x['id']." height=".$x['height']);
-				}
-			}
+                    $res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $x['id']]);
+                    if ($res != 1) {
+                        throw new Exception("Delete block failed.");
+                    } else {
+                        _log("Deleted block id=".$x['id']." height=".$x['height']);
+                    }
+                }
 
-			Masternode::resetVerified();
-			Config::setSync(0);
-			if($db->inTransaction()) {
-				$db->commit();
-                _log("Unlock delete blocks");
-				$db->unlockTables();
-			}
-			Cache::remove("current");
-			Cache::remove("mineInfo");
-			Cache::remove("height");
-			Cache::remove("current_export");
-			return true;
-		} catch (Exception $e) {
-            _log("Error locking delete blocks ".$e->getMessage());
-			Config::setSync(0);
-			if($db->inTransaction()) {
-				$db->rollback();
-				$db->unlockTables();
-			}
-			return false;
-		}
+                Masternode::resetVerified();
+                Config::setSync(0);
+                if($db->inTransaction()) {
+                    $db->commit();
+                    _log("Unlock delete blocks");
+//				$db->unlockTables();
+                }
+                Cache::remove("current");
+                Cache::remove("mineInfo");
+                Cache::remove("height");
+                Cache::remove("current_export");
+                return true;
+            } catch (Exception $e) {
+                _log("Error locking delete blocks ".$e->getMessage());
+                Config::setSync(0);
+                if($db->inTransaction()) {
+                    $db->rollback();
+//				$db->unlockTables();
+                }
+                return false;
+            }
+        });
+
+
 
     }
 
