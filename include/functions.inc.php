@@ -108,6 +108,10 @@ function _log($data, $verbosity = 0)
 
 }
 
+function _logr() {
+    unset($GLOBALS['log']);
+}
+
 function _logp($log, $v = null) {
 	if(!isset($GLOBALS['log'])) {
 		$GLOBALS['log']="";
@@ -413,4 +417,30 @@ function decodeHostname($hash) {
 		$hostname = base58_decode($hash);
 	}
 	return $hostname;
+}
+
+function synchronized($handler)
+{
+    $dbg=debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS,2);
+    $name = md5(json_encode($dbg[0]));
+    $filename = sys_get_temp_dir().'/'.$name.'.lock';
+    _logp("synchronized: ".$dbg[1]['class']."::".$dbg[1]['function']);
+    $file = fopen($filename, 'w');
+    if ($file === false) {
+        _logf("locked");
+        return false;
+    }
+    _logp("lock");
+    $lock = flock($file, LOCK_EX);
+    if (!$lock) {
+        fclose($file);
+        _logf("can not lock");
+        return false;
+    }
+    _logp("call handler");
+    $result = $handler();
+    flock($file, LOCK_UN);
+    fclose($file);
+    _logf("unlock");
+    return $result;
 }

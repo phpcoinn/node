@@ -21,9 +21,14 @@ if (empty($dbversion)) {
 		version varchar(10) default '010000' null,
 		argon varchar(128) not null,
 		miner varchar(128) null,
+		masternode varchar(128) null,
+        mn_signature varchar(255) null,
 		constraint height
 			unique (height)
 	)");
+
+    $db->run("create index blocks_masternode_height_index on blocks (masternode, height);");
+    $db->run("create index blocks_masternode_index on blocks (masternode)");
 
 	$db->run("create table accounts
 	(
@@ -33,11 +38,13 @@ if (empty($dbversion)) {
 		block varchar(128) not null,
 		balance decimal(20,8) not null,
 		alias varchar(32) null,
-		height int null,
+		height int(11) null,
 		constraint accounts
 			foreign key (block) references blocks (id)
 				on delete cascade
 	)");
+
+    $db->run("create index alias on accounts (alias);");
 
 	$db->run("create table config
 	(
@@ -46,30 +53,23 @@ if (empty($dbversion)) {
 		val varchar(200) not null
 	)");
 
-	$db->run("create table logs
-	(
-		id ".DB::autoInc().",
-		`transaction` varchar(128) null,
-		block varchar(128) null,
-		json text null
-	);");
-
 	$db->run("create table masternode
 	(
 		public_key varchar(255) not null
 			primary key,
+			id varchar(128) null,
 		height int not null,
-		ip varchar(16) not null,
-		last_won int default 0 not null,
-		blacklist int default 0 not null,
-		fails int default 0 not null,
-		status tinyint default 1 not null,
-		vote_key varchar(128) null,
-		cold_last_won int default 0 not null,
-		voted tinyint default 0 not null,
+		ip varchar(30) null,
+		win_height int null,
 		collateral int default 10000 not null,
-		verified int default 0 not null
+		verified int default 0 not null,
+		signature varchar(255) null
 	)");
+
+    $db->run("create index height on masternode (height);");
+    $db->run("create index win_height on masternode (win_height);");
+    $db->run("create unique index masternode_ip_uindex on masternode (ip)");
+    $db->run("create index mix on masternode(height, signature, id, public_key);");
 
 	$db->run("create table mempool
 	(
@@ -85,8 +85,14 @@ if (empty($dbversion)) {
 		message varchar(255) default '' null,
 		public_key varchar(255) not null,
 		date bigint not null,
-		peer varchar(64) null
+		peer varchar(64) null,
+		data text null
 	)");
+
+    $db->run("create index height on mempool (height);");
+    $db->run("create index peer on mempool (peer);");
+    $db->run("create index src on mempool (src);");
+    $db->run("create index val on mempool (val);");
 
 	$db->run("create table peers
 	(
@@ -102,11 +108,25 @@ if (empty($dbversion)) {
 		appshash varchar(250),
 		score int,
 		blacklist_reason varchar(100),
+		dappshash varchar(250) null,
+		miner varchar(128) null,
+		generator varchar(128) null,
+		masternode varchar(128) null,
+		dapps_id varchar(128) null,
+		block_id varchar(128) null,
+		response_time decimal(20,8) default 0 null,
+		response_cnt int default 0 null,
+		version varchar(20) null,
 		constraint hostname
 			unique (hostname),
 		constraint ip
 			unique (ip)
 	)");
+
+    $db->run("create index blacklisted on peers (blacklisted);");
+    $db->run("create index ping on peers (ping);");
+    $db->run("create index reserve on peers (reserve);");
+    $db->run("create index stuckfail on peers (stuckfail);");
 
 	$db->run("create table transactions
 	(
@@ -123,54 +143,21 @@ if (empty($dbversion)) {
 		message varchar(255) default '' null,
 		date int not null,
 		public_key varchar(255) not null,
+		data text null,
 		constraint block_id
 			foreign key (block) references blocks (id)
 				on delete cascade
 	)");
 
-	$db->run("create index alias on accounts (alias);");
+    $db->run("create index dst on transactions (dst);");
+    $db->run("create index transactions_src_index on transactions (src)");
+    $db->run("create index height on transactions (height);");
+    $db->run("create index message on transactions (message);");
+    $db->run("create index public_key on transactions (public_key);");
+    $db->run("create index transactions_src_dst_val_fee_index on transactions (src, dst, val, fee);");
+    $db->run("create index transactions_type_index on transactions (type);");
 
-	$db->run("create index block on logs (block);");
-	$db->run("create index `transaction` on logs (`transaction`);");
-
-	$db->run("create index blacklist on masternode (blacklist);");
-	$db->run("create index cold_last_won on masternode (cold_last_won);");
-	$db->run("create index height on masternode (height);");
-	$db->run("create index last_won on masternode (last_won);");
-	$db->run("create index status on masternode (status);");
-	$db->run("create index vote_key on masternode (vote_key);");
-	$db->run("create index voted on masternode (voted);");
-
-	$db->run("create index height on mempool (height);");
-	$db->run("create index peer on mempool (peer);");
-	$db->run("create index src on mempool (src);");
-	$db->run("create index val on mempool (val);");
-
-	$db->run("create index blacklisted on peers (blacklisted);");
-	$db->run("create index ping on peers (ping);");
-	$db->run("create index reserve on peers (reserve);");
-	$db->run("create index stuckfail on peers (stuckfail);");
-
-	$db->run("create index dst on transactions (dst);");
-	$db->run("create index transactions_src_index on transactions (src)");
-	$db->run("create index height on transactions (height);");
-	$db->run("create index message on transactions (message);");
-	$db->run("create index public_key on transactions (public_key);");
-	$db->run("create index version on transactions (type);");
-	$db->run("create unique index masternode_ip_uindex on masternode (ip)");
-
-
-
-	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('hostname', '');");
-	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('dbversion', '1');");
-
-	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync_last', '0');");
-	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync', '0');");
-	$dbversion = 1;
-}
-
-if($dbversion == 1) {
-	$db->run('create table minepool 
+    $db->run('create table minepool 
 	(
 		miner varchar(255) null,
 		address varchar(128) not null,
@@ -178,136 +165,10 @@ if($dbversion == 1) {
 		iphash varchar(128) not null
 	);');
 
-	$db->run("create index val on minepool (iphash);");
-	$db->run("create unique index minepool_iphash_uindex on minepool (iphash);");
+    $db->run("create index val on minepool (iphash);");
+    $db->run("create unique index minepool_iphash_uindex on minepool (iphash);");
 
-	$dbversion = 2;
-}
-
-if($dbversion == 2) {
-	$db->run('alter table peers add version varchar(20) null;');
-	$dbversion = 3;
-}
-
-if($dbversion == 3) {
-	if(!$was_empty) {
-		$db->run("alter table accounts modify public_key varchar(255) not null;");
-		$db->run("alter table blocks modify signature varchar(255) not null;");
-		$db->run("alter table masternode modify public_key varchar(255) not null;");
-		$db->run("alter table mempool modify signature varchar(255) not null;");
-		$db->run("alter table mempool modify message varchar(255) default '' null;");
-		$db->run("alter table mempool modify public_key varchar(255) not null;");
-		$db->run("alter table transactions modify signature varchar(255) not null;");
-		$db->run("alter table transactions modify message varchar(255) default '' null;");
-		$db->run("alter table transactions modify public_key varchar(255) not null;");
-	}
-	$dbversion = 4;
-}
-
-if($dbversion == 4) {
-	$db->run("alter table masternode modify ip varchar(16) null");
-	$dbversion = 5;
-}
-
-if($dbversion == 5) {
-	$db->run("alter table masternode change last_won win_height int default 0 not null");
-	$db->run("alter table masternode add signature varchar(255) null;");
-	$db->run("alter table blocks add masternode varchar(128) null;");
-	$db->run("alter table blocks add mn_signature varchar(255) null;");
-	$dbversion = 6;
-}
-
-if($dbversion == 6) {
-	$db->run("alter table masternode add id varchar(128) null");
-	$db->run("alter table masternode modify win_height int null;");
-	$db->run("alter table masternode drop column blacklist;");
-	$db->run("alter table masternode drop column fails;");
-	$db->run("alter table masternode drop column status;");
-	$db->run("alter table masternode drop column vote_key;");
-	$db->run("alter table masternode drop column cold_last_won;");
-	$db->run("alter table masternode drop column voted;");
-	$dbversion = 7;
-}
-
-if($dbversion == 7) {
-	$db->run("alter table masternode modify ip varchar(30) null");
-	$dbversion = 8;
-}
-
-if($dbversion == 8) {
-	$db->run("alter table peers add miner tinyint(1) default 0 null;");
-	$db->run("alter table peers add generator tinyint(1) default 0 null;");
-	$db->run("alter table peers add masternode tinyint(1) default 0 null;");
-	$db->run("alter table peers add response_cnt int default 0 null;");
-	$db->run("alter table peers add response_time decimal(20,8) default 0 null;");
-	$dbversion = 9;
-}
-
-if($dbversion == 9) {
-	$db->run("alter table peers add block_id varchar(128) null;");
-	$dbversion = 10;
-}
-
-if($dbversion == 10) {
-	$db->run("create index blocks_masternode_index on blocks (masternode)");
-	$dbversion = 11;
-}
-
-if($dbversion == 11) {
-	if(!$was_empty) {
-
-		$lock_file = ROOT . "/tmp/db-lock";
-//		_log("DB Schema: Check lock file $lock_file");
-		if (!mkdir($lock_file, 0700)) {
-//			_log("DB Schema: Lock file exists $lock_file");
-			$db->rollBack();
-			return;
-		}
-		_log("DB Schema: Lock transactions table");
-		$db->run("lock tables transactions write");
-		_log("DB Schema: Add src column");
-		$db->run("alter table transactions add src varchar(128) null");
-		_log("DB Schema: Add index on src column");
-		$db->run("create index transactions_src_index on transactions (src)");
-		_log("DB Schema: Update src column");
-		$db->run("update transactions set transactions.src = (
-		    select accounts.id from accounts where accounts.public_key = transactions.public_key
-		    )
-		where transactions.type > 0 and transactions.src is null");
-		_log("DB Schema: Unlock transactions table");
-		$db->run("unlock tables");
-		_log("DB Schema: Update wrong balances");
-		$db->run("update (
-		    select ac.id, sum(ac.total) as tx_balance, acc.balance
-		    from (
-		             select a.id, sum(t.val*(-1)) as total
-		             from accounts a
-		                      join transactions t
-		                           on (t.src = a.id)
-		             group by a.id
-		             union all
-		             select a.id, sum(t.val) as total
-		             from accounts a
-		                      join transactions t
-		                           on (t.dst = a.id)
-		             group by a.id) as ac
-		             left join accounts acc on (ac.id = acc.id)
-		    group by ac.id
-		    having tx_balance <> balance) as wrong_balances
-		    left join accounts a1
-		    on (wrong_balances.id = a1.id)
-		set a1.balance = wrong_balances.tx_balance
-		where a1.balance <> wrong_balances.tx_balance");
-
-		_log("DB Schema: Remove lock file $lock_file");
-		@rmdir($lock_file);
-
-
-	}
-	$dbversion = 12;
-}
-if ($dbversion == 12) {
-	$db->run("create table smart_contract_state
+    $db->run("create table smart_contract_state
 	(
 	sc_address varchar(128) not null,
 	variable varchar(100) not null,
@@ -316,7 +177,10 @@ if ($dbversion == 12) {
 	height int not null
 	)");
 
-	$db->run("create table smart_contracts
+    $db->run("create unique index smart_contract_state_sc_address_variable_var_key_height_uindex 
+    on smart_contract_state (sc_address, variable, var_key, height);");
+
+    $db->run("create table smart_contracts
 	(
 	address varchar(128) not null,
 	height int not null,
@@ -324,164 +188,23 @@ if ($dbversion == 12) {
 	signature varchar(255) not null
 	)");
 
-	$db->run("alter table transactions add data text null");
-	$db->run("alter table mempool add data text null");
-
-    $db->run("alter table smart_contracts
-    add constraint smart_contracts_pk
-        primary key (address)");
+    $db->run("create unique index smart_contracts_address_uindex
+	on smart_contracts (address)");
 
     $db->run("alter table smart_contract_state
     add constraint smart_contract_state_smart_contracts_address_fk
     foreign key (sc_address) references smart_contracts (address)
     on update cascade on delete cascade");
 
-	$db->run("create unique index smart_contracts_address_uindex
-	on smart_contracts (address)");
+    $db->run("alter table smart_contracts
+    add constraint smart_contracts_pk
+        primary key (address)");
 
-	$db->run("create unique index smart_contract_state_sc_address_variable_var_key_height_uindex 
-    on smart_contract_state (sc_address, variable, var_key, height);");
+	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('hostname', '');");
+	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('dbversion', '1');");
 
-	$dbversion = 13;
-}
-
-if($dbversion == 13) {
-	$db->run("alter table peers add dapps_id varchar(128) null");
-	$dbversion = 14;
-}
-
-if($dbversion == 14) {
-	$db->run("create index blocks_masternode_height_index on blocks (masternode, height);");
-	$db->run("create index mix on masternode(height, signature, id, public_key);");
-	$db->run("drop index version on transactions;");
-	$db->run("create index transactions_type_index on transactions (type);");
-	$db->run("create index transactions_src_dst_val_fee_index on transactions (src, dst, val, fee);");
-	$dbversion = 15;
-}
-
-if($dbversion == 15) {
-	if(!$was_empty) {
-		$db->run("delete from masternode
-        where id in (
-        select dupl.id from (
-	            select m.id, m.ip,
-	                   row_number() over (partition by m.ip order by m.id) as rn
-	            from masternode m
-	            where m.ip is not null
-	            order by m.ip, m.id
-	        ) as dupl
-        where dupl.rn > 1
-        )");
-		$db->run("create unique index masternode_ip_uindex
-            on masternode (ip)");
-	}
-	$dbversion = 16;
-}
-
-if($dbversion == 16) {
-	if(!$was_empty) {
-		$rows = $db->run("show index from masternode where key_name='masternode_ip_uindex'");
-		if (count($rows) !== 1) {
-			$db->run("truncate table masternode");
-			$res = $db->run("create unique index masternode_ip_uindex on masternode (ip)");
-		}
-	}
-	$dbversion = 17;
-}
-
-
-if($dbversion == 17) {
-	if(!$was_empty) {
-		$lock_dir = ROOT . "/tmp/db-migrate";
-		if (mkdir($lock_dir, 0700)) {
-			Util::recalculateMasternodes();
-			@rmdir($lock_dir);
-			$dbversion = 18;
-		}
-	} else {
-		$dbversion = 18;
-	}
-}
-
-if($dbversion == 18) {
-	if(!$was_empty) {
-		$lock_dir = ROOT . "/tmp/db-migrate";
-		if (mkdir($lock_dir, 0700)) {
-			$db->run("alter table mempool modify dst varchar(128) null");
-			@rmdir($lock_dir);
-			$dbversion = 19;
-		}
-	} else {
-		$dbversion = 19;
-	}
-}
-
-if($dbversion == 19) {
-	if(!$was_empty) {
-		$lock_dir = ROOT . "/tmp/db-migrate";
-		if (mkdir($lock_dir, 0700)) {
-			$db->run("alter table transactions modify dst varchar(128) null");
-			@rmdir($lock_dir);
-			$dbversion = 20;
-		}
-	} else {
-		$dbversion = 20;
-	}
-}
-
-if($dbversion == 20) {
-	$db->run("alter table peers modify miner varchar(128) null");
-	$db->run("alter table peers modify generator varchar(128) null");
-	$db->run("alter table peers modify masternode varchar(128) null");
-	$dbversion = 21;
-}
-
-if($dbversion == 21) {
-	$db->run("alter table peers add dappshash varchar(250) null");
-	$dbversion = 22;
-}
-
-if($dbversion < 28) {
-	if(!$was_empty) {
-		$lock_file = ROOT . "/tmp/db-lock-28";
-		if (!mkdir($lock_file, 0700)) {
-			$db->rollBack();
-			return;
-		}
-		$db->run("lock tables transactions write");
-		$db->run("alter table transactions modify dst varchar(128) null");
-		$db->run("unlock tables");
-		@rmdir($lock_file);
-	}
-	$dbversion = 28;
-}
-
-if($dbversion < 29) {
-	$db->run("update transactions set dst = null where dst = '' and type = 8;");
-	$dbversion = 29;
-}
-
-if($dbversion < 31) {
-	if(!$was_empty) {
-		$db->run("alter table accounts add height int null");
-	}
-	$dbversion = 31;
-}
-
-if($dbversion < 34) {
-	if(!$was_empty) {
-		$db->run("alter table masternode
-			add collateral int default 10000 not null;");
-		$db->run("alter table masternode
-			add verified int default 0 not null;");
-	}
-	$dbversion = 34;
-}
-
-if($dbversion < 35) {
-	if(!$was_empty) {
-		$db->run("alter table peers modify fails int default 0 not null");
-	}
+	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync_last', '0');");
+	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync', '0');");
 	$dbversion = 35;
 }
 

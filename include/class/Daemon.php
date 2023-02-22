@@ -153,7 +153,7 @@ class Daemon
 			try {
 				static::process();
 				self::clearError();
-
+                _logr();
                 $db = null;
 
 			} catch (Exception $e) {

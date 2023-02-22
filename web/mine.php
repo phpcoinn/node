@@ -75,6 +75,8 @@ if ($q == "info") {
     if(!$mineInfo) {
         api_err("node-not-ok");
     }
+    $cache_time = $mineInfo['time'];
+    $mineInfo['time']=time();
     _logf(" height=".$mineInfo['height']);
     api_echo($mineInfo);
 } elseif ($q == "stat") {

@@ -10,7 +10,7 @@ const NETWORK = "mainnet-alpha";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
 const VERSION = "1.1.25";
-const BUILD_VERSION = 261;
+const BUILD_VERSION = 262;
 const MIN_VERSION = "1.1.16";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -44,57 +44,11 @@ const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
 const REMOTE_PEERS_LIST_URL = "https://node1.phpcoin.net/peers.php";
 
-const REWARD_SCHEME = [
-	'genesis' => [
-		'reward'=> GENESIS_REWARD
-	],
-	'launch'=>[
-		'blocks' => 100000 - 1,
-		'reward'=> 10,
-	],
-	'mining'=>[
-		'block_per_segment'=>[
-			10000,10000,10000,10000,10000,2000,2000,2000,2000,2000
-		],
-		'reward_per_segment'=>[
-			10, 20, 30, 40, 50, 60, 70, 80, 90, 100
-		],
-	],
-	'combined'=>[
-		'block_per_segment'=>[
-			50000,50000,50000,50000,50000,50000,50000,50000,50000,50000
-		],
-		'reward'=> 100,
-		'mn_reward_per_segment'=>[
-			10, 20, 30, 40, 50, 60, 70, 80, 90, 100
-		],
-	],
-	'deflation'=>[
-		'block_per_segment'=>[
-			100000,100000,100000,100000,100000,100000,100000,100000,100000,100000
-		],
-		'reward_per_segment'=>[
-			90, 80, 70, 60, 50, 40, 30, 20, 10, 0
-		],
-	]
-];
-
-const COLLATERAL_SCHEME = [
-	1 => 10000,
-	560001 => 12000,
-	570001 => 14000,
-	580001 => 16000,
-	610001 => 20000,
-	660001 => 25000,
-	760001 => 30000,
-	860001 => 35000,
-	960001 => 40000,
-];
-
 const MIN_NODE_SCORE = 80;
 
 const FEATURE_MN = true;
 const MN_MIN_RUN_BLOCKS = 1440*30;
+const MN_START_HEIGHT = 160001;
 
 const FEE_START_HEIGHT = PHP_INT_MAX;
 const FEE_DIVIDER = 100;
