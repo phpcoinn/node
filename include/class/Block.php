@@ -1109,6 +1109,24 @@ class Block
 	}
 
 	static function getNextCollateralHeight($height) {
-		return self::getMasternodeCollateral($height, true);
+        require_once ROOT . "/include/rewards.inc.php";
+        $next_height = null;
+        foreach (REWARD_SCHEME as $i => $line) {
+            $start = $line[2];
+            $end = $line[3];
+            if($height >= $start && $height <= $end) {
+                $collateral = $line[8];
+                for($j=$i+1; $j<count(REWARD_SCHEME); $j++) {
+                    $line2 = REWARD_SCHEME[$j];
+                    $next_collateral = $line2[8];
+                    if($next_collateral != $collateral) {
+                        $collateral = $next_collateral;
+                        $next_height = $line2[2];
+                        break;
+                    }
+                }
+            }
+        }
+        return $next_height;
 	}
 }
