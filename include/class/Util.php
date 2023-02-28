@@ -1493,5 +1493,9 @@ class Util
 //		$sql="delete from masternode";
 //		$db->run($sql);
 //	}
+
+    static function runJobs() {
+        Job::runJobs();
+    }
 	
 }
