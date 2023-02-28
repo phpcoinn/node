@@ -75,6 +75,32 @@ class Daemon
 		}
 	}
 
+    static function checkLongRunning() {
+        $name = static::$name;
+        $cmd = "php ".ROOT . "/cli/$name.php --daemon status";
+        $res = shell_exec($cmd);
+        $status = json_decode($res, true);
+        if(!$status['enabled']) {
+            _log("Daemon: checkLongRunning $name: enabled=false", 5);
+            return;
+        }
+        _log("Daemon: checkLongRunning: ".json_encode($status), 5);
+        if($status['running'] && !$status['locked']) {
+            $started = $status['started'];
+            $running_time = time() - $started;
+            _log("Daemon: checkLongRunning: process exists without lock time=$running_time");
+            if($running_time > static::$max_run_time * 2) {
+                $pid = $status['pid'];
+                _log("Daemon: checkLongRunning need to kill process $pid");
+                $scmd = "kill -9 $pid";
+                shell_exec($scmd);
+            }
+        } else if (!$status['running'] && $status['locked']) {
+            _log("Daemon: checkLongRunning: process not running but locked");
+            self::unlock();
+        }
+    }
+
 	static function runDaemon() {
 
 		global $_config;
