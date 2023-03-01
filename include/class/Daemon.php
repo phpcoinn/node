@@ -280,6 +280,7 @@ class Daemon
 
 					$scmd = "ps -e -o pid,pcpu,pmem,lstart,user,cmd | grep ".ROOT."/cli/$name.php | grep -v grep | grep -v status";
 					$res = shell_exec($scmd);
+                    $res = trim($res);
 					$data = [];
 					$data['name'] = static::$title;
 					if ($res) {
