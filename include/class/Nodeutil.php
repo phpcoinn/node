@@ -604,4 +604,47 @@ class Nodeutil
 		return $repoServer;
 	}
 
+    static function discoverPeers() {
+        global $_config;
+        $peers = Peer::getAll();
+        $added = 0;
+        $discovered = 0;
+        if($peers) {
+            $count=count($peers);
+            _log("Found " . $count . " root peers");
+
+            $peers_list = [];
+            foreach ($peers as $index=>$peer) {
+                $hostname = $peer['hostname'];
+                $peers_list[$hostname] = $hostname;
+            }
+
+            foreach ($peers as $index=>$peer) {
+                $hostname = $peer['hostname'];
+                $peers_list[$hostname] = $hostname;
+                $url = "$hostname/api.php?q=getPeers";
+                $res = @file_get_contents($url);
+                $peers2 = json_decode($res, true)['data'];
+                if ($peers2) {
+                    $count2 = count($peers2);
+                    _log("Checking peers from other $hostname: $index / $count - found $count2");
+                    foreach ($peers2 as $index2 => $peer2) {
+                        $hostname2 = $peer2['hostname'];
+                        if (!isset($peers_list[$hostname2]) && $hostname2 !=$_config['hostname']) {
+                            $discovered++;
+                            $peers_list[$hostname2] = $hostname2;
+                            $res = peer_post($hostname2."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1]);
+                            if($res !== false ) {
+                                $added ++;
+                            }
+                            _log("Discovered new peer: $hostname2  - discovered = $discovered added=$added - res=".$res);
+                        }
+                    }
+                }
+
+            }
+        }
+        _log("Total discovered peers = $discovered - added = $added");
+    }
+
 }

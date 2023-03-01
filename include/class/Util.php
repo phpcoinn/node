@@ -1497,5 +1497,8 @@ class Util
     static function runJobs() {
         Job::runJobs();
     }
-	
+
+    static function discoverPeers() {
+        Nodeutil::discoverPeers();
+    }
 }
