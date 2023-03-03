@@ -591,6 +591,9 @@ class Sync extends Daemon
 
 		Cache::clearOldFiles();
 
+        $cmd='find '.ROOT.'/tmp -name "*.lock" -mmin +1 -exec rm -rf {} +';
+        shell_exec($cmd);
+
 		_log("Finishing sync",3);
 
 		$t2 = microtime(true);

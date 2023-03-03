@@ -64,7 +64,7 @@ class Block
 
 	public function add(&$error = null, $syncing=false)
     {
-        return synchronized(function () use (&$error, $syncing) {
+        return synchronized("block-add", function () use (&$error, $syncing) {
 
             try {
 
@@ -583,7 +583,7 @@ class Block
             return true;
         }
 
-        return synchronized(function() use ($r) {
+        return synchronized("block-delete", function() use ($r) {
             try {
                 global $db;
                 _log("Lock delete blocks");
