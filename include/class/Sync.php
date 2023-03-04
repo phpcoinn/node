@@ -96,6 +96,11 @@ class Sync extends Daemon
 		Nodeutil::cleanTmpFiles();
 		Minepool::deleteOldEntries();
 		Cache::clearOldFiles();
+
+        $cmd='find '.ROOT.'/tmp -name "*.lock" -mmin +1 -exec rm -rf {} +';
+        _log("Remove lock files cmd=$cmd");
+        shell_exec($cmd);
+
 		_log("Finishing sync",3);
 		$t2 = microtime(true);
 		Config::setVal("sync_last", time());
