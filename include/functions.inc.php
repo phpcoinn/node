@@ -419,28 +419,19 @@ function decodeHostname($hash) {
 	return $hostname;
 }
 
-function synchronized($handler)
+function synchronized($name, $handler)
 {
-    $dbg=debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS,2);
-    $name = md5(json_encode($dbg[0]));
-    $filename = sys_get_temp_dir().'/'.$name.'.lock';
-    _logp("synchronized: ".$dbg[1]['class']."::".$dbg[1]['function']);
-    $file = fopen($filename, 'w');
-    if ($file === false) {
+    $filename = ROOT.'/tmp/'.$name.'.lock';
+    _logp("synchronized: ".$name);
+
+    if (!mkdir($filename, 0700)) {
         _logf("locked");
         return false;
     }
-    _logp("lock");
-    $lock = flock($file, LOCK_EX);
-    if (!$lock) {
-        fclose($file);
-        _logf("can not lock");
-        return false;
-    }
+
     _logp("call handler");
     $result = $handler();
-    flock($file, LOCK_UN);
-    fclose($file);
     _logf("unlock");
+    @rmdir($filename);
     return $result;
 }
