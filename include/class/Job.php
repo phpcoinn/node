@@ -16,6 +16,10 @@ class Job
 		if($min == "15") {
 			Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php recalculate-masternodes");
 		}
+        Sync::checkLongRunning();
+        Dapps::checkLongRunning();
+        NodeMiner::checkLongRunning();
+        Masternode::checkLongRunning();
 	}
 
 

@@ -28,8 +28,8 @@ class Account
         openssl_pkey_export($key1, $pvkey);
 
 		if(PHP_VERSION_ID > 80000) {
-			$in = ROOT . "/tmp/in.pem";
-			$out = ROOT . "/tmp/out.pem";
+			$in = sys_get_temp_dir() . "/phpcoin.in.pem";
+			$out = sys_get_temp_dir() . "/phpcoin.out.pem";
 			file_put_contents($in, $pvkey);
 			$cmd = "openssl ec -in $in -out $out >/dev/null 2>&1";
 			shell_exec($cmd);
