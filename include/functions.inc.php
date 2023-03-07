@@ -108,6 +108,10 @@ function _log($data, $verbosity = 0)
 
 }
 
+function _logr() {
+    unset($GLOBALS['log']);
+}
+
 function _logp($log, $v = null) {
 	if(!isset($GLOBALS['log'])) {
 		$GLOBALS['log']="";
@@ -413,4 +417,21 @@ function decodeHostname($hash) {
 		$hostname = base58_decode($hash);
 	}
 	return $hostname;
+}
+
+function synchronized($name, $handler)
+{
+    $filename = ROOT.'/tmp/'.$name.'.lock';
+    _logp("synchronized: ".$name);
+
+    if (!mkdir($filename, 0700)) {
+        _logf("locked");
+        return false;
+    }
+
+    _logp("call handler");
+    $result = $handler();
+    _logf("unlock");
+    @rmdir($filename);
+    return $result;
 }

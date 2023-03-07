@@ -186,7 +186,7 @@ class DB extends PDO
 
     public function lockTables() {
     	if(!$this->isSqlite()) {
-	        $this->exec("LOCK TABLES blocks WRITE, accounts WRITE, transactions WRITE, mempool WRITE, masternode WRITE, peers write, config WRITE, logs WRITE");
+	        $this->exec("LOCK TABLES blocks WRITE, accounts WRITE, transactions WRITE, mempool WRITE, masternode WRITE, peers write, config WRITE");
 	    }
     }
 

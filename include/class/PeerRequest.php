@@ -751,31 +751,29 @@ class PeerRequest
 			$hostname = self::$peer['hostname'];
 		}
 		// receive a  new block from a peer
-		_log("submitBlock: Receive new block from a peer $ip hostname=$hostname : id=".$data['id']." height=".$data['height']." current=".$current['height']. " diff=".$diff, 5);
+		_logp("submitBlock: Receive new block from a peer $ip hostname=$hostname : id=".$data['id']." height=".$data['height']." current=".$current['height']. " diff=".$diff, 5);
 
 		if($diff < 0) {
-			_log("submitBlock: current height is lower than received block", 5);
 			if($diff == -1) {
 //				api_echo("block-ok");
-				_log("submitBlock: we received next block current=".$current['height']. " height=".$data['height']. " diff=".$diff, 5);
 				$peer_block = Block::getFromArray($data);
 				$res = $peer_block->check($err);
 				if(!$res) {
-					_log("submitBlock: block check failed: $err", 5);
+					_logf("block check failed: $err", 5);
 					api_err("invalid-block");
 				}
-				_log("submitBlock: received block is checked ok", 5);
+				_logp("received block is checked ok", 5);
 				$peer_block->prevBlockId = $current['id'];
 				$res = $peer_block->add($err);
 				if(!$res) {
-					_log("submitBlock: Error adding block: $err", 5);
+					_logf("Error adding block: $err", 5);
 					api_err("invalid-block");
 				}
-				_log("submitBlock: added block - ok", 5);
+				_logp("added block - ok", 5);
 				Propagate::blockToAll($data['id']);
 				api_echo("block-ok");
 			} else {
-				_log("submitBlock: we are on lower block", 5);
+				_logf("we are on lower block", 5);
 //				if(self::$peer) {
 //					$dir = ROOT."/cli";
 //					$cmd = "php $dir/peersync.php ".self::$peer['hostname'];
@@ -786,27 +784,26 @@ class PeerRequest
 				api_echo("peer-sync");
 			}
 		} else if ($diff > 0) {
-			_log("submitBlock: current height is higher than received block");
 			$block=Block::export("",$data['height']);
 			if(!$block) {
-				_log("submitBlock: we do not have block at height ".$data['height']);
+				_logf("we do not have block at height ".$data['height']);
 				api_err("peer-error");
 			}
-			_log("submitBlock: compare blocks our=".$block['id']." remote=".$data['id']);
+			_logp("compare blocks our=".$block['id']." remote=".$data['id']);
 			if($block['id'] == $data['id']) {
-				_log("submitBlock: blocks are same");
+				_logf("blocks are same");
 				api_echo("block-ok");
 			}
-			_log("submitBlock: BLOCKS ARE NOT SAME elapsed=".$block['elapsed'].",".$data['elapsed'], 5);
+			_logp("submitBlock: BLOCKS ARE NOT SAME elapsed=".$block['elapsed'].",".$data['elapsed'], 5);
 			$res = NodeSync::compareBlocks($block, $data);
 			if($res>0) {
-				_log("submitBlock: my block is winner");
+				_logf("my block is winner");
 				if(self::$peer) {
 					Propagate::blockToPeer(self::$peer['hostname'], self::$peer['ip'], $block['id']);
 				}
 				api_err("block-not-ok");
 			} else if ($res<0) {
-				_log("submitBlock: other block is winner");
+				_logf("other block is winner");
 				if(self::$peer) {
 					$dir = ROOT."/cli";
 //					$cmd = "php $dir/peercheck.php ".self::$peer['hostname']. " ".$data['height'];
@@ -816,26 +813,26 @@ class PeerRequest
 				}
 				api_err("block-ok");
 			} else {
-				_log("submitBlock: blocks are actually same");
+				_logf("blocks are actually same");
 				api_err("block-ok");
 			}
 		} else {
-			_log("submitBlock: heights are equal", 5);
+			_logp("heights are equal", 5);
 			if($current['id']==$data['id']) {
-				_log("submitBlock: blocks are same on same height");
+				_logf("blocks are same on same height");
 				api_echo("block-ok");
 			}
-			_log("submitBlock: BLOCKS ARE NOT SAME ON SAME HEIGHT", 5);
+			_logp("BLOCKS ARE NOT SAME ON SAME HEIGHT", 5);
 			$current = Block::export($current['id']);
 			$res = NodeSync::compareBlocks($current, $data);
 			if($res>0) {
-				_log("submitBlock: my block is winner", 5);
+				_logf("my block is winner", 5);
 				if(self::$peer) {
 					Propagate::blockToPeer(self::$peer['hostname'], self::$peer['ip'], $current['id']);
 				}
 				api_err("block-not-ok");
 			} else if ($res<0) {
-				_log("submitBlock: other block is winner", 5);
+				_logf("other block is winner", 5);
 				if(self::$peer) {
 					$dir = ROOT."/cli";
 					$cmd = "php $dir/deepcheck.php ".self::$peer['hostname']. " ".$data['height'];
@@ -845,7 +842,7 @@ class PeerRequest
 				}
 				api_err("block-not-ok");
 			} else {
-				_log("submitBlock: blocks are actually same", 5);
+				_logf("blocks are actually same", 5);
 				api_err("block-ok");
 			}
 		}

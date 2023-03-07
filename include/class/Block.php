@@ -64,113 +64,121 @@ class Block
 
 	public function add(&$error = null, $syncing=false)
     {
-        global $db;
+        return synchronized("block-add", function () use (&$error, $syncing) {
 
-		try {
+            try {
 
-			if($this->height > STOP_CHAIN_HEIGHT) {
-				throw new Exception("Blockchain stopped at height " .  STOP_CHAIN_HEIGHT . " - Can not add block");
-			}
+                global $db;
 
-			if(Config::getVal("blockchain_invalid") == 1) {
-				throw new Exception("Blockchain is invalid - please reimport");
-			}
+                $block = Block::get($this->height);
+                if($block && $block['height']=$this->height) {
+                    throw new Exception("Block already added");
+                }
 
-	        if(empty($this->generator)) {
-		        $this->generator = Account::getAddress($this->publicKey);
-	        }
+                $currentHeight = Block::getHeight();
+                _log("Checking block height currentHeight=$currentHeight height={$this->height}", 3);
+                if($this->height - $currentHeight != 1) {
+                    throw new Exception("Block height failed");
+                }
 
-	        // the transactions are always sorted in the same way, on all nodes, as they are hashed as json
-	        ksort($this->data);
+                if($this->height > STOP_CHAIN_HEIGHT) {
+                    throw new Exception("Blockchain stopped at height " .  STOP_CHAIN_HEIGHT . " - Can not add block");
+                }
 
-	        if(count($this->data)==0 && $this->height>1) {
-	            throw new Exception("No transactions");
-	        }
+                if(Config::getVal("blockchain_invalid") == 1) {
+                    throw new Exception("Blockchain is invalid - please reimport");
+                }
 
-	        if($this->version != Block::versionCode($this->height)) {
-		        throw new Exception("Wrong version code");
-	        }
+                if(empty($this->generator)) {
+                    $this->generator = Account::getAddress($this->publicKey);
+                }
 
-	        // create the hash / block id
-	        $hash = $this->hash();
+                // the transactions are always sorted in the same way, on all nodes, as they are hashed as json
+                ksort($this->data);
 
-	        // create the block data and check it against the signature
-	        $info = $this->getSignatureBase();
-	    // _log($info,3);
+                if(count($this->data)==0 && $this->height>1) {
+                    throw new Exception("No transactions");
+                }
 
-            if (!Account::checkSignature($info, $this->signature, $this->publicKey, $this->height)) {
-	            throw new Exception("Block signature check failed info=$info signature={$this->signature} public_key={$this->publicKey}");
+                if($this->version != Block::versionCode($this->height)) {
+                    throw new Exception("Wrong version code");
+                }
+
+                // create the hash / block id
+                $hash = $this->hash();
+
+                // create the block data and check it against the signature
+                $info = $this->getSignatureBase();
+                // _log($info,3);
+
+                if (!Account::checkSignature($info, $this->signature, $this->publicKey, $this->height)) {
+                    throw new Exception("Block signature check failed info=$info signature={$this->signature} public_key={$this->publicKey}");
+                }
+
+                // lock table to avoid race conditions on blocks
+                _log("LOCK: lock block add ".$this->height." " . $this->id, 4);
+//	        $db->lockTables();
+                $db->beginTransaction();
+                $total = count($this->data);
+
+
+                $bind = [
+                    ":id"           => $this->id,
+                    ":generator"    => $this->generator,
+                    ":miner"        => $this->miner,
+                    ":masternode"   => $this->masternode,
+                    ":signature"    => $this->signature,
+                    ":mn_signature" => $this->mn_signature,
+                    ":height"       => $this->height,
+                    ":date"         => $this->date,
+                    ":nonce"        => $this->nonce,
+                    ":difficulty"   => $this->difficulty,
+                    ":argon"        => $this->argon,
+                    ":version"        => $this->version,
+                    ":transactions" => $total,
+                ];
+                $res = Block::insert($bind);
+                if ($res != 1) {
+                    // rollback and exit if it fails
+                    $db->rollback();
+                    _log("LOCK: unlock 1 block add ".$this->height." ".$this->id . " - insert failed", 4);
+//	            $db->unlockTables();
+                    throw new Exception("Block DB insert failed");
+                }
+
+                Masternode::resetVerified();
+
+                // parse the block's transactions and insert them to db
+                $res = $this->parse_block(false, $perr, $syncing);
+                if ($res == false) {
+                    throw new Exception("Parse block failed ".$this->height." : $perr");
+                }
+
+                _log("Inserted new block height={$this->height} id=$hash ");
+                $db->commit();
+                _log("LOCK: unlock 2 block add ".$this->height." ".$this->id. " - ok", 4);
+//                $db->unlockTables();
+                Cache::set("current", $this->toArray());
+                Cache::set("height", $this->height);
+                Cache::set("current_export", Block::export($hash));
+                Cache::set("mineInfo", Blockchain::getMineInfo());
+                return true;
+
+            } catch (Exception $e) {
+                $error = $e->getMessage();
+                _log("LOCK: Block ".$this->height." ".$this->id." add error: $error", 4);
+                if($db->inTransaction()) {
+                    $db->rollback();
+                    _log("LOCK: unlock 3 block ".$this->height."  add ".$this->id. " ".$error, 4);
+//				$db->unlockTables();
+                }
+                _log($error);
+                return false;
             }
 
-	            if (!$this->parse_block(true, $bl_error, $syncing)) {
-		            throw new Exception("Parse block failed: ".$bl_error);
-	            }
-
-            $currentHeight = Block::getHeight();
-            _log("Checking block height currentHeight=$currentHeight height={$this->height}", 3);
-            if($this->height - $currentHeight != 1) {
-	            throw new Exception("Block height failed");
-            }
-	        // lock table to avoid race conditions on blocks
-			_log("LOCK: lock block add ".$this->height." " . $this->id, 4);
-	        $db->lockTables();
-	        $db->beginTransaction();
-	        $total = count($this->data);
+        });
 
 
-	        $bind = [
-	            ":id"           => $this->id,
-	            ":generator"    => $this->generator,
-	            ":miner"        => $this->miner,
-	            ":masternode"   => $this->masternode,
-	            ":signature"    => $this->signature,
-	            ":mn_signature" => $this->mn_signature,
-	            ":height"       => $this->height,
-	            ":date"         => $this->date,
-	            ":nonce"        => $this->nonce,
-	            ":difficulty"   => $this->difficulty,
-	            ":argon"        => $this->argon,
-	            ":version"        => $this->version,
-	            ":transactions" => $total,
-	        ];
-	        $res = Block::insert($bind);
-	        if ($res != 1) {
-	            // rollback and exit if it fails
-	            $db->rollback();
-		        _log("LOCK: unlock 1 block add ".$this->height." ".$this->id . " - insert failed", 4);
-	            $db->unlockTables();
-		        throw new Exception("Block DB insert failed");
-	        }
-
-			Masternode::resetVerified();
-
-	        // parse the block's transactions and insert them to db
-	        $res = $this->parse_block(false, $perr, $syncing);
-			if ($res == false) {
-				throw new Exception("Parse block failed ".$this->height." : $perr");
-			}
-
-			_log("Inserted new block height={$this->height} id=$hash ");
-            $db->commit();
-			_log("LOCK: unlock 2 block add ".$this->height." ".$this->id. " - ok", 4);
-	        $db->unlockTables();
-			Cache::set("current", $this->toArray());
-			Cache::set("height", $this->height);
-			Cache::set("current_export", Block::export($hash));
-            Cache::set("mineInfo", Blockchain::getMineInfo());
-	        return true;
-
-		} catch (Exception $e) {
-			$error = $e->getMessage();
-            _log("LOCK: Block ".$this->height." ".$this->id." add error: $error", 4);
-			if($db->inTransaction()) {
-				$db->rollback();
-				_log("LOCK: unlock 3 block ".$this->height."  add ".$this->id. " ".$error, 4);
-				$db->unlockTables();
-			}
-			_log($error);
-			return false;
-		}
     }
 
     static function getFromArray($b) {
@@ -265,92 +273,36 @@ class Block
         return ceil($avg * 1.1);
     }
 
-    // calculate the reward for each block
-	public static function reward($height)
-	{
-		$rewards = [];
-		unset($phase);
-		$phases = Blockchain::getPhases();
-		foreach($phases as $index=>$phase) {
 
-			$start = $phase['start'];
-			$end = $phase['end'];
-			if($height < $start || $height > $end) {
-				continue;
-			}
-			$name = $phase['name'];
-			$total = $phase['reward'];
-			$segment = @$phase['segment'];
-			$pos_reward = 0;
-			switch ($name) {
-				case "genesis":
-					$miner = $total;
-					$generator = 0;
-					$mn_reward = 0;
-					$staker = 0;
-					break;
-				case "launch":
-					$miner = $total * 0.9;
-					$generator = $total * 0.1;
-					$mn_reward = 0;
-					$staker = 0;
-					break;
-				case "mining":
-					$miner = $total * 0.9;
-					$generator = $total * 0.1;
-					$mn_reward = 0;
-					$staker = 0;
-					break;
-				case "combined":
-					if($segment == 10) {
-						$mn_reward = 0.6 * $total;
-						$generator = 0.1 * $total;
-						$miner = 0.2 * $total;
-						$staker = 0.1 * $total;
-					} else {
-						if($height >= STAKING_START_HEIGHT) {
-							$mn_reward = $segment/10 * $total;
-							$remain_reward = $total - $mn_reward;
-							$miner = $remain_reward * 0.8;
-							$staker = $remain_reward * 0.1;
-							$generator = $remain_reward * 0.1;
-						} else {
-							$mn_reward = $segment/10 * $total;
-							$remain_reward = $total - $mn_reward;
-							$miner = $remain_reward * 0.9;
-							$generator = $remain_reward * 0.1;
-							$staker = 0;
-						}
-					}
-					break;
-				case "deflation":
-					$mn_reward = 0.6 * $total;
-					$generator = 0.1 * $total;
-					$miner = 0.2 * $total;
-					$staker = 0.1 * $total;
-					break;
-				default:
-					$total = 0;
-					$miner = 0;
-					$mn_reward = 0;
-					$pos_reward = 0;
-					$generator = 0;
-					$staker = 0;
-			}
-			$out = [
-				'total'=>$total,
-				'miner'=>$miner,
-				'generator'=>$generator,
-				'masternode'=>$mn_reward,
-				'pos'=>$pos_reward,
-				'key'=>"$name-$segment",
-				'phase'=>$name,
-				'segment'=>$segment,
-				'staker'=>$staker
-			];
-			return $out;
-		}
-	}
+    public static function reward($height)
+    {
+        require_once ROOT . "/include/rewards.inc.php";
+        foreach (REWARD_SCHEME as $line) {
+            $start = $line[2];
+            $end = $line[3];
+            if($height>=$start && $height <=$end) {
+                $miner = $line [4];
+                $generator = $line [5];
+                $mn_reward = $line [7];
+                $staker = $line [6];
+                $name = $line[0];
+                $segment = $line[1];
+                $total = $generator + $miner + $staker + $mn_reward;
+                $out = [
+                    'total'=>$total,
+                    'miner'=>$miner,
+                    'generator'=>$generator,
+                    'masternode'=>$mn_reward,
+                    'pos'=>$staker,
+                    'key'=>"{$name}-{$segment}",
+                    'phase'=>$name,
+                    'segment'=>empty($segment) ? null : $segment,
+                    'staker'=>$staker
+                ];
+                return $out;
+            }
+        }
+    }
 
 	public function check(&$err = null)
 	{
@@ -400,7 +352,7 @@ class Block
 
 			// invalid future blocks
 			if ($this->date>time()+30) {
-				throw new Exception("Future block - invalid");
+				throw new Exception("Future block - invalid block date=".$this->date . " diff=".(time() - $this->date));
 			}
 
 			$prev = Block::get($this->height-1);
@@ -631,52 +583,57 @@ class Block
             return true;
         }
 
-		try {
-            _log("Lock delete blocks");
-            $db->lockTables();
-            $db->beginTransaction();
+        return synchronized("block-delete", function() use ($r) {
+            try {
+                global $db;
+                _log("Lock delete blocks");
+//            $db->lockTables();
+                $db->beginTransaction();
 
-			foreach ($r as $x) {
-				$res = Transaction::reverse($x, $err);
-				if ($res === false) {
-					_log("A transaction could not be reversed. Delete block failed.");
-					throw new Exception("A transaction could not be reversed");
-				}
+                foreach ($r as $x) {
+                    $res = Transaction::reverse($x, $err);
+                    if ($res === false) {
+                        _log("A transaction could not be reversed. Delete block failed.");
+                        throw new Exception("A transaction could not be reversed");
+                    }
 
-				$res = Masternode::reverseBlock($x, $merr);
-				if(!$res) {
-					throw new Exception("Reverse masternode winner failed. Error: $merr");
-				}
+                    $res = Masternode::reverseBlock($x, $merr);
+                    if(!$res) {
+                        throw new Exception("Reverse masternode winner failed. Error: $merr");
+                    }
 
-				$res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $x['id']]);
-				if ($res != 1) {
-					throw new Exception("Delete block failed.");
-				} else {
-					_log("Deleted block id=".$x['id']." height=".$x['height']);
-				}
-			}
+                    $res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $x['id']]);
+                    if ($res != 1) {
+                        throw new Exception("Delete block failed.");
+                    } else {
+                        _log("Deleted block id=".$x['id']." height=".$x['height']);
+                    }
+                }
 
-			Masternode::resetVerified();
-			Config::setSync(0);
-			if($db->inTransaction()) {
-				$db->commit();
-                _log("Unlock delete blocks");
-				$db->unlockTables();
-			}
-			Cache::remove("current");
-			Cache::remove("mineInfo");
-			Cache::remove("height");
-			Cache::remove("current_export");
-			return true;
-		} catch (Exception $e) {
-            _log("Error locking delete blocks ".$e->getMessage());
-			Config::setSync(0);
-			if($db->inTransaction()) {
-				$db->rollback();
-				$db->unlockTables();
-			}
-			return false;
-		}
+                Masternode::resetVerified();
+                Config::setSync(0);
+                if($db->inTransaction()) {
+                    $db->commit();
+                    _log("Unlock delete blocks");
+//				$db->unlockTables();
+                }
+                Cache::remove("current");
+                Cache::remove("mineInfo");
+                Cache::remove("height");
+                Cache::remove("current_export");
+                return true;
+            } catch (Exception $e) {
+                _log("Error locking delete blocks ".$e->getMessage());
+                Config::setSync(0);
+                if($db->inTransaction()) {
+                    $db->rollback();
+//				$db->unlockTables();
+                }
+                return false;
+            }
+        });
+
+
 
     }
 
@@ -1066,17 +1023,21 @@ class Block
 		if($height == null) {
 			$height = self::getHeight();
 		}
-		if($height < UPDATE_1_BLOCK_ZERO_TIME) {
-			return "010000";
-		} else if ($height >= UPDATE_1_BLOCK_ZERO_TIME && $height < UPDATE_2_BLOCK_CHECK_IMPROVED) {
-			return "010001";
-		} else if ($height >= UPDATE_2_BLOCK_CHECK_IMPROVED && $height < UPDATE_3_ARGON_HARD) {
-			return "010002";	
-		} else if ($height >= UPDATE_3_ARGON_HARD && $height < UPDATE_6_CHAIN_ID) {
-			return "010003";
-		} else {
-			return CHAIN_ID . "0004";
-		}
+        if(CHAIN_ID == "01") {
+            if ($height < UPDATE_1_BLOCK_ZERO_TIME) {
+                return "010000";
+            } else if ($height >= UPDATE_1_BLOCK_ZERO_TIME && $height < UPDATE_2_BLOCK_CHECK_IMPROVED) {
+                return "010001";
+            } else if ($height >= UPDATE_2_BLOCK_CHECK_IMPROVED && $height < UPDATE_3_ARGON_HARD) {
+                return "010002";
+            } else if ($height >= UPDATE_3_ARGON_HARD && $height < UPDATE_6_CHAIN_ID) {
+                return "010003";
+            } else {
+                return CHAIN_ID . "0004";
+            }
+        } else {
+            return CHAIN_ID . "0000";
+        }
 	}
 
 	static function hashingOptions($height=null) {
@@ -1102,12 +1063,7 @@ class Block
 	}
 
 	static function getMnStartHeight() {
-		$phases = Blockchain::getPhases();
-		foreach ($phases as $phase) {
-			if($phase['name']=="combined") {
-				return $phase['start'];
-			}
-		}
+		return MN_START_HEIGHT;
 	}
 
 	static function getChainId($height=null) {
@@ -1129,35 +1085,48 @@ class Block
 	}
 
 	static function getMasternodeCollateral($height, $next=false) {
-		$heights = array_keys(COLLATERAL_SCHEME);
-		foreach ($heights as $index => $h) {
-			if(isset($heights[$index+1]) && $height >= $heights[$index] && $height < $heights[$index+1]) {
-				if($next) {
-					$collateral = COLLATERAL_SCHEME[$heights[$index+1]];
-				} else {
-					$collateral = COLLATERAL_SCHEME[$h];
-				}
-				break;
-			}
-		}
-
-		if(empty($collateral)) {
-			if($next) {
-				$collateral = COLLATERAL_SCHEME[$heights[count($heights)-1]];
-			} else {
-				$collateral =  COLLATERAL_SCHEME[$h];
-			}
-		}
-
+        require_once ROOT . "/include/rewards.inc.php";
+        foreach (REWARD_SCHEME as $i => $line) {
+            $start = $line[2];
+            $end = $line[3];
+            if($height >= $start && $height <= $end) {
+                $collateral = $line[8];
+                if($next) {
+                    for($j=$i+1; $j<count(REWARD_SCHEME); $j++) {
+                        $line2 = REWARD_SCHEME[$j];
+                        $next_collateral = $line2[8];
+                        if($next_collateral != $collateral) {
+                            $collateral = $next_collateral;
+                            break;
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
 		return $collateral;
 	}
 
 	static function getNextCollateralHeight($height) {
-		$heights = array_keys(COLLATERAL_SCHEME);
-		foreach ($heights as $index => $h) {
-			if(isset($heights[$index+1]) && $height >= $heights[$index] && $height < $heights[$index+1]) {
-				return $heights[$index+1];
-			}
-		}
+        require_once ROOT . "/include/rewards.inc.php";
+        $next_height = null;
+        foreach (REWARD_SCHEME as $i => $line) {
+            $start = $line[2];
+            $end = $line[3];
+            if($height >= $start && $height <= $end) {
+                $collateral = $line[8];
+                for($j=$i+1; $j<count(REWARD_SCHEME); $j++) {
+                    $line2 = REWARD_SCHEME[$j];
+                    $next_collateral = $line2[8];
+                    if($next_collateral != $collateral) {
+                        $collateral = $next_collateral;
+                        $next_height = $line2[2];
+                        break;
+                    }
+                }
+            }
+        }
+        return $next_height;
 	}
 }
