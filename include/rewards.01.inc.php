@@ -1,14 +1,5 @@
 <?php
 
-
-$chain_id = trim(@file_get_contents(dirname(__DIR__)."/chain_id"));
-if($chain_id != DEFAULT_CHAIN_ID) {
-    require_once __DIR__ . "/rewards.".$chain_id.".inc.php";
-    return;
-}
-
-
-
 //	 phase               ,segment   ,start       ,end         ,miner               ,generator ,staker    ,masternode,collateral
 //	 0                   ,1         ,2           ,3           ,4                   ,5         ,6         ,7         ,8         
 const REWARD_SCHEME = [
