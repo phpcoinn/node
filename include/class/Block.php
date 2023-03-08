@@ -64,7 +64,7 @@ class Block
 
 	public function add(&$error = null, $syncing=false)
     {
-        return synchronized("block-add", function () use (&$error, $syncing) {
+        return synchronized("block-lock", function () use (&$error, $syncing) {
 
             try {
 
@@ -583,7 +583,7 @@ class Block
             return true;
         }
 
-        return synchronized("block-delete", function() use ($r) {
+        return synchronized("block-lock", function() use ($r) {
             try {
                 global $db;
                 _log("Lock delete blocks");
@@ -624,11 +624,11 @@ class Block
                 return true;
             } catch (Exception $e) {
                 _log("Error locking delete blocks ".$e->getMessage());
-                Config::setSync(0);
                 if($db->inTransaction()) {
                     $db->rollback();
 //				$db->unlockTables();
                 }
+                Config::setSync(0);
                 return false;
             }
         });

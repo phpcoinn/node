@@ -314,18 +314,6 @@ class Nodeutil
 
 	}
 
-	static function walletEnabled() {
-		global $_config;
-		if(isset($_config['wallet']) && $_config['wallet']
-			&& !empty($_config['wallet_public_key']) && !empty($_config['wallet_private_key']) &&
-			APPS_WALLET_SERVER_PUBLIC_KEY == $_config['wallet_public_key']) {
-			return true;
-		} else {
-			return false;
-		}
-
-	}
-
 	static function extractAppsArchive() {
 		$cmd = "cd ".ROOT."/web && rm -rf apps";
 		shell_exec($cmd);

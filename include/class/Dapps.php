@@ -338,7 +338,7 @@ class Dapps extends Daemon
 		];
 
 		if(file_exists(ROOT."/chain_id")) {
-			$chain_id = file_get_contents(dirname(__DIR__)."/chain_id");
+			$chain_id = trim(file_get_contents(ROOT."/chain_id"));
 			$allowed_files[]=ROOT . "/include/coinspec.".$chain_id.".inc.php";
 		}
 

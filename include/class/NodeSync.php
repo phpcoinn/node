@@ -508,8 +508,6 @@ class NodeSync
 
 	static function syncBlocks() {
 
-        Config::setSync(1);
-
 		global $db;
 		$sql="select p.height as best_height, count(p.id) as peers_cnt, count(distinct p.block_id) as unique_blocks,
 		       max(p.block_id) as best_block_id
@@ -567,6 +565,14 @@ class NodeSync
 		$peersForSync = $db->run($sql, [":height"=>$sync_height, ":block_id"=>$sync_block_id]);
 		_log("Found ".count($peersForSync)." peer to sync");
 
+        if(count($peersForSync)==0) {
+            _log("NO peers for sync - get more peers");
+            $dir = ROOT."/cli";
+            $cmd = "php $dir/util.php get-more-peers";
+            Nodeutil::runSingleProcess($cmd);
+            return;
+        }
+        Config::setSync(1);
 		_log("Sync height = $sync_height block=$sync_block_id peers=".count($peersForSync));
 
 

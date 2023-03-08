@@ -114,10 +114,12 @@ class Transaction
 						throw new Exception("Update balance for reverse transaction failed");
 					}
 					$publicKey = Account::publicKey($tx->dst);
-					$res = Masternode::delete($publicKey);
-					if(!$res) {
-						throw new Exception("Error deleting masternode");
-					}
+                    if($publicKey) {
+                        $res = Masternode::delete($publicKey);
+                        if(!$res) {
+                            throw new Exception("Error deleting masternode spublicKey=$publicKey dst=".$tx->dst);
+                        }
+                    }
 				}
 
 				if ($type == TX_TYPE_MN_REMOVE) {
