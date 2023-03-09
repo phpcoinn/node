@@ -666,7 +666,7 @@ class NodeSync
 						break;
 					}
 
-					_log("Syncing current_height= ".$current['height']." sync_height=$sync_height current_id=".$current['id']." block_id=$sync_block_id");
+					_log("Syncing current_height= ".$current['height']." sync_height=$sync_height current_id=".$current['id']." block_id=$sync_block_id",3);
 					$limit_peers = 10;
 					$peers_cnt = 0;
 					$added = false;
@@ -679,7 +679,7 @@ class NodeSync
 							$syncing = false;
 							break;
 						}
-						_log("Get block ".$current['height']." from peer $hostname");
+						_log("Get block ".$current['height']." from peer $hostname", 5);
 						$peer_block = self::staticGetPeerBlock($hostname, $current['height']);
 //				        _log("get peer block $hostname res=".json_encode($peer_block));
 						if(!$peer_block) {
@@ -693,7 +693,7 @@ class NodeSync
 							_log("Blocks does not match peer=".$peer_block['id']. " my=".$current['id']);
 							continue;
 						}
-						_log("We got ok block - go to next");
+						_log("We got ok block - go to next", 5);
 						$next_block = self::staticGetPeerBlock($hostname, $current['height']+1);
 						if(!$next_block) {
 							_log("Not get next block for peer - check other peer");
@@ -704,26 +704,26 @@ class NodeSync
 							_log("Next block check failed");
 							continue;
 						}
-						_log("Block check ok");
+						_log("Block check ok", 4);
 						$block->prevBlockId = $current['id'];
 						$res = $block->add($err, true);
 						if(!$res) {
 							_log("Error adding block: $err");
 							continue;
 						}
-						_log("Block added");
+						_log("Block added", 4);
 						$res=$block->verifyBlock($err);
 						if(!$res) {
 							_log("Error verify block: $err");
 							$syncing = false;
 							break 2;
 						}
-						_log("Block verified");
+						_log("Block verified", 4);
 						$added = true;
 						break;
 					}
 
-					_log("Finish check peers");
+					_log("Finish check peers", 4);
 
 					if(!$added) {
 
