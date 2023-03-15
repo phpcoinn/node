@@ -163,27 +163,19 @@ class Peer
 
 	static function insert($ip,$hostname) {
 		global $db;
-		if($db->isSqlite()) {
-			$row = $db->run("select * from peers where ip=:ip",[":ip" => $ip]);
-			if($row) {
-				$db->run("update peers set hostname=:hostname where ip=:ip", [":ip" => $ip, ":hostname" => $hostname]);
-			} else {
-				$res = $db->run(
-					"INSERT INTO peers 
-					    (hostname, ping, ip) 
-					    values  (:hostname, ".DB::unixTimeStamp().", :ip) ",
-					[":ip" => $ip, ":hostname" => $hostname]
-				);
-			}
-		} else {
-			$res = $db->run(
-				"INSERT ignore INTO peers 
-				    (hostname, ping, ip) 
-				    values  (:hostname, ".DB::unixTimeStamp().", :ip) 
-					ON DUPLICATE KEY UPDATE hostname=:hostname2",
-				[":ip" => $ip, ":hostname2" => $hostname, ":hostname" => $hostname]
-			);
-		}
+        $peer = $db->run("select * from peers where ip=:ip or hostname=:hostname",[":ip" => $ip, ":hostname"=>$hostname]);
+        _log("Peer:insert: find peer with ip=$ip or hostname=$hostname peer=".json_encode($peer), 5);
+        if($peer) {
+            $res = $db->run("update peers p set p.hostname = :hostname, p.ip = :ip where
+                    p.hostname = :hostname2 or p.ip = :ip2", [":ip" => $ip, ":hostname"=>$hostname, ":ip2"=>$ip, ":hostname2"=>$hostname]);
+            _log("Peer:insert: updated new peer res=$res", 5);
+        } else {
+            _log("Peer:insert: peer not exists");
+            $res = $db->run("INSERT INTO peers
+                (hostname, ping, ip)
+                values  (:hostname, ".DB::unixTimeStamp().", :ip)", [":ip" => $ip, ":hostname" => $hostname]);
+            _log("Peer:insert: peer inserted res=$res", 5);
+        }
 		return $res;
 	}
 
