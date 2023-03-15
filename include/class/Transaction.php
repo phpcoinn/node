@@ -94,12 +94,12 @@ class Transaction
 				if ($type == TX_TYPE_SEND) {
 			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 			        $res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee),$src_height);
-					$res = $res && $tx->add_mempool();
+					$tx->add_mempool();
 		        }
 
 				if ($type == TX_TYPE_BURN) {
 					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee),$src_height);
-					$res = $res && $tx->add_mempool();
+					$tx->add_mempool();
 				}
 
 		        if ($type == TX_TYPE_FEE) {
@@ -109,7 +109,7 @@ class Transaction
 				if ($type == TX_TYPE_MN_CREATE) {
 					$res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 					$res = $res && Account::addBalance($tx->src, floatval($tx->val),$src_height);
-					$res = $res && $tx->add_mempool();
+					$tx->add_mempool();
 					if($res === false) {
 						throw new Exception("Update balance for reverse transaction failed");
 					}
@@ -125,7 +125,7 @@ class Transaction
 				if ($type == TX_TYPE_MN_REMOVE) {
 					$res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 					$res = $res && Account::addBalance($tx->src, floatval($tx->val),$src_height);
-					$res = $res && $tx->add_mempool();
+					$tx->add_mempool();
 					if($res === false) {
 						throw new Exception("Update balance for reverse transaction failed");
 					}
@@ -143,7 +143,7 @@ class Transaction
 
 					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee),$src_height);
-					$res = $res && $tx->add_mempool();
+					$tx->add_mempool();
 
 					$res = $res && SmartContract::reverse($tx, $err);
 					if(!$res) {
@@ -154,7 +154,7 @@ class Transaction
 				if ($type == TX_TYPE_SC_EXEC) {
 					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee),$src_height);
-					$res = $res && $tx->add_mempool();
+					$tx->add_mempool();
 
 					$height = $tx->height;
 					$res = $res && SmartContract::reverseState($tx, $height, $err);
@@ -166,7 +166,7 @@ class Transaction
 				if ($type == TX_TYPE_SC_SEND) {
 					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1), $dst_height);
 					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee), $src_height);
-					$res = $res && $tx->add_mempool();
+					$tx->add_mempool();
 
 					$height = $tx->height;
 					$res = $res && SmartContract::reverseState($tx, $height, $err);
