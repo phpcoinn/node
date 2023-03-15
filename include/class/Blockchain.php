@@ -45,7 +45,7 @@ class Blockchain
 			"reward"=>num($reward['miner']),
 			"version"=>Block::versionCode($current['height']+1),
 			"generator"=>Account::getAddress($_config['generator_public_key']),
-			"ip"=>$_SERVER['REMOTE_ADDR'],
+			"ip"=>$_SERVER['SERVER_ADDR'],
 			"hashingOptions"=>Block::hashingOptions($current['height']+1),
 			"fee"=>Blockchain::getFee(),
 			"network"=>NETWORK,
