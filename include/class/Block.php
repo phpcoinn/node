@@ -546,6 +546,9 @@ class Block
 		if (!$res) {
 			api_err("Could not add the genesis block. Error: $err");
 		}
+        if($block->id != GENESIS_DATA['block']) {
+            api_err("Could not add the genesis block. Error: Invalid block id");
+        }
 
 	}
 

@@ -1,5 +1,5 @@
 <?php
 
 $checkpoints = [
-    1 => "Ab41JQqQZA54TMabcDczWc6toTsV2eJnBnu67ywqfmXw"
+    1 => "2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw"
 ];

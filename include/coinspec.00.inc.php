@@ -7,7 +7,7 @@ const COIN_PORT = "";
 const VERSION = "1.1.25";
 const BUILD_VERSION = 261;
 const MIN_VERSION = "1.1.16";
-const DEVELOPMENT = true;
+const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
 
@@ -37,13 +37,13 @@ const TX_TYPE_BURN = 8;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
-const REMOTE_PEERS_LIST_URL = "https://node1.phpcoin.net/peers.php";
+const REMOTE_PEERS_LIST_URL = "https://main1.phpcoin.net/peers.php";
 
 const MIN_NODE_SCORE = 80;
 
 const FEATURE_MN = true;
 const MN_MIN_RUN_BLOCKS = 1440*30;
-const MN_START_HEIGHT = 2;
+const MN_START_HEIGHT = 20001;
 
 const FEE_START_HEIGHT = PHP_INT_MAX;
 const FEE_DIVIDER = 100;
@@ -53,7 +53,7 @@ const TX_SC_CREATE_FEE = 100;
 const TX_SC_EXEC_FEE = 0.01;
 const SC_START_HEIGHT = PHP_INT_MAX;
 const TX_TYPE_BURN_START_HEIGHT = 0;
-const STAKING_START_HEIGHT = 2;
+const STAKING_START_HEIGHT = 20001;
 const STAKING_COIN_MATURITY = 600;
 const STAKING_MIN_BALANCE = 100;
 

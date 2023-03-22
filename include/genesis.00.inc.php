@@ -1,11 +1,13 @@
 <?php
 const GENESIS_DATA = [
-"signature" => '381yXYw8SJnyZMLcpYDFT8eDrwVpSf5sz55ev7vQ4S9zA6zie3V3yemsumE4BSUUq4NXuEV4em8GGuJKZzDoS4JzqgDjuNbu',
-"public_key" => 'PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCxn7ju38eoR3U7eGi8SSBs9maXFhyhcR98fzsFYvohsU83hiru9ipVWQAJ1eYW7uhNnmavR84X8izevv99ksNWJUt',
-"argon" => '$argon2i$v=19$m=32768,t=2,p=1$bElVZkVaVVVpVGRUdEN5Vg$3W8U++iXBSKyAJUwfmfVSYd9LzjS/fOwaH0u5MU/4fM',
+"signature" => 'iKx1CJQ38Fu3W4uvvyWDqscDHK79SSU5sZcVG2Hdg1VVt8R8mJmn8ppQUQjVj74Z89q22Cqmdw5s44JTJiN5v5XPiUmtoDsHhD',
+"public_key" => 'PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwV8eomW54A8ffNJhS8h3iq1DpzNaDadZvMBSBp6yqKLuebioGkhPjZCGCe59WCVTMmGAHF1qCXaVzKWmCR7KBNEA',
+"argon" => '$argon2i$v=19$m=32768,t=2,p=1$dnN6NVAvUVU5RUt0NzJPQQ$fucz2ipellsRhqbR6g3oAG+wTuzcJi44KsL7D6g1P/A',
 "difficulty" => '60000',
-"nonce" => '1cd8c55203c3fd9c5dba4bc83787933e9e87cdf91b760fdc8501ffd13c7704b5',
-"date" => '1680307200',
-"reward_tx" => '{"FY3wu6xoRNJahneDyYAR1Wg3n7nTtwYvjDA7XUcHnV7z":{"date":1680307200,"dst":"PvUvDCLmhXomiw5kCB8ZfqnvhGmjqNZKyG","fee":"0.00000000","id":"FY3wu6xoRNJahneDyYAR1Wg3n7nTtwYvjDA7XUcHnV7z","message":"Marty McFly: If you put your mind to it, you can accomplish anything.","public_key":"PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCxn7ju38eoR3U7eGi8SSBs9maXFhyhcR98fzsFYvohsU83hiru9ipVWQAJ1eYW7uhNnmavR84X8izevv99ksNWJUt","signature":"iKx1CJMfCYTP3ormxFkc5mDSQXsMMfyu1D67QazSstUJ8AZ3HQng2CST71dSLW8pQoFp2AUifTEQNJjZJMyBUqfUHtDgHQZuap","src":"PvUvDCLmhXomiw5kCB8ZfqnvhGmjqNZKyG","type":0,"val":"103200000.00000000"}}',
+"nonce" => '0215d1ec54cab34df311b623e270c7171e4b7023aee65fde46af07ef62eea2fe',
+"date" => '1680350400',
+"reward_tx" => '{"9YF9wJKWP8cKuGWsaSZEs9QrHF39vzqsbjSG8VuSQwZ8":{"date":1680350400,"dst":"PgngvvRi27gwQrWQQD43Pj6R3cJaABeLTv","fee":"0.00000000","id":"9YF9wJKWP8cKuGWsaSZEs9QrHF39vzqsbjSG8VuSQwZ8","message":"Doc: Roads? Where were going, we dont need roads.","public_key":"PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwV8eomW54A8ffNJhS8h3iq1DpzNaDadZvMBSBp6yqKLuebioGkhPjZCGCe59WCVTMmGAHF1qCXaVzKWmCR7KBNEA","signature":"AN1rKvtKPNusPgcV21viJdDH7VJ9oX84TgVp2b7dB8qPaxL5pxo5WKaK7ymuEbdS9uJ7cgJdzdxYAkJE4JUkXFt2cbPnC7mFU","src":"PgngvvRi27gwQrWQQD43Pj6R3cJaABeLTv","type":0,"val":"103200000.00000000"}}',
+"block" => '2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw',
+"address" => 'PgngvvRi27gwQrWQQD43Pj6R3cJaABeLTv',
 ];
-const GENESIS_TIME = 1680307200;
+const GENESIS_TIME = 1680350400;
