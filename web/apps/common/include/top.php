@@ -9,7 +9,7 @@ if(isset($_COOKIE['theme'])) {
 
 $theme = ($theme == "dark" ? "dark" : "light");
 
-$menuPeers = Peer::getPeersForSync();
+$menuPeers = Peer::findPeers(false, null);
 usort($menuPeers, function($p1, $p2) {
     return strcmp($p2['hostname'], $p1['hostname']);
 })

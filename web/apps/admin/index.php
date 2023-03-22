@@ -639,6 +639,7 @@ require_once __DIR__. '/../common/include/top.php';
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'blacklisted', 'Blacklisted' ,'') ?>
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'ping', 'Ping' ,'') ?>
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'height', 'Height' ,'') ?>
+                        <th>Block</th>
                         <th>Ip</th>
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'version', 'Version' ,'') ?>
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'fails', 'Fails' ,'') ?>
@@ -674,6 +675,7 @@ require_once __DIR__. '/../common/include/top.php';
                             </td>
                             <td nowrap="nowrap"><?php echo display_date($peer['ping']) . " | " . durationFormat(time() - $peer['ping']) ?></td>
                             <td><?php echo $peer['height'] ?></td>
+                            <td><?php echo $peer['block_id'] ?></td>
                             <td><?php echo $peer['ip'] ?></td>
                             <td><?php echo $peer['version'] ?></td>
                             <td><?php echo $peer['fails'] ?></td>

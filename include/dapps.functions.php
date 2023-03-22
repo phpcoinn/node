@@ -50,7 +50,7 @@ function dapps_get_session() {
 	$sessions_dir = ROOT."/tmp/dapps/sessions";
 	$file = "$sessions_dir/sess_$session_id";
 	$contents = file_get_contents($file);
-	session_start();
+	@session_start();
 	session_decode($contents);
 
 	register_shutdown_function(function () use ($file) {
@@ -136,6 +136,10 @@ function dapps_get_url($url = null, $full=false) {
 	return $url;
 }
 
+/**
+ * Retrieves full url of currently running dapp
+ * @return mixed
+ */
 function dapps_get_full_url() {
 	return $_SERVER['DAPPS_FULL_URL'];
 }
@@ -196,6 +200,16 @@ function dapps_exec($code) {
 	exit;
 }
 
+/**
+ * Instructs Dapp to execute some predefined function.
+ * Only works on local calls
+ * Function must be defined in file: /include/dapps.local.inc.php
+ * This call perform redirection
+ *
+ * @param $name string name of function execute
+ * @param ...$params array parameters to pass to the function
+ * @return void
+ */
 function dapps_exec_fn($name, ...$params) {
 	if(!dapps_is_local()) {
 		exit;
@@ -240,6 +254,7 @@ function dapps_get_random_peer() {
  * Calls API function on network node
  * @param null $api - API string to call
  * @param null $node - URL of node to call. If empty node will be random
+ * @param string $error - Returns error message if any
  * @return mixed - response from API
  * @throws Exception
  */
@@ -260,6 +275,11 @@ function dapps_api($api=null, $node=null, &$error = null) {
 
 }
 
+/**
+ * Send response from dapp as json
+ * @param mixed $data - data to return
+ * @return void
+ */
 function dapps_json_response($data) {
 	$action = [
 		"type"=>"dapps_json_response",
@@ -269,6 +289,12 @@ function dapps_json_response($data) {
 	exit;
 }
 
+/**
+ * Send response from dapp as different content type
+ * @param string $content_type - content type in header to return
+ * @param mixed $data - base64 encoded data to return
+ * @return void
+ */
 function dapps_response($content_type, $data) {
 	$action = [
 		"type"=>"dapps_response",

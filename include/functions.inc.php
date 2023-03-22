@@ -424,7 +424,7 @@ function synchronized($name, $handler)
     $filename = ROOT.'/tmp/'.$name.'.lock';
     _logp("synchronized: ".$name);
 
-    if (!mkdir($filename, 0700)) {
+    if (!@mkdir($filename, 0700)) {
         _logf("locked");
         return false;
     }
