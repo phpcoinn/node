@@ -7,12 +7,14 @@ if($chain_id != DEFAULT_CHAIN_ID && file_exists(__DIR__ . "/genesis.".$chain_id.
 }
 
 const GENESIS_DATA = [
-"signature" => 'AN1rKrcHMBADh4ceGUo3hGvoNLFg7kDjJxfYxSgSyCU1JUDefpvFKoycVid53z1SFSX8neNwvRDejYS3Txas2JSvg7wmnpa32',
-"public_key" => 'PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwV8eomW54A8ffNJhS8h3iq1DpzNaDadZvMBSBp6yqKLuebioGkhPjZCGCe59WCVTMmGAHF1qCXaVzKWmCR7KBNEA',
-"argon" => '$argon2i$v=19$m=2048,t=2,p=1$UGduZ3Z2UmkyN2d3UXJXUQ$KLnWlZm784lkgDlOnrmXhbpwruA+5FLQcdWctEwl62U',
-"difficulty" => '60000',
-"nonce" => 'ea1a46a97bd1db6fd9503537d67ec9b6c048047fa9536a3df604bf7c0eaac654',
-"date" => '1636751245',
-"reward_tx" => '{"5KKJEairgawBSAEshhYoxZTuhQbXUBUDEKY4Y2FAuRLz":{"date":1636751245,"dst":"PgngvvRi27gwQrWQQD43Pj6R3cJaABeLTv","fee":"0.00000000","id":"5KKJEairgawBSAEshhYoxZTuhQbXUBUDEKY4Y2FAuRLz","message":"Marty McFly: If you put your mind to it, you can accomplish anything.","public_key":"PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwV8eomW54A8ffNJhS8h3iq1DpzNaDadZvMBSBp6yqKLuebioGkhPjZCGCe59WCVTMmGAHF1qCXaVzKWmCR7KBNEA","signature":"iKx1CJLcMQBxDTaxH8jPLZKiHM5y17vwvJDs9asLmwy5sUHhq8oZXwNvS35ujH3MKwj9H9g31wP2SCyt8RsTdoXVt2GDAf5t87","src":"PgngvvRi27gwQrWQQD43Pj6R3cJaABeLTv","type":0,"val":"4900010.00000000"}}',
+    "signature" => 'iKx1CJQ38Fu3W4uvvyWDqscDHK79SSU5sZcVG2Hdg1VVt8R8mJmn8ppQUQjVj74Z89q22Cqmdw5s44JTJiN5v5XPiUmtoDsHhD',
+    "public_key" => 'PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwV8eomW54A8ffNJhS8h3iq1DpzNaDadZvMBSBp6yqKLuebioGkhPjZCGCe59WCVTMmGAHF1qCXaVzKWmCR7KBNEA',
+    "argon" => '$argon2i$v=19$m=32768,t=2,p=1$dnN6NVAvUVU5RUt0NzJPQQ$fucz2ipellsRhqbR6g3oAG+wTuzcJi44KsL7D6g1P/A',
+    "difficulty" => '60000',
+    "nonce" => '0215d1ec54cab34df311b623e270c7171e4b7023aee65fde46af07ef62eea2fe',
+    "date" => '1680350400',
+    "reward_tx" => '{"9YF9wJKWP8cKuGWsaSZEs9QrHF39vzqsbjSG8VuSQwZ8":{"date":1680350400,"dst":"PgngvvRi27gwQrWQQD43Pj6R3cJaABeLTv","fee":"0.00000000","id":"9YF9wJKWP8cKuGWsaSZEs9QrHF39vzqsbjSG8VuSQwZ8","message":"Doc: Roads? Where were going, we dont need roads.","public_key":"PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwV8eomW54A8ffNJhS8h3iq1DpzNaDadZvMBSBp6yqKLuebioGkhPjZCGCe59WCVTMmGAHF1qCXaVzKWmCR7KBNEA","signature":"AN1rKvtKPNusPgcV21viJdDH7VJ9oX84TgVp2b7dB8qPaxL5pxo5WKaK7ymuEbdS9uJ7cgJdzdxYAkJE4JUkXFt2cbPnC7mFU","src":"PgngvvRi27gwQrWQQD43Pj6R3cJaABeLTv","type":0,"val":"103200000.00000000"}}',
+    "block" => '2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw',
+    "address" => 'PgngvvRi27gwQrWQQD43Pj6R3cJaABeLTv',
 ];
-const GENESIS_TIME = 1636751245;
+const GENESIS_TIME = 1680350400;
