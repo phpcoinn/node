@@ -329,6 +329,7 @@ class Wallet
 		if(DEVELOPMENT) {
 			return "http://spectre:8000";
 		} else {
+            echo "CHAIN: ".DEFAULT_CHAIN_ID . PHP_EOL;
 			echo "Connected to peer: $peer".PHP_EOL;
 			return $peer;
 		}

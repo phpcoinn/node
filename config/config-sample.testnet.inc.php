@@ -6,6 +6,11 @@
 |--------------------------------------------------------------------------
 */
 
+$_config['chain_id'] = trim(file_get_contents(dirname(__DIR__)."/chain_id"));
+if($_config['chain_id'] != DEFAULT_CHAIN_ID) {
+	require_once __DIR__ . "/config.".$_config['chain_id'].".inc.php";
+	return;
+}
 // The database DSN
 $_config['db_connect'] = 'mysql:host=localhost;dbname=ENTER-DB-NAME;charset=utf8';
 // Alternative sqlite db
@@ -52,9 +57,9 @@ $_config['max_test_peers'] = 5;
 
 // The initial peers to sync from
 $_config['initial_peer_list'] = [
-    'https://main1.phpcoin.net',
-    'https://main2.phpcoin.net',
-    'https://main3.phpcoin.net'
+    'https://node1.phpcoin.net',
+    'https://node2.phpcoin.net',
+    'https://node3.phpcoin.net'
 ];
 
 // does not peer with any of the peers. Uses the seed peers and syncs only from those peers. Requires a cronjob on sync.php

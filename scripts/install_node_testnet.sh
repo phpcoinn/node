@@ -1,8 +1,8 @@
 #!/bin/bash
 # setup node on ubuntu server 21.04, 20.04, 18.04
-# one liner: curl -s https://raw.githubusercontent.com/phpcoinn/node/main/scripts/install_node.sh | bash
+# one liner: curl -s https://raw.githubusercontent.com/phpcoinn/node/main/scripts/install_node_testnet.sh | bash
 
-echo "PHPCoin node Installation"
+echo "PHPCoin Tesnet node Installation"
 echo "==================================================================================================="
 echo "PHPCoin: define db user and pass"
 echo "==================================================================================================="
@@ -49,7 +49,7 @@ echo "PHPCoin: setup config file"
 echo "==================================================================================================="
 CONFIG_FILE=config/config.inc.php
 if [ ! -f "$CONFIGFILE" ]; then
-  cp config/config-sample.mainnet.inc.php config/config.inc.php
+  cp config/config-sample.testnet.inc.php config/config.inc.php
   sed -i "s/ENTER-DB-NAME/$DB_NAME/g" config/config.inc.php
   sed -i "s/ENTER-DB-USER/$DB_USER/g" config/config.inc.php
   sed -i "s/ENTER-DB-PASS/$DB_PASS/g" config/config.inc.php
@@ -62,6 +62,10 @@ chown -R www-data:www-data web/apps
 mkdir dapps
 chown -R www-data:www-data dapps
 
+echo "PHPCoin: Set testnet"
+echo "==================================================================================================="
+echo "01" > /var/www/phpcoin/chain_id
+
 export IP=$(curl -s http://whatismyip.akamai.com/)
 echo "PHPCoin: open start page"
 echo "==================================================================================================="
@@ -72,10 +76,10 @@ sleep 5
 echo "PHPCoin: import blockchain"
 echo "==================================================================================================="
 cd /var/www/phpcoin/tmp
-wget https://phpcoin.net/download/blockchain.sql.zip -O blockchain.sql.zip
-unzip -o blockchain.sql.zip
+wget https://phpcoin.net/download/blockchain-testnet.sql.zip -O blockchain-testnet.sql.zip
+unzip -o blockchain-testnet.sql.zip
 cd /var/www/phpcoin
-php cli/util.php importdb tmp/blockchain.sql
+php cli/util.php importdb tmp/blockchain-testnet.sql
 
 echo "PHPCoin: Setup node automatic update"
 echo "==================================================================================================="
