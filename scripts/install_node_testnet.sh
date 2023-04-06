@@ -6,9 +6,10 @@ echo "PHPCoin Tesnet node Installation"
 echo "==================================================================================================="
 echo "PHPCoin: define db user and pass"
 echo "==================================================================================================="
-export DB_NAME=phpcoin
+export DB_NAME=phpcointest
 export DB_USER=phpcoin
 export DB_PASS=phpcoin
+export NODE_DIR=/var/www/phpcoin-testnet
 
 echo "PHPCoin: update system"
 echo "==================================================================================================="
@@ -25,16 +26,16 @@ mysql -e "grant all privileges on $DB_NAME.* to '$DB_USER'@'localhost';"
 
 echo "PHPCoin: download node"
 echo "==================================================================================================="
-mkdir /var/www/phpcoin
-cd /var/www/phpcoin
+mkdir $NODE_DIR
+cd $NODE_DIR
 git clone https://github.com/phpcoinn/node .
 
 echo "PHPCoin: Configure apache"
 echo "==================================================================================================="
-cat << "EOF" > /etc/apache2/sites-available/phpcoin.conf
+cat << EOF > /etc/apache2/sites-available/phpcoin.conf
 <VirtualHost *:80>
         ServerAdmin webmaster@localhost
-        DocumentRoot /var/www/phpcoin/web
+        DocumentRoot $NODE_DIR/web
         ErrorLog ${APACHE_LOG_DIR}/phpcoin.error.log
         RewriteEngine on
         RewriteRule ^/dapps/(.*)$ /dapps.php?url=$1
@@ -64,7 +65,7 @@ chown -R www-data:www-data dapps
 
 echo "PHPCoin: Set testnet"
 echo "==================================================================================================="
-echo "01" > /var/www/phpcoin/chain_id
+echo "01" > $NODE_DIR/chain_id
 
 export IP=$(curl -s http://whatismyip.akamai.com/)
 echo "PHPCoin: open start page"
@@ -75,19 +76,27 @@ sleep 5
 
 echo "PHPCoin: import blockchain"
 echo "==================================================================================================="
-cd /var/www/phpcoin/tmp
+cd $NODE_DIR/tmp
 wget https://phpcoin.net/download/blockchain-testnet.sql.zip -O blockchain-testnet.sql.zip
 unzip -o blockchain-testnet.sql.zip
-cd /var/www/phpcoin
+cd $NODE_DIR
 php cli/util.php importdb tmp/blockchain-testnet.sql
 
 echo "PHPCoin: Setup node automatic update"
 echo "==================================================================================================="
-cd /var/www/phpcoin/scripts
-chmod +x install_update.sh
-./install_update.sh
+CRON_LINE="cd $NODE_DIR && php cli/util.php update"
+CRON_EXISTS=$(crontab -l | grep "$CRON_LINE" | wc -l)
 
-rm -rf /var/www/phpcoin/tmp/sync-lock
+if [ $CRON_EXISTS -eq 0 ]
+then
+	crontab -l | { cat; echo "*/5 * * * * $CRON_LINE"; } | crontab -
+	echo "Added new cron line"
+else
+	echo "Cron entry exists"
+fi
+
+
+rm -rf $NODE_DIR/tmp/sync-lock
 
 echo "==================================================================================================="
 echo "PHPCoin: Install finished"
