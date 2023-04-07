@@ -858,6 +858,10 @@ class Util
 			$res = shell_exec($cmd);
 			_log("cmd=$cmd res=$res", 5);
 
+            $cmd = "cd ".ROOT." && echo \"".CHAIN_ID."\" > chain_id";
+            $res = shell_exec($cmd);
+            _log("cmd=$cmd res=$res", 5);
+
 //			Util::recalculateMasternodes();
 
 //			$cmd="cd ".ROOT." && chown -R www-data:www-data web";
