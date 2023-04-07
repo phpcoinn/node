@@ -858,7 +858,14 @@ class Util
 			$res = shell_exec($cmd);
 			_log("cmd=$cmd res=$res", 5);
 
-            $cmd = "cd ".ROOT." && echo \"".CHAIN_ID."\" > chain_id";
+            $block = Block::get(1);
+            if($block['id']=="2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw") {
+                $chain_id = "00";
+            } else {
+                $chain_id = "01";
+            }
+
+            $cmd = "cd ".ROOT." && echo \"$chain_id\" > chain_id";
             $res = shell_exec($cmd);
             _log("cmd=$cmd res=$res", 5);
 
