@@ -122,4 +122,16 @@ if (empty($_config['hostname']) || $_config['hostname'] == "http://" || $_config
     api_err("Invalid hostname");
 }
 
+$block = Block::get(1);
+
+if($block['id']=="2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw") {
+    if(CHAIN_ID != "00") {
+        api_err("Invalid chain. Please check coinspec.inc.files");
+    }
+} else {
+    if(CHAIN_ID != "01") {
+        api_err("Invalid chain. Please check coinspec.inc.files");
+    }
+}
+
 require_once __DIR__ . "/daemons.inc.php";
