@@ -65,7 +65,7 @@ if($db->isSqlite()) {
     $db->exec('PRAGMA journal_mode=WAL;');
     $db->exec("PRAGMA busy_timeout=5000");
 } else {
-    $db->exec('set SESSION innodb_lock_wait_timeout=5');
+//    $db->exec('set SESSION innodb_lock_wait_timeout=5');
 }
 
 
