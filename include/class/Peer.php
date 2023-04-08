@@ -170,11 +170,10 @@ class Peer
                     p.hostname = :hostname2 or p.ip = :ip2", [":ip" => $ip, ":hostname"=>$hostname, ":ip2"=>$ip, ":hostname2"=>$hostname]);
             _log("Peer:insert: updated new peer res=$res", 5);
         } else {
-            _log("Peer:insert: peer not exists");
             $res = $db->run("INSERT INTO peers
                 (hostname, ping, ip)
                 values  (:hostname, ".DB::unixTimeStamp().", :ip)", [":ip" => $ip, ":hostname" => $hostname]);
-            _log("Peer:insert: peer inserted res=$res", 5);
+            _log("Peer:insert: peer not exists $ip $hostname res=$res", 4);
         }
 		return $res;
 	}

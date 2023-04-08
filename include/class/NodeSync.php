@@ -760,9 +760,9 @@ class NodeSync
 				}
 
 				$current_height = Block::getHeight();
-//				if($current_height > $start_height) {
-                Propagate::blockToAll('currrent');
-//				}
+				if($current_height > $start_height) {
+                    Propagate::blockToAll('current');
+				}
 		}
 
         Config::setSync(0);
