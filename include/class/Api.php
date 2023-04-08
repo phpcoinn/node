@@ -712,9 +712,9 @@ class Api
 		if(!$res) {
 			api_err("Signature verification failed");
 		}
-		if(is_readable(ROOT."/config/config.inc.php")) {
-			api_err("Config file is readable");
-		}
+//		if(is_readable(ROOT."/config/config.inc.php")) {
+//			api_err("Config file is readable");
+//		}
 		$cmd = $msg_decoded['cmd'];
 		if(empty($cmd)) {
 			api_err("Empty command");

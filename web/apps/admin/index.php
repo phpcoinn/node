@@ -634,6 +634,7 @@ require_once __DIR__. '/../common/include/top.php';
                 <table class="table table-sm table-striped dataTable">
                     <thead class="table-light">
                     <tr>
+                        <th>Action</th>
                         <th>Id</th>
                         <th>Hostname</th>
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'blacklisted', 'Blacklisted' ,'') ?>
@@ -651,7 +652,6 @@ require_once __DIR__. '/../common/include/top.php';
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'response_time', 'Response time' ,'') ?>
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'response_cnt', 'Response count' ,'') ?>
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'response_time/response_cnt', 'Response avg' ,'') ?>
-                        <th></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -660,6 +660,10 @@ require_once __DIR__. '/../common/include/top.php';
                         $table_class = $peer['blacklisted'] > time() ? "table-danger" : ($live ? "table-success" : "");
                         ?>
                         <tr  class="<?php echo $table_class ?>">
+                            <td class="text-nowrap">
+                                <a class="btn btn-danger btn-xs" href="<?php echo APP_URL ?>/?action=delete_peer&id=<?php echo $peer['id']  ?>" onclick="if(!confirm('Delete peer?')) return false;">Delete</a>
+                                <a class="btn btn-warning btn-xs" href="<?php echo APP_URL ?>/?action=repeer&id=<?php echo $peer['id']  ?>&peer=<?php echo $peer['hostname'] ?>">Re-peer</a>
+                            </td>
                             <td><?php echo $peer['id'] ?></td>
                             <td>
                                 <a href="<?php echo $peer['hostname'] ?>" target="_blank">
@@ -695,10 +699,6 @@ require_once __DIR__. '/../common/include/top.php';
                                 }
                                 ?>
                                 <span title="total=<?php echo $total ?> cnt=<?php echo $cnt ?>"><?php echo $avg ?></span>
-                            </td>
-                            <td class="text-nowrap">
-                                <a class="btn btn-danger btn-xs" href="<?php echo APP_URL ?>/?action=delete_peer&id=<?php echo $peer['id']  ?>" onclick="if(!confirm('Delete peer?')) return false;">Delete</a>
-                                <a class="btn btn-warning btn-xs" href="<?php echo APP_URL ?>/?action=repeer&id=<?php echo $peer['id']  ?>&peer=<?php echo $peer['hostname'] ?>">Re-peer</a>
                             </td>
                         </tr>
                     <?php } ?>

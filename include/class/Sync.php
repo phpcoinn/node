@@ -31,7 +31,7 @@ class Sync extends Daemon
 
 		$now = time();
 		$sync_last = Config::getVal('sync_last');
-		_log("Check sync last: $sync_last elapsed = ".($now - $sync_last));
+		_log("Check sync last: $sync_last elapsed = ".($now - $sync_last), 3);
 		if(Config::isSync() && ($now - $sync_last > 60*60*2)) {
 			_log("Set sync = 0");
 			Config::setSync(0);
@@ -98,7 +98,7 @@ class Sync extends Daemon
 		Cache::clearOldFiles();
 
         $cmd='find '.ROOT.'/tmp -name "*.lock" -mmin +1 -exec rm -rf {} +';
-        _log("Remove lock files cmd=$cmd");
+        _log("Remove lock files cmd=$cmd", 3);
         shell_exec($cmd);
 
 		_log("Finishing sync",3);

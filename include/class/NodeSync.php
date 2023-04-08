@@ -563,7 +563,7 @@ class NodeSync
 			  order by p.response_time / p.response_cnt";
 
 		$peersForSync = $db->run($sql, [":height"=>$sync_height, ":block_id"=>$sync_block_id]);
-		_log("Found ".count($peersForSync)." peer to sync");
+		_log("Found ".count($peersForSync)." peer to sync", 3);
 
         if(count($peersForSync)==0) {
             _log("NO peers for sync - get more peers");
@@ -792,7 +792,7 @@ class NodeSync
 			$block = Block::get($height);
 			if(!empty($block)) {
 				$block_ok = $block['id'] == $block_id;
-				_log("Compare checkpoint $height - $block_id block_ok=$block_ok");
+				_log("Compare checkpoint $height - $block_id block_ok=$block_ok", 2);
 				if(!$block_ok) {
 					$invalid_height = $height;
 					break;
@@ -821,7 +821,7 @@ class NodeSync
 		$count = $db->single($sql);
 		$sql="select max(height) from blocks";
 		$max = $db->single($sql);
-		_log("checkBlocks count=$count max=$max");
+		_log("checkBlocks count=$count max=$max", 3);
 		if($count == $max) {
 			return true;
 		} else {
