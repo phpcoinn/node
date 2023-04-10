@@ -26,7 +26,7 @@ $balance = Account::pendingBalance($address);
 $public_key = Account::publicKey($address);
 
 $dm=get_data_model(AccountgetCountByAddress($address),
-    '/apps/explorer/address.php?address='.$address);
+    '/apps/explorer/address.php?address='.$address, "", 100);
 
 $transactions = Account::getTransactions($address, $dm);
 $addressStat = Transaction::getAddressStat($address);
@@ -146,6 +146,7 @@ require_once __DIR__. '/../common/include/top.php';
             <th>Id</th>
             <th>Date</th>
             <th>Height</th>
+            <th>Conf</th>
             <th>Block</th>
             <th>From/To</th>
             <th>Type</th>
@@ -174,6 +175,7 @@ require_once __DIR__. '/../common/include/top.php';
                 <td><?php echo display_date($transaction['date']) ?></td>
                 <td><a href="/apps/explorer/block.php?height=<?php echo $transaction['height'] ?>">
                         <?php echo $transaction['height'] ?></a></td>
+                <td><?php echo $transaction['confirmations'] ?></td>
                 <td><a href="/apps/explorer/block.php?height=<?php echo $transaction['height'] ?>">
                         <?php echo truncate_hash($transaction['block']) ?></a></td>
                 <td><a href="/apps/explorer/address.php?address=<?php echo $party ?>">

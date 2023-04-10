@@ -10,4 +10,7 @@ $checkpoints = [
     6000 => "6Z3uV4ZGaxKsLiG5qH9rt8G5AUHsumGSU78pqTqcz5jg",
     7000 => "FWGgn7MvCSGHGQfPAiqLq7ALhR19BMLMTj3D9H6Mcn29",
     8000 => "GJJY4Bc8mHe7zCPMNaE64vD7S6ZY8HzYCtozFRUqiNCN",
+    9000 => "32c1PmcubjHeGtUjsGAiNZ1nRngk18kRvUeT6y1CtY6i",
+    10000 => "5FCNEW8bRgb6pv7YXub755ijSU2DQJ15EqSdd4USMj98",
+    11000 => "GkH9S8LqQ3X5VWvKwxgScvSYuLjeQoDxdc1Y2pFcoMEt",
 ];

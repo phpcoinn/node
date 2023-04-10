@@ -32,8 +32,7 @@ function explorer_tx_link($id, $short=false) {
 	return '<a href="/apps/explorer/tx.php?id='.$id.'" '.($short?'title="'.$id.'" data-bs-toggle="tooltip"':'').'>'.$text.'</a>';
 }
 
-function get_data_model($total, $link, $default_sorting = "") {
-	$rowsPerPage = 10;
+function get_data_model($total, $link, $default_sorting = "", $rowsPerPage=10) {
 	$pages = ceil($total / $rowsPerPage);
 	$page = 1;
 	if(isset($_GET['page'])) {
