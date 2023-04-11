@@ -1,6 +1,4 @@
-# node
-
-The PHPCoin (PHP) cryptocurrency node.
+# The PHPCoin (PHP) cryptocurrency node.
 
 Name: PHPCoin
 
