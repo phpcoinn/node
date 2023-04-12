@@ -5,7 +5,7 @@ if(!defined("ROOT")) {
 
 }
 
-const DEFAULT_CHAIN_ID = "01";
+const DEFAULT_CHAIN_ID = "00";
 
 require_once ROOT . "/include/coinspec.inc.php";
 require_once ROOT . "/include/common.functions.php";
