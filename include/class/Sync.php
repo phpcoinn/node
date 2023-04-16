@@ -113,7 +113,7 @@ class Sync extends Daemon
         Daemon::runAtInterval("auto_update", 5, function() {
             _log("Run auto update", 5);
             $dir = ROOT."/cli";
-            $cmd = "php $dir/util.php update";
+            $cmd = "php $dir/util.php update >> ".ROOT."/tmp/update.log";
             Nodeutil::runSingleProcess($cmd);
         });
     }
