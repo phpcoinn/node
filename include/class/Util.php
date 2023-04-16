@@ -847,16 +847,6 @@ class Util
 		if($version > $currentVersion || $build_number > $currentVersion || !empty($force)) {
 			echo "There is new version: $version - updating node".PHP_EOL;
 
-            _log("Check node folder user permissions");
-            $user = trim(shell_exec("stat -c '%U' ".ROOT));
-            $perms = trim(shell_exec("stat -c '%a' ".ROOT));
-            if($user != "www-data") {
-                shell_exec("chown -R www-data:www-data ".ROOT);
-            }
-            if($perms != 755) {
-                shell_exec("chmod -R 755 ".ROOT);
-            }
-
 			$cmd="cd ".ROOT." && git restore .";
 			$res = shell_exec($cmd);
 			_log("cmd=$cmd res=$res", 5);
@@ -880,6 +870,11 @@ class Util
             $cmd = "cd ".ROOT." && echo \"$chain_id\" > chain_id";
             $res = shell_exec($cmd);
             _log("cmd=$cmd res=$res", 5);
+
+            _log("Set node folder user permissions");
+            shell_exec("chown -R www-data:www-data ".ROOT);
+            shell_exec("chmod -R 755 ".ROOT);
+            shell_exec("git config --global --add safe.directory ".ROOT);
 
 //			Util::recalculateMasternodes();
 
