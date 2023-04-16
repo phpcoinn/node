@@ -547,13 +547,25 @@ class NodeSync
 		$current = Block::current();
 		$current_height = $current['height'];
 
-		$sync_height = $best_height;
-		$sync_block_id = $best_block_id;
 
-		if($longest_height > $best_height) {
-			$sync_height = $longest_height;
-			$sync_block_id = $longest_block_id;
-		}
+        if(NETWORK == "mainnet") {
+            $sync_height = $best_height;
+            $sync_block_id = $best_block_id;
+
+            if($longest_height > $best_height) {
+                $sync_height = $longest_height;
+                $sync_block_id = $longest_block_id;
+            }
+        } else {
+            $sync_height = min($longest_height, $best_height);
+            if($sync_height == $longest_height) {
+                $sync_block_id = $longest_block_id;
+            } else {
+                $sync_block_id = $best_block_id;
+            }
+        }
+
+
 
 		$sql="select * from peers p
 			where p.height = :height
