@@ -827,7 +827,12 @@ class Util
 		$branch = trim($argv[2]);
 		$force = trim($argv[3]);
 		if(empty($branch)) {
-			$branch = "main";
+            $block = Block::get(1);
+            if($block['id']=="2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw") {
+                $branch = "main";
+            } else {
+                $branch = "test";
+            }
 		}
 		$currentVersion = BUILD_VERSION;
 		echo "Checking node update current version = ".BUILD_VERSION.PHP_EOL;
