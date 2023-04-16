@@ -897,6 +897,11 @@ class Util
 		Peer::deleteWrongHostnames();
 		Dapps::createDir();
 		$mnCount = Masternode::getCount();
+        if(ROOT != "/var/www/phpcoin") {
+            $cmd = 'echo "cd '.ROOT.' && php cli/util.php update  >> '.ROOT.'/tmp/update.log" | at "now + 5 minutes"';
+            $res = shell_exec($cmd);
+            _log("cmd=$cmd res=$res", 5);
+        }
 		echo "Finished".PHP_EOL;
 	}
 
