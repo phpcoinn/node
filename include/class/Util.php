@@ -834,8 +834,8 @@ class Util
                 $branch = "test";
             }
 		}
-		$currentVersion = BUILD_VERSION;
-		echo "Checking node update current version = ".BUILD_VERSION.PHP_EOL;
+        $currentVersion = BUILD_VERSION;
+		echo "Checking node branch=$branch force=$force update current version = ".BUILD_VERSION.PHP_EOL;
 		$build_number = Peer::getMaxBuildNumber();
 		$cmd= "curl -H 'Cache-Control: no-cache, no-store' -s https://raw.githubusercontent.com/phpcoinn/node/$branch/include/coinspec.inc.php | grep BUILD_VERSION";
 		$res = shell_exec($cmd);
@@ -854,7 +854,7 @@ class Util
 			$res = shell_exec($cmd);
 			_log("cmd=$cmd res=$res", 5);
 
-			$cmd="cd ".ROOT." && git checkout -- .";
+			$cmd="cd ".ROOT." && git checkout -b $branch";
 			$res = shell_exec($cmd);
 			_log("cmd=$cmd res=$res", 5);
 
