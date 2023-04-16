@@ -834,6 +834,7 @@ class Util
                 $branch = "test";
             }
 		}
+
         $currentVersion = BUILD_VERSION;
 		echo "Checking node branch=$branch force=$force update current version = ".BUILD_VERSION.PHP_EOL;
 		$build_number = Peer::getMaxBuildNumber();
@@ -845,10 +846,16 @@ class Util
 		$version = intval($version);
 		if($version > $currentVersion || $build_number > $currentVersion || !empty($force)) {
 			echo "There is new version: $version - updating node".PHP_EOL;
-			//temp fix apps
-//			$cmd="cd ".ROOT." && rm -rf web/apps";
-//			$res = shell_exec($cmd);
-//			_log("cmd=$cmd res=$res", 5);
+
+            _log("Check node folder user permissions");
+            $user = trim(shell_exec("stat -c '%U' ".ROOT));
+            $perms = trim(shell_exec("stat -c '%a' ".ROOT));
+            if($user != "www-data") {
+                shell_exec("chown -R www-data:www-data ".ROOT);
+            }
+            if($perms != 755) {
+                shell_exec("chmod -R 755 ".ROOT);
+            }
 
 			$cmd="cd ".ROOT." && git restore .";
 			$res = shell_exec($cmd);
