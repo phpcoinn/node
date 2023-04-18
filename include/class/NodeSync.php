@@ -352,30 +352,35 @@ class NodeSync
 		}
 	}
 
-	static function verifyLastBlocks($num=10) {
-		$current = Block::current();
-		if ($num > 0) {
-			_log("Rechecking blocks",3);
-			$all_blocks_ok = true;
-			$start = $current['height'] - $num;
-			if ($start < 2) {
-				$start = 2;
-			}
-			$max_height = $current['height'];
-			for ($i = $start + 1; $i <= $max_height; $i++) {
-				$block = Block::export("",$i);
-				$res = Block::getFromArray($block)->verifyBlock($error);
-				if(!$res) {
-					_log("Invalid block detected. Deleting block height ".$i);
-					$all_blocks_ok = false;
-					Block::delete($i);
-					break;
-				}
-			}
-			if ($all_blocks_ok) {
-				_log("All checked blocks are ok", 3);
-			}
-		}
+	static function verifyLastBlocks($minutes=30, $num=60) {
+        Daemon::runAtInterval("verifyLastBlocks", 30, function() use ($num) {
+            $current = Block::current();
+            if ($num > 0) {
+                _log("verifyLastBlocks: Rechecking blocks",3);
+                $all_blocks_ok = true;
+                $start = $current['height'] - $num;
+                if ($start < 2) {
+                    $start = 2;
+                }
+                $max_height = $current['height'];
+                for ($i = $start + 1; $i <= $max_height; $i++) {
+                    $block = Block::export("",$i);
+                    $res = Block::getFromArray($block)->verifyBlock($error);
+                    if(!$res) {
+                        _log("verifyLastBlocks: Invalid block detected. Deleting block height ".$i);
+                        $all_blocks_ok = false;
+                        Block::delete($i);
+                        break;
+                    }
+                }
+                if ($all_blocks_ok) {
+                    _log("verifyLastBlocks: All checked blocks are ok", 3);
+                }
+            }
+        });
+
+
+
 	}
 
 	static function getPeerBlocksMap() {

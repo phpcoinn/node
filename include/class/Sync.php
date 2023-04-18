@@ -64,7 +64,7 @@ class Sync extends Daemon
 
 		Mempool::deleteOldMempool();
 //		NodeSync::checkForkedBlocks();
-        NodeSync::verifyLastBlocks(30); //switch to run on hour
+        NodeSync::verifyLastBlocks(); //switch to run on hour
 		NodeSync::syncBlocks();
 		$peersForSync = Peer::getValidPeersForSync();
 		$nodeSync = new NodeSync($peersForSync);
