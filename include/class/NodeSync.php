@@ -729,7 +729,7 @@ class NodeSync
 						if(!$res) {
 							_log("Error verify block: $err");
 							$syncing = false;
-							break 2;
+							break;
 						}
 						_log("Block verified", 4);
 						$added = true;
