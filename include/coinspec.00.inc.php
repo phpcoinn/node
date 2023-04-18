@@ -4,9 +4,9 @@
 const NETWORK = "mainnet";
 const CHAIN_ID = "00";
 const COIN_PORT = "";
-const VERSION = "1.1.33";
-const BUILD_VERSION = 299;
-const MIN_VERSION = "1.1.30";
+const VERSION = "1.1.34";
+const BUILD_VERSION = 300;
+const MIN_VERSION = "1.1.33";
 const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
@@ -77,4 +77,4 @@ const FEATURE_APPS = false;
 const MAIN_DAPPS_ID = "PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3";
 const TOTAL_INITIAL_SUPPLY = 103200000;
 
-const STOP_CHAIN_HEIGHT = 21300;
+const STOP_CHAIN_HEIGHT = PHP_INT_MAX;
