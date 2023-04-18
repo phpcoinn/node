@@ -548,22 +548,22 @@ class NodeSync
 		$current_height = $current['height'];
 
 
-        if(NETWORK == "mainnet-alpha") {
+//        if(NETWORK == "mainnet-alpha") {
             $sync_height = min($longest_height, $best_height);
             if($sync_height == $longest_height) {
                 $sync_block_id = $longest_block_id;
             } else {
                 $sync_block_id = $best_block_id;
             }
-        } else {
-            $sync_height = $best_height;
-            $sync_block_id = $best_block_id;
-
-            if($longest_height > $best_height) {
-                $sync_height = $longest_height;
-                $sync_block_id = $longest_block_id;
-            }
-        }
+//        } else {
+//            $sync_height = $best_height;
+//            $sync_block_id = $best_block_id;
+//
+//            if($longest_height > $best_height) {
+//                $sync_height = $longest_height;
+//                $sync_block_id = $longest_block_id;
+//            }
+//        }
 
 
 
@@ -658,8 +658,8 @@ class NodeSync
 
 		if($current_height == $sync_height) {
 			_log("Blockchain is synced");
-		} else if ($sync_height < $current_height && NETWORK != "mainnet-alpha") {
-			_log("We are ahead of peers");
+//		} else if ($sync_height < $current_height && NETWORK != "mainnet-alpha") {
+//			_log("We are ahead of peers");
 		} else {
 			_log("Need to sync blokchain");
 
@@ -673,7 +673,7 @@ class NodeSync
 					$current = Block::export("", Block::getHeight());
 					$syncing = (($current['height'] < $sync_height && $sync_height > 1)
 						|| ($current['height'] == $sync_height && $current['id'] != $sync_block_id)
-                        || ($longest_height != $best_height && NETWORK == "mainnet-alpha"));
+                        || ($longest_height != $best_height));
 
 					if (!$syncing) {
 						break;
@@ -758,14 +758,14 @@ class NodeSync
                         $diff = $sync_height - $current['height'];
 						_log("Can not add new block  sync_height=$sync_height height=".$current['height']." diff=$diff");
                         Block::pop();
-                        if($diff > 100 || NETWORK == "mainnet-alpha") { //test condition on tetsnet
+//                        if($diff > 100 || NETWORK == "mainnet-alpha") { //test condition on tetsnet
                             $dir = ROOT."/cli";
                             $peer = $peersForSync[0];
                             _log("Trigger deep check with ".$peer['hostname']);
                             $cmd = "php $dir/deepcheck.php ".$peer['hostname'];
                             $check_cmd = "php $dir/deepcheck.php";
                             Nodeutil::runSingleProcess($cmd, $check_cmd);
-                        }
+//                        }
 						$syncing = false;
 						break;
 					}
