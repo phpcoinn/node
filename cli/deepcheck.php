@@ -75,18 +75,53 @@ if($res>0) {
 	$res = peer_post($url, [], 5, $err );
 	_log("Requested deep check res=".json_encode($res));
 } else if ($res<0) {
-	_log("Other block is winner");
 	$my_winner = false;
 	$winner = $peer_block;
 	$height = Block::getHeight();
 	$diff = $height - $invalid_height;
 	$delete_height = $invalid_height;
+	_log("Other block is winner diff=$diff");
 	if($diff > 100) {
 		_log("Delete only last 100 blocks");
 		$delete_height = $height - 100;
 	}
 	_log("Delete up to height $delete_height");
 	Block::delete($delete_height);
+    Config::setSync(1);
+    $block = Block::getFromArray($peer_block);
+    _log("Peer block add ".$peer_block['height']." id=".$peer_block['id']);
+    $block_error = false;
+    if (!$block->check()) {
+        _log("Peer block check failed");
+    } else {
+        _log("Peer Block check ok");
+        $current = Block::current();
+        $block->prevBlockId = $current['id'];
+        $res = $block->add($err, false);
+        if(!$res) {
+            _log("Error adding block: $err");
+            $block_error = true;
+        } else {
+            _log("Block added");
+            $res=$block->verifyBlock($err);
+            if(!$res) {
+                _log("Error verify block: $err");
+            } else {
+                _log("Block verified");
+                $block_error = true;
+            }
+        }
+    }
+    if($block_error) {
+        _log("My block is still winner");
+        $my_winner = true;
+        $winner = $block;
+        Peer::blacklist($peer['id'], "Invalid block $height");
+        $url = $peer['hostname'] . "/peer.php?q=deepCheck";
+        $res = peer_post($url, [], 5, $err );
+        _log("Requested deep check res=".json_encode($res));
+    }
+    Config::setSync(0);
 } else {
 	_log("Blocks are actually same");
 }

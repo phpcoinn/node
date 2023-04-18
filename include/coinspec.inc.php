@@ -10,7 +10,7 @@ const NETWORK = "mainnet";
 const CHAIN_ID = "00";
 const COIN_PORT = "";
 const VERSION = "1.1.33";
-const BUILD_VERSION = 297;
+const BUILD_VERSION = 298;
 const MIN_VERSION = "1.1.30";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -82,4 +82,4 @@ const FEATURE_APPS = false;
 const MAIN_DAPPS_ID = "PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3";
 const TOTAL_INITIAL_SUPPLY = 103200000;
 
-const STOP_CHAIN_HEIGHT = PHP_INT_MAX;
+const STOP_CHAIN_HEIGHT = 21300;
