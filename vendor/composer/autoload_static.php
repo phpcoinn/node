@@ -21,6 +21,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         'Cache' => __DIR__ . '/../..' . '/include/class/Cache.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Config' => __DIR__ . '/../..' . '/include/class/Config.php',
+        'Cron' => __DIR__ . '/../..' . '/include/class/Cron.php',
         'Daemon' => __DIR__ . '/../..' . '/include/class/Daemon.php',
         'Dapps' => __DIR__ . '/../..' . '/include/class/Dapps.php',
         'Job' => __DIR__ . '/../..' . '/include/class/Job.php',

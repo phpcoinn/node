@@ -844,16 +844,16 @@ class Util
 		$version = str_replace(";", "", $version);
 		$version = intval($version);
         $user = shell_exec("whoami");
-        _log("AUTO_UPDATE: call php util branch=$branch force=$force currentVersion=$currentVersion version=$version maxPeerBuildNumber=$maxPeerBuildNumber user=$user");
+        _log("AUTO_UPDATE: call php util branch=$branch force=$force node version=$currentVersion git version=$version maxPeerBuildNumber=$maxPeerBuildNumber user=$user");
 		if($version > $currentVersion || $maxPeerBuildNumber > $currentVersion || !empty($force)) {
 			echo "There is new version: $version - updating node".PHP_EOL;
             _log("AUTO_UPDATE: Updating node");
 
-            $cmd="git config --global --unset-all safe.directory ".ROOT;
+            $cmd="git config --unset-all safe.directory ".ROOT;
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res");
 
-            $cmd="git config --global --add safe.directory ".ROOT;
+            $cmd="git config --add safe.directory ".ROOT;
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res");
 
@@ -868,8 +868,12 @@ class Util
 			$cmd="cd ".ROOT." && git checkout -b $branch";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res");
+//
+//			$cmd="cd ".ROOT." && git reset --hard origin/$branch";
+//			$res = shell_exec($cmd);
+//			_log("AUTO_UPDATE: cmd=$cmd res=$res");
 
-			$cmd="cd ".ROOT." && git reset --hard origin/$branch";
+			$cmd="cd ".ROOT." && git pull origin $branch";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res");
 

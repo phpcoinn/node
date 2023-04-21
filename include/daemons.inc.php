@@ -4,3 +4,4 @@ Dapps::checkDaemon();
 NodeMiner::checkDaemon();
 Sync::checkDaemon();
 Masternode::checkDaemon();
+Cron::checkDaemon();

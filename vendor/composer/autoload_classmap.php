@@ -14,6 +14,7 @@ return array(
     'Cache' => $baseDir . '/include/class/Cache.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
     'Config' => $baseDir . '/include/class/Config.php',
+    'Cron' => $baseDir . '/include/class/Cron.php',
     'Daemon' => $baseDir . '/include/class/Daemon.php',
     'Dapps' => $baseDir . '/include/class/Dapps.php',
     'Job' => $baseDir . '/include/class/Job.php',
