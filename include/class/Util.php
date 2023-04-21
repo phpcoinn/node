@@ -843,7 +843,8 @@ class Util
 		$version = $arr[3];
 		$version = str_replace(";", "", $version);
 		$version = intval($version);
-        _log("AUTO_UPDATE: call php util branch=$branch force=$force currentVersion=$currentVersion version=$version maxPeerBuildNumber=$maxPeerBuildNumber");
+        $user = shell_exec("whoami");
+        _log("AUTO_UPDATE: call php util branch=$branch force=$force currentVersion=$currentVersion version=$version maxPeerBuildNumber=$maxPeerBuildNumber user=$user");
 		if($version > $currentVersion || $maxPeerBuildNumber > $currentVersion || !empty($force)) {
 			echo "There is new version: $version - updating node".PHP_EOL;
             _log("AUTO_UPDATE: Updating node");
