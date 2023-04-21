@@ -28,7 +28,10 @@ echo "PHPCoin: download node"
 echo "==================================================================================================="
 mkdir $NODE_DIR
 cd $NODE_DIR
+git config --global --add safe.directory $NODE_DIR
+git config core.fileMode false
 git clone https://github.com/phpcoinn/node .
+git checkout -b test
 
 echo "PHPCoin: Configure apache"
 echo "==================================================================================================="
@@ -67,6 +70,7 @@ echo "==========================================================================
 curl "http://$IP" > /dev/null 2>&1
 
 sleep 5
+mysql $DB_NAME -e "update config set val='http://$IP' where cfg='hostname';"
 
 echo "PHPCoin: import blockchain"
 echo "==================================================================================================="
