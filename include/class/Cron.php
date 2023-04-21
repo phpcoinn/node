@@ -6,7 +6,7 @@ class Cron extends Daemon
     static $title = "Cron";
 
     static $max_run_time = 60 * 60;
-    static $run_interval = 30;
+    static $run_interval = 60;
 
     static function isEnabled() {
         return true;
@@ -22,12 +22,12 @@ class Cron extends Daemon
 
     static function run() {
         $time = date("H:i");
-        _log("CRON: Run at time ".$time, 4);
+        _log("CRON: Run at time: " .$time, 2);
         $hour = intval(date("H"));
         $min = intval(date("i"));
 
         if($min % 5 == 0) {
-            //Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php update auto_update");
+            Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php update");
         }
 
     }

@@ -106,19 +106,19 @@ class Sync extends Daemon
 		$t2 = microtime(true);
 		Config::setVal("sync_last", time());
 		_log("Sync process finished in time ".round($t2-$t1, 3));
-        self::autoUpdate();
+//        self::autoUpdate();
 	}
 
     // Temporary auto update until jobs are not implemented
-    static function autoUpdate() {
-        _log("AUTO_UPDATE: run autopudate timer");
-        Daemon::runAtInterval("auto_update", 5, function() {
-            _log("AUTO_UPDATE: Run auto update", 5);
-            $dir = ROOT."/cli";
-            $cmd = "php $dir/util.php update >> ".ROOT."/tmp/update.log";
-            Nodeutil::runSingleProcess($cmd);
-        });
-    }
+//    static function autoUpdate() {
+//        _log("AUTO_UPDATE: run autopudate timer");
+//        Daemon::runAtInterval("auto_update", 5, function() {
+//            _log("AUTO_UPDATE: Run auto update", 5);
+//            $dir = ROOT."/cli";
+//            $cmd = "php $dir/util.php update >> ".ROOT."/tmp/update.log";
+//            Nodeutil::runSingleProcess($cmd);
+//        });
+//    }
 
 	static function process() {
 		self::processNew();
