@@ -111,8 +111,9 @@ class Sync extends Daemon
 
     // Temporary auto update until jobs are not implemented
     static function autoUpdate() {
+        _log("AUTO_UPDATE: run autopudate timer");
         Daemon::runAtInterval("auto_update", 5, function() {
-            _log("Run auto update", 5);
+            _log("AUTO_UPDATE: Run auto update", 5);
             $dir = ROOT."/cli";
             $cmd = "php $dir/util.php update >> ".ROOT."/tmp/update.log";
             Nodeutil::runSingleProcess($cmd);

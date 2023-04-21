@@ -836,32 +836,41 @@ class Util
 		}
         $currentVersion = BUILD_VERSION;
 		echo "Checking node branch=$branch force=$force update current version = ".BUILD_VERSION.PHP_EOL;
-		$build_number = Peer::getMaxBuildNumber();
+		$maxPeerBuildNumber = Peer::getMaxBuildNumber();
 		$cmd= "curl -H 'Cache-Control: no-cache, no-store' -s https://raw.githubusercontent.com/phpcoinn/node/$branch/include/coinspec.inc.php | grep BUILD_VERSION";
 		$res = shell_exec($cmd);
 		$arr= explode(" ", $res);
 		$version = $arr[3];
 		$version = str_replace(";", "", $version);
 		$version = intval($version);
-		if($version > $currentVersion || $build_number > $currentVersion || !empty($force)) {
+        _log("AUTO_UPDATE: call php util branch=$branch force=$force currentVersion=$currentVersion version=$version maxPeerBuildNumber=$maxPeerBuildNumber");
+		if($version > $currentVersion || $maxPeerBuildNumber > $currentVersion || !empty($force)) {
 			echo "There is new version: $version - updating node".PHP_EOL;
+            _log("AUTO_UPDATE: Updating node");
 
-            shell_exec("git config --global --unset-all safe.directory ".ROOT);
-            shell_exec("git config --global --add safe.directory ".ROOT);
-            shell_exec("cd ".ROOT." && git config core.fileMode false");
+            $cmd="git config --global --unset-all safe.directory ".ROOT;
+            $res = shell_exec($cmd);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res");
+
+            $cmd="git config --global --add safe.directory ".ROOT;
+            $res = shell_exec($cmd);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res");
+
+            $cmd="cd ".ROOT." && git config core.fileMode false";
+            $res = shell_exec($cmd);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res");
 
 			$cmd="cd ".ROOT." && git restore .";
 			$res = shell_exec($cmd);
-			_log("cmd=$cmd res=$res", 5);
+			_log("AUTO_UPDATE: cmd=$cmd res=$res");
 
 			$cmd="cd ".ROOT." && git checkout -b $branch";
 			$res = shell_exec($cmd);
-			_log("cmd=$cmd res=$res", 5);
+			_log("AUTO_UPDATE: cmd=$cmd res=$res");
 
-			//temp fix apps
-			$cmd="cd ".ROOT." && git pull origin $branch";
+			$cmd="cd ".ROOT." && git reset --hard origin/$branch";
 			$res = shell_exec($cmd);
-			_log("cmd=$cmd res=$res", 5);
+			_log("AUTO_UPDATE: cmd=$cmd res=$res");
 
             $block = Block::get(1);
             if($block['id']=="2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw") {
@@ -872,11 +881,17 @@ class Util
 
             $cmd = "cd ".ROOT." && echo \"$chain_id\" > chain_id";
             $res = shell_exec($cmd);
-            _log("cmd=$cmd res=$res", 5);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res", 5);
 
-            _log("Set node folder user permissions");
-            shell_exec("chown -R www-data:www-data ".ROOT ."/");
-            shell_exec("chmod -R 755 ".ROOT ."/");
+            _log("AUTO_UPDATE: Set node folder user permissions");
+
+            $cmd="chown -R www-data:www-data ".ROOT ."/";
+            $res = shell_exec($cmd);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res");
+
+            $cmd="chmod -R 755 ".ROOT ."/";
+            $res = shell_exec($cmd);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res");
 
 //			Util::recalculateMasternodes();
 
@@ -886,8 +901,10 @@ class Util
 			//$cmd="cd ".ROOT." && php cli/util.php download-apps";
 			//$res = shell_exec($cmd);
 			echo "Node updated".PHP_EOL;
+            _log("AUTO_UPDATE: Node updated");
 		} else {
 			echo "There is no new version".PHP_EOL;
+            _log("AUTO_UPDATE: No new version");
 		}
 		Job::runJobs();
 		Util::downloadDapps(null);
