@@ -1,15 +1,15 @@
 #!/bin/bash
 # setup node on ubuntu server 21.04, 20.04, 18.04
-# one liner: curl -s https://raw.githubusercontent.com/phpcoinn/node/main/scripts/install_node.sh | bash
+# one liner: curl -s https://raw.githubusercontent.com/phpcoinn/node/test/scripts/install_node.sh | bash
 
-echo "PHPCoin node Installation"
+echo "PHPCoin Tesnet node Installation"
 echo "==================================================================================================="
 echo "PHPCoin: define db user and pass"
 echo "==================================================================================================="
-export DB_NAME=phpcoin
+export DB_NAME=phpcointest
 export DB_USER=phpcoin
 export DB_PASS=phpcoin
-export NODE_DIR=/var/www/phpcoin
+export NODE_DIR=/var/www/phpcoin-testnet
 
 echo "PHPCoin: update system"
 echo "==================================================================================================="
@@ -50,7 +50,7 @@ echo "PHPCoin: setup config file"
 echo "==================================================================================================="
 CONFIG_FILE=config/config.inc.php
 if [ ! -f "$CONFIGFILE" ]; then
-  cp config/config-sample.inc.php config/config.inc.php
+  cp config/config-sample.testnet.inc.php config/config.inc.php
   sed -i "s/ENTER-DB-NAME/$DB_NAME/g" config/config.inc.php
   sed -i "s/ENTER-DB-USER/$DB_USER/g" config/config.inc.php
   sed -i "s/ENTER-DB-PASS/$DB_PASS/g" config/config.inc.php
@@ -58,10 +58,8 @@ fi
 echo "PHPCoin: configure node"
 echo "==================================================================================================="
 mkdir tmp
-chown -R www-data:www-data tmp
-chown -R www-data:www-data web/apps
 mkdir dapps
-chown -R www-data:www-data dapps
+chown -R www-data:www-data .
 
 export IP=$(curl -s http://whatismyip.akamai.com/)
 echo "PHPCoin: open start page"
@@ -73,23 +71,10 @@ sleep 5
 echo "PHPCoin: import blockchain"
 echo "==================================================================================================="
 cd $NODE_DIR/tmp
-wget https://phpcoin.net/download/blockchain.sql.zip -O blockchain.sql.zip
-unzip -o blockchain.sql.zip
+wget https://phpcoin.net/download/blockchain-testnet.sql.zip -O blockchain-testnet.sql.zip
+unzip -o blockchain-testnet.sql.zip
 cd $NODE_DIR
-php cli/util.php importdb tmp/blockchain.sql
-
-echo "PHPCoin: Setup node automatic update"
-echo "==================================================================================================="
-CRON_LINE="cd $NODE_DIR && php cli/util.php update"
-CRON_EXISTS=$(crontab -l | grep "$CRON_LINE" | wc -l)
-
-if [ $CRON_EXISTS -eq 0 ]
-then
-	crontab -l | { cat; echo "*/5 * * * * $CRON_LINE"; } | crontab -
-	echo "Added new cron line"
-else
-	echo "Cron entry exists"
-fi
+php cli/util.php importdb tmp/blockchain-testnet.sql
 
 rm -rf $NODE_DIR/tmp/sync-lock
 
