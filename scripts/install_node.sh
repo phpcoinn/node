@@ -2,7 +2,7 @@
 # setup node on ubuntu server 21.04, 20.04, 18.04
 # one liner: curl -s https://raw.githubusercontent.com/phpcoinn/node/test/scripts/install_node.sh | bash
 
-echo "PHPCoin Tesnet node Installation"
+echo "PHPCoin Testnet node Installation"
 echo "==================================================================================================="
 echo "PHPCoin: define db user and pass"
 echo "==================================================================================================="
