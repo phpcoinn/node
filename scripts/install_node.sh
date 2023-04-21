@@ -29,9 +29,8 @@ echo "==========================================================================
 mkdir $NODE_DIR
 cd $NODE_DIR
 git config --global --add safe.directory $NODE_DIR
+git clone https://github.com/phpcoinn/node --branch test .
 git config core.fileMode false
-git clone https://github.com/phpcoinn/node .
-git checkout -b test
 
 echo "PHPCoin: Configure apache"
 echo "==================================================================================================="
