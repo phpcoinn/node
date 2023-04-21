@@ -362,7 +362,7 @@ class Peer
 	{
 		global $db;
 		$x = $db->row(
-			"SELECT id,hostname FROM peers WHERE hostname=:hostname",
+			"SELECT id,hostname,ip FROM peers WHERE hostname=:hostname",
 			[":hostname" => $hostName]
 		);
 		return $x;

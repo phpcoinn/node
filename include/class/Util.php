@@ -834,7 +834,6 @@ class Util
                 $branch = "test";
             }
 		}
-
         $currentVersion = BUILD_VERSION;
 		echo "Checking node branch=$branch force=$force update current version = ".BUILD_VERSION.PHP_EOL;
 		$build_number = Peer::getMaxBuildNumber();

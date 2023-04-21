@@ -283,6 +283,7 @@ class Masternode extends Daemon
 	static function checkCreateMasternodeTransaction($height, Transaction $transaction, &$error, $verify=true) {
 
 		try {
+
 			//masternodes must be allowed and height after start height
 			if (!self::allowedMasternodes($height)) {
 				throw new Exception("Not allowed transaction type {$transaction->type} for height $height");
@@ -305,7 +306,12 @@ class Masternode extends Daemon
 				if ($res) {
 					throw new Exception("Destination address $dst is already a masternode");
 				}
-			}
+			} else {
+                $res = Masternode::checkExistsMasternode($transaction->dst, $height-1);
+                if($res) {
+                    throw new Exception("Masternode already created");
+                }
+            }
 			//masternode collateral must be exact
 			$collateral = Block::getMasternodeCollateral($height);
 			if($transaction->val != $collateral) {
