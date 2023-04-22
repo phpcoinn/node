@@ -634,7 +634,7 @@ class Transaction
 			}
 
 	        // the value must be >=0
-	        if ($this->val <= 0 && in_array($phase, ["genesis","launch","mining","deflation"]) && $height > 671000) {
+	        if ($this->val <= 0 && in_array($phase, ["genesis","launch","mining","combined","deflation","increasing","decreasing"]) && $height > UPDATE_10_ZERO_TX_NOT_ALLOWED) {
 				if($this->type != TX_TYPE_SC_CREATE && $this->type != TX_TYPE_SC_EXEC) {
 		            throw new Exception("Transaction type {$this->val} - Value <= 0", 3);
 		        }
