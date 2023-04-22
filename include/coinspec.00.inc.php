@@ -4,8 +4,8 @@
 const NETWORK = "mainnet";
 const CHAIN_ID = "00";
 const COIN_PORT = "";
-const VERSION = "1.1.34";
-const BUILD_VERSION = 301;
+const VERSION = "1.1.35";
+const BUILD_VERSION = 302;
 const MIN_VERSION = "1.1.33";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -70,6 +70,7 @@ const UPDATE_6_CHAIN_ID = 0;
 const UPDATE_7_MINER_CHAIN_ID = 0;
 const UPDATE_8_FIX_CHECK_BURN_TX_DST_NULL = [0, 0];
 const UPDATE_9_ADD_MN_COLLATERAL_TO_SIGNATURE = 0;
+const UPDATE_10_ZERO_TX_NOT_ALLOWED = 27000;
 
 const DEV_PUBLIC_KEY = "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCyao5hHHJd9axKhC1c5emTgT4hT7k7EvXiZrjTJSGEPmz9K1swEDQi8j14vCRwUisMsvHr4P5kirrDawM3NJiknWR";
 const FEATURE_APPS = false;
