@@ -30,8 +30,11 @@ if (php_sapi_name() !== 'cli') {
     die("This should only be run as cli");
 }
 
+
 $time_limit = getenv("TIME_LIMIT");
-if(!$time_limit) $time_limit = 60*30;
+if(strlen($time_limit)==0) {
+    $time_limit = 60*30;
+}
 set_time_limit($time_limit);
 
 require_once dirname(__DIR__).'/include/init.inc.php';
