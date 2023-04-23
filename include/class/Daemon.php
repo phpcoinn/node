@@ -101,6 +101,10 @@ class Daemon
         }
     }
 
+    static function isDbNeeded() {
+        return true;
+    }
+
 	static function runDaemon() {
 
 		global $_config;
