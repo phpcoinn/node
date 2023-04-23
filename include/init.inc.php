@@ -1,7 +1,7 @@
 <?php
 $GLOBALS['start_time']=microtime(true);
 
-const DEFAULT_CHAIN_ID = "00";
+const DEFAULT_CHAIN_ID = "01";
 
 $blocked_agents = ["DataForSeoBot","BLEXBot","SemrushBot","YandexBot","AhrefsBot"];
 if (php_sapi_name() !== 'cli') {
@@ -122,18 +122,20 @@ if (empty($_config['hostname']) || $_config['hostname'] == "http://" || $_config
     api_err("Invalid hostname");
 }
 
+global $checkpoints;
+require_once __DIR__ . "/checkpoints.php";
 $block = Block::get(1);
 if($block) {
-    if($block['id']=="2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw") {
-        if(CHAIN_ID != "00") {
-            api_err("Invalid chain. Please check coinspec.inc.files");
-        }
-    } else {
-        if(CHAIN_ID != "01") {
-            api_err("Invalid chain. Please check coinspec.inc.files");
-        }
+    if($block['id']!=$checkpoints[1]) {
+        api_err("Invalid chain. Please check config files");
     }
 }
+
+$chain_id = trim(file_get_contents(dirname(__DIR__)."/chain_id"));
+if($chain_id!= CHAIN_ID) {
+    api_err("Invalid chain. Please check chain_id file");
+}
+
 
 
 require_once __DIR__ . "/daemons.inc.php";

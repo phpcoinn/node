@@ -827,12 +827,7 @@ class Util
 		$branch = trim($argv[2]);
 		$force = trim($argv[3]);
 		if(empty($branch)) {
-            $block = Block::get(1);
-            if($block['id']=="2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw") {
-                $branch = "main";
-            } else {
-                $branch = "test";
-            }
+            $branch = GIT_BRANCH;
 		}
         $currentVersion = BUILD_VERSION;
 		echo "Checking node branch=$branch force=$force update current version = ".BUILD_VERSION.PHP_EOL;
@@ -877,14 +872,7 @@ class Util
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res");
 
-            $block = Block::get(1);
-            if($block['id']=="2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw") {
-                $chain_id = "00";
-            } else {
-                $chain_id = "01";
-            }
-
-            $cmd = "cd ".ROOT." && echo \"$chain_id\" > chain_id";
+            $cmd = "cd ".ROOT." && echo \"". CHAIN_ID ."\" > chain_id";
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res", 5);
 
