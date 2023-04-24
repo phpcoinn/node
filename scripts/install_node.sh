@@ -28,7 +28,9 @@ echo "PHPCoin: download node"
 echo "==================================================================================================="
 mkdir $NODE_DIR
 cd $NODE_DIR
+git config --global --add safe.directory $NODE_DIR
 git clone https://github.com/phpcoinn/node .
+git config core.fileMode false
 
 echo "PHPCoin: Configure apache"
 echo "==================================================================================================="
@@ -58,10 +60,8 @@ fi
 echo "PHPCoin: configure node"
 echo "==================================================================================================="
 mkdir tmp
-chown -R www-data:www-data tmp
-chown -R www-data:www-data web/apps
 mkdir dapps
-chown -R www-data:www-data dapps
+chown -R www-data:www-data .
 
 export IP=$(curl -s http://whatismyip.akamai.com/)
 echo "PHPCoin: open start page"
@@ -69,6 +69,7 @@ echo "==========================================================================
 curl "http://$IP" > /dev/null 2>&1
 
 sleep 5
+mysql $DB_NAME -e "update config set val='http://$IP' where cfg='hostname';"
 
 echo "PHPCoin: import blockchain"
 echo "==================================================================================================="
@@ -77,19 +78,6 @@ wget https://phpcoin.net/download/blockchain.sql.zip -O blockchain.sql.zip
 unzip -o blockchain.sql.zip
 cd $NODE_DIR
 php cli/util.php importdb tmp/blockchain.sql
-
-echo "PHPCoin: Setup node automatic update"
-echo "==================================================================================================="
-CRON_LINE="cd $NODE_DIR && php cli/util.php update"
-CRON_EXISTS=$(crontab -l | grep "$CRON_LINE" | wc -l)
-
-if [ $CRON_EXISTS -eq 0 ]
-then
-	crontab -l | { cat; echo "*/5 * * * * $CRON_LINE"; } | crontab -
-	echo "Added new cron line"
-else
-	echo "Cron entry exists"
-fi
 
 rm -rf $NODE_DIR/tmp/sync-lock
 
