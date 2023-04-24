@@ -852,32 +852,32 @@ class Util
             if(trim($user)=="root") {
                 $cmd="cd ".ROOT." && git config --global --unset-all safe.directory ".ROOT;
                 $res = shell_exec($cmd);
-                _log("AUTO_UPDATE: cmd=$cmd res=$res");
+                _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
                 $cmd="cd ".ROOT." && git config --global --add safe.directory ".ROOT;
                 $res = shell_exec($cmd);
-                _log("AUTO_UPDATE: cmd=$cmd res=$res");
+                _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
             }
 
             $cmd="cd ".ROOT." && git config --unset-all safe.directory ".ROOT;
             $res = shell_exec($cmd);
-            _log("AUTO_UPDATE: cmd=$cmd res=$res");
+            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
             $cmd="cd ".ROOT." && git config --add safe.directory ".ROOT;
             $res = shell_exec($cmd);
-            _log("AUTO_UPDATE: cmd=$cmd res=$res");
+            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
             $cmd="cd ".ROOT." && git config core.fileMode false";
             $res = shell_exec($cmd);
-            _log("AUTO_UPDATE: cmd=$cmd res=$res");
+            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
 			$cmd="cd ".ROOT." && git restore .";
 			$res = shell_exec($cmd);
-			_log("AUTO_UPDATE: cmd=$cmd res=$res");
+			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
 			$cmd="cd ".ROOT." && git checkout -b $branch";
 			$res = shell_exec($cmd);
-			_log("AUTO_UPDATE: cmd=$cmd res=$res");
+			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 //
 //			$cmd="cd ".ROOT." && git reset --hard origin/$branch";
 //			$res = shell_exec($cmd);
@@ -885,7 +885,7 @@ class Util
 
 			$cmd="cd ".ROOT." && git pull origin $branch";
 			$res = shell_exec($cmd);
-			_log("AUTO_UPDATE: cmd=$cmd res=$res");
+			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
             $block = Block::get(1);
             if($block['id']=="2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw") {
@@ -898,15 +898,15 @@ class Util
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res", 5);
 
-            _log("AUTO_UPDATE: Set node folder user permissions");
+            _log("AUTO_UPDATE: Set node folder user permissions",4);
 
             $cmd="chown -R www-data:www-data ".ROOT ."/";
             $res = shell_exec($cmd);
-            _log("AUTO_UPDATE: cmd=$cmd res=$res");
+            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
             $cmd="chmod -R 755 ".ROOT ."/";
             $res = shell_exec($cmd);
-            _log("AUTO_UPDATE: cmd=$cmd res=$res");
+            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
 //			Util::recalculateMasternodes();
 
@@ -919,7 +919,7 @@ class Util
             _log("AUTO_UPDATE: Node updated");
 		} else {
 			echo "There is no new version".PHP_EOL;
-            _log("AUTO_UPDATE: No new version");
+            _log("AUTO_UPDATE: No new version",2);
 		}
 		Job::runJobs();
 		Util::downloadDapps(null);
