@@ -246,7 +246,7 @@ class Api
 			api_err("Invalid address");
 		}
 		$public_key = Account::publicKey($address);
-		if ($public_key === false) {
+		if (empty($public_key)) {
 			api_err("No public key found for this account");
 		} else {
 			api_echo($public_key);
