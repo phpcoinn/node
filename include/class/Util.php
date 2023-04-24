@@ -850,11 +850,11 @@ class Util
             _log("AUTO_UPDATE: Updating node");
 
             if(trim($user)=="root") {
-                $cmd="git config --global --unset-all safe.directory ".ROOT;
+                $cmd="cd ".ROOT." && git config --global --unset-all safe.directory ".ROOT;
                 $res = shell_exec($cmd);
                 _log("AUTO_UPDATE: cmd=$cmd res=$res");
 
-                $cmd="git config --global --add safe.directory ".ROOT;
+                $cmd="cd ".ROOT." && git config --global --add safe.directory ".ROOT;
                 $res = shell_exec($cmd);
                 _log("AUTO_UPDATE: cmd=$cmd res=$res");
             }
