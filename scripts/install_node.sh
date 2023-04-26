@@ -52,7 +52,7 @@ echo "PHPCoin: setup config file"
 echo "==================================================================================================="
 CONFIG_FILE=config/config.inc.php
 if [ ! -f "$CONFIGFILE" ]; then
-  cp config/config-sample.testnet.inc.php config/config.inc.php
+  cp config/config-sample.inc.php config/config.inc.php
   sed -i "s/ENTER-DB-NAME/$DB_NAME/g" config/config.inc.php
   sed -i "s/ENTER-DB-USER/$DB_USER/g" config/config.inc.php
   sed -i "s/ENTER-DB-PASS/$DB_PASS/g" config/config.inc.php

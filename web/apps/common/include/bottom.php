@@ -2,6 +2,9 @@
 </div>
 <?php
 global $_config;
+$maxPeerBuildNumber = Peer::getMaxBuildNumber();
+$currentVersion = BUILD_VERSION;
+$updateAvb = $maxPeerBuildNumber > $currentVersion;
 ?>
 <footer class="footer">
     <div class="container-fluid">
@@ -11,6 +14,9 @@ global $_config;
                 <?php
                 if(!empty($gitRev)) { ?>
                     - <a href="<?php echo GIT_URL ?>/tree/<?php echo $gitRev ?>" target="_blank"><?php echo substr($gitRev, 0, 8) ?></a>
+                <?php } ?>
+                <?php if ($updateAvb) { ?>
+                    <span class="badge rounded-pill bg-success">Update available!</span>
                 <?php } ?>
             </div>
             <div class="col-sm-6">
