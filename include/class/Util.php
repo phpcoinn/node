@@ -840,7 +840,7 @@ class Util
 		$version = intval($version);
         $user = shell_exec("whoami");
 
-        if(trim($user)=="root" && $currentVersion > 317) {
+        if(trim($user)=="root" && $currentVersion >= 317) {
             _log("AUTO_UPDATE: Run as root is deprecated");
             return;
         }
