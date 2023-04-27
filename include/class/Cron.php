@@ -28,6 +28,22 @@ class Cron extends Daemon
 
         if($min % 5 == 0) {
             Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php update");
+            Sync::checkLongRunning();
+            Dapps::checkLongRunning();
+            NodeMiner::checkLongRunning();
+            Masternode::checkLongRunning();
+            Cache::resetCache();
+            Peer::deleteBlacklisted();
+            Peer::deleteWrongHostnames();
+            Dapps::createDir();
+            $mnCount = Masternode::getCount();
+        }
+
+        if($hour == 2 && $min == 30) {
+            Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php check-accounts");
+        }
+        if($min == 15) {
+            Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php recalculate-masternodes");
         }
 
     }

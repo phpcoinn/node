@@ -909,13 +909,6 @@ class Util
 			echo "There is no new version".PHP_EOL;
             _log("AUTO_UPDATE: No new version",2);
 		}
-		Job::runJobs();
-		Util::downloadDapps(null);
-		Cache::resetCache();
-		Peer::deleteBlacklisted();
-		Peer::deleteWrongHostnames();
-		Dapps::createDir();
-		$mnCount = Masternode::getCount();
 		echo "Finished".PHP_EOL;
 	}
 
@@ -1535,7 +1528,7 @@ class Util
 //	}
 
     static function runJobs() {
-        Job::runJobs();
+        Cron::run();
     }
 
     static function discoverPeers() {
