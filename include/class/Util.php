@@ -859,10 +859,9 @@ class Util
                 $res = shell_exec($cmd);
                 _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-                _log("AUTO_UPDATE: cron update");
                 $cmd = "crontab -l";
                 $res = shell_exec($cmd);
-                _log("AUTO_UPDATE: cmd=$cmd res=$res");
+                _log("AUTO_UPDATE: cron cmd=$cmd res=$res");
 
             }
 
