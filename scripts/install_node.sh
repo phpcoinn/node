@@ -34,17 +34,17 @@ git config core.fileMode false
 
 echo "PHPCoin: Configure apache"
 echo "==================================================================================================="
-cat << EOF > /etc/apache2/sites-available/phpcoin.conf
+cat << EOF > /etc/apache2/sites-available/phpcoin-testnet.conf
 <VirtualHost *:80>
         ServerAdmin webmaster@localhost
         DocumentRoot $NODE_DIR/web
-        ErrorLog ${APACHE_LOG_DIR}/phpcoin.error.log
+        ErrorLog ${APACHE_LOG_DIR}/phpcoin-testnet.error.log
         RewriteEngine on
         RewriteRule ^/dapps/(.*)$ /dapps.php?url=$1
 </VirtualHost>
 EOF
 a2dissite 000-default
-a2ensite phpcoin
+a2ensite phpcoin-testnet
 a2enmod rewrite
 service apache2 restart
 
