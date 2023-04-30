@@ -827,12 +827,7 @@ class Util
 		$branch = trim($argv[2]);
 		$force = trim($argv[3]);
 		if(empty($branch)) {
-            $block = Block::get(1);
-            if($block['id']=="2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw") {
-                $branch = "main";
-            } else {
-                $branch = "test";
-            }
+            $branch = GIT_BRANCH;
 		}
         $currentVersion = BUILD_VERSION;
 		echo "Checking node branch=$branch force=$force update current version = ".BUILD_VERSION.PHP_EOL;
@@ -844,6 +839,12 @@ class Util
 		$version = str_replace(";", "", $version);
 		$version = intval($version);
         $user = shell_exec("whoami");
+
+//        if(trim($user)=="root" && $currentVersion >= 317) {
+//            _log("AUTO_UPDATE: Run as root is deprecated");
+//            return;
+//        }
+
         _log("AUTO_UPDATE: call php util branch=$branch force=$force node version=$currentVersion git version=$version maxPeerBuildNumber=$maxPeerBuildNumber user=$user");
 		if($version > $currentVersion || $maxPeerBuildNumber > $currentVersion || !empty($force)) {
 			echo "There is new version: $version - updating node".PHP_EOL;
@@ -887,14 +888,7 @@ class Util
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-            $block = Block::get(1);
-            if($block['id']=="2ucwGhYszGUTZwmiT5YMsw3tn9nfhdTciaaKMMTX77Zw") {
-                $chain_id = "00";
-            } else {
-                $chain_id = "01";
-            }
-
-            $cmd = "cd ".ROOT." && echo \"$chain_id\" > chain_id";
+            $cmd = "cd ".ROOT." && echo \"". CHAIN_ID ."\" > chain_id";
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res", 5);
 
@@ -921,13 +915,6 @@ class Util
 			echo "There is no new version".PHP_EOL;
             _log("AUTO_UPDATE: No new version",2);
 		}
-		Job::runJobs();
-		Util::downloadDapps(null);
-		Cache::resetCache();
-		Peer::deleteBlacklisted();
-		Peer::deleteWrongHostnames();
-		Dapps::createDir();
-		$mnCount = Masternode::getCount();
 		echo "Finished".PHP_EOL;
 	}
 
@@ -1547,7 +1534,7 @@ class Util
 //	}
 
     static function runJobs() {
-        Job::runJobs();
+        Cron::run();
     }
 
     static function discoverPeers() {
