@@ -643,7 +643,7 @@ class Transaction
 		    //genesis transaction
 		    $mining_end_block = Block::getMnStartHeight();
 		    if($this->publicKey==GENESIS_DATA['public_key'] && $this->type==TX_TYPE_SEND && $height <= $mining_end_block
-                && NETWORK == "mainnet-alpha") {
+                && NETWORK == "testnet") {
 			    throw new Exception("Genesis can not spend before locked height");
 		    }
 

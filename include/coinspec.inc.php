@@ -5,7 +5,7 @@ if($_config['chain_id'] != DEFAULT_CHAIN_ID && file_exists(__DIR__ . "/coinspec.
 	return;
 }
 
-const NETWORK = "mainnet-alpha";
+const NETWORK = "testnet";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
 const VERSION = "1.1.41";
