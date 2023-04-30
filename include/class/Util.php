@@ -840,10 +840,10 @@ class Util
 		$version = intval($version);
         $user = shell_exec("whoami");
 
-        if(trim($user)=="root" && $currentVersion >= 317) {
-            _log("AUTO_UPDATE: Run as root is deprecated");
-            return;
-        }
+//        if(trim($user)=="root" && $currentVersion >= 317) {
+//            _log("AUTO_UPDATE: Run as root is deprecated");
+//            return;
+//        }
 
         _log("AUTO_UPDATE: call php util branch=$branch force=$force node version=$currentVersion git version=$version maxPeerBuildNumber=$maxPeerBuildNumber user=$user");
 		if($version > $currentVersion || $maxPeerBuildNumber > $currentVersion || !empty($force)) {
