@@ -17,7 +17,6 @@ return array(
     'Cron' => $baseDir . '/include/class/Cron.php',
     'Daemon' => $baseDir . '/include/class/Daemon.php',
     'Dapps' => $baseDir . '/include/class/Dapps.php',
-    'Job' => $baseDir . '/include/class/Job.php',
     'Masternode' => $baseDir . '/include/class/Masternode.php',
     'Mempool' => $baseDir . '/include/class/Mempool.php',
     'Minepool' => $baseDir . '/include/class/Minepool.php',
