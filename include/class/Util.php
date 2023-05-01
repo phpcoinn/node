@@ -879,6 +879,10 @@ class Util
 			$cmd="cd ".ROOT." && git checkout -b $branch";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
+
+            $cmd="cd ".ROOT." && git switch $branch";
+            $res = shell_exec($cmd);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 //
 //			$cmd="cd ".ROOT." && git reset --hard origin/$branch";
 //			$res = shell_exec($cmd);
