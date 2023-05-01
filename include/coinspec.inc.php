@@ -10,11 +10,12 @@ const NETWORK = "mainnet";
 const CHAIN_ID = "00";
 const COIN_PORT = "";
 const VERSION = "1.1.37";
-const BUILD_VERSION = 310;
+const BUILD_VERSION = 311;
 const MIN_VERSION = "1.1.36";
 const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
+const GIT_BRANCH = "main";
 
 const COIN = "phpcoin";
 const COIN_NAME="PHPCoin";
