@@ -863,6 +863,10 @@ class Util
                 $res = shell_exec($cmd);
                 _log("AUTO_UPDATE: cron cmd=$cmd res=$res");
 
+                $cmd="crontab -l | grep -v 'cd ".ROOT." && php cli/util.php update' | crontab -";
+                $res = shell_exec($cmd);
+                _log("AUTO_UPDATE: cron cmd=$cmd res=$res");
+
             }
 
             $cmd="cd ".ROOT." && git config --unset-all safe.directory ".ROOT;
