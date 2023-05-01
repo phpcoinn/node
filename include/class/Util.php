@@ -858,6 +858,15 @@ class Util
                 $cmd="cd ".ROOT." && git config --global --add safe.directory ".ROOT;
                 $res = shell_exec($cmd);
                 _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
+
+                $cmd = "crontab -l";
+                $res = shell_exec($cmd);
+                _log("AUTO_UPDATE: cron cmd=$cmd res=$res");
+
+                $cmd="crontab -l | grep -v 'cd ".ROOT." && php cli/util.php update' | crontab -";
+                $res = shell_exec($cmd);
+                _log("AUTO_UPDATE: cron cmd=$cmd res=$res");
+
             }
 
             $cmd="cd ".ROOT." && git config --unset-all safe.directory ".ROOT;
@@ -879,10 +888,6 @@ class Util
 			$cmd="cd ".ROOT." && git checkout -b $branch";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
-
-            $cmd="cd ".ROOT." && git switch $branch";
-            $res = shell_exec($cmd);
-            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 //
 //			$cmd="cd ".ROOT." && git reset --hard origin/$branch";
 //			$res = shell_exec($cmd);
