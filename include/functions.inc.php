@@ -252,6 +252,9 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
 	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
 	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
 	curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+    if(isset($_config['interface'])) {
+        curl_setopt($ch, CURLOPT_INTERFACE, $_config['interface']);
+    }
 	$result = curl_exec($ch);
 
 	$curl_error = curl_errno($ch);

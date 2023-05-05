@@ -739,6 +739,7 @@ class Util
 
 	static function importdb($argv) {
 		$file = trim($argv[2]);
+        $options = "";
 		if(isset($argv[3])) {
 			$options = $argv[3];
 		}
