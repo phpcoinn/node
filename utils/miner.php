@@ -12,18 +12,32 @@ $address = @$argv[2];
 $cpu = @$argv[3];
 $block_cnt = @$argv[4];
 
+foreach ($argv as $item){
+    if(strpos($item, "--threads")!==false) {
+        $arr = explode("=", $item);
+        $threads = $arr[1];
+    }
+}
+
+
 if(file_exists(getcwd()."/miner.conf")) {
 	$minerConf = parse_ini_file(getcwd()."/miner.conf");
 	$node = $minerConf['node'];
 	$address = $minerConf['address'];
 	$block_cnt = @$minerConf['block_cnt'];
 	$cpu = @$minerConf['cpu'];
+    $threads = @$minerConf['threads'];
+}
+
+if(empty($threads)) {
+    $threads=1;
 }
 
 echo "PHPCoin Miner Version ".VERSION.".(".BUILD_VERSION.")".PHP_EOL;
 echo "Mining server:  ".$node.PHP_EOL;
 echo "Mining address: ".$address.PHP_EOL;
 echo "CPU:            ".$cpu.PHP_EOL;
+echo "Threads:        ".$threads.PHP_EOL;
 
 if(empty($node) && empty($address)) {
 	die("Usage: miner <node> <address> <cpu>");
@@ -55,7 +69,24 @@ $_config['chain_id'] = trim(file_exists(dirname(__DIR__)."/chain_id"));
 
 define("ROOT", __DIR__);
 
-$miner = new Miner($address, $node);
-$miner->block_cnt = empty($block_cnt) ? 0 : $block_cnt;
-$miner->cpu = empty($cpu) ? 0 : $cpu;
-$miner->start();
+function startMiner($address,$node, $forked) {
+    $miner = new Miner($address, $node, $forked);
+    $miner->block_cnt = empty($block_cnt) ? 0 : $block_cnt;
+    $miner->cpu = empty($cpu) ? 0 : $cpu;
+    $miner->start();
+}
+
+if($threads == 1) {
+    startMiner($address,$node, false);
+} else {
+    for($i=1; $i<=$threads; $i++) {
+        $pid = pcntl_fork();
+        if ($pid == -1) {
+            die('could not fork');
+        } else if ($pid == 0) {
+            echo "Start $i instance of miner".PHP_EOL;
+            startMiner($address,$node, true);
+        }
+    }
+    while (pcntl_waitpid(0, $status) != -1) ;
+}

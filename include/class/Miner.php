@@ -11,14 +11,16 @@ class Miner {
 	public $block_cnt = 0;
 	public $cpu = 0;
     public $minerid;
+    private $forked;
 
 	private $running = true;
 
-	function __construct($address, $node)
+	function __construct($address, $node, $forked=false)
 	{
 		$this->address = $address;
 		$this->node = $node;
         $this->minerid = time() . uniqid();
+        $this->forked = $forked;
 	}
 
 	function getMiningInfo() {
@@ -154,9 +156,13 @@ class Miner {
 				$diff = $t2 - $t1;
 				$speed = round($attempt / $diff,2);
 
-				$s = "Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed submits=".
+				$s = "PID=".getmypid()." Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed submits=".
                     $this->miningStat['submits']." accepted=".$this->miningStat['accepted']. " rejected=".$this->miningStat['rejected']. " dropped=".$this->miningStat['dropped'];
-                echo "$s \r";
+                if(!$this->forked){
+                    echo "$s \r";
+                } else {
+                    echo $s. PHP_EOL;
+                }
 				$this->miningStat['hashes']++;
 				if($prev_elapsed != $elapsed && $elapsed % 10 == 0) {
 					$prev_elapsed = $elapsed;
