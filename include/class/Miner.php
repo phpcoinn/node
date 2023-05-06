@@ -136,7 +136,9 @@ class Miner {
 				$diff = $t2 - $t1;
 				$speed = round($attempt / $diff,2);
 
-				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed blockFound=$blockFound", 3);
+				$s = "Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed submits=".
+                    $this->miningStat['submits']." accepted=".$this->miningStat['accepted']. " rejected=".$this->miningStat['rejected']. " dropped=".$this->miningStat['dropped'];
+                echo "$s \r";
 				$this->miningStat['hashes']++;
 				if($prev_elapsed != $elapsed && $elapsed % 10 == 0) {
 					$prev_elapsed = $elapsed;

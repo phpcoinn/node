@@ -21,6 +21,9 @@ if(file_exists(getcwd()."/miner.conf")) {
 }
 
 echo "PHPCoin Miner Version ".VERSION.".(".BUILD_VERSION.")".PHP_EOL;
+echo "Mining server:  ".$node.PHP_EOL;
+echo "Mining address: ".$address.PHP_EOL;
+echo "CPU:            ".$cpu.PHP_EOL;
 
 if(empty($node) && empty($address)) {
 	die("Usage: miner <node> <address> <cpu>");
