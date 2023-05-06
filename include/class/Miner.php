@@ -43,6 +43,20 @@ class Miner {
 		return $info;
 	}
 
+    function sendStat($hashes, $height, $interval) {
+        $postData = http_build_query([
+            "address"=>$this->address,
+            "minerid"=>$this->minerid,
+            "cpu"=>$this->cpu,
+            "hashes"=>$hashes,
+            "height"=>$height,
+            "interval"=>$interval,
+            "miner_type"=>"cli",
+            "version"=>VERSION
+        ]);
+        $res = url_post($this->node . "/mine.php?q=submitStat&", $postData);
+    }
+
 	function checkAddress() {
 		$url = $this->node."/mine.php?q=checkAddress";
 		$postdata = http_build_query([
@@ -120,6 +134,8 @@ class Miner {
 
 			$t1 = microtime(true);
 			$prev_elapsed = null;
+			$prev_stat = null;
+			$prev_hashes = null;
 			while (!$blockFound) {
 				$attempt++;
 				usleep((100-$this->cpu) * 5 * 1000);
@@ -154,6 +170,12 @@ class Miner {
 						}
 					}
 				}
+                if($prev_stat != $elapsed && $elapsed % 30 == 0) {
+                    $prev_stat = $elapsed;
+                    $hashes = $this->miningStat['hashes'] - $prev_hashes;
+                    $prev_hashes = $this->miningStat['hashes'];
+                    $this->sendStat($hashes, $height, 30);
+                }
 			}
 
 			if(!$blockFound || $elapsed <=0) {
