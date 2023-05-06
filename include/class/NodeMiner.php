@@ -13,14 +13,20 @@ class NodeMiner extends Daemon {
 	public $miningStat;
 	public $cnt = 0;
 	public $blocks = 0;
+    public $address;
 
 	private $running = true;
+	private $minerid;
+	private $cpu;
 
 	function __construct()
 	{
 		global $_config;
 		$this->public_key = $_config['miner_public_key'];
 		$this->private_key = $_config['miner_private_key'];
+        $this->address = Account::getAddress($this->public_key);
+        $this->minerid = time() . uniqid();
+        $this->cpu = isset($_config['miner_cpu']) ? $_config['miner_cpu'] : 0;
 	}
 
 	function getMiningInfo() {
@@ -77,13 +83,14 @@ class NodeMiner extends Daemon {
 			$bl->publicKey = $this->public_key;
 
 			$t1 = microtime(true);
-			$cpu = isset($_config['miner_cpu']) ? $_config['miner_cpu'] : 0;
+            $prev_stat = null;
+            $prev_hashes = null;
 			while (!$blockFound) {
 				$attempt++;
 
 				$this->saveMiningStats();
 
-				usleep((100-$cpu) * 5 * 1000);
+				usleep((100-$this->cpu) * 5 * 1000);
 				$this->checkRunning();
 				if(!$this->running) {
 					_log("Stop miner because missing lock file");
@@ -106,7 +113,7 @@ class NodeMiner extends Daemon {
 
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
-				$mod = 10+$cpu;
+				$mod = 10+$this->cpu;
 				if($attempt % $mod == 0) {
 					$info = $this->getMiningInfo();
 					if($info!==false) {
@@ -118,6 +125,13 @@ class NodeMiner extends Daemon {
 						}
 					}
 				}
+
+                if($prev_stat != $elapsed && $elapsed % 30 == 0) {
+                    $prev_stat = $elapsed;
+                    $hashes = $this->miningStat['hashes'] - $prev_hashes;
+                    $prev_hashes = $this->miningStat['hashes'];
+                    $this->sendStat($hashes, $height, 30);
+                }
 			}
 
 
@@ -210,6 +224,21 @@ class NodeMiner extends Daemon {
 
 		_log("Miner stopped");
 	}
+
+    function sendStat($hashes, $height, $interval) {
+        global $_config;
+        $postData = http_build_query([
+            "address"=>$this->address,
+            "minerid"=>$this->minerid,
+            "cpu"=>$this->cpu,
+            "hashes"=>$hashes,
+            "height"=>$height,
+            "interval"=>$interval,
+            "miner_type"=>"nodeminer",
+            "version"=>VERSION
+        ]);
+        $res = url_post($_config['hostname'] . "/mine.php?q=submitStat&", $postData);
+    }
 
 	function saveMiningStats() {
 		if($this->miningStat['hashes'] % 100 === 0) {
