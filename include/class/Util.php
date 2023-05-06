@@ -1005,7 +1005,7 @@ class Util
 		global $_config;
 
 		_log("Sync: Util: get-more-peers", 5);
-		$peers=Peer::getPeersForSync();
+		$peers=Peer::getPeers();
 		$peered = [];
 
 		foreach ($peers as $ix => $peer) {
