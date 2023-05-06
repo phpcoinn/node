@@ -10,6 +10,7 @@ class Miner {
 	public $cnt = 0;
 	public $block_cnt = 0;
 	public $cpu = 0;
+    public $minerid;
 
 	private $running = true;
 
@@ -17,6 +18,7 @@ class Miner {
 	{
 		$this->address = $address;
 		$this->node = $node;
+        $this->minerid = time() . uniqid();
 	}
 
 	function getMiningInfo() {

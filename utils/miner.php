@@ -49,7 +49,7 @@ if(!($res['status']=="ok" && !empty($res['data']))) {
 }
 
 $_config['enable_logging'] = true;
-$_config['log_verbosity']=3;
+$_config['log_verbosity']=0;
 $_config['log_file']="/dev/null";
 $_config['chain_id'] = trim(file_exists(dirname(__DIR__)."/chain_id"));
 
