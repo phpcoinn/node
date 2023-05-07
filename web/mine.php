@@ -94,6 +94,7 @@ if ($q == "info") {
     }
     $cache_time = $mineInfo['time'];
     $mineInfo['time']=time();
+    $mineInfo['ip']=$_SERVER['SERVER_ADDR'];
     _logf(" height=".$mineInfo['height']);
     api_echo($mineInfo);
 } elseif ($q == "stat") {

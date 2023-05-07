@@ -73,7 +73,6 @@ class Miner {
 	}
 
 	function start() {
-		global $_config;
 		$this->miningStat = [
 			'started'=>time(),
 			'hashes'=>0,
@@ -82,6 +81,8 @@ class Miner {
 			'rejected'=>0,
 			'dropped'=>0,
 		];
+        $start_time = time();
+        $prev_hashes = null;
 		while($this->running) {
 			$this->cnt++;
 //			_log("Mining cnt: ".$this->cnt);
@@ -100,7 +101,7 @@ class Miner {
 			}
 
 			if(!isset($info['data']['ip'])) {
-				_log("Miner node does not send ip address");
+				_log("Miner node does not send ip address ",json_encode($info));
 				sleep(3);
 				continue;
 			}
@@ -136,8 +137,6 @@ class Miner {
 
 			$t1 = microtime(true);
 			$prev_elapsed = null;
-			$prev_stat = null;
-			$prev_hashes = null;
 			while (!$blockFound) {
 				$attempt++;
 				usleep((100-$this->cpu) * 5 * 1000);
@@ -176,11 +175,14 @@ class Miner {
 						}
 					}
 				}
-                if($prev_stat != $elapsed && $elapsed % 30 == 0) {
-                    $prev_stat = $elapsed;
+                $send_interval = 60;
+                $t=time();
+                $elapsed = $t - $start_time;
+                if($elapsed >= $send_interval) {
+                    $start_time = time();
                     $hashes = $this->miningStat['hashes'] - $prev_hashes;
                     $prev_hashes = $this->miningStat['hashes'];
-                    $this->sendStat($hashes, $height, 30);
+                    $this->sendStat($hashes, $height, $send_interval);
                 }
 			}
 

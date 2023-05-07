@@ -74,6 +74,7 @@ $_config['chain_id'] = trim(file_exists(dirname(__DIR__)."/chain_id"));
 define("ROOT", __DIR__);
 
 function startMiner($address,$node, $forked) {
+    global $cpu;
     $miner = new Miner($address, $node, $forked);
     $miner->block_cnt = empty($block_cnt) ? 0 : $block_cnt;
     $miner->cpu = empty($cpu) ? 0 : $cpu;

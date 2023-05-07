@@ -38,7 +38,8 @@ class NodeMiner extends Daemon {
 	function start($mine_blocks = null, $sleep = 3) {
 
 		$this->loadMiningStats();
-
+        $start_time = time();
+        $prev_hashes = $this->miningStat['hashes'];
 		while($this->running) {
 			$this->cnt++;
 //			_log("Mining cnt: ".$this->cnt);
@@ -83,8 +84,6 @@ class NodeMiner extends Daemon {
 			$bl->publicKey = $this->public_key;
 
 			$t1 = microtime(true);
-            $prev_stat = null;
-            $prev_hashes = null;
 			while (!$blockFound) {
 				$attempt++;
 
@@ -126,11 +125,15 @@ class NodeMiner extends Daemon {
 					}
 				}
 
-                if($prev_stat != $elapsed && $elapsed % 30 == 0) {
-                    $prev_stat = $elapsed;
+                $send_interval = 10;
+                $t=time();
+                $elapsed = $t - $start_time;
+//                _log("elapsed=$elapsed hashes=".$this->miningStat['hashes']." prev_hashes=$prev_hashes");
+                if($elapsed >= $send_interval) {
+                    $start_time = time();
                     $hashes = $this->miningStat['hashes'] - $prev_hashes;
+                    $this->sendStat($hashes, $height, $send_interval);
                     $prev_hashes = $this->miningStat['hashes'];
-                    $this->sendStat($hashes, $height, 30);
                 }
 			}
 
@@ -237,6 +240,7 @@ class NodeMiner extends Daemon {
             "miner_type"=>"nodeminer",
             "version"=>VERSION
         ]);
+        _log("Send stat hashes=$hashes", 4);
         $res = url_post($_config['hostname'] . "/mine.php?q=submitStat&", $postData);
     }
 
