@@ -1,6 +1,7 @@
 <?php
 if(php_sapi_name() !== 'cli') exit;
 const DEFAULT_CHAIN_ID = "01";
+const MINER_VERSION = "1.2";
 if(Phar::running()) {
 	require_once 'vendor/autoload.php';
 } else {
@@ -33,34 +34,37 @@ if(empty($threads)) {
     $threads=1;
 }
 
-echo "PHPCoin Miner Version ".VERSION.".(".BUILD_VERSION.")".PHP_EOL;
+echo "PHPCoin Miner Version ".MINER_VERSION.PHP_EOL;
 echo "Mining server:  ".$node.PHP_EOL;
 echo "Mining address: ".$address.PHP_EOL;
 echo "CPU:            ".$cpu.PHP_EOL;
 echo "Threads:        ".$threads.PHP_EOL;
 
+
 if(empty($node) && empty($address)) {
-	die("Usage: miner <node> <address> <cpu>");
+	die("Usage: miner <node> <address> <cpu>".PHP_EOL);
 }
 
 if(empty($node)) {
-	die("Node not defined");
+	die("Node not defined".PHP_EOL);
 }
 if(empty($address)) {
-	die("Address not defined");
+	die("Address not defined".PHP_EOL);
 }
 
 $res = url_get($node . "/api.php?q=getPublicKey&address=".$address);
 if(empty($res)) {
-	die("No response from node");
+	die("No response from node".PHP_EOL);
 }
 $res = json_decode($res, true);
 if(empty($res)) {
-	die("Invalid response from node");
+	die("Invalid response from node".PHP_EOL);
 }
 if(!($res['status']=="ok" && !empty($res['data']))) {
-	die("Invalid response from node: ".json_encode($res));
+	die("Invalid response from node: ".json_encode($res).PHP_EOL);
 }
+
+echo "Network:        ".$res['network'].PHP_EOL;
 
 $_config['enable_logging'] = true;
 $_config['log_verbosity']=0;
@@ -84,7 +88,6 @@ if($threads == 1) {
         if ($pid == -1) {
             die('could not fork');
         } else if ($pid == 0) {
-            echo "Start $i instance of miner".PHP_EOL;
             startMiner($address,$node, true);
         }
     }
