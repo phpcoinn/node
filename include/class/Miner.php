@@ -54,7 +54,7 @@ class Miner {
             "height"=>$height,
             "interval"=>$interval,
             "miner_type"=>"cli",
-            "version"=>VERSION
+            "version"=>MINER_VERSION
         ]);
         $res = url_post($this->node . "/mine.php?q=submitStat&", $postData);
     }
