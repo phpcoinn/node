@@ -125,7 +125,7 @@ class NodeMiner extends Daemon {
 					}
 				}
 
-                $send_interval = 10;
+                $send_interval = 60;
                 $t=time();
                 $elapsed = $t - $start_time;
 //                _log("elapsed=$elapsed hashes=".$this->miningStat['hashes']." prev_hashes=$prev_hashes");
