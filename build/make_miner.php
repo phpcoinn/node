@@ -41,7 +41,7 @@ try
 	$phar->stopBuffering();
 
 	// plus - compressing it into gzip
-	$phar->compressFiles(Phar::GZ);
+//	$phar->compressFiles(Phar::GZ);
 
 	# Make the file executable
 	chmod($pharFile, 0770);
