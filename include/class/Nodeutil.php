@@ -635,4 +635,78 @@ class Nodeutil
         _log("Total discovered peers = $discovered - added = $added");
     }
 
+    static function readMiningStat() {
+        $mining_stat_file = ROOT . '/tmp/mining-stat.json';
+        if(file_exists($mining_stat_file)) {
+            $mining_stat = json_decode(file_get_contents($mining_stat_file), true);
+        } else {
+            $mining_stat = [];
+        }
+        return $mining_stat;
+    }
+
+    static function saveMiningStat($mining_stat) {
+        $mining_stat_file = ROOT . '/tmp/mining-stat.json';
+        file_put_contents($mining_stat_file, json_encode($mining_stat));
+    }
+
+    static function processMiningStat($data) {
+        $miningStat = Nodeutil::readMiningStat();
+        $hashes = $data['hashes'];
+        $interval = $data['interval'];
+        $height = $data['height'];
+        $miningStat['totals'][$height]['hashes']+=$hashes;
+        $miningStat['totals'][$height]['intervals']+=$interval;
+        Nodeutil::saveMiningStat($miningStat);
+    }
+
+    static function clearOldMiningStat() {
+        $miningStat = Nodeutil::readMiningStat();
+        $current_height = Block::getHeight();
+        $count1 = count(array_keys($miningStat['totals']));
+        foreach ($miningStat['totals'] as $height => $stat) {
+            if($height < $current_height - 100) {
+                unset($miningStat['totals'][$height]);
+            }
+        }
+        $count2 = count(array_keys($miningStat['totals']));
+        $deleted = $count1 - $count2;
+        _log("clearOldMiningStat deleted=$deleted",3);
+        Nodeutil::saveMiningStat($miningStat);
+    }
+
+    static function getHashrateStat() {
+        $data = self::readMiningStat();
+        $currentHeight = Block::getHeight();
+
+        $currentHashRate = null;
+        $prevHashRate = null;
+        $last10blocks = [];
+        $last100blocks = [];
+        foreach ($data['totals'] as $height => $item) {
+            if($height == $currentHeight) {
+                $currentHashRate = $item['hashes'] / $item['intervals'];
+            }
+            if($height == $currentHeight-1) {
+                $prevHashRate = $item['hashes'] / $item['intervals'];
+            }
+            if($height >= $currentHeight - 10 ) {
+                $last10blocks['hashes']+=$item['hashes'];
+                $last10blocks['intervals']+=$item['intervals'];
+            }
+            if($height >= $currentHeight - 100 ) {
+                $last100blocks['hashes']+=$item['hashes'];
+                $last100blocks['intervals']+=$item['intervals'];
+            }
+        }
+
+
+        $stat = [
+            "current"=>round($currentHashRate,2),
+            "prev"=>round($prevHashRate,2),
+            "last10blocks"=>round($last10blocks['hashes']/$last10blocks['intervals'],2),
+            "last100blocks"=>round($last100blocks['hashes']/$last100blocks['intervals'],2)
+        ];
+        return $stat;
+    }
 }

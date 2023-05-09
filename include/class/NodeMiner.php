@@ -132,7 +132,7 @@ class NodeMiner extends Daemon {
                 if($elapsed >= $send_interval) {
                     $start_time = time();
                     $hashes = $this->miningStat['hashes'] - $prev_hashes;
-                    $this->sendStat($hashes, $height, $send_interval);
+                    $this->storeStat($hashes, $height, $send_interval);
                     $prev_hashes = $this->miningStat['hashes'];
                 }
 			}
@@ -228,9 +228,8 @@ class NodeMiner extends Daemon {
 		_log("Miner stopped");
 	}
 
-    function sendStat($hashes, $height, $interval) {
-        global $_config;
-        $postData = http_build_query([
+    function storeStat($hashes, $height, $interval) {
+        $data = [
             "address"=>$this->address,
             "minerid"=>$this->minerid,
             "cpu"=>$this->cpu,
@@ -239,9 +238,9 @@ class NodeMiner extends Daemon {
             "interval"=>$interval,
             "miner_type"=>"nodeminer",
             "version"=>VERSION
-        ]);
-        _log("Send stat hashes=$hashes", 4);
-        $res = url_post($_config['hostname'] . "/mine.php?q=submitStat&", $postData);
+        ];
+        _log("Nodeminer: processMiningStat ".json_encode($data), 3);
+        Nodeutil::processMiningStat($data);
     }
 
 	function saveMiningStats() {
