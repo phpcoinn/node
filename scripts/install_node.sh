@@ -1,15 +1,15 @@
 #!/bin/bash
 # setup node on ubuntu server 21.04, 20.04, 18.04
-# one liner: curl -s https://raw.githubusercontent.com/phpcoinn/node/test/scripts/install_node.sh | bash
+# one liner: curl -s https://raw.githubusercontent.com/phpcoinn/node/main/scripts/install_node.sh | bash
 
-echo "PHPCoin Testnet node Installation"
+echo "PHPCoin node Installation"
 echo "==================================================================================================="
 echo "PHPCoin: define db user and pass"
 echo "==================================================================================================="
-export DB_NAME=phpcointest
+export DB_NAME=phpcoin
 export DB_USER=phpcoin
 export DB_PASS=phpcoin
-export NODE_DIR=/var/www/phpcoin-testnet
+export NODE_DIR=/var/www/phpcoin
 
 echo "PHPCoin: update system"
 echo "==================================================================================================="
@@ -34,17 +34,17 @@ git config core.fileMode false
 
 echo "PHPCoin: Configure apache"
 echo "==================================================================================================="
-cat << EOF > /etc/apache2/sites-available/phpcoin-testnet.conf
+cat << EOF > /etc/apache2/sites-available/phpcoin.conf
 <VirtualHost *:80>
         ServerAdmin webmaster@localhost
         DocumentRoot $NODE_DIR/web
-        ErrorLog ${APACHE_LOG_DIR}/phpcoin-testnet.error.log
+        ErrorLog ${APACHE_LOG_DIR}/phpcoin.error.log
         RewriteEngine on
         RewriteRule ^/dapps/(.*)$ /dapps.php?url=$1
 </VirtualHost>
 EOF
 a2dissite 000-default
-a2ensite phpcoin-testnet
+a2ensite phpcoin
 a2enmod rewrite
 service apache2 restart
 
@@ -74,8 +74,8 @@ mysql $DB_NAME -e "update config set val='http://$IP' where cfg='hostname';"
 echo "PHPCoin: import blockchain"
 echo "==================================================================================================="
 cd $NODE_DIR/tmp
-wget https://phpcoin.net/download/blockchain-testnet.sql.zip -O blockchain-testnet.sql.zip
-unzip -o blockchain-testnet.sql.zip
+wget https://phpcoin.net/download/blockchain.sql.zip -O blockchain.sql.zip
+unzip -o blockchain.sql.zip
 cd $NODE_DIR
 php cli/util.php importdb tmp/blockchain.sql
 

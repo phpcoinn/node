@@ -552,25 +552,12 @@ class NodeSync
 		$current = Block::current();
 		$current_height = $current['height'];
 
-
-//        if(NETWORK == "mainnet-alpha") {
         $sync_height = min($longest_height, $best_height);
         if($sync_height == $longest_height) {
             $sync_block_id = $longest_block_id;
         } else {
             $sync_block_id = $best_block_id;
         }
-//        } else {
-//            $sync_height = $best_height;
-//            $sync_block_id = $best_block_id;
-//
-//            if($longest_height > $best_height) {
-//                $sync_height = $longest_height;
-//                $sync_block_id = $longest_block_id;
-//            }
-//        }
-
-
 
 		$sql="select * from peers p
 			where p.height = :height
@@ -663,8 +650,6 @@ class NodeSync
 
 		if($current_height == $sync_height) {
 			_log("Blockchain is synced");
-//		} else if ($sync_height < $current_height && NETWORK != "mainnet-alpha") {
-//			_log("We are ahead of peers");
 		} else {
 			_log("Need to sync blokchain");
 
@@ -763,14 +748,12 @@ class NodeSync
                         $diff = $sync_height - $current['height'];
 						_log("Can not add new block  sync_height=$sync_height height=".$current['height']." diff=$diff");
                         Block::pop();
-//                        if($diff > 100 || NETWORK == "mainnet-alpha") { //test condition on tetsnet
                         $dir = ROOT."/cli";
                         $peer = $peersForSync[0];
                         _log("Trigger deep check with ".$peer['hostname']);
                         $cmd = "php $dir/deepcheck.php ".$peer['hostname'];
                         $check_cmd = "php $dir/deepcheck.php";
                         Nodeutil::runSingleProcess($cmd, $check_cmd);
-//                        }
 						$syncing = false;
 						break;
 					}
