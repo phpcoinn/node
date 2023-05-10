@@ -10,13 +10,17 @@ class Miner {
 	public $cnt = 0;
 	public $block_cnt = 0;
 	public $cpu = 0;
+    public $minerid;
+    private $forked;
 
 	private $running = true;
 
-	function __construct($address, $node)
+	function __construct($address, $node, $forked=false)
 	{
 		$this->address = $address;
 		$this->node = $node;
+        $this->minerid = time() . uniqid();
+        $this->forked = $forked;
 	}
 
 	function getMiningInfo() {
@@ -41,6 +45,20 @@ class Miner {
 		return $info;
 	}
 
+    function sendStat($hashes, $height, $interval) {
+        $postData = http_build_query([
+            "address"=>$this->address,
+            "minerid"=>$this->minerid,
+            "cpu"=>$this->cpu,
+            "hashes"=>$hashes,
+            "height"=>$height,
+            "interval"=>$interval,
+            "miner_type"=>"cli",
+            "version"=>MINER_VERSION
+        ]);
+        $res = url_post($this->node . "/mine.php?q=submitStat&", $postData);
+    }
+
 	function checkAddress() {
 		$url = $this->node."/mine.php?q=checkAddress";
 		$postdata = http_build_query([
@@ -55,7 +73,6 @@ class Miner {
 	}
 
 	function start() {
-		global $_config;
 		$this->miningStat = [
 			'started'=>time(),
 			'hashes'=>0,
@@ -64,6 +81,8 @@ class Miner {
 			'rejected'=>0,
 			'dropped'=>0,
 		];
+        $start_time = time();
+        $prev_hashes = null;
 		while($this->running) {
 			$this->cnt++;
 //			_log("Mining cnt: ".$this->cnt);
@@ -82,7 +101,7 @@ class Miner {
 			}
 
 			if(!isset($info['data']['ip'])) {
-				_log("Miner node does not send ip address");
+				_log("Miner node does not send ip address ",json_encode($info));
 				sleep(3);
 				continue;
 			}
@@ -136,7 +155,13 @@ class Miner {
 				$diff = $t2 - $t1;
 				$speed = round($attempt / $diff,2);
 
-				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed blockFound=$blockFound", 3);
+				$s = "PID=".getmypid()." Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed submits=".
+                    $this->miningStat['submits']." accepted=".$this->miningStat['accepted']. " rejected=".$this->miningStat['rejected']. " dropped=".$this->miningStat['dropped'];
+                if(!$this->forked){
+                    echo "$s \r";
+                } else {
+                    echo $s. PHP_EOL;
+                }
 				$this->miningStat['hashes']++;
 				if($prev_elapsed != $elapsed && $elapsed % 10 == 0) {
 					$prev_elapsed = $elapsed;
@@ -150,6 +175,15 @@ class Miner {
 						}
 					}
 				}
+                $send_interval = 60;
+                $t=time();
+                $elapsed = $t - $start_time;
+                if($elapsed >= $send_interval) {
+                    $start_time = time();
+                    $hashes = $this->miningStat['hashes'] - $prev_hashes;
+                    $prev_hashes = $this->miningStat['hashes'];
+                    $this->sendStat($hashes, $height, $send_interval);
+                }
 			}
 
 			if(!$blockFound || $elapsed <=0) {

@@ -554,12 +554,12 @@ class NodeSync
 
 
 //        if(NETWORK == "mainnet-alpha") {
-            $sync_height = min($longest_height, $best_height);
-            if($sync_height == $longest_height) {
-                $sync_block_id = $longest_block_id;
-            } else {
-                $sync_block_id = $best_block_id;
-            }
+        $sync_height = min($longest_height, $best_height);
+        if($sync_height == $longest_height) {
+            $sync_block_id = $longest_block_id;
+        } else {
+            $sync_block_id = $best_block_id;
+        }
 //        } else {
 //            $sync_height = $best_height;
 //            $sync_block_id = $best_block_id;
@@ -764,12 +764,12 @@ class NodeSync
 						_log("Can not add new block  sync_height=$sync_height height=".$current['height']." diff=$diff");
                         Block::pop();
 //                        if($diff > 100 || NETWORK == "mainnet-alpha") { //test condition on tetsnet
-                            $dir = ROOT."/cli";
-                            $peer = $peersForSync[0];
-                            _log("Trigger deep check with ".$peer['hostname']);
-                            $cmd = "php $dir/deepcheck.php ".$peer['hostname'];
-                            $check_cmd = "php $dir/deepcheck.php";
-                            Nodeutil::runSingleProcess($cmd, $check_cmd);
+                        $dir = ROOT."/cli";
+                        $peer = $peersForSync[0];
+                        _log("Trigger deep check with ".$peer['hostname']);
+                        $cmd = "php $dir/deepcheck.php ".$peer['hostname'];
+                        $check_cmd = "php $dir/deepcheck.php";
+                        Nodeutil::runSingleProcess($cmd, $check_cmd);
 //                        }
 						$syncing = false;
 						break;

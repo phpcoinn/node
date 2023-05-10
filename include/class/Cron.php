@@ -45,6 +45,8 @@ class Cron extends Daemon
         if($min == 15) {
             Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php recalculate-masternodes");
         }
-
+        if($min % 60 == 0) {
+            Nodeutil::clearOldMiningStat();
+        }
     }
 }

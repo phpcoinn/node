@@ -175,6 +175,44 @@ require_once __DIR__. '/../common/include/top.php';
 
 <?php if($miner_stats) {?>
 
+    <h4>Mining hashrates</h4>
+
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body p-3">
+                    <h5>Current block</h5>
+                    <h3><?php echo $miner_stats['data']['hashRates']['current'] ?></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card">
+                <div class="card-body p-3">
+                    <h5>Previous block</h5>
+                    <h3><?php echo $miner_stats['data']['hashRates']['prev'] ?></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card">
+                <div class="card-body p-3">
+                    <h5>Last 10 blocks</h5>
+                    <h3><?php echo $miner_stats['data']['hashRates']['last10blocks'] ?></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card">
+                <div class="card-body p-3">
+                    <h5>Last 100 blocks</h5>
+                    <h3><?php echo $miner_stats['data']['hashRates']['last100blocks'] ?></h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <h4>Miner statistics</h4>
     <div class="table-responsive">
         <table class="table table-sm table-striped">

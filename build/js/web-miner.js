@@ -28,6 +28,7 @@ class WebMiner {
         this.cpu = options.cpu || 0
         this.updateUITimer = null
         this.mineInfoTimer = null
+        this.sendStatTimer = null
         this.break = false
         this.miner = null
         if(options.miningStat) {
@@ -40,7 +41,8 @@ class WebMiner {
             this.minerInfo = options.minerInfo
         }
         this.development = options.development
-
+        this.minerid = Math.round(Date.now()/1000) + Math.random().toString(16).slice(2)
+        this.prevHashes=0
     }
 
     async start() {
@@ -66,6 +68,20 @@ class WebMiner {
             })
 
         }, 10000)
+        this.sendStatTimer = setInterval(()=>{
+            let address = this.address
+            let hashes = this.miningStat.hashes - this.prevHashes
+            this.prevHashes = this.miningStat.hashes
+            let height = this.miner.height
+            let postData = {address, minerid: this.minerid,cpu: this.cpu, hashes, height, interval: 60, miner_type: 'web-miner', version: this.minerInfo}
+            axios({
+                method: 'post',
+                url: this.node + '/mine.php?q=submitStat',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                data: new URLSearchParams(postData).toString()
+            }).then(response => {
+            })
+        }, 60000)
         await this.loop()
     }
 
@@ -73,6 +89,7 @@ class WebMiner {
         this.running = false
         clearInterval(this.updateUITimer)
         clearInterval(this.mineInfoTimer)
+        clearInterval(this.sendStatTimer)
     }
 
     sha256(pwd) {
@@ -87,6 +104,7 @@ class WebMiner {
         this.miningStat.accepted = 0
         this.miningStat.rejected = 0
         this.miningStat.dropped = 0
+        this.prevHashes = 0
     }
 
     updateCpu(cpu) {
@@ -197,6 +215,7 @@ class WebMiner {
                 this.miner.elapsed = elapsed
                 this.miner.attempt = attempt
                 this.miner.new_block_date = new_block_date
+                this.miner.height = height
 
                 salt = address.substr(0, 16)
                 if(info.data.hashingOptions) {

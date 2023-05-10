@@ -13,14 +13,20 @@ class NodeMiner extends Daemon {
 	public $miningStat;
 	public $cnt = 0;
 	public $blocks = 0;
+    public $address;
 
 	private $running = true;
+	private $minerid;
+	private $cpu;
 
 	function __construct()
 	{
 		global $_config;
 		$this->public_key = $_config['miner_public_key'];
 		$this->private_key = $_config['miner_private_key'];
+        $this->address = Account::getAddress($this->public_key);
+        $this->minerid = time() . uniqid();
+        $this->cpu = isset($_config['miner_cpu']) ? $_config['miner_cpu'] : 0;
 	}
 
 	function getMiningInfo() {
@@ -32,7 +38,8 @@ class NodeMiner extends Daemon {
 	function start($mine_blocks = null, $sleep = 3) {
 
 		$this->loadMiningStats();
-
+        $start_time = time();
+        $prev_hashes = $this->miningStat['hashes'];
 		while($this->running) {
 			$this->cnt++;
 //			_log("Mining cnt: ".$this->cnt);
@@ -77,13 +84,12 @@ class NodeMiner extends Daemon {
 			$bl->publicKey = $this->public_key;
 
 			$t1 = microtime(true);
-			$cpu = isset($_config['miner_cpu']) ? $_config['miner_cpu'] : 0;
 			while (!$blockFound) {
 				$attempt++;
 
 				$this->saveMiningStats();
 
-				usleep((100-$cpu) * 5 * 1000);
+				usleep((100-$this->cpu) * 5 * 1000);
 				$this->checkRunning();
 				if(!$this->running) {
 					_log("Stop miner because missing lock file");
@@ -106,7 +112,7 @@ class NodeMiner extends Daemon {
 
 				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
-				$mod = 10+$cpu;
+				$mod = 10+$this->cpu;
 				if($attempt % $mod == 0) {
 					$info = $this->getMiningInfo();
 					if($info!==false) {
@@ -118,6 +124,17 @@ class NodeMiner extends Daemon {
 						}
 					}
 				}
+
+                $send_interval = 60;
+                $t=time();
+                $elapsed = $t - $start_time;
+//                _log("elapsed=$elapsed hashes=".$this->miningStat['hashes']." prev_hashes=$prev_hashes");
+                if($elapsed >= $send_interval) {
+                    $start_time = time();
+                    $hashes = $this->miningStat['hashes'] - $prev_hashes;
+                    $this->storeStat($hashes, $height, $send_interval);
+                    $prev_hashes = $this->miningStat['hashes'];
+                }
 			}
 
 
@@ -210,6 +227,21 @@ class NodeMiner extends Daemon {
 
 		_log("Miner stopped");
 	}
+
+    function storeStat($hashes, $height, $interval) {
+        $data = [
+            "address"=>$this->address,
+            "minerid"=>$this->minerid,
+            "cpu"=>$this->cpu,
+            "hashes"=>$hashes,
+            "height"=>$height,
+            "interval"=>$interval,
+            "miner_type"=>"nodeminer",
+            "version"=>VERSION
+        ];
+        _log("Nodeminer: processMiningStat ".json_encode($data), 3);
+        Nodeutil::processMiningStat($data);
+    }
 
 	function saveMiningStats() {
 		if($this->miningStat['hashes'] % 100 === 0) {

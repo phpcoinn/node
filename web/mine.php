@@ -59,6 +59,7 @@ function readGeneratorStat() {
 			'reject-reasons'=>[]
 		];
 	}
+    $generator_stat['hashRates']=Nodeutil::getHashrateStat();
 	return $generator_stat;
 }
 
@@ -66,6 +67,7 @@ function saveGeneratorStat($generator_stat) {
 	$generator_stat_file = ROOT . '/tmp/generator-stat.json';
 	file_put_contents($generator_stat_file, json_encode($generator_stat));
 }
+
 
 if ($q == "info") {
     _logp("info:");
@@ -77,6 +79,7 @@ if ($q == "info") {
     }
     $cache_time = $mineInfo['time'];
     $mineInfo['time']=time();
+    $mineInfo['ip']=$_SERVER['SERVER_ADDR'];
     _logf(" height=".$mineInfo['height']);
     api_echo($mineInfo);
 } elseif ($q == "stat") {
@@ -327,17 +330,20 @@ if ($q == "info") {
 	}
 //TODO: remove checkAddress from wallet
 } else if ($q == "checkAddress") {
-	$address = $_POST['address'];
-	if(empty($address)) {
-		api_err("address-not-specified");
-	}
-	_log("Check mine access to ip: $ip address=$address", 4);
-	$res = Minepool::checkIp($address, $ip);
-	if($res) {
-		api_echo($address);
-	} else {
-		api_err("ipcheck-failed");
-	}
+    $address = $_POST['address'];
+    if (empty($address)) {
+        api_err("address-not-specified");
+    }
+    _log("Check mine access to ip: $ip address=$address", 4);
+    $res = Minepool::checkIp($address, $ip);
+    if ($res) {
+        api_echo($address);
+    } else {
+        api_err("ipcheck-failed");
+    }
+} else if ($q="submitStat") {
+    _log("submitStat data=".json_encode($_POST));
+    Nodeutil::processMiningStat($_POST);
 } else {
     api_err("invalid command");
 }
