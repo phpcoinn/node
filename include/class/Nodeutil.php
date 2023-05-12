@@ -682,34 +682,40 @@ class Nodeutil
         _log("getHashrateStat data=".json_encode($data));
         $currentHeight = Block::getHeight();
         _log("getHashrateStat currentHeight=$currentHeight");
-        $currentHashRate = null;
-        $prevHashRate = null;
-        $last10blocks = [];
-        $last100blocks = [];
-        foreach ($data['totals'] as $height => $item) {
-            if($height == $currentHeight) {
-                $currentHashRate = $item['hashes'] / $item['intervals'];
-            }
-            if($height == $currentHeight-1) {
-                $prevHashRate = $item['hashes'] / $item['intervals'];
-            }
-            if($height >= $currentHeight - 10 ) {
-                $last10blocks['hashes']+=$item['hashes'];
-                $last10blocks['intervals']+=$item['intervals'];
-            }
-            if($height >= $currentHeight - 100 ) {
-                $last100blocks['hashes']+=$item['hashes'];
-                $last100blocks['intervals']+=$item['intervals'];
-            }
-        }
-        _log("getHashrateStat calculate");
 
-        $stat = [
-            "current"=>round($currentHashRate,2),
-            "prev"=>round($prevHashRate,2),
-            "last10blocks"=>round($last10blocks['hashes']/$last10blocks['intervals'],2),
-            "last100blocks"=>round($last100blocks['hashes']/$last100blocks['intervals'],2)
-        ];
+        try {
+            $currentHashRate = null;
+            $prevHashRate = null;
+            $last10blocks = [];
+            $last100blocks = [];
+            foreach ($data['totals'] as $height => $item) {
+                if($height == $currentHeight) {
+                    $currentHashRate = $item['hashes'] / $item['intervals'];
+                }
+                if($height == $currentHeight-1) {
+                    $prevHashRate = $item['hashes'] / $item['intervals'];
+                }
+                if($height >= $currentHeight - 10 ) {
+                    $last10blocks['hashes']+=$item['hashes'];
+                    $last10blocks['intervals']+=$item['intervals'];
+                }
+                if($height >= $currentHeight - 100 ) {
+                    $last100blocks['hashes']+=$item['hashes'];
+                    $last100blocks['intervals']+=$item['intervals'];
+                }
+            }
+            _log("getHashrateStat calculate");
+
+            $stat = [
+                "current"=>round($currentHashRate,2),
+                "prev"=>round($prevHashRate,2),
+                "last10blocks"=>round($last10blocks['hashes']/$last10blocks['intervals'],2),
+                "last100blocks"=>round($last100blocks['hashes']/$last100blocks['intervals'],2)
+            ];
+        } catch (Exception $e) {
+            $stat=[];
+        }
+
         _log("getHashrateStat=".json_encode($stat));
         return $stat;
     }
