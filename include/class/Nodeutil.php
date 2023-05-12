@@ -639,7 +639,8 @@ class Nodeutil
         $mining_stat_file = ROOT . '/tmp/mining-stat.json';
         if(file_exists($mining_stat_file)) {
             $mining_stat = json_decode(file_get_contents($mining_stat_file), true);
-        } else {
+        }
+        if(empty($mining_stat)) {
             $mining_stat = [];
         }
         return $mining_stat;
@@ -707,6 +708,7 @@ class Nodeutil
             "last10blocks"=>round($last10blocks['hashes']/$last10blocks['intervals'],2),
             "last100blocks"=>round($last100blocks['hashes']/$last100blocks['intervals'],2)
         ];
+        _log("getHashrateStat=".json_encode($stat));
         return $stat;
     }
 }
