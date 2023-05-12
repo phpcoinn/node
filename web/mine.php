@@ -49,16 +49,17 @@ function readGeneratorStat() {
 	$generator_stat_file = ROOT . '/tmp/generator-stat.json';
 	if(file_exists($generator_stat_file)) {
 		$generator_stat = json_decode(file_get_contents($generator_stat_file), true);
-	} else {
-		$generator_stat = [
-			'address'=>Account::getAddress($_config['generator_public_key']),
-			'started'=>time(),
-			'submits' => 0,
-			'accepted' => 0,
-			'rejected' => 0,
-			'reject-reasons'=>[]
-		];
 	}
+    if(empty($generator_stat)) {
+        $generator_stat = [
+            'address'=>Account::getAddress($_config['generator_public_key']),
+            'started'=>time(),
+            'submits' => 0,
+            'accepted' => 0,
+            'rejected' => 0,
+            'reject-reasons'=>[]
+        ];
+    }
     $generator_stat['hashRates']=Nodeutil::getHashrateStat();
     _log("readGeneratorStat = ".json_encode($generator_stat));
 	return $generator_stat;
