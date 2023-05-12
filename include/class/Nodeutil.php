@@ -704,7 +704,8 @@ class Nodeutil
                     $last100blocks['intervals']+=$item['intervals'];
                 }
             }
-            _log("getHashrateStat calculate");
+            _log("getHashrateStat calculate currentHashRate=$currentHashRate prevHashRate=$prevHashRate last10blocks=".
+                json_encode($last10blocks)." last100blocks=".json_encode($last100blocks));
 
             $stat = [
                 "current"=>round($currentHashRate,2),
@@ -713,6 +714,7 @@ class Nodeutil
                 "last100blocks"=>round($last100blocks['hashes']/$last100blocks['intervals'],2)
             ];
         } catch (Exception $e) {
+            _log("getHashrateStat exception e=".json_encode($e->getTrace()));
             $stat=[];
         }
 
