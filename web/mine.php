@@ -47,19 +47,21 @@ if (!in_array($ip, $_config['allowed_hosts']) && !empty($ip) && !in_array(
 function readGeneratorStat() {
 	global $_config;
 	$generator_stat_file = ROOT . '/tmp/generator-stat.json';
+    $started = time();
 	if(file_exists($generator_stat_file)) {
 		$generator_stat = json_decode(file_get_contents($generator_stat_file), true);
-	} else {
+        $started = filemtime($generator_stat_file);
+	}
+    if(empty($generator_stat)) {
 		$generator_stat = [
 			'address'=>Account::getAddress($_config['generator_public_key']),
-			'started'=>time(),
 			'submits' => 0,
 			'accepted' => 0,
 			'rejected' => 0,
 			'reject-reasons'=>[]
 		];
 	}
-    $generator_stat['hashRates']=Nodeutil::getHashrateStat();
+    $generator_stat['started']=$started;
 	return $generator_stat;
 }
 
