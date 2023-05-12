@@ -677,11 +677,8 @@ class Nodeutil
     }
 
     static function getHashrateStat() {
-        _log("getHashrateStat");
         $data = self::readMiningStat();
-        _log("getHashrateStat data=".json_encode($data));
         $currentHeight = Block::getHeight();
-        _log("getHashrateStat currentHeight=$currentHeight");
 
         try {
             $currentHashRate = 0;
@@ -710,8 +707,6 @@ class Nodeutil
                     $last100blocks['intervals']+=$item['intervals'];
                 }
             }
-            _log("getHashrateStat calculate currentHashRate=$currentHashRate prevHashRate=$prevHashRate last10blocks=".
-                json_encode($last10blocks)." last100blocks=".json_encode($last100blocks));
 
             $stat = [
                 "current"=>round($currentHashRate,2),
@@ -720,11 +715,8 @@ class Nodeutil
                 "last100blocks"=>$last100blocks['intervals'] == 0 ? 0 : round($last100blocks['hashes']/$last100blocks['intervals'],2)
             ];
         } catch (Exception $e) {
-            _log("getHashrateStat exception e=".json_encode($e->getTrace()));
             $stat=[];
         }
-
-        _log("getHashrateStat=".json_encode($stat));
         return $stat;
     }
 }
