@@ -50,6 +50,7 @@ function readGeneratorStat() {
 	if(file_exists($generator_stat_file)) {
 		$generator_stat = json_decode(file_get_contents($generator_stat_file), true);
 	}
+    _log("readGeneratorStat = ".json_encode($generator_stat). " empty=".empty($generator_stat));
     if(empty($generator_stat)) {
         $generator_stat = [
             'address'=>Account::getAddress($_config['generator_public_key']),
@@ -61,7 +62,6 @@ function readGeneratorStat() {
         ];
     }
     $generator_stat['hashRates']=Nodeutil::getHashrateStat();
-    _log("readGeneratorStat = ".json_encode($generator_stat));
 	return $generator_stat;
 }
 
