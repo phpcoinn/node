@@ -684,10 +684,16 @@ class Nodeutil
         _log("getHashrateStat currentHeight=$currentHeight");
 
         try {
-            $currentHashRate = null;
-            $prevHashRate = null;
-            $last10blocks = [];
-            $last100blocks = [];
+            $currentHashRate = 0;
+            $prevHashRate = 0;
+            $last10blocks = [
+                "hashes"=>0,
+                "intervals"=>0
+            ];
+            $last100blocks = [
+                "hashes"=>0,
+                "intervals"=>0
+            ];
             foreach ($data['totals'] as $height => $item) {
                 if($height == $currentHeight) {
                     $currentHashRate = $item['hashes'] / $item['intervals'];
@@ -710,8 +716,8 @@ class Nodeutil
             $stat = [
                 "current"=>round($currentHashRate,2),
                 "prev"=>round($prevHashRate,2),
-                "last10blocks"=>round($last10blocks['hashes']/$last10blocks['intervals'],2),
-                "last100blocks"=>round($last100blocks['hashes']/$last100blocks['intervals'],2)
+                "last10blocks"=> $last10blocks['intervals'] ==0 ? 0 : round($last10blocks['hashes']/$last10blocks['intervals'],2),
+                "last100blocks"=>$last100blocks['intervals'] == 0 ? 0 : round($last100blocks['hashes']/$last100blocks['intervals'],2)
             ];
         } catch (Exception $e) {
             _log("getHashrateStat exception e=".json_encode($e->getTrace()));
