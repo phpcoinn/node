@@ -60,6 +60,7 @@ function readGeneratorStat() {
 		];
 	}
     $generator_stat['hashRates']=Nodeutil::getHashrateStat();
+    _log("readGeneratorStat = ".json_encode($generator_stat));
 	return $generator_stat;
 }
 
