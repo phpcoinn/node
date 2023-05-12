@@ -651,12 +651,19 @@ class Nodeutil
     }
 
     static function processMiningStat($data) {
+        _log("processMiningStat data=".json_encode($data));
         $miningStat = Nodeutil::readMiningStat();
         $hashes = $data['hashes'];
         $interval = $data['interval'];
         $height = $data['height'];
+        $address = $data['address'];
+        $minerid = $data['minerid'];
+        $ip = $_SERVER['REMOTE_ADDR'];
         $miningStat['totals'][$height]['hashes']+=$hashes;
         $miningStat['totals'][$height]['intervals']+=$interval;
+        $miningStat['totals'][$height]['miner'][$minerid]=$minerid;
+        $miningStat['totals'][$height]['address'][$address]=$address;
+        $miningStat['totals'][$height]['ip'][$ip]=$ip;
         Nodeutil::saveMiningStat($miningStat);
     }
 
@@ -679,34 +686,70 @@ class Nodeutil
         $data = self::readMiningStat();
         $currentHeight = Block::getHeight();
 
-        $currentHashRate = null;
-        $prevHashRate = null;
-        $last10blocks = [];
-        $last100blocks = [];
+        try {
+
+            $last10blocks = [
+                "hashes"=>0,
+                "count"=>0
+            ];
+            $last100blocks = [
+                "hashes"=>0,
+                "count"=>0
+            ];
+            $stat = [];
         foreach ($data['totals'] as $height => $item) {
             if($height == $currentHeight) {
-                $currentHashRate = $item['hashes'] / $item['intervals'];
+                    $stat['current']['hashRate'] = round($item['hashes'] / 60, 2);
+                    $stat['current']['address'] = count($item['address']);
+                    $stat['current']['miner'] = count($item['miner']);
+                    $stat['current']['ip'] = count($item['ip']);
             }
             if($height == $currentHeight-1) {
-                $prevHashRate = $item['hashes'] / $item['intervals'];
+                    $stat['prev']['hashRate'] = round($item['hashes'] / 60, 2);
+                    $stat['prev']['address'] = count($item['address']);
+                    $stat['prev']['miner'] = count($item['miner']);
+                    $stat['prev']['ip'] = count($item['ip']);
             }
             if($height >= $currentHeight - 10 ) {
                 $last10blocks['hashes']+=$item['hashes'];
-                $last10blocks['intervals']+=$item['intervals'];
+                    $last10blocks['count']++;
+                    foreach ($item['address'] as $address) {
+                        $last10blocks['address'][$address]=$address;
+                    }
+                    foreach ($item['miner'] as $miner) {
+                        $last10blocks['miner'][$miner]=$miner;
+                    }
+                    foreach ($item['ip'] as $ip) {
+                        $last10blocks['ip'][$ip]=$ip;
+                    }
             }
             if($height >= $currentHeight - 100 ) {
                 $last100blocks['hashes']+=$item['hashes'];
-                $last100blocks['intervals']+=$item['intervals'];
+                    $last100blocks['count']++;
+                    foreach ($item['address'] as $address) {
+                        $last100blocks['address'][$address]=$address;
+                    }
+                    foreach ($item['miner'] as $miner) {
+                        $last100blocks['miner'][$miner]=$miner;
+                    }
+                    foreach ($item['ip'] as $ip) {
+                        $last100blocks['ip'][$ip]=$ip;
+                    }
             }
         }
 
+            $stat['last10blocks']['hashRate']=$last10blocks['count'] ==0 ? 0 : round($last10blocks['hashes']/(60*$last10blocks['count']),2);
+            $stat['last10blocks']['address']=count($last10blocks['address']);
+            $stat['last10blocks']['miner']=count($last10blocks['miner']);
+            $stat['last10blocks']['ip']=count($last10blocks['ip']);
+            $stat['last100blocks']['hashRate']=$last100blocks['count'] == 0 ? 0 : round($last100blocks['hashes']/(60*$last100blocks['count']),2);
+            $stat['last100blocks']['address']=count($last100blocks['address']);
+            $stat['last100blocks']['miner']=count($last100blocks['miner']);
+            $stat['last100blocks']['ip']=count($last100blocks['ip']);
 
-        $stat = [
-            "current"=>round($currentHashRate,2),
-            "prev"=>round($prevHashRate,2),
-            "last10blocks"=>round($last10blocks['hashes']/$last10blocks['intervals'],2),
-            "last100blocks"=>round($last100blocks['hashes']/$last100blocks['intervals'],2)
-        ];
+        } catch (Exception $e) {
+            $stat=[];
+        }
         return $stat;
     }
 }
