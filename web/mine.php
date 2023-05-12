@@ -61,6 +61,7 @@ function readGeneratorStat() {
             'reject-reasons'=>[]
         ];
     }
+    _log("readGeneratorStat2 = ".json_encode($generator_stat));
     $generator_stat['hashRates']=Nodeutil::getHashrateStat();
 	return $generator_stat;
 }
