@@ -73,25 +73,19 @@ class Sync extends Daemon
 
 		//rebroadcasting local transactions
 		$current = Block::current();
-		if ($_config['sync_rebroadcast_locals'] == true && $_config['disable_repropagation'] == false) {
-			$r = Mempool::getForRebroadcast($current['height']);
-			_log("Rebroadcasting local transactions - ".count($r), 1);
-			foreach ($r as $x) {
-				Propagate::transactionToAll($x['id']);
-			}
-		}
+        $r = Mempool::getForRebroadcast($current['height']);
+        _log("Rebroadcasting local transactions - ".count($r), 1);
+        foreach ($r as $x) {
+            Propagate::transactionToAll($x['id']);
+        }
 
 		//rebroadcasting transactions
-		if ($_config['disable_repropagation'] == false) {
-			$forgotten = $current['height'] - $_config['sync_rebroadcast_height'];
-			$r=Mempool::getForgotten($forgotten);
-
-			_log("Rebroadcasting external transactions - ".count($r),1);
-
-			foreach ($r as $x) {
-				Propagate::transactionToAll($x['id']);
-			}
-		}
+        $forgotten = $current['height'] - 30;
+        $r=Mempool::getForgotten($forgotten);
+        _log("Rebroadcasting external transactions - ".count($r),1);
+        foreach ($r as $x) {
+            Propagate::transactionToAll($x['id']);
+        }
 
 
 		Nodeutil::cleanTmpFiles();

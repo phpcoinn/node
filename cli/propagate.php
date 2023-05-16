@@ -147,7 +147,7 @@ if ($type == "transaction") {
 	if(empty($peers_limit)) {
 		$peers_limit = 30;
 	}
-	$r = Peer::getPeersForSync($peers_limit);
+	$r = Peer::getPeersForPropagate($peers_limit);
 	_log("PropagateFork: Transaction propagate peers: ".count($r),3);
 
 	if(Propagate::PROPAGATE_BY_FORKING) {
