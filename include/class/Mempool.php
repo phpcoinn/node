@@ -42,10 +42,16 @@ class Mempool
 		return $mem;
 	}
 
-	public static function mempoolBalance($id)
+	public static function mempoolBalance($id, $exceptTxid = null)
 	{
 		global $db;
-		$mem = $db->single("SELECT SUM(case when src=:id1 then -(val+fee) else (val+fee) end) FROM mempool WHERE src=:id2 or dst=:id3", [":id1" => $id,":id2" => $id,":id3" => $id]);
+        $params = [":id1" => $id,":id2" => $id,":id3" => $id];
+        $sql="SELECT SUM(case when src=:id1 then -(val+fee) else (val+fee) end) FROM mempool WHERE (src=:id2 or dst=:id3)";
+        if(!empty($exceptTxid)) {
+            $sql.=" and id != :exceptTxid";
+            $params[":exceptTxid"]=$exceptTxid;
+        }
+		$mem = $db->single($sql, $params);
 		return num($mem);
 	}
 
