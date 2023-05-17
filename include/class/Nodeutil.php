@@ -639,7 +639,8 @@ class Nodeutil
         $mining_stat_file = ROOT . '/tmp/mining-stat.json';
         if(file_exists($mining_stat_file)) {
             $mining_stat = json_decode(file_get_contents($mining_stat_file), true);
-        } else {
+        }
+        if(empty($mining_stat)) {
             $mining_stat = [];
         }
         return $mining_stat;
