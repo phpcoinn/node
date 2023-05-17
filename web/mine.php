@@ -86,6 +86,8 @@ if ($q == "info") {
     api_echo($mineInfo);
 } elseif ($q == "stat") {
 	$generator_stat = readGeneratorStat();
+    $generator_stat['hashRates']=Nodeutil::getHashrateStat();
+    _log("stat=".json_encode($generator_stat));
 	api_echo($generator_stat);
 	exit;
 } elseif ($q == "submitHash") {

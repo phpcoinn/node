@@ -688,31 +688,31 @@ class Nodeutil
         $currentHeight = Block::getHeight();
 
         try {
-            $currentHashRate = 0;
-            $prevHashRate = 0;
+
             $last10blocks = [
                 "hashes"=>0,
-                "intervals"=>0
+                "count"=>0
             ];
             $last100blocks = [
                 "hashes"=>0,
-                "intervals"=>0
+                "count"=>0
             ];
-        foreach ($data['totals'] as $height => $item) {
-            if($height == $currentHeight) {
+            $stat = [];
+            foreach ($data['totals'] as $height => $item) {
+                if($height == $currentHeight) {
                     $stat['current']['hashRate'] = round($item['hashes'] / 60, 2);
                     $stat['current']['address'] = count($item['address']);
                     $stat['current']['miner'] = count($item['miner']);
                     $stat['current']['ip'] = count($item['ip']);
-            }
-            if($height == $currentHeight-1) {
+                }
+                if($height == $currentHeight-1) {
                     $stat['prev']['hashRate'] = round($item['hashes'] / 60, 2);
                     $stat['prev']['address'] = count($item['address']);
                     $stat['prev']['miner'] = count($item['miner']);
                     $stat['prev']['ip'] = count($item['ip']);
-            }
-            if($height >= $currentHeight - 10 ) {
-                $last10blocks['hashes']+=$item['hashes'];
+                }
+                if($height >= $currentHeight - 10 ) {
+                    $last10blocks['hashes']+=$item['hashes'];
                     $last10blocks['count']++;
                     foreach ($item['address'] as $address) {
                         $last10blocks['address'][$address]=$address;
@@ -723,9 +723,9 @@ class Nodeutil
                     foreach ($item['ip'] as $ip) {
                         $last10blocks['ip'][$ip]=$ip;
                     }
-            }
-            if($height >= $currentHeight - 100 ) {
-                $last100blocks['hashes']+=$item['hashes'];
+                }
+                if($height >= $currentHeight - 100 ) {
+                    $last100blocks['hashes']+=$item['hashes'];
                     $last100blocks['count']++;
                     foreach ($item['address'] as $address) {
                         $last100blocks['address'][$address]=$address;
@@ -736,15 +736,18 @@ class Nodeutil
                     foreach ($item['ip'] as $ip) {
                         $last100blocks['ip'][$ip]=$ip;
                     }
+                }
             }
-        }
 
-            $stat = [
-                "current"=>round($currentHashRate,2),
-                "prev"=>round($prevHashRate,2),
-                "last10blocks"=> $last10blocks['intervals'] ==0 ? 0 : round($last10blocks['hashes']/$last10blocks['intervals'],2),
-                "last100blocks"=>$last100blocks['intervals'] == 0 ? 0 : round($last100blocks['hashes']/$last100blocks['intervals'],2)
-            ];
+            $stat['last10blocks']['hashRate']=$last10blocks['count'] ==0 ? 0 : round($last10blocks['hashes']/(60*$last10blocks['count']),2);
+            $stat['last10blocks']['address']=count($last10blocks['address']);
+            $stat['last10blocks']['miner']=count($last10blocks['miner']);
+            $stat['last10blocks']['ip']=count($last10blocks['ip']);
+            $stat['last100blocks']['hashRate']=$last100blocks['count'] == 0 ? 0 : round($last100blocks['hashes']/(60*$last100blocks['count']),2);
+            $stat['last100blocks']['address']=count($last100blocks['address']);
+            $stat['last100blocks']['miner']=count($last100blocks['miner']);
+            $stat['last100blocks']['ip']=count($last100blocks['ip']);
+
         } catch (Exception $e) {
             $stat=[];
         }
