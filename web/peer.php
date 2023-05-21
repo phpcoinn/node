@@ -29,6 +29,40 @@ header('Content-Type: application/json');
 
 $q = $_GET['q'];
 
+$t1=microtime(true);
+
+$info = "";
+$data = json_decode(trim($_POST['data']), true);
+
+$lock_name = false;
+if($q=="submitBlock") {
+    $lock_name = "submitBlock-".$data['id'];
+}
+
+
+if($lock_name) {
+    $lock_filename = ROOT.'/tmp/peer-'.$lock_name.'.lock';
+//    _log("PEER: check lock process peer $lock_name filename=$lock_filename");
+    if (!@mkdir($lock_filename, 0700)) {
+        //_log("PEER: Request q=$q $lock_name BUSY");
+        api_err("Peer busy");
+    }
+}
+
+
+
+
+register_shutdown_function(function () use ($t1, $q, $lock_filename) {
+    $t2=microtime(true);
+    $diff = $t2-$t1;
+    if($lock_filename) {
+        @rmdir($lock_filename);
+    }
+//    if($diff > 1) {
+//        _log("PEER: Request q=$q time=" . $diff);
+//    }
+});
+
 PeerRequest::processRequest();
 
 
