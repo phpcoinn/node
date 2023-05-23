@@ -298,7 +298,7 @@ class Masternode extends Daemon
 				//destionation address must be verified
 				$dst = $transaction->dst;
 				$dstPublicKey = Account::publicKey($dst);
-				if (!$dstPublicKey) {
+				if (!$dstPublicKey && !in_array($height, MN_CREATE_IGNORE_HEIGHT)) {
 					throw new Exception("Destination address $dst is not verified!");
 				}
 				//destionation address must not be masternode
