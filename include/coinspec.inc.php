@@ -15,6 +15,7 @@ const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
 const GIT_BRANCH = "test";
+const MIN_MINER_VERSION = "1.2";
 
 const COIN = "phpcoin";
 const COIN_NAME="PHPCoin";
