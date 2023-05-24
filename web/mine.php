@@ -70,6 +70,13 @@ function saveGeneratorStat($generator_stat) {
 	file_put_contents($generator_stat_file, json_encode($generator_stat));
 }
 
+function checkVersion() {
+    $version = $_POST['version'];
+    $minerInfo = $_POST['minerInfo'];
+    if($_GET['q'] == "submitStat") {
+        _log("checkVersion q=".$_GET['q']. " version=".$version. " MIN_VERSION=".MIN_MINER_VERSION. " minerInfo=$minerInfo");
+    }
+}
 
 if ($q == "info") {
     _logp("info:");
@@ -91,6 +98,8 @@ if ($q == "info") {
 	api_echo($generator_stat);
 	exit;
 } elseif ($q == "submitHash") {
+
+    checkVersion();
 
 	$generator_stat = readGeneratorStat();
 
@@ -346,6 +355,9 @@ if ($q == "info") {
         api_err("ipcheck-failed");
     }
 } else if ($q="submitStat") {
+
+    checkVersion();
+
     _log("submitStat data=".json_encode($_POST));
     Nodeutil::processMiningStat($_POST);
 } else {

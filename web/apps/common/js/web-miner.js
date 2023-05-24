@@ -6,6 +6,7 @@ const Base58 = require("base-58")
 const jsonKeySort = require("json-keys-sort")
 const phpcoinCrypto = require("phpcoin-crypto")
 
+const version = '1.2'
 
 function hex2coin(hash) {
     return Base58.encode(Buffer.from(hash, 'hex'))
@@ -75,7 +76,7 @@ class WebMiner {
             let hashes = this.miningStat.hashes - this.prevHashes
             this.prevHashes = this.miningStat.hashes
             let height = this.miner.height
-            let postData = {address, minerid: this.minerid,cpu: this.cpu, hashes, height, interval: 60, miner_type: 'web-miner', version: this.minerInfo}
+            let postData = {address, minerid: this.minerid,cpu: this.cpu, hashes, height, interval: 60, miner_type: 'web-miner', minerInfo: this.minerInfo, version}
             axios({
                 method: 'post',
                 url: this.node + '/mine.php?q=submitStat',
@@ -147,7 +148,6 @@ class WebMiner {
             let submitResponse
             let calOffset = 0
             let blockFound = false
-            let version = info.data.version
             let attempt = 0
             let speed = 0
 
@@ -280,7 +280,8 @@ class WebMiner {
                 address,
                 date: new_block_date,
                 elapsed,
-                minerInfo: this.minerInfo
+                minerInfo: this.minerInfo,
+                version
             }
             response = await axios({
                 method: 'post',
