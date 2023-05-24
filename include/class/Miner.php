@@ -54,6 +54,7 @@ class Miner {
             "height"=>$height,
             "interval"=>$interval,
             "miner_type"=>"cli",
+            'minerInfo'=>'phpcoin-miner cli ' . VERSION,
             "version"=>MINER_VERSION
         ]);
         $res = url_post($this->node . "/mine.php?q=submitStat&", $postData);
@@ -199,7 +200,8 @@ class Miner {
 					'address' => $this->address,
 					'date'=> $new_block_date,
 					'elapsed' => $elapsed,
-					'minerInfo'=>'phpcoin-miner cli ' . VERSION
+					'minerInfo'=>'phpcoin-miner cli ' . VERSION,
+                    "version"=>MINER_VERSION
 				]
 			);
 
