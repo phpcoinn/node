@@ -6,7 +6,7 @@ const Base58 = require("base-58")
 const jsonKeySort = require("json-keys-sort")
 const phpcoinCrypto = require("phpcoin-crypto")
 
-const version = '1.2'
+const version = '1.3'
 
 function hex2coin(hash) {
     return Base58.encode(Buffer.from(hash, 'hex'))
