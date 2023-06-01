@@ -1,6 +1,7 @@
 #!/bin/bash
 
 export DB_NAME=phpcoin
+export NODE_DIR=/var/www/phpcoin
 
 service mysql start > /dev/null
 service apache2 start > /dev/null 2>&1
@@ -8,8 +9,7 @@ service apache2 start > /dev/null 2>&1
 cd /var/www/phpcoin
 git pull origin main > /dev/null 2>&1
 
-chown -R www-data:www-data tmp
-chown -R www-data:www-data web/apps
+chown -R www-data:www-data .
 
 FILE=first-run
 if test -f "$FILE"; then
@@ -22,16 +22,15 @@ if test -f "$FILE"; then
     mysql $DB_NAME -e "update config set val='http://$IP' where cfg='hostname'"
 
     echo "Import blockchain... "
-    cd /var/www/phpcoin/tmp
+
+    cd $NODE_DIR/tmp
     wget -q https://phpcoin.net/download/blockchain.sql.zip
     unzip blockchain.sql.zip > /dev/null 2>&1
-    cd /var/www/phpcoin
+    cd $NODE_DIR
     php cli/util.php importdb tmp/blockchain.sql > /dev/null
     rm first-run
     > tmp/phpcoin.log
 fi
-
-php cli/util.php download-apps
 
 rm -rf /var/www/phpcoin/tmp/sync-lock
 
