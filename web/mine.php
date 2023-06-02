@@ -73,9 +73,9 @@ function saveGeneratorStat($generator_stat) {
 function checkVersion() {
     $version = $_POST['version'];
     $minerInfo = $_POST['minerInfo'];
-    if($_GET['q'] == "submitStat") {
-        _log("checkVersion q=".$_GET['q']. " version=".$version. " MIN_VERSION=".MIN_MINER_VERSION. " minerInfo=$minerInfo");
-    }
+    $version_ok = version_compare($version, MIN_MINER_VERSION)>=0;
+    _log("checkVersion q=".$_GET['q']. " version=".$version. " MIN_VERSION=".MIN_MINER_VERSION. " minerInfo=$minerInfo version_ok=$version_ok");
+    return $version_ok;
 }
 
 if ($q == "info") {
@@ -99,13 +99,19 @@ if ($q == "info") {
 	exit;
 } elseif ($q == "submitHash") {
 
-    checkVersion();
 
 	$generator_stat = readGeneratorStat();
+	$generator_stat['submits']++;
 
 	_logp("submitHash ip=$ip");
 
-	$generator_stat['submits']++;
+    $res = checkVersion();
+    if(!$res && false) {
+        $generator_stat['miner-version-invalid']++;
+        @$generator_stat['reject-reasons']['miner-version-invalid']++;
+        saveGeneratorStat($generator_stat);
+        api_err("miner-version-invalid");
+    }
 
 	if (empty($_config['generator'])) {
 		_logf("generator-disabled");
@@ -356,7 +362,10 @@ if ($q == "info") {
     }
 } else if ($q="submitStat") {
 
-    checkVersion();
+    $res = checkVersion();
+    if(!$res && false) {
+        api_err("miner-version-invalid");
+    }
 
     _log("submitStat data=".json_encode($_POST));
     Nodeutil::processMiningStat($_POST);
