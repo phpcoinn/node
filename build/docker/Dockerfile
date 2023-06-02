@@ -5,12 +5,14 @@ ARG DB_NAME=phpcoin
 ARG DB_USER=phpcoin
 ARG DB_PASS=phpcoin
 ARG NODE_DIR=/var/www/phpcoin
+ARG NETWORK=main
+ENV NETWORK=$NETWORK
 
 EXPOSE 80
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
 apt update && \
-apt install curl wget git -y && \
+apt install nano curl wget git -y && \
 apt install apache2 php libapache2-mod-php php-mysql php-gmp php-bcmath php-curl unzip -y && \
 apt install mariadb-server -y && \
 service mysql start && \
@@ -22,13 +24,12 @@ RUN mkdir $NODE_DIR && \
 cd $NODE_DIR && \
 git config --global --add safe.directory $NODE_DIR && \
 git clone https://github.com/phpcoinn/node . && \
-git config core.fileMode false
+git config core.fileMode false && \
+if [ "$NETWORK" = "test" ] ; then cd $NODE_DIR && git switch test; fi
 
 RUN echo "<VirtualHost *:80>\n\
        ServerAdmin webmaster@localhost\n\
        DocumentRoot $NODE_DIR/web\n\
-       ErrorLog ${APACHE_LOG_DIR}/error.log\n\
-       CustomLog ${APACHE_LOG_DIR}/access.log combined\n\
        RewriteRule ^/dapps/(.*)$ /dapps.php?url=$1\n\
 </VirtualHost>" > /etc/apache2/sites-available/phpcoin.conf && \
 a2dissite 000-default && \
