@@ -106,7 +106,7 @@ if ($q == "info") {
 	_logp("submitHash ip=$ip");
 
     $res = checkVersion();
-    if(!$res && false) {
+    if(!$res) {
         $generator_stat['miner-version-invalid']++;
         @$generator_stat['reject-reasons']['miner-version-invalid']++;
         saveGeneratorStat($generator_stat);
@@ -363,7 +363,7 @@ if ($q == "info") {
 } else if ($q="submitStat") {
 
     $res = checkVersion();
-    if(!$res && false) {
+    if(!$res) {
         api_err("miner-version-invalid");
     }
 
