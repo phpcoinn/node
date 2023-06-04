@@ -365,7 +365,7 @@ if ($q == "info") {
         api_err("miner-version-invalid");
     }
 
-    _log("submitStat is_array=".is_array($_POST)." data=".json_encode($_POST));
+    _log("submitStat data=".json_encode($_POST));
     Nodeutil::processMiningStat($_POST);
 } else {
     api_err("invalid command");
