@@ -87,6 +87,10 @@ class Account
 	        }
         }
 
+        if($offset<0) {
+            $offset = 0;
+        }
+
         $current = Block::current();
 
 		$cond = '';
