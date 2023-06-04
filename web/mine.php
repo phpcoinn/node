@@ -47,10 +47,8 @@ if (!in_array($ip, $_config['allowed_hosts']) && !empty($ip) && !in_array(
 function readGeneratorStat() {
 	global $_config;
 	$generator_stat_file = ROOT . '/tmp/generator-stat.json';
-    $started = time();
 	if(file_exists($generator_stat_file)) {
 		$generator_stat = json_decode(file_get_contents($generator_stat_file), true);
-        $started = filemtime($generator_stat_file);
 	}
     if(empty($generator_stat)) {
         $generator_stat = [
@@ -58,10 +56,10 @@ function readGeneratorStat() {
             'submits' => 0,
             'accepted' => 0,
             'rejected' => 0,
+            'started' => time(),
             'reject-reasons'=>[]
         ];
     }
-    $generator_stat['started']=$started;
 	return $generator_stat;
 }
 
@@ -367,7 +365,7 @@ if ($q == "info") {
         api_err("miner-version-invalid");
     }
 
-    _log("submitStat data=".json_encode($_POST));
+    _log("submitStat is_array=".is_array($_POST)." data=".json_encode($_POST));
     Nodeutil::processMiningStat($_POST);
 } else {
     api_err("invalid command");

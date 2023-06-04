@@ -182,7 +182,10 @@ require_once __DIR__. '/../common/include/top.php';
             <div class="card">
                 <div class="card-body p-3">
                     <h5>Current block</h5>
-                    <h3><?php echo $miner_stats['data']['hashRates']['current'] ?></h3>
+                    <h3><?php echo $miner_stats['data']['hashRates']['current']['hashRate'] ?>&nbsp;</h3>
+                    <div class="text-nowrap">
+                         <span class="text-muted font-size-13"><strong><?php echo $miner_stats['data']['hashRates']['current']['miner'] ?></strong> miners</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -190,7 +193,10 @@ require_once __DIR__. '/../common/include/top.php';
             <div class="card">
                 <div class="card-body p-3">
                     <h5>Previous block</h5>
-                    <h3><?php echo $miner_stats['data']['hashRates']['prev'] ?></h3>
+                    <h3><?php echo $miner_stats['data']['hashRates']['prev']['hashRate'] ?>&nbsp;</h3>
+                    <div class="text-nowrap">
+                        <span class="text-muted font-size-13"><strong><?php echo $miner_stats['data']['hashRates']['prev']['miner'] ?></strong> miners</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -198,7 +204,10 @@ require_once __DIR__. '/../common/include/top.php';
             <div class="card">
                 <div class="card-body p-3">
                     <h5>Last 10 blocks</h5>
-                    <h3><?php echo $miner_stats['data']['hashRates']['last10blocks'] ?></h3>
+                    <h3><?php echo $miner_stats['data']['hashRates']['last10blocks']['hashRate'] ?>&nbsp;</h3>
+                    <div class="text-nowrap">
+                        <span class="text-muted font-size-13"><strong><?php echo $miner_stats['data']['hashRates']['last10blocks']['miner'] ?></strong> miners</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -206,7 +215,10 @@ require_once __DIR__. '/../common/include/top.php';
             <div class="card">
                 <div class="card-body p-3">
                     <h5>Last 100 blocks</h5>
-                    <h3><?php echo $miner_stats['data']['hashRates']['last100blocks'] ?></h3>
+                    <h3><?php echo $miner_stats['data']['hashRates']['last100blocks']['hashRate'] ?>&nbsp;</h3>
+                    <div class="text-nowrap">
+                        <span class="text-muted font-size-13"><strong><?php echo $miner_stats['data']['hashRates']['last100blocks']['miner'] ?></strong> miners</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -220,7 +232,6 @@ require_once __DIR__. '/../common/include/top.php';
                 <td>Running</td>
                 <td>
                     <?php
-                    $miner_stats['data']['started']= 1667332680;
                     if(isset($miner_stats['data']['started'])) {
 	                    $elapsed = time() - $miner_stats['data']['started'];
 	                    $days = (int) ($elapsed / 60 / 60 / 24);
