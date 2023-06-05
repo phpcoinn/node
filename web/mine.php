@@ -98,7 +98,7 @@ if ($q == "info") {
         _log("MINE_STAT=".json_encode($generator_stat));
         api_echo($generator_stat);
     } catch (Error $e) {
-        api_err(json_encode($e));
+        api_err(json_encode(["error"=>$e->getMessage(), "trace"=>$e->getTraceAsString()]));
     }
 
 } elseif ($q == "submitHash") {
