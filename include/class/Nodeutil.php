@@ -698,6 +698,14 @@ class Nodeutil
                 "count"=>0
             ];
             $stat = [];
+            $stat['current']['hashRate']=0;
+            $stat['current']['address']=0;
+            $stat['current']['miner']=0;
+            $stat['current']['ip']=0;
+            $stat['prev']['hashRate']=0;
+            $stat['prev']['address']=0;
+            $stat['prev']['miner']=0;
+            $stat['prev']['ip']=0;
             foreach ($data['totals'] as $height => $item) {
                 if($height == $currentHeight) {
                     $stat['current']['hashRate'] = round($item['hashes'] / 60, 2);
