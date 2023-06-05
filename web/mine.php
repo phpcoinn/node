@@ -94,7 +94,9 @@ if ($q == "info") {
         _log("MINE_STAT");
         $generator_stat = readGeneratorStat();
         _log("MINE_STAT generator_stat=".json_encode($generator_stat));
-        $generator_stat['hashRates']=Nodeutil::getHashrateStat();
+        $hashRates=Nodeutil::getHashrateStat();
+        _log("MINE_STAT hashRates=".json_encode($hashRates));
+        $generator_stat['hashRates']=$hashRates;
         _log("MINE_STAT=".json_encode($generator_stat));
         api_echo($generator_stat);
     } catch (Error $e) {
