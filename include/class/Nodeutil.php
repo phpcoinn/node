@@ -757,7 +757,7 @@ class Nodeutil
             $stat['last100blocks']['ip']=count($last100blocks['ip']);
 
         } catch (Error $e) {
-            _log("MINE_STAT ERROR=".json_encode(["error"=>$e->getMessage(), "trace"=>$e->getTraceAsString()]));
+//            _log("MINE_STAT ERROR=".json_encode(["error"=>$e->getMessage(), "trace"=>$e->getTraceAsString()]));
             $stat=[];
         }
         return $stat;

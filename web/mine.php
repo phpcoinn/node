@@ -91,13 +91,13 @@ if ($q == "info") {
     api_echo($mineInfo);
 } elseif ($q == "stat") {
     try {
-        _log("MINE_STAT");
+//        _log("MINE_STAT");
         $generator_stat = readGeneratorStat();
-        _log("MINE_STAT generator_stat=".json_encode($generator_stat));
+//        _log("MINE_STAT generator_stat=".json_encode($generator_stat));
         $hashRates=Nodeutil::getHashrateStat();
-        _log("MINE_STAT hashRates=".json_encode($hashRates));
+//        _log("MINE_STAT hashRates=".json_encode($hashRates));
         $generator_stat['hashRates']=$hashRates;
-        _log("MINE_STAT=".json_encode($generator_stat));
+//        _log("MINE_STAT=".json_encode($generator_stat));
         api_echo($generator_stat);
     } catch (Error $e) {
         api_err(json_encode(["error"=>$e->getMessage(), "trace"=>$e->getTraceAsString()]));
