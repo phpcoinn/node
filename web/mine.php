@@ -90,11 +90,17 @@ if ($q == "info") {
     _logf(" height=".$mineInfo['height']);
     api_echo($mineInfo);
 } elseif ($q == "stat") {
-	$generator_stat = readGeneratorStat();
-    $generator_stat['hashRates']=Nodeutil::getHashrateStat();
-    _log("stat=".json_encode($generator_stat));
-	api_echo($generator_stat);
-	exit;
+    try {
+        _log("MINE_STAT");
+        $generator_stat = readGeneratorStat();
+        _log("MINE_STAT generator_stat=".json_encode($generator_stat));
+        $generator_stat['hashRates']=Nodeutil::getHashrateStat();
+        _log("MINE_STAT=".json_encode($generator_stat));
+        api_echo($generator_stat);
+    } catch (Error $e) {
+        api_err(json_encode($e));
+    }
+
 } elseif ($q == "submitHash") {
 
 
