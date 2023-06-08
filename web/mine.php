@@ -78,15 +78,15 @@ function checkVersion() {
 
 function checkStats() {
     $height=$_REQUEST['height'];
-    $minerId=$_REQUEST['minerid'];
+    $ip=$_REQUEST['ip'];
     $miningStat = Nodeutil::readMiningStat();
-    $minerIds=@$miningStat['totals'][$height]['miner'];
+    $ips=@$miningStat['totals'][$height]['ip'];
     $not_found_stat = false;
-    if(!in_array($minerId, $minerIds)) {
+    if(!in_array($ip, $ips)) {
         $not_found_stat = true;
     }
-    _log("checkStats minerid=".$minerId." height=".$height." not_found_stat=$not_found_stat");
-    _log("checkStats addresses=".json_encode($minerIds));
+    _log("checkStats ip=".$ip." height=".$height." not_found_stat=$not_found_stat");
+    _log("checkStats ips=".json_encode($ips));
 }
 
 if ($q == "info") {
