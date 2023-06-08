@@ -76,6 +76,10 @@ function checkVersion() {
     return $version_ok;
 }
 
+function checkStats() {
+    _log("checkStats");
+}
+
 if ($q == "info") {
     _logp("info:");
     $mineInfo = Cache::get("mineInfo", function() {
@@ -118,6 +122,8 @@ if ($q == "info") {
         saveGeneratorStat($generator_stat);
         api_err("miner-version-invalid");
     }
+
+    $res = checkStats();
 
 	if (empty($_config['generator'])) {
 		_logf("generator-disabled");
