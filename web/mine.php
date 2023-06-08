@@ -76,9 +76,8 @@ function checkVersion() {
     return $version_ok;
 }
 
-function checkStats() {
+function checkStats($ip) {
     $height=$_REQUEST['height'];
-    $ip=$_REQUEST['ip'];
     $miningStat = Nodeutil::readMiningStat();
     $ips=@$miningStat['totals'][$height]['ip'];
     $not_found_stat = false;
@@ -132,7 +131,7 @@ if ($q == "info") {
         api_err("miner-version-invalid");
     }
 
-    $res = checkStats();
+    $res = checkStats($ip);
 
 	if (empty($_config['generator'])) {
 		_logf("generator-disabled");
