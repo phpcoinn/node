@@ -77,11 +77,16 @@ function checkVersion() {
 }
 
 function checkStats() {
-    _log("checkStats data=".json_encode($_REQUEST));
+    $height=$_REQUEST['height'];
+    $minerId=$_REQUEST['minerid'];
     $miningStat = Nodeutil::readMiningStat();
-    $height = Block::getHeight();
-    $addresses=@$miningStat['totals'][$height]['address'];
-    _log("checkStats addresses=".json_encode($addresses));
+    $minerIds=@$miningStat['totals'][$height]['miner'];
+    $not_found_stat = false;
+    if(!in_array($minerId, $minerIds)) {
+        $not_found_stat = true;
+    }
+    _log("checkStats minerid=".$minerId." height=".$height." not_found_stat=$not_found_stat");
+    _log("checkStats addresses=".json_encode($minerIds));
 }
 
 if ($q == "info") {
