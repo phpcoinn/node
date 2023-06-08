@@ -77,7 +77,11 @@ function checkVersion() {
 }
 
 function checkStats() {
-    _log("checkStats");
+    _log("checkStats data=".json_encode($_REQUEST));
+    $miningStat = Nodeutil::readMiningStat();
+    $height = Block::getHeight();
+    $addresses=@$miningStat['totals'][$height]['address'];
+    _log("checkStats addresses=".json_encode($addresses));
 }
 
 if ($q == "info") {
