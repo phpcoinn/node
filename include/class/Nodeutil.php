@@ -683,6 +683,13 @@ class Nodeutil
         Nodeutil::saveMiningStat($miningStat);
     }
 
+    static function resetMiningStats() {
+        $mining_stat_file = ROOT . '/tmp/mining-stat.json';
+        @unlink($mining_stat_file);
+        $generator_stat_file = ROOT . '/tmp/generator-stat.json';
+        @unlink($generator_stat_file);
+    }
+
     static function getHashrateStat() {
         $data = self::readMiningStat();
         $currentHeight = Block::getHeight();

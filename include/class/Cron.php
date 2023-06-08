@@ -48,5 +48,8 @@ class Cron extends Daemon
         if($min % 60 == 0) {
             Nodeutil::clearOldMiningStat();
         }
+        if($hour == 3 && $min == 0) {
+            Nodeutil::resetMiningStats();
+        }
     }
 }

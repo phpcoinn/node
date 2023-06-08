@@ -85,7 +85,7 @@ function checkStats($ip) {
         $not_found_stat = true;
     }
     _log("checkStats ip=".$ip." height=".$height." not_found_stat=$not_found_stat");
-    _log("checkStats ips=".json_encode($ips));
+    return $not_found_stat;
 }
 
 if ($q == "info") {
@@ -131,7 +131,14 @@ if ($q == "info") {
         api_err("miner-version-invalid");
     }
 
-    $res = checkStats($ip);
+    $not_found_stat = checkStats($ip);
+    if($not_found_stat) {
+        $reason = "miner-not-sending-stat";
+        $generator_stat[$reason]++;
+        @$generator_stat['reject-reasons'][$reason]++;
+        saveGeneratorStat($generator_stat);
+        api_err($reason);
+    }
 
 	if (empty($_config['generator'])) {
 		_logf("generator-disabled");
