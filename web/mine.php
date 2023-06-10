@@ -117,8 +117,6 @@ if ($q == "info") {
 
 } elseif ($q == "submitHash") {
 
-    _log("SUBMIT_HASH ".json_encode($_REQUEST));
-
 	$generator_stat = readGeneratorStat();
 	$generator_stat['submits']++;
 
