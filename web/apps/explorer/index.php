@@ -58,6 +58,10 @@ $next_collateral = Block::getMasternodeCollateral($blockCount, true);
 $next_collateral_height = Block::getNextCollateralHeight($blockCount);
 $fee = Blockchain::getFee();
 
+$res = file_get_contents("https://main1.phpcoin.net/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/api.php?q=coinInfo");
+$res = json_decode($res, true);
+$btcPrice = num($res['rate'],8);
+$usdPrice = num($res['usdPrice'],4);
 ?>
 <?php
     require_once __DIR__. '/../common/include/top.php';
@@ -175,8 +179,8 @@ $fee = Blockchain::getFee();
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
             <div class="card-body p-3">
-                <div class="row align-items-center">
-                    <div class="col-12">
+                <div class="row align-items-start">
+                    <div class="col-6">
                         <i class="fas fa-exchange-alt me-1 h4"></i>
                         <span class="text-muted mb-3 lh-1 text-truncate h4">
                             <a href="/apps/explorer/txs.php">Transactions</a>
@@ -188,15 +192,6 @@ $fee = Blockchain::getFee();
                             <span class="text-muted font-size-13">Fee <?php echo number_format($fee,5) ?></span>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-lg-4 col-md-6">
-        <div class="card card-h-100">
-            <div class="card-body p-3">
-                <div class="row align-items-center">
                     <div class="col-6">
                         <i class="fas fa-hourglass-start  me-1 h4"></i>
                         <span class="text-muted mb-3 lh-1 text-truncate h4">
@@ -206,17 +201,27 @@ $fee = Blockchain::getFee();
                             <?php echo $mempoolCount ?>
                         </h2>
                     </div>
-                    <?php if (Nodeutil::miningEnabled() && $minepool_enabled) { ?>
-                        <div class="col-6">
-                            <i class="fas fa-running  me-1 h4"></i>
-                            <span class="text-muted mb-3 lh-1 text-truncate h4">
-                                Minepool
-                            </span>
-                            <h2 class="my-2">
-                                <?php echo $minepoolCount ?>
-                            </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="card card-h-100">
+            <div class="card-body p-3">
+                <div class="row align-items-center">
+                    <div class="col-12">
+                        <i class="fas fa-dollar-sign  me-1 h4"></i>
+                        <span class="text-muted mb-3 lh-1 text-truncate h4">
+                            <a href="https://xeggex.com/market/PHP_USDT" target="_blank">Price</a>
+                        </span>
+                        <h2 class="my-2">
+                            <?php echo $btcPrice ?> BTC
+                        </h2>
+                        <div class="text-nowrap">
+                            <span class="text-muted font-size-13"><?php echo $usdPrice ?> $</span>
                         </div>
-                    <?php } ?>
+                    </div>
                 </div>
             </div>
         </div>
