@@ -88,6 +88,17 @@ class Peer
 		return self::findPeers(false, null);
 	}
 
+    static function getLimitedPeersForPropagate() {
+        global $_config;
+        $peers_limit = $_config['peers_limit'];
+        if(empty($peers_limit)) {
+            $peers_limit = 30;
+        }
+        $peers =  self::findPeers(false, null, $peers_limit, DB::unixTimeStamp()." - ping desc");
+        _log("getLimitedPeersForPropagate found=".count($peers), 5);
+        return $peers;
+    }
+
 	static function getPeersForMasternode($limit = null) {
 		global $db;
 		$sql="select * from peers p WHERE (p.blacklisted < ".DB::unixTimeStamp()." or p.generator is not null or p.miner is not null )

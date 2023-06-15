@@ -774,13 +774,6 @@ class PeerRequest
 				api_echo("block-ok");
 			} else {
 				_logf("we are on lower block", 5);
-//				if(self::$peer) {
-//					$dir = ROOT."/cli";
-//					$cmd = "php $dir/peersync.php ".self::$peer['hostname'];
-//					$check_cmd = "php $dir/peersync.php";
-//					_log("submitBlock: run peer sync with ".self::$peer['hostname']);
-//					Nodeutil::runSingleProcess($cmd, $check_cmd);
-//				}
 				api_echo("peer-sync");
 			}
 		} else if ($diff > 0) {
@@ -804,13 +797,6 @@ class PeerRequest
 				api_err("block-not-ok");
 			} else if ($res<0) {
 				_logf("other block is winner");
-				if(self::$peer) {
-					$dir = ROOT."/cli";
-//					$cmd = "php $dir/peercheck.php ".self::$peer['hostname']. " ".$data['height'];
-//					$check_cmd = "php $dir/peercheck.php";
-//					_log("submitBlock: run peer check with ".self::$peer['hostname']);
-//					Nodeutil::runSingleProcess($cmd, $check_cmd);
-				}
 				api_err("block-ok");
 			} else {
 				_logf("blocks are actually same");
