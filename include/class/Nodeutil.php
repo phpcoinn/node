@@ -683,6 +683,13 @@ class Nodeutil
         Nodeutil::saveMiningStat($miningStat);
     }
 
+    static function resetMiningStats() {
+        $mining_stat_file = ROOT . '/tmp/mining-stat.json';
+        @unlink($mining_stat_file);
+        $generator_stat_file = ROOT . '/tmp/generator-stat.json';
+        @unlink($generator_stat_file);
+    }
+
     static function getHashrateStat() {
         $data = self::readMiningStat();
         $currentHeight = Block::getHeight();
@@ -756,7 +763,8 @@ class Nodeutil
             $stat['last100blocks']['miner']=count($last100blocks['miner']);
             $stat['last100blocks']['ip']=count($last100blocks['ip']);
 
-        } catch (Exception $e) {
+        } catch (Error $e) {
+//            _log("MINE_STAT ERROR=".json_encode(["error"=>$e->getMessage(), "trace"=>$e->getTraceAsString()]));
             $stat=[];
         }
         return $stat;

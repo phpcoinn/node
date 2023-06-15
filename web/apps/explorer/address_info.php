@@ -42,15 +42,27 @@ $transactions = Transaction::getByAddressType($address, $type,$dm);
 
 $rewardStat = Transaction::getRewardsStat($address, $type);
 
-$addressPeer = Peer::getPeerByType($address, $type);
-
-if($type == "generator" && $addressPeer) {
-    $url = $addressPeer['hostname'] . "/mine.php?q=stat";
-    $res = url_get($url);
-    $miner_stats = json_decode($res, true);
-}
 
 global $_config;
+if($type=="generator") {
+    if(!empty($_config['generator_public_key'])) {
+        $generator = Account::getAddress($_config['generator_public_key']);
+        if($generator == $address) {
+            $hostname = $_config['hostname'];
+        }
+    }
+    $addressPeer = Peer::getPeerByType($address, $type);
+    if($addressPeer) {
+        $hostname = $addressPeer['hostname'];
+    }
+    if($hostname) {
+        $url = $hostname . "/mine.php?q=stat";
+        $res = url_get($url);
+        $miner_stats = json_decode($res, true);
+    }
+}
+
+
 
 require_once __DIR__. '/../common/include/top.php';
 ?>

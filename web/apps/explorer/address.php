@@ -35,6 +35,7 @@ $mempool = Account::getMempoolTransactions($address);
 
 $addressTypes = Block::getAddressTypes($address);
 
+
 ?>
 <?php
 require_once __DIR__. '/../common/include/top.php';

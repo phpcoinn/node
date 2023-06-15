@@ -76,6 +76,18 @@ function checkVersion() {
     return $version_ok;
 }
 
+function checkStats($ip) {
+    $height=$_REQUEST['height'];
+    $miningStat = Nodeutil::readMiningStat();
+    $ips=@$miningStat['totals'][$height]['ip'];
+    $not_found_stat = false;
+    if(!in_array($ip, $ips)) {
+        $not_found_stat = true;
+    }
+    _log("checkStats ip=".$ip." height=".$height." not_found_stat=$not_found_stat");
+    return $not_found_stat;
+}
+
 if ($q == "info") {
     _logp("info:");
     $mineInfo = Cache::get("mineInfo", function() {
@@ -90,13 +102,20 @@ if ($q == "info") {
     _logf(" height=".$mineInfo['height']);
     api_echo($mineInfo);
 } elseif ($q == "stat") {
-	$generator_stat = readGeneratorStat();
-    $generator_stat['hashRates']=Nodeutil::getHashrateStat();
-    _log("stat=".json_encode($generator_stat));
-	api_echo($generator_stat);
-	exit;
-} elseif ($q == "submitHash") {
+    try {
+//        _log("MINE_STAT");
+        $generator_stat = readGeneratorStat();
+//        _log("MINE_STAT generator_stat=".json_encode($generator_stat));
+        $hashRates=Nodeutil::getHashrateStat();
+//        _log("MINE_STAT hashRates=".json_encode($hashRates));
+        $generator_stat['hashRates']=$hashRates;
+//        _log("MINE_STAT=".json_encode($generator_stat));
+        api_echo($generator_stat);
+    } catch (Error $e) {
+        api_err(json_encode(["error"=>$e->getMessage(), "trace"=>$e->getTraceAsString()]));
+    }
 
+} elseif ($q == "submitHash") {
 
 	$generator_stat = readGeneratorStat();
 	$generator_stat['submits']++;
@@ -109,6 +128,15 @@ if ($q == "info") {
         @$generator_stat['reject-reasons']['miner-version-invalid']++;
         saveGeneratorStat($generator_stat);
         api_err("miner-version-invalid");
+    }
+
+    $not_found_stat = checkStats($ip);
+    if($not_found_stat) {
+        $reason = "miner-not-sending-stat";
+        $generator_stat[$reason]++;
+        @$generator_stat['reject-reasons'][$reason]++;
+        saveGeneratorStat($generator_stat);
+        api_err($reason);
     }
 
 	if (empty($_config['generator'])) {
