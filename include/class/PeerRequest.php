@@ -729,9 +729,10 @@ class PeerRequest
 		self::emitToScoket("logSubmitBlock", $data);
 	}
 
-	static function emitToScoket($type, $data) {
-		$log = ["type"=>$type, "data"=>$data];
-		$res = peer_post("http://node1.phpcoin.net:3000/emit", $log);
+	static function emitToScoket($event, $data) {
+        global $_config;
+		$log = ["event"=>$event, "data"=>$data, "hostname" => $_config['hostname']];
+		$res = peer_post("http://node1.phpcoin.net:3001/emit", $log);
 		api_echo("OK");
 	}
 

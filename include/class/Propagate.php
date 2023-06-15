@@ -156,4 +156,18 @@ class Propagate
 			_log("Microsync: Block not accepted response=".$response." err=".$err, 5);
 		}
 	}
+
+    static function propagateEventAddedBlock($block) {
+        $data['height']=$block->height;
+        $data['id']=$block->id;
+        _log("SOCKET: propagateEventAddedBlock data=".json_encode($data), 5);
+        self::propagateSocketEvent("blockAdded", $data);
+    }
+
+    static function propagateSocketEvent($event, $data) {
+        $dir = ROOT . "/cli";
+        $data = base64_encode(json_encode($data));
+        $cmd = "php $dir/propagate.php socket $event $data";
+        Nodeutil::runSingleProcess($cmd);
+    }
 }

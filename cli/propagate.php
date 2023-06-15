@@ -294,3 +294,9 @@ if($type == "dappsupdate") {
 	Dapps::propagateDappsUpdate($hash, $id);
 }
 
+if($type == "socket") {
+    $event = $argv[2];
+    $data = json_decode(base64_decode($argv[3]), true);
+    _log("SOCKET: propagate event=$event data=".json_encode($data), 4);
+    PeerRequest::emitToScoket($event, $data);
+}
