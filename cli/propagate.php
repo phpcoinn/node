@@ -66,6 +66,9 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 				die('could not fork');
 			} else if ($pid == 0) {
 				$cpid = getmypid();
+                $requestId = time().uniqid();
+                $data['requestId']=$requestId;
+                Propagate::eventPropagate($hostname, $requestId);
 				$response = peer_post($hostname . "/peer.php?q=submitBlock", $data, 5, $err, $info);
 				_log("PropagateFork: forking child $cpid $hostname end response=".json_encode($response)." err=$err time=".(microtime(true) - $start),5);
 				Propagate::processBlockPropagateResponse($hostname, $ip, $id, $response, $err);

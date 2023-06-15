@@ -754,7 +754,10 @@ class PeerRequest
 		// receive a  new block from a peer
 		_logp("submitBlock: Receive new block from a peer $ip hostname=$hostname : id=".$data['id']." height=".$data['height']." current=".$current['height']. " diff=".$diff, 5);
 
-		if($diff < 0) {
+		Propagate::eventPropagateComplete($data['requestId']);
+        
+        
+        if($diff < 0) {
 			if($diff == -1) {
 //				api_echo("block-ok");
 				$peer_block = Block::getFromArray($data);

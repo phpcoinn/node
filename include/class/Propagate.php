@@ -170,4 +170,17 @@ class Propagate
         $cmd = "php $dir/propagate.php socket $event $data";
         Nodeutil::runSingleProcess($cmd);
     }
+
+    static function eventPropagate($dst, $requestId) {
+        global $_config;
+        $data['src']=$_config['hostname'];
+        $data['dst']=$dst;
+        $data['requestId']=$requestId;
+        self::propagateSocketEvent("propagateBlock", $data);
+    }
+
+    static function eventPropagateComplete($requestId) {
+        $data['requestId']=$requestId;
+        self::propagateSocketEvent("propagateComplete", $data);
+    }
 }
