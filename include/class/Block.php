@@ -163,7 +163,7 @@ class Block
                 Cache::set("current_export", Block::export($hash));
                 Cache::set("mineInfo", Blockchain::getMineInfo());
                 
-                Propagate::propagateEventAddedBlock($this);
+//                Propagate::propagateEventAddedBlock($this);
                 
                 return true;
 

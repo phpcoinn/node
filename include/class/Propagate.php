@@ -183,4 +183,9 @@ class Propagate
         $data['requestId']=$requestId;
         self::propagateSocketEvent("propagateComplete", $data);
     }
+
+    static function eventPostReceived($requestId) {
+        $data['requestId']=$requestId;
+        self::propagateSocketEvent("postReceived", $data);
+    }
 }

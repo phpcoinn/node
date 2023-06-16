@@ -116,6 +116,7 @@ class PeerRequest
 
 		_logf("finish process");
 
+        Propagate::eventPostReceived($requestId);
 
 		self::$ip=$ip;
 		self::$data=$data;
@@ -754,7 +755,7 @@ class PeerRequest
 		// receive a  new block from a peer
 		_logp("submitBlock: Receive new block from a peer $ip hostname=$hostname : id=".$data['id']." height=".$data['height']." current=".$current['height']. " diff=".$diff, 5);
 
-		Propagate::eventPropagateComplete($data['requestId']);
+//		Propagate::eventPropagateComplete($data['requestId']);
         
         
         if($diff < 0) {
