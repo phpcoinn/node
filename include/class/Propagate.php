@@ -165,10 +165,10 @@ class Propagate
     }
 
     static function propagateSocketEvent($event, $data) {
-        $dir = ROOT . "/cli";
-        $data = base64_encode(json_encode($data));
-        $cmd = "php $dir/propagate.php socket $event $data";
-        Nodeutil::runSingleProcess($cmd);
+//        $dir = ROOT . "/cli";
+//        $data = base64_encode(json_encode($data));
+//        $cmd = "php $dir/propagate.php socket $event $data";
+//        Nodeutil::runSingleProcess($cmd);
     }
 
     static function eventPropagate($dst, $requestId) {
