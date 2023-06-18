@@ -38,7 +38,6 @@ cat << EOF > /etc/apache2/sites-available/phpcoin.conf
 <VirtualHost *:80>
         ServerAdmin webmaster@localhost
         DocumentRoot $NODE_DIR/web
-        ErrorLog ${APACHE_LOG_DIR}/phpcoin.error.log
         RewriteEngine on
         RewriteRule ^/dapps/(.*)$ /dapps.php?url=$1
 </VirtualHost>
