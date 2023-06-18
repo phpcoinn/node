@@ -95,6 +95,7 @@ class PeerRequest
 			}
 			_logp("update peer info");
 			Peer::updatePeerInfo($ip, $info);
+            $peer['height']=$info['height'];
 			if($peer['blacklisted'] < time() && $peer['fails']>0) {
 				_logp("clear blacklist");
 				Peer::clearFails($peer['id']);
