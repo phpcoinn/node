@@ -162,9 +162,6 @@ class Block
                 Cache::set("height", $this->height);
                 Cache::set("current_export", Block::export($hash));
                 Cache::set("mineInfo", Blockchain::getMineInfo());
-                
-//                Propagate::propagateEventAddedBlock($this);
-                
                 return true;
 
             } catch (Exception $e) {

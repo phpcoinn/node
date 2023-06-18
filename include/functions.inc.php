@@ -201,25 +201,6 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
 {
     global $_config;
 
-
-    $url_info = parse_url($url);
-    $query = $url_info['query'];
-
-    $requestId=uniqid();
-
-    if(!empty($query)) {
-        $q = str_replace("q=", "", $query);
-        $socket_data=[
-            'q'=>$q,
-            'requestId'=>$requestId,
-            'src'=>$_config['hostname'],
-            'dst'=>$url_info['scheme']."://".$url_info['host'],
-            'time'=>time()
-        ];
-        _log("peer_post: $url socket_data=".json_encode($socket_data), 5);
-        Propagate::propagateSocketEvent("peerPost", $socket_data);
-    }
-
     if(isset($_config) && $_config['offline']==true) {
 	    _log("Peer is set to offline");
 	    return false;
@@ -237,7 +218,7 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
 	        "version"=>VERSION,
 	        "network"=>NETWORK,
 	        "chain_id"=>CHAIN_ID,
-	        "requestId" => $requestId,
+	        "requestId" => uniqid(),
 	        "info"=>empty($info) ? Peer::getInfo() : $info
         ]
     );

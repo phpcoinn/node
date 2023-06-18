@@ -95,6 +95,7 @@ class PeerRequest
 			}
 			_logp("update peer info");
 			Peer::updatePeerInfo($ip, $info);
+            $peer['height']=$info['height'];
 			if($peer['blacklisted'] < time() && $peer['fails']>0) {
 				_logp("clear blacklist");
 				Peer::clearFails($peer['id']);
@@ -702,10 +703,7 @@ class PeerRequest
 		// receive a  new block from a peer
 		_logp("submitBlock: Receive new block from a peer $ip hostname=$hostname : id=".$data['id']." height=".$data['height']." current=".$current['height']. " diff=".$diff, 5);
 
-//		Propagate::eventPropagateComplete($data['requestId']);
-        
-        
-        if($diff < 0) {
+		if($diff < 0) {
 			if($diff == -1) {
 //				api_echo("block-ok");
 				$peer_block = Block::getFromArray($data);
@@ -726,6 +724,13 @@ class PeerRequest
 				api_echo("block-ok");
 			} else {
 				_logf("we are on lower block", 5);
+//				if(self::$peer) {
+//					$dir = ROOT."/cli";
+//					$cmd = "php $dir/peersync.php ".self::$peer['hostname'];
+//					$check_cmd = "php $dir/peersync.php";
+//					_log("submitBlock: run peer sync with ".self::$peer['hostname']);
+//					Nodeutil::runSingleProcess($cmd, $check_cmd);
+//				}
 				api_echo("peer-sync");
 			}
 		} else if ($diff > 0) {
