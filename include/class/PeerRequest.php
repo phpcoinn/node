@@ -116,8 +116,6 @@ class PeerRequest
 
 		_logf("finish process");
 
-        Propagate::eventPostReceived($requestId);
-
 		self::$ip=$ip;
 		self::$data=$data;
 		self::$requestId=$requestId;
@@ -631,10 +629,10 @@ class PeerRequest
 		api_echo($masternode);
 	}
 
-	static function propagateMsg()
+	static function propagateMsg2()
 	{
 		global $_config, $db;
-		
+        
 		$info = $_POST['info'];
 
 		if($info['version'] != VERSION.".".BUILD_VERSION) {
@@ -642,78 +640,27 @@ class PeerRequest
 		}
 
 		$data = self::$data;
-		$data = $data['data'];
-		$data = base64_decode($data);
-		$data = json_decode($data, true);
+		$orig_message = $data['msg'];
+        $message = base64_decode($orig_message);
+        $message = json_decode($message, true);
 
-		$message = $data['source']['message'];
-		_log("Msg propagate: Checking propagate msg: $message");
-
-		$signature = $data['source']['signature'];
-		$nonce = $data['source']['nonce'];
-
-		$time = $data['source']['time'];
-		if(empty($time)) {
-			api_err("Missing time in request");
-		}
-
-		$now = microtime(true);
-		if($now - $time > 60) {
-			api_err("Expired propagation request");
-		}
-
-		$hops = $data['hops'];
-		$hops_cnt = count($hops);
-		if ($hops_cnt > 10) {
-			api_err("Msg propagate: max hops exceed. Stop");
-		}
-
-		$res = ec_verify($nonce, $signature, DEV_PUBLIC_KEY);
+		$signature = $message['signature'];
+		$public_key = $message['public_key'];
+		$msg = $message['message'];
+		$res = ec_verify($msg, $signature, $public_key);
 		if(!$res) {
 			api_err("Signature failed");
 		}
 
 		$val = $db->getConfig('propagate_msg');
-
-		if ($val == $message) {
-			_log("Msg propagate: This node already receive message $message - do not propagate");
-			$propagate = false;
+		if ($val == $msg) {
+            api_echo("This node already receive message $msg - do not propagate");
 		} else {
-			_log("Msg propagate: This node not receive message $message - store and propagate further");
-			$db->setConfig('propagate_msg', $message);
-			$propagate_file = ROOT . "/tmp/propagate_info.txt";
-			$t = microtime(true);
-			$elapsed = $t - $data['source']['time'];
-			$data['target']=[
-				'hostname'=>$_config['hostname'],
-				'time'=>$t,
-				'elapsed'=>$elapsed
-			];
-			file_put_contents($propagate_file, json_encode($data));
-			$propagate = true;
+			$db->setConfig('propagate_msg', $msg);
+            $payload = base64_encode(json_encode($message));
+            Propagate::message($payload);
+            api_echo("This node not receive message $msg - store and propagate further");
 		}
-
-		if ($propagate) {
-			$hop = [
-				"node" => $_config['hostname'],
-				"time" => microtime(true)
-			];
-			$data['hops'][] = $hop;
-
-			$type = $data['source']['type'];
-			$limit = $data['source']['limit'];
-
-			$msg = base64_encode(json_encode($data));
-			if($type == "nearest") {
-				$peers = Peer::getPeersForSync($limit, true);
-				$dir = ROOT . "/cli";
-				foreach ($peers as $peer) {
-					Propagate::messageToPeer($peer['hostname'], $msg);
-				}
-			}
-			peer_post("https://node1.phpcoin.net/peer.php?q=logPropagate", $msg);
-		}
-		api_echo("Propagate=$propagate");
 	}
 
 	static function logPropagate() {

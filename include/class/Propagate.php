@@ -85,6 +85,12 @@ class Propagate
 		Nodeutil::runSingleProcess($cmd);
 	}
 
+	static function message($msg) {
+		$dir = ROOT . "/cli";
+		$cmd = "php $dir/propagate.php message $msg";
+		Nodeutil::runProcess($cmd);
+	}
+
 	static function dappsLocal() {
 		$dir = ROOT . "/cli";
 		$cmd = "php $dir/propagate.php dapps local";

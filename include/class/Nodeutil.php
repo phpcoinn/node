@@ -365,6 +365,11 @@ class Nodeutil
 		}
 	}
 
+	static function runProcess($cmd) {
+        $exec_cmd = "$cmd > /dev/null 2>&1  &";
+        system($exec_cmd);
+	}
+
 	static function getTableRowsCount() {
 		global $db;
 		$db_name = $db->single('select database()');

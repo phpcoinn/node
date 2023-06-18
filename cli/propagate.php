@@ -66,9 +66,6 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 				die('could not fork');
 			} else if ($pid == 0) {
 				$cpid = getmypid();
-                $requestId = time().uniqid();
-                $data['requestId']=$requestId;
-//                Propagate::eventPropagate($hostname, $requestId);
 				$response = peer_post($hostname . "/peer.php?q=submitBlock", $data, 5, $err, $info);
 				_log("PropagateFork: forking child $cpid $hostname end response=".json_encode($response)." err=$err time=".(microtime(true) - $start),5);
 				Propagate::processBlockPropagateResponse($hostname, $ip, $id, $response, $err);
@@ -278,12 +275,25 @@ if($type == "masternode") {
 }
 
 if($type == "message") {
-	$hash = $argv[2];
-	$data = $argv[3];
-	$hostname = base64_decode($hash);
-	$url = $hostname."/peer.php?q=propagateMsg";
-	$res = peer_post($url, ["data"=>$data], 30, $err);
-	_log("Propagate message: propagate to peer $url res=".json_encode($res). " err=".json_encode($err), 5);
+    global $_config;
+    $msg = $argv[2];
+    $r = Peer::getLimitedPeersForPropagate();
+    $info = Peer::getInfo();
+    define("FORKED_PROCESS", getmypid());
+    foreach ($r as $peer) {
+        $pid = pcntl_fork();
+        if ($pid == -1) {
+            die('could not fork');
+        } else if ($pid == 0) {
+            $hostname = $peer['hostname'];
+                $url = $hostname."/peer.php?q=propagateMsg2";
+                $data['msg']=$msg;
+                $res = peer_post($url, $data, 5, $err, $info);
+            exit();
+        }
+    }
+    while (pcntl_waitpid(0, $status) != -1) ;
+    exit;
 }
 
 if($type == "dapps") {

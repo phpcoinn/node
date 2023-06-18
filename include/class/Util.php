@@ -1072,33 +1072,20 @@ class Util
 			echo "Message not specified".PHP_EOL;
 			exit;
 		}
-		$private_key = $_config['repository_private_key'];
-		$public_key = $_config['repository_public_key'];
+		$private_key = $_config['masternode_private_key'];
+		$public_key = $_config['masternode_public_key'];
 		if(empty($private_key)) {
-			echo "No repository private key".PHP_EOL;
+			echo "No masternode private key".PHP_EOL;
 			exit;
 		}
-//		if(!isset($_config['propagate_msg-enable'])) {
-//			_log("Msg propagate: Not enabled. Stop");
-//			return;
-//		}
 		$signature = ec_sign($message, $private_key);
-		$data = [
-			"source" => [
-				"address" => Account::getAddress($public_key),
-				"message" => $message,
-				"signature" => $signature,
-				"time"=>microtime(true)
-			],
-			"hops" => []
-		];
-		_log("Msg propagate: start data=".json_encode($data));
+        $data = [
+            'message'=>$message,
+            'signature'=>$signature,
+            'public_key'=>$public_key
+        ];
 		$msg = base64_encode(json_encode($data));
-		$peers = Peer::getPeersForSync(10);
-		$dir = ROOT."/cli";
-		foreach($peers  as $peer) {
-			Propagate::messageToPeer($peer['hostname'], $msg);
-		}
+        Propagate::message($msg);
 	}
 
 	static function smartContractCompile($argv) {
