@@ -635,6 +635,8 @@ class PeerRequest
 		global $_config, $db;
         
 		$info = $_POST['info'];
+
+        api_echo("OK");
         
         _log("PROPAGATE: received peer request propagateMsg3");
 
