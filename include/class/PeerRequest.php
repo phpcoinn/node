@@ -636,7 +636,7 @@ class PeerRequest
         
 		$info = $_POST['info'];
 
-        api_echo("OK");
+//        api_echo("OK");
         
         _log("PROPAGATE: received peer request propagateMsg3");
 

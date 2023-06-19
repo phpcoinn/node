@@ -290,9 +290,9 @@ if($type == "message") {
     define("FORKED_PROCESS", getmypid());
     foreach ($peers as $peer) {
         $hostname = $peer['hostname'];
-//        if(strpos($hostname, "phpcoin.net") === false) {
-//            continue;
-//        }
+        if(strpos($hostname, "phpcoin.net") === false) {
+            continue;
+        }
         $pid = pcntl_fork();
         if ($pid == -1) {
             die('could not fork');
@@ -328,6 +328,6 @@ if($type == "dappsupdate") {
 if($type == "socket") {
     $event = $argv[2];
     $data = json_decode(base64_decode($argv[3]), true);
-    _log("PROPAGATE: propagate event=$event data=".json_encode($data), 4);
+//    _log("PROPAGATE: propagate event=$event data=".json_encode($data), 4);
     PeerRequest::emitToScoket($event, $data);
 }
