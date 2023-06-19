@@ -1066,7 +1066,7 @@ class Util
 	}
 
 	static function propagate($argv) {
-		global $_config;
+		global $_config, $db;
 		$message = trim($argv[2]);
 		if(empty($message)) {
 			echo "Message not specified".PHP_EOL;
@@ -1085,6 +1085,7 @@ class Util
             'public_key'=>$public_key
         ];
 		$msg = base64_encode(json_encode($data));
+        $db->setConfig('propagate_msg', $message);
         Propagate::message($msg);
 	}
 

@@ -664,10 +664,11 @@ class PeerRequest
         $dst = $_config['hostname'];
 
         _log("PROPAGATE: requestId=".$requestId);
+        $val = $db->getConfig('propagate_msg');
+        $completed = ($val == $msg);
+        Propagate::propagateSocketEvent2("messageReceived", ['requestId'=>$requestId, 'elapsed'=>$elapsed, 'src'=>$src, 'dst'=>$dst, 'completed'=>$completed]);
 
-        Propagate::propagateSocketEvent2("messageReceived", ['requestId'=>$requestId, 'elapsed'=>$elapsed, 'src'=>$src, 'dst'=>$dst]);
 
-		$val = $db->getConfig('propagate_msg');
 		if ($val == $msg) {
             api_echo("PROPAGATE: This node already receive message $msg - do not propagate",0);
 		} else {
