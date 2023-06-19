@@ -92,7 +92,7 @@ class Peer
         global $_config;
         $peers_limit = $_config['peers_limit'];
         if(empty($peers_limit)) {
-            $peers_limit = 30;
+            $peers_limit = 500;
         }
         $peers =  self::findPeers(false, null, $peers_limit, DB::unixTimeStamp()." - ping desc");
         _log("getLimitedPeersForPropagate found=".count($peers), 5);

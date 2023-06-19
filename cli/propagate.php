@@ -277,18 +277,36 @@ if($type == "masternode") {
 if($type == "message") {
     global $_config;
     $msg = $argv[2];
-    $r = Peer::getLimitedPeersForPropagate();
+    $peers = Peer::getLimitedPeersForPropagate();
+//    $peers = Peer::getPeersForPropagate();
+//    _log("PROPAGATE: running propagate found peers=".count($peers));
+//    foreach ($peers as $peer) {
+//        $hostname = $peer['hostname'];
+////        _log("PROPAGATE: found peer $hostname");
+//    }
+
+
     $info = Peer::getInfo();
     define("FORKED_PROCESS", getmypid());
-    foreach ($r as $peer) {
+    foreach ($peers as $peer) {
+        $hostname = $peer['hostname'];
+//        if(strpos($hostname, "phpcoin.net") === false) {
+//            continue;
+//        }
         $pid = pcntl_fork();
         if ($pid == -1) {
             die('could not fork');
         } else if ($pid == 0) {
-            $hostname = $peer['hostname'];
-                $url = $hostname."/peer.php?q=propagateMsg2";
-                $data['msg']=$msg;
-                $res = peer_post($url, $data, 5, $err, $info);
+            $url = $hostname."/peer.php?q=propagateMsg3";
+            $data['msg']=$msg;
+            $data['requestId']=time().uniqid();
+            $data['src']=$_config['hostname'];
+            $data['dst']=$hostname;
+            $data['time']=microtime(true);
+            Propagate::propagateSocketEvent2("messageSent", $data);
+            $res = peer_post($url, $data, 5, $err, $info);
+            _log("PROPAGATE: propagate msg to peer $hostname res=$res err=".json_encode($err));
+
             exit();
         }
     }
@@ -310,6 +328,6 @@ if($type == "dappsupdate") {
 if($type == "socket") {
     $event = $argv[2];
     $data = json_decode(base64_decode($argv[3]), true);
-    _log("SOCKET: propagate event=$event data=".json_encode($data), 4);
+    _log("PROPAGATE: propagate event=$event data=".json_encode($data), 4);
     PeerRequest::emitToScoket($event, $data);
 }

@@ -177,6 +177,13 @@ class Propagate
 //        Nodeutil::runSingleProcess($cmd);
     }
 
+    static function propagateSocketEvent2($event, $data) {
+        $dir = ROOT . "/cli";
+        $data = base64_encode(json_encode($data));
+        $cmd = "php $dir/propagate.php socket $event $data";
+        Nodeutil::runSingleProcess($cmd);
+    }
+
     static function eventPropagate($dst, $requestId) {
         global $_config;
         $data['src']=$_config['hostname'];

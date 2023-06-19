@@ -630,11 +630,13 @@ class PeerRequest
 		api_echo($masternode);
 	}
 
-	static function propagateMsg2()
+	static function propagateMsg3()
 	{
 		global $_config, $db;
         
 		$info = $_POST['info'];
+        
+        _log("PROPAGATE: received peer request propagateMsg3");
 
 		if($info['version'] != VERSION.".".BUILD_VERSION) {
 			api_err("Only latest version allowed");
@@ -650,17 +652,27 @@ class PeerRequest
 		$msg = $message['message'];
 		$res = ec_verify($msg, $signature, $public_key);
 		if(!$res) {
-			api_err("Signature failed");
+			api_err("PROPAGATE: Signature failed");
 		}
+        _log("PROPAGATE: message signature OK");
+
+        $requestId = $data['requestId'];
+        $elapsed = microtime(true) - $data['time'];
+        $src = $data['src'];
+        $dst = $_config['hostname'];
+
+        _log("PROPAGATE: requestId=".$requestId);
+
+        Propagate::propagateSocketEvent2("messageReceived", ['requestId'=>$requestId, 'elapsed'=>$elapsed, 'src'=>$src, 'dst'=>$dst]);
 
 		$val = $db->getConfig('propagate_msg');
 		if ($val == $msg) {
-            api_echo("This node already receive message $msg - do not propagate");
+            api_echo("PROPAGATE: This node already receive message $msg - do not propagate",0);
 		} else {
 			$db->setConfig('propagate_msg', $msg);
             $payload = base64_encode(json_encode($message));
             Propagate::message($payload);
-            api_echo("This node not receive message $msg - store and propagate further");
+            api_echo("PROPAGATE: This node not receive message $msg - store and propagate further",0);
 		}
 	}
 
