@@ -1086,6 +1086,7 @@ class Util
         ];
 		$msg = base64_encode(json_encode($data));
         $db->setConfig('propagate_msg', $message);
+        Propagate::propagateSocketEvent2("messageCreated", ['time'=>microtime(true)]);
         Propagate::message($msg);
 	}
 

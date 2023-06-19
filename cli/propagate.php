@@ -288,10 +288,16 @@ if($type == "message") {
 
     $info = Peer::getInfo();
     define("FORKED_PROCESS", getmypid());
+    $limit = 2;
+    $cnt = 0;
     foreach ($peers as $peer) {
         $hostname = $peer['hostname'];
         if(strpos($hostname, "phpcoin.net") === false) {
             continue;
+        }
+        $cnt ++;
+        if($cnt > $limit) {
+            break;
         }
         $pid = pcntl_fork();
         if ($pid == -1) {
