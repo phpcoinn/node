@@ -720,7 +720,7 @@ class PeerRequest
         @file_put_contents($requestFile, json_encode($peers));
 
         $completed = ($val == $payload);
-        Propagate::propagateSocketEvent2("messageReceived", ['requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed]);
+        Propagate::propagateSocketEvent2("messageReceived", ['requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed, "peers"=>$peers]);
         if ($val == $payload) {
             api_echo("PROPAGATE: This node already receive message $payload - do not propagate elapsed=$elapsed hops=$hops",0);
         } else {

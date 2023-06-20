@@ -285,12 +285,12 @@ if($type == "message") {
     $requestId=$envelope['id'];
     $requestFile = ROOT . "/tmp/propagate/$requestId";
     @mkdir(ROOT . "/tmp/propagate");
-    $peers = @json_decode(@file_get_contents($requestFile), true);
-    if(!$peers) {
-        $peers=[];
+    $ignorePeers = @json_decode(@file_get_contents($requestFile), true);
+    if(!$ignorePeers) {
+        $ignorePeers=[];
     }
 
-    $ignoreList = array_merge([$origin, $sender], $peers);
+    $ignoreList = array_merge([$origin, $sender], $ignorePeers);
     $peers = Peer::getPeersForPropagate2($ignoreList);
     _log("PROPAGATE: sender=$sender ignoreList=".json_encode($ignoreList)." peers=".count($peers));
     define("FORKED_PROCESS", getmypid());
@@ -305,6 +305,7 @@ if($type == "message") {
             $data['src']=$_config['hostname'];
             $data['dst']=$hostname;
             $data['envelope']=$envelope;
+            $data['ignorePeers']=$ignorePeers;
             Propagate::propagateSocketEvent2("messageSent", $data);
             $res = peer_post($url, $envelope, 5, $err, $info);
             _log("PROPAGATE: propagate msg to peer $hostname res=$res err=".json_encode($err));
