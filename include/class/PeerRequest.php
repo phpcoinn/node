@@ -718,6 +718,7 @@ class PeerRequest
         }
         $peers[]=self::$peer['hostname'];
         @file_put_contents($requestFile, json_encode($peers));
+        _log("PROPAGATE2: STORE ignorePeers=".json_encode($peers));
 
         $completed = ($val == $payload);
         Propagate::propagateSocketEvent2("messageReceived", ['requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed, "peers"=>$peers]);

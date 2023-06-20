@@ -290,6 +290,8 @@ if($type == "message") {
         $ignorePeers=[];
     }
 
+    _log("PROPAGATE2: READ ignorePeers=".json_encode($ignorePeers));
+
     $ignoreList = array_merge([$origin, $sender], $ignorePeers);
     $peers = Peer::getPeersForPropagate2($ignoreList);
     _log("PROPAGATE: sender=$sender ignoreList=".json_encode($ignoreList)." peers=".count($peers));
