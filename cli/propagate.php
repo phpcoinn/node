@@ -277,42 +277,25 @@ if($type == "masternode") {
 if($type == "message") {
     global $_config;
     $msg = $argv[2];
-    $peers = Peer::getLimitedPeersForPropagate();
-//    $peers = Peer::getPeersForPropagate();
-//    _log("PROPAGATE: running propagate found peers=".count($peers));
-//    foreach ($peers as $peer) {
-//        $hostname = $peer['hostname'];
-////        _log("PROPAGATE: found peer $hostname");
-//    }
-
-
-    $info = Peer::getInfo();
+    $envelope = json_decode(base64_decode($msg), true);
+    _log("PROPAGATE: cmd propagate envelope ".json_encode($envelope));
+    $sender = $envelope['sender'];
+    $hostnames = array_keys($envelope['hops']);
+    $ignoreList = array_merge([$sender], $hostnames);
+    $peers = Peer::getPeersForPropagate2(array_merge([$sender], $hostnames));
+    _log("PROPAGATE: sender=$sender ignoreList=".json_encode($ignoreList)." peers=".count($peers));
     define("FORKED_PROCESS", getmypid());
-    $limit = 2;
-    $cnt = 0;
+    $info = Peer::getInfo();
     foreach ($peers as $peer) {
         $hostname = $peer['hostname'];
-        if(strpos($hostname, "phpcoin.net") === false) {
-            continue;
-        }
-        $cnt ++;
-        if($cnt > $limit) {
-            break;
-        }
         $pid = pcntl_fork();
         if ($pid == -1) {
             die('could not fork');
         } else if ($pid == 0) {
-            $url = $hostname."/peer.php?q=propagateMsg3";
-            $data['msg']=$msg;
-            $data['requestId']=time().uniqid();
-            $data['src']=$_config['hostname'];
-            $data['dst']=$hostname;
-            $data['time']=microtime(true);
-            Propagate::propagateSocketEvent2("messageSent", $data);
-            $res = peer_post($url, $data, 5, $err, $info);
+            $url = $hostname."/peer.php?q=propagateMsg4";
+//            Propagate::propagateSocketEvent2("messageSent", $data);
+            $res = peer_post($url, $envelope, 5, $err, $info);
             _log("PROPAGATE: propagate msg to peer $hostname res=$res err=".json_encode($err));
-
             exit();
         }
     }

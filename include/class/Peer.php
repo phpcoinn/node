@@ -99,7 +99,28 @@ class Peer
         return $peers;
     }
 
-	static function getPeersForMasternode($limit = null) {
+    static function getPeersForPropagate2($ignoreList = []) {
+        global $db;
+        $limit = 10;
+        $hostnames = [];
+        if(!empty($ignoreList)) {
+            foreach ($ignoreList as $hostname) {
+                $hostnames[]="'$hostname'";
+            }
+            $hostnames = implode(",", $hostnames);
+        } else {
+            $hostnames = "''";
+        }
+        $sql="select * from peers p 
+            where p.blacklisted < unix_timestamp() and p.hostname not in ($hostnames)
+            and p.hostname like '%phpcoin.net%'
+            order by response_time/response_cnt limit $limit";
+        $rows = $db->run($sql);
+        return $rows;
+    }
+
+
+    static function getPeersForMasternode($limit = null) {
 		global $db;
 		$sql="select * from peers p WHERE (p.blacklisted < ".DB::unixTimeStamp()." or p.generator is not null or p.miner is not null )
 			and ping > ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES."

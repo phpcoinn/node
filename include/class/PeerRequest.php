@@ -679,6 +679,46 @@ class PeerRequest
 		}
 	}
 
+    static function propagateMsg4()
+    {
+        global $db, $_config;
+
+        $envelope = self::$data;
+        $time=$envelope['time'];
+        $elapsed = microtime(true) - $time;
+        $hops = count(array_keys($envelope['hops']));
+
+        if($elapsed > 120) {
+            api_err("PROPAGATE: message expired");
+        }
+
+        if($hops > 10) {
+            api_err("PROPAGATE: to many hops");
+        }
+
+        _log("PROPAGATE: received peer request propagateMsg4 data=".json_encode($envelope). " elapsed=$elapsed hops=$hops");
+        $signature = $envelope['signature'];
+        $public_key = $envelope['public_key'];
+        $base = $envelope;
+        unset($base['hops']);
+        unset($base['signature']);
+        $res = ec_verify(json_encode($base), $signature, $public_key);
+        _log("PROPAGATE: check signature=$signature res=$res base=".json_encode($base));
+        if(!$res) {
+            api_err("PROPAGATE: Signature failed", 0);
+        }
+        $payload = $envelope['payload'];
+        $val = $db->getConfig('propagate_msg');
+        if ($val == $payload) {
+            api_echo("PROPAGATE: This node already receive message $payload - do not propagate elapsed=$elapsed hops=$hops",0);
+        } else {
+            $db->setConfig('propagate_msg', $payload);
+            $envelope['hops'][$_config['hostname']]=microtime(true);
+            Propagate::message($envelope);
+            api_echo("PROPAGATE: This node not receive message $payload - store and propagate further elapsed=$elapsed hops=$hops",0);
+        }
+    }
+
 	static function logPropagate() {
 		$data = self::$data;
 		$data = base64_decode($data);

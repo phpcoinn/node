@@ -1078,16 +1078,21 @@ class Util
 			echo "No masternode private key".PHP_EOL;
 			exit;
 		}
-		$signature = ec_sign($message, $private_key);
-        $data = [
-            'message'=>$message,
-            'signature'=>$signature,
-            'public_key'=>$public_key
-        ];
-		$msg = base64_encode(json_encode($data));
         $db->setConfig('propagate_msg', $message);
-        Propagate::propagateSocketEvent2("messageCreated", ['time'=>microtime(true)]);
-        Propagate::message($msg);
+
+        $base = [
+            "id"=>time().uniqid(),
+            "sender"=>$_config['hostname'],
+            "time"=>microtime(true),
+            "public_key"=>$public_key,
+            "payload"=>$message
+        ];
+        $signature = ec_sign(json_encode($base), $private_key);
+        $envelope = $base;
+        $envelope['signature']=$signature;
+        $envelope['hops']=[];
+        _log("PROPAGATE: created envelope ".json_encode($envelope));
+        Propagate::message($envelope);
 	}
 
 	static function smartContractCompile($argv) {
