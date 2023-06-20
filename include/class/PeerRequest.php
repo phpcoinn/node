@@ -726,7 +726,6 @@ class PeerRequest
         } else {
             $db->setConfig('propagate_msg', $payload);
             $envelope['hops'][$_config['hostname']]=microtime(true);
-            $envelope['sender']=$_config['hostname'];
             Propagate::message($envelope);
             api_echo("PROPAGATE: This node not receive message $payload - store and propagate further elapsed=$elapsed hops=$hops",0);
         }
