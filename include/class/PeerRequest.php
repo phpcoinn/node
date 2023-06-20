@@ -702,6 +702,7 @@ class PeerRequest
         $base = $envelope;
         unset($base['hops']);
         unset($base['signature']);
+        unset($base['extra']);
         $res = ec_verify(json_encode($base), $signature, $public_key);
         _log("PROPAGATE: check signature=$signature res=$res base=".json_encode($base));
         if(!$res) {
@@ -721,7 +722,8 @@ class PeerRequest
         _log("PROPAGATE2: STORE ignorePeers=".json_encode($peers));
 
         $completed = ($val == $payload);
-        Propagate::propagateSocketEvent2("messageReceived", ['requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed, "peers"=>$peers]);
+        $rayId = $envelope['extra']['rayId'];
+        Propagate::propagateSocketEvent2("messageReceived", ['rayId'=>$rayId, 'requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed, "peers"=>$peers]);
         if ($val == $payload) {
             api_echo("PROPAGATE: This node already receive message $payload - do not propagate elapsed=$elapsed hops=$hops",0);
         } else {

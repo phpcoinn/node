@@ -308,6 +308,9 @@ if($type == "message") {
             $data['dst']=$hostname;
             $data['envelope']=$envelope;
             $data['ignorePeers']=$ignorePeers;
+            $rayId = time().uniqid();
+            $data['rayId']=$rayId;
+            $envelope['extra']['rayId']=$rayId;
             Propagate::propagateSocketEvent2("messageSent", $data);
             $res = peer_post($url, $envelope, 5, $err, $info);
             _log("PROPAGATE: propagate msg to peer $hostname res=$res err=".json_encode($err));
