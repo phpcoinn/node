@@ -1082,7 +1082,7 @@ class Util
 
         $base = [
             "id"=>time().uniqid(),
-            "sender"=>$_config['hostname'],
+            "origin"=>$_config['hostname'],
             "time"=>microtime(true),
             "public_key"=>$public_key,
             "payload"=>$message

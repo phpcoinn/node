@@ -280,8 +280,9 @@ if($type == "message") {
     $envelope = json_decode(base64_decode($msg), true);
     _log("PROPAGATE: cmd propagate envelope ".json_encode($envelope));
     $sender = $envelope['sender'];
+    $origin = $envelope['origin'];
     $hostnames = array_keys($envelope['hops']);
-    $ignoreList = array_merge([$sender], $hostnames);
+    $ignoreList = array_merge([$origin, $sender], $hostnames);
     $peers = Peer::getPeersForPropagate2(array_merge([$sender], $hostnames));
     _log("PROPAGATE: sender=$sender ignoreList=".json_encode($ignoreList)." peers=".count($peers));
     define("FORKED_PROCESS", getmypid());
