@@ -709,6 +709,9 @@ class PeerRequest
         }
         $payload = $envelope['payload'];
         $val = $db->getConfig('propagate_msg');
+
+        $completed = ($val == $payload);
+        Propagate::propagateSocketEvent2("messageReceived", ['requestId'=>$envelope['id'], 'elapsed'=>$elapsed, 'completed'=>$completed]);
         if ($val == $payload) {
             api_echo("PROPAGATE: This node already receive message $payload - do not propagate elapsed=$elapsed hops=$hops",0);
         } else {

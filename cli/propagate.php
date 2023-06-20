@@ -293,7 +293,10 @@ if($type == "message") {
             die('could not fork');
         } else if ($pid == 0) {
             $url = $hostname."/peer.php?q=propagateMsg4";
-//            Propagate::propagateSocketEvent2("messageSent", $data);
+            $data['src']=$_config['hostname'];
+            $data['dst']=$hostname;
+            $data['envelope']=$envelope;
+            Propagate::propagateSocketEvent2("messageSent", $data);
             $res = peer_post($url, $envelope, 5, $err, $info);
             _log("PROPAGATE: propagate msg to peer $hostname res=$res err=".json_encode($err));
             exit();
