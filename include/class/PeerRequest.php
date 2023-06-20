@@ -710,6 +710,15 @@ class PeerRequest
         $payload = $envelope['payload'];
         $val = $db->getConfig('propagate_msg');
 
+        $requestId=$envelope['id'];
+        $requestFile = ROOT . "/tmp/propagate/$requestId";
+        $peers = @json_decode(@file_get_contents($requestFile), true);
+        if(!$peers) {
+            $peers=[];
+        }
+        $peers[]=self::$peer['hostname'];
+        @file_put_contents($requestFile, json_encode($peers));
+
         $completed = ($val == $payload);
         Propagate::propagateSocketEvent2("messageReceived", ['requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed]);
         if ($val == $payload) {
@@ -717,7 +726,7 @@ class PeerRequest
         } else {
             $db->setConfig('propagate_msg', $payload);
             $envelope['hops'][$_config['hostname']]=microtime(true);
-            $envelope['sender']=self::$peer['hostname'];
+            $envelope['sender']=$_config['hostname'];
             Propagate::message($envelope);
             api_echo("PROPAGATE: This node not receive message $payload - store and propagate further elapsed=$elapsed hops=$hops",0);
         }
