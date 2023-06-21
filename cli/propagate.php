@@ -292,8 +292,12 @@ if($type == "message") {
 
     _log("PROPAGATE2: READ ignorePeers=".json_encode($ignorePeers));
 
+    $payload = $envelope['payload'];
+    $arr = explode("-", $payload);
+    $limit = $arr[1];
+
     $ignoreList = array_merge([$origin, $sender], $ignorePeers);
-    $peers = Peer::getPeersForPropagate2($ignoreList);
+    $peers = Peer::getPeersForPropagate2($limit, $ignoreList);
     _log("PROPAGATE: sender=$sender ignoreList=".json_encode($ignoreList)." peers=".count($peers));
     define("FORKED_PROCESS", getmypid());
     $info = Peer::getInfo();

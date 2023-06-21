@@ -99,9 +99,8 @@ class Peer
         return $peers;
     }
 
-    static function getPeersForPropagate2($ignoreList = []) {
+    static function getPeersForPropagate2($limit=100, $ignoreList = []) {
         global $db;
-        $limit = 10;
         $hostnames = [];
         if(!empty($ignoreList)) {
             foreach ($ignoreList as $hostname) {
