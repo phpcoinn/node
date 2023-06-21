@@ -679,7 +679,7 @@ class PeerRequest
 		}
 	}
 
-    static function propagateMsg4()
+    static function propagateMsg5()
     {
         global $db, $_config;
 
@@ -687,6 +687,11 @@ class PeerRequest
         $time=$envelope['time'];
         $elapsed = microtime(true) - $time;
         $hops = count(array_keys($envelope['hops']));
+
+        $info = $_POST['info'];
+        if($info['version'] != VERSION.".".BUILD_VERSION) {
+            api_err("Only latest version allowed");
+        }
 
         if($elapsed > 120) {
             api_err("PROPAGATE: message expired");
@@ -696,7 +701,7 @@ class PeerRequest
             api_err("PROPAGATE: to many hops");
         }
 
-        _log("PROPAGATE: received peer request propagateMsg4 data=".json_encode($envelope). " elapsed=$elapsed hops=$hops");
+        _log("PROPAGATE: received peer request propagateMsg5 data=".json_encode($envelope). " elapsed=$elapsed hops=$hops");
         $signature = $envelope['signature'];
         $public_key = $envelope['public_key'];
         $base = $envelope;

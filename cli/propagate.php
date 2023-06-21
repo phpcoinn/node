@@ -307,7 +307,7 @@ if($type == "message") {
         if ($pid == -1) {
             die('could not fork');
         } else if ($pid == 0) {
-            $url = $hostname."/peer.php?q=propagateMsg4";
+            $url = $hostname."/peer.php?q=propagateMsg5";
             $data['src']=$_config['hostname'];
             $data['dst']=$hostname;
             $data['envelope']=$envelope;
