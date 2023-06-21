@@ -723,7 +723,9 @@ class PeerRequest
 
         $completed = ($val == $payload);
         $rayId = $envelope['extra']['rayId'];
-        Propagate::propagateSocketEvent2("messageReceived", ['rayId'=>$rayId, 'requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed, "peers"=>$peers]);
+        $src = self::$peer['hostname'];
+        $dst = $_config['hostname'];
+        Propagate::propagateSocketEvent2("messageReceived", ['rayId'=>$rayId, 'src'=>$src, 'dst'=>$dst, 'requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed, "peers"=>$peers]);
         if ($val == $payload) {
             api_echo("PROPAGATE: This node already receive message $payload - do not propagate elapsed=$elapsed hops=$hops",0);
         } else {
