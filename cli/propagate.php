@@ -1,4 +1,5 @@
 <?php
+
 /*
 The MIT License (MIT)
 Copyright (c) 2018 AroDev
@@ -56,32 +57,49 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 		$start = microtime(true);
 		$info = Peer::getInfo();
 		define("FORKED_PROCESS", getmypid());
-        $db = null;
+        $i=0;
+        $pipes = [];
 		foreach ($r as $peer) {
+            $i++;
 			$hostname = $peer['hostname'];
 			$ip = $peer['ip'];
 			if ($peer['hostname'] == $_config['hostname']) continue;
+            $socket = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+            if (!$socket) {
+                continue;
+            }
 			$pid = pcntl_fork();
 			if ($pid == -1) {
 				die('could not fork');
+            } elseif ($pid > 0) {
+                fclose($socket[1]);
+                $pipes[$i] = $socket;
 			} else if ($pid == 0) {
+                register_shutdown_function(function(){
+                    posix_kill(getmypid(), SIGKILL);
+                });
+                fclose($socket[0]);
 				$cpid = getmypid();
-				$response = peer_post($hostname . "/peer.php?q=submitBlock", $data, 5, $err, $info);
-				_log("PropagateFork: forking child $cpid $hostname end response=".json_encode($response)." err=$err time=".(microtime(true) - $start),5);
+				$response = peer_post($hostname . "/peer.php?q=submitBlock", $data, 5, $err, $info, $curl_info);
+				_log("PropagateFork: forking child $cpid $hostname end response=".json_encode($response)." err=$err time=".(microtime(true) - $start));
 				Propagate::processBlockPropagateResponse($hostname, $ip, $id, $response, $err);
-				exit();
+                $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time']];
+                fwrite($socket[1], json_encode($res));
+                fclose($socket[1]);
+                exit();
 			}
 		}
 		while (pcntl_waitpid(0, $status) != -1) ;
-		$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
-		$key = "fork_".FORKED_PROCESS;
-		$responses = Cache::get($key, []);
-		foreach ($responses as $hostname => $connect_time) {
-			Peer::storeResponseTime($hostname, $connect_time);
-		}
-		Cache::remove($key);
-		_log("PropagateFork: Total time = ".(microtime(true)-$start),5);
-		_log("PropagateFork: process " . getmypid() . " exit",5);
+        foreach($pipes as $pipe) {
+            $output = stream_get_contents($pipe[0]);
+            fclose($pipe[0]);
+            $output = json_decode($output, true);
+            $hostname = $output['hostname'];
+            $connect_time = $output['connect_time'];
+            Peer::storeResponseTime($hostname, $connect_time);
+        }
+        _log("PropagateFork: Total time = ".(microtime(true)-$start),5);
+        _log("PropagateFork: process " . getmypid() . " exit",5);
 		exit;
 	} else {
 		Cache::set("block_export_$id", $data);
@@ -137,6 +155,9 @@ if ($type == "transaction") {
 	_log("Propagate transaction",3);
     // get the transaction data
     $data = Transaction::export($id);
+    if(!$data) {
+        exit;
+    }
 
 	$peers_limit = $_config['peers_limit'];
 	if(empty($peers_limit)) {
@@ -150,43 +171,62 @@ if ($type == "transaction") {
 		$info = Peer::getInfo();
 		$start = microtime(true);
 		define("FORKED_PROCESS", getmypid());
-        $db = null;
-		$fork_tx_key = "tx_{$id}_res_".FORKED_PROCESS;
+        $i=0;
+        $pipes = [];
 		foreach ($r as $peer) {
+            $i++;
+            $socket = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+            if (!$socket) {
+                continue;
+            }
 			$pid = pcntl_fork();
 			if ($pid == -1) {
 				die('could not fork');
+            } elseif ($pid > 0) {
+                fclose($socket[1]);
+                $pipes[$i] = $socket;
 			} else if ($pid == 0) {
+                register_shutdown_function(function(){
+                    posix_kill(getmypid(), SIGKILL);
+                });
+                fclose($socket[0]);
 				$hostname = $peer['hostname'];
 				$cpid = getmypid();
 				$url = $hostname."/peer.php?q=submitTransaction";
-				$res = peer_post($url, $data, 5, $err, $info);
+				$res = peer_post($url, $data, 5, $err, $info, $curl_info);
 				_log("PropagateFork: forking child $cpid $hostname end response=$response time=".(microtime(true) - $start),5);
-				$tx_responses = Cache::get($fork_tx_key, []);
-				$tx_responses['count']++;
+                $status = null;
 				if (!$res) {
-					_log("Transaction $id to $hostname - Transaction not accepted: $err");
-					$tx_responses['error']++;
+                    if($err == "The transaction is already in mempool") {
+                    } else {
+                        _log("Transaction $id to $hostname - Transaction not accepted: $err");
+                        $status = "error";
+                    }
 				} else {
 					_log("Transaction $id to $hostname - Transaction accepted",2);
-					$tx_responses['ok']++;
 				}
-				Cache::set($fork_tx_key, $tx_responses);
-				exit();
+                $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time'], "status"=>$status];
+                fwrite($socket[1], json_encode($res));
+                fclose($socket[1]);
+                exit();
 			}
 		}
 		while (pcntl_waitpid(0, $status) != -1) ;
-		$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
-		$key = "fork_".FORKED_PROCESS;
-		$responses = Cache::get($key, []);
-		foreach ($responses as $hostname => $connect_time) {
-			Peer::storeResponseTime($hostname, $connect_time);
-		}
-		Cache::remove($key);
-		$tx_responses = Cache::get($fork_tx_key);
-		Cache::remove($fork_tx_key);
-		$count = $tx_responses['count'];
-		$error = $tx_responses['error'];
+        $count = 0;
+        $error = 0;
+        foreach($pipes as $pipe) {
+            $output = stream_get_contents($pipe[0]);
+            fclose($pipe[0]);
+            $output = json_decode($output, true);
+            $hostname = $output['hostname'];
+            $connect_time = $output['connect_time'];
+            $count++;
+            if($output['status']=="error") {
+                $error++;
+            }
+            Peer::storeResponseTime($hostname, $connect_time);
+        }
+        //TODO: check if is correct
 		if($error < 1/3 * $count) {
 			$current = Block::current();
 			Mempool::updateMempool($id, $current['height']);
@@ -301,12 +341,26 @@ if($type == "message") {
     _log("PROPAGATE: sender=$sender ignoreList=".json_encode($ignoreList)." peers=".count($peers));
     define("FORKED_PROCESS", getmypid());
     $info = Peer::getInfo();
+    $i=0;
+    $pipes = [];
     foreach ($peers as $peer) {
         $hostname = $peer['hostname'];
+        $i++;
+        $socket = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+        if (!$socket) {
+            continue;
+        }
         $pid = pcntl_fork();
         if ($pid == -1) {
             die('could not fork');
+        } elseif ($pid > 0) {
+            fclose($socket[1]);
+            $pipes[$i] = $socket;
         } else if ($pid == 0) {
+            register_shutdown_function(function(){
+                posix_kill(getmypid(), SIGKILL);
+            });
+            fclose($socket[0]);
             $url = $hostname."/peer.php?q=propagateMsg5";
             $data['src']=$_config['hostname'];
             $data['dst']=$hostname;
@@ -316,12 +370,23 @@ if($type == "message") {
             $data['rayId']=$rayId;
             $envelope['extra']['rayId']=$rayId;
             Propagate::propagateSocketEvent2("messageSent", $data);
-            $res = peer_post($url, $envelope, 5, $err, $info);
+            $res = peer_post($url, $envelope, 5, $err, $info, $curl_info);
             _log("PROPAGATE: propagate msg to peer $hostname res=$res err=".json_encode($err));
+            $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time']];
+            fwrite($socket[1], json_encode($res));
+            fclose($socket[1]);
             exit();
         }
     }
     while (pcntl_waitpid(0, $status) != -1) ;
+    foreach($pipes as $pipe) {
+        $output = stream_get_contents($pipe[0]);
+        fclose($pipe[0]);
+        $output = json_decode($output, true);
+        $hostname = $output['hostname'];
+        $connect_time = $output['connect_time'];
+        Peer::storeResponseTime($hostname, $connect_time);
+    }
     exit;
 }
 

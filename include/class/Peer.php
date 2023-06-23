@@ -382,6 +382,9 @@ class Peer
 
 	static function storeResponseTime($hostname, $connect_time) {
 		global $db;
+        if(empty($connect_time)) {
+            return;
+        }
 		$res = $db->run("update peers set 
 			response_cnt=response_cnt+1, response_time=response_time+:time 
 			where hostname like :hostname",

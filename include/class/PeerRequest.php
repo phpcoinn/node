@@ -748,6 +748,30 @@ class PeerRequest
 		self::emitToScoket("logPropagate", $data);
 	}
 
+    static function peerTest() {
+        $t1 = self::$data;
+        _log("PP: received peerTest  data=".json_encode(self::$data));
+        $url = self::$peer['hostname'] . "/peer.php?q=peerTest2";
+        $data['t1']=$t1;
+        $data['t2']=time();
+        $data['t2-t1']=$data['t2'] - $data['t1'];
+        sleep(5);
+        $res = peer_post($url, $data);
+        _log("PP: call back ".self::$peer['hostname']." res=".$res);
+        api_echo($res);
+    }
+
+    static function peerTest2() {
+        _log("PP: received peerTest2 request data=".json_encode(self::$data));
+        $data = self::$data;
+        $data['t3']=time();
+        $data['t3-t2']=$data['t3']-$data['t2'];
+        $data['t3-t1']=$data['t3']-$data['t1'];
+        sleep(5);
+        _log("PP: send response");
+        api_echo($data);
+    }
+
 	static function logSubmitBlock() {
 		$data = self::$data;
 		$data = base64_decode($data);

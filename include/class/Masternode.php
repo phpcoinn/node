@@ -519,31 +519,73 @@ class Masternode extends Daemon
 			$peers = Peer::getPeersForPropagate();
 			$info = Peer::getInfo();
 			define("FORKED_PROCESS", getmypid());
-            $db = null;
+            $cnt = count($peers);
+            $i=0;
+            $pipes = [];
 			foreach ($peers as $peer) {
+                $i++;
+                $socket = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+                if (!$socket) {
+                    continue;
+                }
 				$pid = pcntl_fork();
 				if ($pid == -1) {
 					die('could not fork');
+                } elseif ($pid > 0) {
+                    fclose($socket[1]);
+                    $pipes[$i] = $socket;
 				} else if ($pid == 0) {
-					$cpid = getmypid();
+                    pcntl_signal(SIGALRM, function($signal){
+                        if ($signal == SIGALRM) {
+                            exit();
+                        }
+                    });
+                    pcntl_alarm(10);
+                    register_shutdown_function(function() use ($socket){
+                        fclose($socket[1]);
+                        posix_kill(getmypid(), SIGKILL);
+                    });
+                    fclose($socket[0]);
 					$hostname = $peer['hostname'];
 					$url = $hostname."/peer.php?q=updateMasternode";
-					$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 5, $err, $info);
-					_log("PF: Propagating to peer: ".$hostname." res=".json_encode($res). " err=$err", 5);
-					_log("PF: child $cpid $hostname end response=$res time=".(microtime(true) - $start), 5);
+					$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 10, $err, $info, $curl_info);
+                    $t2 = microtime(true);
+                    $elapsed = $t2  - $start;
+					_log("PF: Propagating to peer $i/$cnt: ".$hostname." res=".json_encode($res). " err=$err elapsed=$elapsed", 2);
+                    $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time'], "elapsed"=>$elapsed, "res"=>$res, "err"=>$err];
+                    fwrite($socket[1], json_encode($res));
 					exit();
 				}
 			}
 			while (pcntl_waitpid(0, $status) != -1) ;
-			$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
-			$key = "fork_".FORKED_PROCESS;
-			$responses = Cache::get($key, []);
-			foreach ($responses as $hostname => $connect_time) {
-				Peer::storeResponseTime($hostname, $connect_time);
-			}
-			Cache::remove($key);
-			_log("PF: Total time = ".(microtime(true)-$start), 5);
-			_log("PF: process " . getmypid() . " exit", 5);
+            $connect_times = [];
+            $elapsed_times = [];
+            $ok_responses = 0;
+            foreach($pipes as $pipe) {
+                $output = stream_get_contents($pipe[0]);
+                fclose($pipe[0]);
+                $output = json_decode($output, true);
+                $hostname = $output['hostname'];
+                $connect_time = $output['connect_time'];
+                $elapsed = $output['elapsed'];
+                if(!empty($connect_time)) {
+                    $connect_times[]=$connect_time;
+                }
+                $res = $output['res'];
+                $err = $output['err'];
+                if($res !== false) {
+                    $ok_responses++;
+                } else {
+                    _log("PM: $err");
+                }
+                $elapsed_times[]=$elapsed;
+                Peer::storeResponseTime($hostname, $connect_time);
+            }
+            $avg_connect_time = array_sum($connect_times) / count($connect_times);
+            $avg_elapsed_times = array_sum($elapsed_times) / count($elapsed_times);
+            _log("PF: Connect times avg = ".$avg_connect_time ." min=".min($connect_times). " max = ".max($connect_times), 5);
+            _log("PF: Elapsed times avg = ".$avg_elapsed_times ." min=".min($elapsed_times). " max = ".max($elapsed_times), 5);
+			_log("PF: Total time = ".(microtime(true)-$start). " total=".count($pipes). " ok_responses=$ok_responses", 5);
 		} else {
 
 			if ($id === "local") {
