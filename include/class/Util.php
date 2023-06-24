@@ -1304,9 +1304,13 @@ class Util
 			$data = json_decode($argv[4], true);
 		}
 		$url = $peer . "/peer.php?q=$method";
-		$res = peer_post($url, $data, 30, $err);
+		$res = peer_post($url, $data, 30, $err, null, $curl_info);
 		if($res) {
-			api_echo($res);
+            echo "Response:".PHP_EOL;
+			print_r($res);
+            echo PHP_EOL;
+            echo "Curl info:".PHP_EOL;
+            print_r($curl_info);
 		} else {
 			api_err($err);
 		}
