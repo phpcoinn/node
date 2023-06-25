@@ -724,6 +724,9 @@ class PeerRequest
         _log("PMM: requestId=$requestId");
         $requestFile = ROOT . "/tmp/propagate/$requestId";
 
+        Propagate::propagateSocketEvent2("messageReceived", ['envelope' => $envelope,'rayId'=>$rayId, 'src'=>$src, 'dst'=>$dst, 'requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed]);
+
+
         if(file_exists($requestFile)) {
             api_echo("Message already processing");
         }
@@ -741,7 +744,6 @@ class PeerRequest
         $rayId = $envelope['extra']['rayId'];
         $src = self::$peer['hostname'];
         $dst = $_config['hostname'];
-        Propagate::propagateSocketEvent2("messageReceived", ['envelope' => $envelope,'rayId'=>$rayId, 'src'=>$src, 'dst'=>$dst, 'requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed, "peers"=>$peers]);
         if ($val == $payload) {
             api_echo("PMM: This node already receive message $payload - do not propagate elapsed=$elapsed hops=$hops",0);
         } else {
