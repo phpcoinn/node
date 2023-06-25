@@ -148,29 +148,57 @@ class Dapps extends Daemon
 					];
 					$info = Peer::getInfo();
 					define("FORKED_PROCESS", getmypid());
-                    $db = null;
+                    $i=0;
+                    $pipes = [];
 					foreach ($peers as $peer) {
+                        $i++;
+                        $socket = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+                        if (!$socket) {
+                            continue;
+                        }
 						$pid = pcntl_fork();
 						if ($pid == -1) {
 							die('could not fork');
+                        } elseif ($pid > 0) {
+                            fclose($socket[1]);
+                            $pipes[$i] = $socket;
 						} else if ($pid == 0) {
-							$cpid = getmypid();
+                            pcntl_signal(SIGALRM, function($signal) use ($i, $start){
+                                if ($signal == SIGALRM) {
+                                    _log("PD: exit $i because of timout after ".(microtime(true) - $start));
+                                    exit();
+                                }
+                            });
+                            pcntl_alarm(30);
+                            register_shutdown_function(function() use ($i,$socket){
+                                fclose($socket[1]);
+                                posix_kill(getmypid(), SIGKILL);
+                            });
+                            fclose($socket[0]);
 							$hostname = $peer['hostname'];
 							$url = $hostname."/peer.php?q=updateDapps";
-							$res = peer_post($url, $data, 30, $err, $info);
-							_log("Dapps: forking child $cpid $hostname end response=$res time=".(microtime(true) - $start));
-							exit;
+							$res = peer_post($url, $data, 30, $err, $info, $curl_info);
+                            $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time'], "res"=>$res];
+                            fwrite($socket[1], json_encode($res));
+                            exit();
 						}
 					}
 					while (pcntl_waitpid(0, $status) != -1) ;
-					$db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
-					$key = "fork_".FORKED_PROCESS;
-					$responses = Cache::get($key, []);
-					foreach ($responses as $hostname => $connect_time) {
-						Peer::storeResponseTime($hostname, $connect_time);
-					}
-					Cache::remove($key);
-					_log("Dapps: Total time = ".(microtime(true)-$start));
+
+                    $responded = 0;
+                    foreach($pipes as $i => $pipe) {
+                        $output = stream_get_contents($pipe[0]);
+                        fclose($pipe[0]);
+                        $output = json_decode($output, true);
+                        $hostname = $output['hostname'];
+                        $connect_time = $output['connect_time'];
+                        if(!empty($connect_time)) {
+                            $responded++;
+                        }
+                        Peer::storeResponseTime($hostname, $connect_time);
+                    }
+
+					_log("Dapps: Total time = ".(microtime(true)-$start)." total=".count($pipes)." responded=".$responded);
 					_log("Dapps: process " . getmypid() . " exit");
 					exit;
 				} else {

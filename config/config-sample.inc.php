@@ -155,13 +155,6 @@ $_config['admin']=false;
 $_config['admin_password']='';
 
 /**
- * Allow wallet app on node
- */
-$_config['wallet']=false;
-$_config['wallet_public_key']="";
-$_config['wallet_private_key']="";
-
-/**
  * Masternode configuration
  */
 $_config['masternode']=false;
@@ -177,3 +170,4 @@ $_config['dapps_private_key']="";
 $_config['dapps_anonymous']=false;
 $_config['dapps_disable_auto_propagate']=true;
 
+//TEST

@@ -117,7 +117,6 @@ class PeerRequest
 
 		_logf("finish process");
 
-
 		self::$ip=$ip;
 		self::$data=$data;
 		self::$requestId=$requestId;
@@ -631,90 +630,116 @@ class PeerRequest
 		api_echo($masternode);
 	}
 
-	static function propagateMsg()
+	static function propagateMsg3()
 	{
 		global $_config, $db;
-		
+
 		$info = $_POST['info'];
+
+//        api_echo("OK");
+
+        _log("PROPAGATE: received peer request propagateMsg3");
 
 		if($info['version'] != VERSION.".".BUILD_VERSION) {
 			api_err("Only latest version allowed");
 		}
 
 		$data = self::$data;
-		$data = $data['data'];
-		$data = base64_decode($data);
-		$data = json_decode($data, true);
+		$orig_message = $data['msg'];
+        $message = base64_decode($orig_message);
+        $message = json_decode($message, true);
 
-		$message = $data['source']['message'];
-		_log("Msg propagate: Checking propagate msg: $message");
-
-		$signature = $data['source']['signature'];
-		$nonce = $data['source']['nonce'];
-
-		$time = $data['source']['time'];
-		if(empty($time)) {
-			api_err("Missing time in request");
-		}
-
-		$now = microtime(true);
-		if($now - $time > 60) {
-			api_err("Expired propagation request");
-		}
-
-		$hops = $data['hops'];
-		$hops_cnt = count($hops);
-		if ($hops_cnt > 10) {
-			api_err("Msg propagate: max hops exceed. Stop");
-		}
-
-		$res = ec_verify($nonce, $signature, DEV_PUBLIC_KEY);
+		$signature = $message['signature'];
+		$public_key = $message['public_key'];
+		$msg = $message['message'];
+		$res = ec_verify($msg, $signature, $public_key);
 		if(!$res) {
-			api_err("Signature failed");
+			api_err("PROPAGATE: Signature failed");
 		}
+        _log("PROPAGATE: message signature OK");
 
-		$val = $db->getConfig('propagate_msg');
+        $requestId = $data['requestId'];
+        $elapsed = microtime(true) - $data['time'];
+        $src = $data['src'];
+        $dst = $_config['hostname'];
 
-		if ($val == $message) {
-			_log("Msg propagate: This node already receive message $message - do not propagate");
-			$propagate = false;
+        _log("PROPAGATE: requestId=".$requestId);
+        $val = $db->getConfig('propagate_msg');
+        $completed = ($val == $msg);
+        Propagate::propagateSocketEvent2("messageReceived", ['requestId'=>$requestId, 'elapsed'=>$elapsed, 'src'=>$src, 'dst'=>$dst, 'completed'=>$completed]);
+
+
+		if ($val == $msg) {
+            api_echo("PROPAGATE: This node already receive message $msg - do not propagate",0);
 		} else {
-			_log("Msg propagate: This node not receive message $message - store and propagate further");
-			$db->setConfig('propagate_msg', $message);
-			$propagate_file = ROOT . "/tmp/propagate_info.txt";
-			$t = microtime(true);
-			$elapsed = $t - $data['source']['time'];
-			$data['target']=[
-				'hostname'=>$_config['hostname'],
-				'time'=>$t,
-				'elapsed'=>$elapsed
-			];
-			file_put_contents($propagate_file, json_encode($data));
-			$propagate = true;
+			$db->setConfig('propagate_msg', $msg);
+            $payload = base64_encode(json_encode($message));
+            Propagate::message($payload);
+            api_echo("PROPAGATE: This node not receive message $msg - store and propagate further",0);
 		}
-
-		if ($propagate) {
-			$hop = [
-				"node" => $_config['hostname'],
-				"time" => microtime(true)
-			];
-			$data['hops'][] = $hop;
-
-			$type = $data['source']['type'];
-			$limit = $data['source']['limit'];
-
-			$msg = base64_encode(json_encode($data));
-			if($type == "nearest") {
-				$peers = Peer::getPeersForSync($limit, true);
-				$dir = ROOT . "/cli";
-				foreach ($peers as $peer) {
-					Propagate::messageToPeer($peer['hostname'], $msg);
-				}
-			}
-			peer_post("https://node1.phpcoin.net/peer.php?q=logPropagate", $msg);
-		}
-		api_echo("Propagate=$propagate");
 	}
+
+    static function propagateMsg5()
+    {
+        global $db, $_config;
+
+        $envelope = self::$data;
+        $time=$envelope['time'];
+        $elapsed = microtime(true) - $time;
+        $hops = count(array_keys($envelope['hops']));
+
+        $info = $_POST['info'];
+        if($info['version'] != VERSION.".".BUILD_VERSION) {
+            api_err("Only latest version allowed");
+        }
+
+        if($elapsed > 120) {
+            api_err("PROPAGATE: message expired");
+        }
+
+        if($hops > 10) {
+            api_err("PROPAGATE: to many hops");
+        }
+
+        _log("PROPAGATE: received peer request propagateMsg5 data=".json_encode($envelope). " elapsed=$elapsed hops=$hops");
+        $signature = $envelope['signature'];
+        $public_key = $envelope['public_key'];
+        $base = $envelope;
+        unset($base['hops']);
+        unset($base['signature']);
+        unset($base['extra']);
+        $res = ec_verify(json_encode($base), $signature, $public_key);
+        _log("PROPAGATE: check signature=$signature res=$res base=".json_encode($base));
+        if(!$res) {
+            api_err("PROPAGATE: Signature failed", 0);
+        }
+        $payload = $envelope['payload'];
+        $val = $db->getConfig('propagate_msg');
+
+        $requestId=$envelope['id'];
+        $requestFile = ROOT . "/tmp/propagate/$requestId";
+        $peers = @json_decode(@file_get_contents($requestFile), true);
+        if(!$peers) {
+            $peers=[];
+        }
+        $peers[]=self::$peer['hostname'];
+        @file_put_contents($requestFile, json_encode($peers));
+        _log("PROPAGATE2: STORE ignorePeers=".json_encode($peers));
+
+        $completed = ($val == $payload);
+        $rayId = $envelope['extra']['rayId'];
+        $src = self::$peer['hostname'];
+        $dst = $_config['hostname'];
+        Propagate::propagateSocketEvent2("messageReceived", ['rayId'=>$rayId, 'src'=>$src, 'dst'=>$dst, 'requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed, "peers"=>$peers]);
+        if ($val == $payload) {
+            api_echo("PROPAGATE: This node already receive message $payload - do not propagate elapsed=$elapsed hops=$hops",0);
+        } else {
+            $db->setConfig('propagate_msg', $payload);
+            $envelope['hops'][$_config['hostname']]=microtime(true);
+            Propagate::message($envelope);
+            api_echo("PROPAGATE: This node not receive message $payload - store and propagate further elapsed=$elapsed hops=$hops",0);
+        }
+    }
 
 	static function logPropagate() {
 		$data = self::$data;
@@ -723,6 +748,30 @@ class PeerRequest
 		self::emitToScoket("logPropagate", $data);
 	}
 
+    static function peerTest() {
+        $t1 = self::$data;
+        _log("PP: received peerTest  data=".json_encode(self::$data));
+        $url = self::$peer['hostname'] . "/peer.php?q=peerTest2";
+        $data['t1']=$t1;
+        $data['t2']=time();
+        $data['t2-t1']=$data['t2'] - $data['t1'];
+        sleep(5);
+        $res = peer_post($url, $data);
+        _log("PP: call back ".self::$peer['hostname']." res=".$res);
+        api_echo($res);
+    }
+
+    static function peerTest2() {
+        _log("PP: received peerTest2 request data=".json_encode(self::$data));
+        $data = self::$data;
+        $data['t3']=time();
+        $data['t3-t2']=$data['t3']-$data['t2'];
+        $data['t3-t1']=$data['t3']-$data['t1'];
+        sleep(5);
+        _log("PP: send response");
+        api_echo($data);
+    }
+
 	static function logSubmitBlock() {
 		$data = self::$data;
 		$data = base64_decode($data);
@@ -730,9 +779,10 @@ class PeerRequest
 		self::emitToScoket("logSubmitBlock", $data);
 	}
 
-	static function emitToScoket($type, $data) {
-		$log = ["type"=>$type, "data"=>$data];
-		$res = peer_post("http://node1.phpcoin.net:3000/emit", $log);
+	static function emitToScoket($event, $data) {
+        global $_config;
+		$log = ["event"=>$event, "data"=>$data, "hostname" => $_config['hostname']];
+		$res = peer_post("http://node1.phpcoin.net:3001/emit", $log);
 		api_echo("OK");
 	}
 
@@ -805,13 +855,6 @@ class PeerRequest
 				api_err("block-not-ok");
 			} else if ($res<0) {
 				_logf("other block is winner");
-				if(self::$peer) {
-					$dir = ROOT."/cli";
-//					$cmd = "php $dir/peercheck.php ".self::$peer['hostname']. " ".$data['height'];
-//					$check_cmd = "php $dir/peercheck.php";
-//					_log("submitBlock: run peer check with ".self::$peer['hostname']);
-//					Nodeutil::runSingleProcess($cmd, $check_cmd);
-				}
 				api_err("block-ok");
 			} else {
 				_logf("blocks are actually same");

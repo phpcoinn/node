@@ -88,7 +88,37 @@ class Peer
 		return self::findPeers(false, null);
 	}
 
-	static function getPeersForMasternode($limit = null) {
+    static function getLimitedPeersForPropagate() {
+        global $_config;
+        $peers_limit = $_config['peers_limit'];
+        if(empty($peers_limit)) {
+            $peers_limit = 500;
+        }
+        $peers =  self::findPeers(false, null, $peers_limit, DB::unixTimeStamp()." - ping desc");
+        _log("getLimitedPeersForPropagate found=".count($peers), 5);
+        return $peers;
+    }
+
+    static function getPeersForPropagate2($limit=100, $ignoreList = []) {
+        global $db;
+        $hostnames = [];
+        if(!empty($ignoreList)) {
+            foreach ($ignoreList as $hostname) {
+                $hostnames[]="'$hostname'";
+            }
+            $hostnames = implode(",", $hostnames);
+        } else {
+            $hostnames = "''";
+        }
+        $sql="select * from peers p 
+            where p.blacklisted < unix_timestamp() and p.hostname not in ($hostnames)
+            order by response_time/response_cnt limit $limit";
+        $rows = $db->run($sql);
+        return $rows;
+    }
+
+
+    static function getPeersForMasternode($limit = null) {
 		global $db;
 		$sql="select * from peers p WHERE (p.blacklisted < ".DB::unixTimeStamp()." or p.generator is not null or p.miner is not null )
 			and ping > ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES."
@@ -352,6 +382,9 @@ class Peer
 
 	static function storeResponseTime($hostname, $connect_time) {
 		global $db;
+        if(empty($connect_time)) {
+            return;
+        }
 		$res = $db->run("update peers set 
 			response_cnt=response_cnt+1, response_time=response_time+:time 
 			where hostname like :hostname",

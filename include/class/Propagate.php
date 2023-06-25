@@ -85,6 +85,14 @@ class Propagate
 		Nodeutil::runSingleProcess($cmd);
 	}
 
+	static function message($envelope) {
+		$dir = ROOT . "/cli";
+        $msg = base64_encode(json_encode($envelope));
+		$cmd = "php $dir/propagate.php message $msg";
+        _log("PROPAGATE: call propagate command $cmd");
+		Nodeutil::runProcess($cmd);
+	}
+
 	static function dappsLocal() {
 		$dir = ROOT . "/cli";
 		$cmd = "php $dir/propagate.php dapps local";
@@ -156,4 +164,43 @@ class Propagate
 			_log("Microsync: Block not accepted response=".$response." err=".$err, 5);
 		}
 	}
+
+    static function propagateEventAddedBlock($block) {
+        $data['height']=$block->height;
+        $data['id']=$block->id;
+        _log("SOCKET: propagateEventAddedBlock data=".json_encode($data), 5);
+        self::propagateSocketEvent("blockAdded", $data);
+    }
+
+    static function propagateSocketEvent($event, $data) {
+//        $dir = ROOT . "/cli";
+//        $data = base64_encode(json_encode($data));
+//        $cmd = "php $dir/propagate.php socket $event $data";
+//        Nodeutil::runSingleProcess($cmd);
+    }
+
+    static function propagateSocketEvent2($event, $data) {
+        $dir = ROOT . "/cli";
+        $data = base64_encode(json_encode($data));
+        $cmd = "php $dir/propagate.php socket $event $data";
+        Nodeutil::runSingleProcess($cmd);
+    }
+
+    static function eventPropagate($dst, $requestId) {
+        global $_config;
+        $data['src']=$_config['hostname'];
+        $data['dst']=$dst;
+        $data['requestId']=$requestId;
+        self::propagateSocketEvent("propagateBlock", $data);
+    }
+
+    static function eventPropagateComplete($requestId) {
+        $data['requestId']=$requestId;
+        self::propagateSocketEvent("propagateComplete", $data);
+    }
+
+    static function eventPostReceived($requestId) {
+        $data['requestId']=$requestId;
+        self::propagateSocketEvent("postReceived", $data);
+    }
 }

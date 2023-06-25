@@ -197,7 +197,7 @@ function isValidURL($url)
 }
 
 // POST data to an URL (usualy peer). The data is an array, json encoded with is sent as $_POST['data']
-function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
+function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null, &$curl_info = null)
 {
     global $_config;
 
@@ -296,12 +296,9 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null)
 					Peer::updatePeerInfo($ip, $peerInfo);
 				}
 			}
-    	    Peer::storeResponseTime($hostname, $connect_time);
-		} else {
-			$key = "fork_".FORKED_PROCESS;
-			$responses = Cache::get($key, []);
-			$responses[$hostname]=$connect_time;
-			Cache::set($key, $responses);
+            if($connect_time) {
+    	        Peer::storeResponseTime($hostname, $connect_time);
+            }
 		}
     }
     return $res['data'];

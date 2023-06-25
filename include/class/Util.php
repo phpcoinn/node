@@ -1066,39 +1066,34 @@ class Util
 	}
 
 	static function propagate($argv) {
-		global $_config;
+		global $_config, $db;
 		$message = trim($argv[2]);
 		if(empty($message)) {
 			echo "Message not specified".PHP_EOL;
 			exit;
 		}
-		$private_key = $_config['repository_private_key'];
-		$public_key = $_config['repository_public_key'];
+		$private_key = $_config['masternode_private_key'];
+		$public_key = $_config['masternode_public_key'];
 		if(empty($private_key)) {
-			echo "No repository private key".PHP_EOL;
+			echo "No masternode private key".PHP_EOL;
 			exit;
 		}
-//		if(!isset($_config['propagate_msg-enable'])) {
-//			_log("Msg propagate: Not enabled. Stop");
-//			return;
-//		}
-		$signature = ec_sign($message, $private_key);
-		$data = [
-			"source" => [
-				"address" => Account::getAddress($public_key),
-				"message" => $message,
-				"signature" => $signature,
-				"time"=>microtime(true)
-			],
-			"hops" => []
-		];
-		_log("Msg propagate: start data=".json_encode($data));
-		$msg = base64_encode(json_encode($data));
-		$peers = Peer::getPeersForSync(10);
-		$dir = ROOT."/cli";
-		foreach($peers  as $peer) {
-			Propagate::messageToPeer($peer['hostname'], $msg);
-		}
+        $db->setConfig('propagate_msg', $message);
+
+        $base = [
+            "id"=>time().uniqid(),
+            "origin"=>$_config['hostname'],
+            "time"=>microtime(true),
+            "public_key"=>$public_key,
+            "payload"=>$message
+        ];
+        $signature = ec_sign(json_encode($base), $private_key);
+        $envelope = $base;
+        $envelope['signature']=$signature;
+        $envelope['hops']=[];
+        _log("PROPAGATE: created envelope ".json_encode($envelope));
+        Propagate::propagateSocketEvent2("messageCreated", ['time'=>microtime(true)]);
+        Propagate::message($envelope);
 	}
 
 	static function smartContractCompile($argv) {
@@ -1309,9 +1304,13 @@ class Util
 			$data = json_decode($argv[4], true);
 		}
 		$url = $peer . "/peer.php?q=$method";
-		$res = peer_post($url, $data, 30, $err);
+		$res = peer_post($url, $data, 30, $err, null, $curl_info);
 		if($res) {
-			api_echo($res);
+            echo "Response:".PHP_EOL;
+			print_r($res);
+            echo PHP_EOL;
+            echo "Curl info:".PHP_EOL;
+            print_r($curl_info);
 		} else {
 			api_err($err);
 		}
