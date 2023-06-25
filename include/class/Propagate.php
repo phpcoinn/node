@@ -181,6 +181,7 @@ class Propagate
 
     static function propagateSocketEvent2($event, $data) {
         $dir = ROOT . "/cli";
+        $data['ts']=microtime(true);
         $data = base64_encode(json_encode($data));
         $cmd = "php $dir/propagate.php socket $event $data";
         Nodeutil::runSingleProcess($cmd);
