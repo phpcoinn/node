@@ -731,8 +731,8 @@ class PeerRequest
 //            $peers=[];
 //        }
 //        _log("PMM: GET sentPeers=".json_encode($peers));
-//        $peers[self::$peer['hostname']]=self::$peer['hostname'];
-//        @file_put_contents($requestFile, json_encode($peers));
+        $peers[self::$peer['hostname']]=self::$peer['hostname'];
+        @file_put_contents($requestFile, json_encode($peers));
 //        _log("PMM: STORE sentPeers=".json_encode($peers));
 
         $completed = ($val == $payload);
