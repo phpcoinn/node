@@ -1091,7 +1091,7 @@ class Util
         $envelope = $base;
         $envelope['signature']=$signature;
         $envelope['hops']=[];
-        _log("PROPAGATE: created envelope ".json_encode($envelope));
+        _log("PM: created envelope ".json_encode($envelope));
         Propagate::propagateSocketEvent2("messageCreated", ['time'=>microtime(true)]);
         Propagate::message($envelope);
 	}

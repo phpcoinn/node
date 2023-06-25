@@ -318,7 +318,7 @@ if($type == "message") {
     global $_config;
     $msg = $argv[2];
     $envelope = json_decode(base64_decode($msg), true);
-    _log("PROPAGATE: cmd propagate envelope ".json_encode($envelope));
+    _log("PMM: cmd propagate envelope ".json_encode($envelope));
 
     $sender = $envelope['sender'];
     $origin = $envelope['origin'];
@@ -330,15 +330,15 @@ if($type == "message") {
         $ignorePeers=[];
     }
 
-    _log("PROPAGATE2: READ ignorePeers=".json_encode($ignorePeers));
+    _log("PMM: READ ignorePeers=".json_encode($ignorePeers));
 
     $payload = $envelope['payload'];
     $arr = explode("-", $payload);
     $limit = $arr[1];
 
-    $ignoreList = array_merge([$origin, $sender], $ignorePeers);
+    $ignoreList = array_merge([$origin, $sender], array_keys($ignorePeers));
     $peers = Peer::getPeersForPropagate2($limit, $ignoreList);
-    _log("PROPAGATE: sender=$sender ignoreList=".json_encode($ignoreList)." peers=".count($peers));
+    _log("PMM: sender=$sender ignoreList=".json_encode($ignoreList)." peers=".count($peers));
     define("FORKED_PROCESS", getmypid());
     $info = Peer::getInfo();
     $i=0;
@@ -361,7 +361,7 @@ if($type == "message") {
                 posix_kill(getmypid(), SIGKILL);
             });
             fclose($socket[0]);
-            $url = $hostname."/peer.php?q=propagateMsg5";
+            $url = $hostname."/peer.php?q=propagateMsg6";
             $data['src']=$_config['hostname'];
             $data['dst']=$hostname;
             $data['envelope']=$envelope;
@@ -371,7 +371,7 @@ if($type == "message") {
             $envelope['extra']['rayId']=$rayId;
             Propagate::propagateSocketEvent2("messageSent", $data);
             $res = peer_post($url, $envelope, 5, $err, $info, $curl_info);
-            _log("PROPAGATE: propagate msg to peer $hostname res=$res err=".json_encode($err));
+//            _log("PMM: propagate msg to peer $hostname res=$res err=".json_encode($err));
             $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time']];
             fwrite($socket[1], json_encode($res));
             fclose($socket[1]);

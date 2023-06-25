@@ -89,7 +89,7 @@ class Propagate
 		$dir = ROOT . "/cli";
         $msg = base64_encode(json_encode($envelope));
 		$cmd = "php $dir/propagate.php message $msg";
-        _log("PROPAGATE: call propagate command $cmd");
+        _log("PM: call propagate command $cmd");
 		Nodeutil::runProcess($cmd);
 	}
 
