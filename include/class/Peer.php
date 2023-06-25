@@ -112,7 +112,6 @@ class Peer
         }
         $sql="select * from peers p 
             where p.blacklisted < unix_timestamp() and p.hostname not in ($hostnames)
-            and p.hostname like '%phpcoin%'
             order by response_time/response_cnt limit $limit";
         $rows = $db->run($sql);
         return $rows;
