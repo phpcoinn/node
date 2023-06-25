@@ -682,6 +682,8 @@ class PeerRequest
     static function propagateMsg6()
     {
         global $db, $_config;
+
+        _log("PMM: received propagateMsg6");
         
         $envelope = self::$data;
         $time=$envelope['time'];
@@ -692,15 +694,15 @@ class PeerRequest
         $info = $_POST['info'];
 
         if($info['version'] != VERSION.".".BUILD_VERSION) {
-            api_err("Only latest version allowed");
+            api_err("PMM: Only latest version allowed", 0);
         }
 
         if($elapsed > 30) {
-            api_err("PMM: message expired");
+            api_err("PMM: message expired", 0);
         }
 
-        if($hops > 3) {
-            api_err("PMM: to many hops");
+        if($hops > 5) {
+            api_err("PMM: to many hops", 0);
         }
 
         _log("PMM: received peer request propagateMsg6 elapsed=$elapsed hops=$hops");
