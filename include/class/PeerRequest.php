@@ -721,14 +721,19 @@ class PeerRequest
         $requestId=$envelope['id'];
         _log("PMM: requestId=$requestId");
         $requestFile = ROOT . "/tmp/propagate/$requestId";
-        $peers = @json_decode(@file_get_contents($requestFile), true);
-        if(!$peers) {
-            $peers=[];
+
+        if(file_exists($requestFile)) {
+            api_echo("Message already processing");
         }
-        _log("PMM: GET sentPeers=".json_encode($peers));
-        $peers[self::$peer['hostname']]=self::$peer['hostname'];
-        @file_put_contents($requestFile, json_encode($peers));
-        _log("PMM: STORE sentPeers=".json_encode($peers));
+        $peers=[];
+//        $peers = @json_decode(@file_get_contents($requestFile), true);
+//        if(!$peers) {
+//            $peers=[];
+//        }
+//        _log("PMM: GET sentPeers=".json_encode($peers));
+//        $peers[self::$peer['hostname']]=self::$peer['hostname'];
+//        @file_put_contents($requestFile, json_encode($peers));
+//        _log("PMM: STORE sentPeers=".json_encode($peers));
 
         $completed = ($val == $payload);
         $rayId = $envelope['extra']['rayId'];
