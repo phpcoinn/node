@@ -338,6 +338,7 @@ if($type == "message") {
     $limit = $payload['limit'];
     $internal = $payload['internal'];
     $add_cond = $payload['add_cond'];
+    $notifySent = $payload['notifySent'];
 
     $ignoreList = array_merge([$origin, $sender], array_keys($ignorePeers));
     $peers = Peer::getPeersForPropagate2($limit, $ignoreList, $internal, $add_cond);
@@ -372,7 +373,9 @@ if($type == "message") {
             $rayId = time().uniqid();
             $data['rayId']=$rayId;
             $envelope['extra']['rayId']=$rayId;
-            Propagate::propagateSocketEvent2("messageSent", $data);
+            if($notifySent) {
+                Propagate::propagateSocketEvent2("messageSent", $data);
+            }
             $res = peer_post($url, $envelope, 5, $err, $info, $curl_info);
             _log("PMM: propagate msg to peer $hostname res=$res err=".json_encode($err));
             $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time']];

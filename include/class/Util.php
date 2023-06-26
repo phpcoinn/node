@@ -1088,7 +1088,9 @@ class Util
             "maxHops"=>5,
             "internal"=>true,
             "add_cond"=>"",
-            "onlyLatestVersion"=>true
+            "onlyLatestVersion"=>true,
+            "notifySent"=>true,
+            "notifyReceived"=>true,
         ];
 
         $base = [
@@ -1103,7 +1105,7 @@ class Util
         $envelope['signature']=$signature;
         $envelope['hops']=[];
         _log("PM2: created envelope ".json_encode($envelope));
-//        Propagate::propagateSocketEvent2("messageCreated", ['time'=>microtime(true)]);
+        Propagate::propagateSocketEvent2("messageCreated", ['time'=>microtime(true)]);
         Propagate::message($envelope);
 	}
 

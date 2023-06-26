@@ -671,6 +671,7 @@ class PeerRequest
             api_err("PROPAGATE: Signature failed", 0);
         }
         $message = $payload['message'];
+        $notifyReceived = $payload['notifyReceived'];
 
 
         $val = $db->getConfig('propagate_msg');
@@ -683,7 +684,9 @@ class PeerRequest
         $src = self::$peer['hostname'];
         $dst = $_config['hostname'];
 
-//        Propagate::propagateSocketEvent2("messageReceived", ['envelope' => $envelope,'rayId'=>$rayId, 'src'=>$src, 'dst'=>$dst, 'requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed]);
+        if($notifyReceived) {
+            Propagate::propagateSocketEvent2("messageReceived", ['envelope' => $envelope,'rayId'=>$rayId, 'src'=>$src, 'dst'=>$dst, 'requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed]);
+        }
 
         $type = $payload['type'];
         _log("PMM: propagate type = $type");
