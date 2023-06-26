@@ -1083,13 +1083,13 @@ class Util
         $payload = [
             "message"=>$message,
             "type"=>"propagate",
-            "limit"=>100,
+            "limit"=>3,
             "maxTime"=>30,
             "maxHops"=>5,
             "internal"=>true,
             "add_cond"=>"",
             "onlyLatestVersion"=>true,
-            "notifySent"=>false,
+            "notifySent"=>true,
             "notifyReceived"=>true,
         ];
 
