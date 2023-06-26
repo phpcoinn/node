@@ -333,12 +333,15 @@ if($type == "message") {
     _log("PMM: READ ignorePeers=".json_encode($ignorePeers));
 
     $payload = $envelope['payload'];
-    $arr = explode("-", $payload);
-    $limit = $arr[1];
+    $payload = json_decode($payload, true);
+    $message = $payload['message'];
+    $limit = $payload['limit'];
+    $internal = $payload['internal'];
+    $add_cond = $payload['add_cond'];
 
     $ignoreList = array_merge([$origin, $sender], array_keys($ignorePeers));
-    $peers = Peer::getPeersForPropagate2($limit, $ignoreList);
-    _log("PMM: sender=$sender ignoreList=".json_encode($ignoreList)." peers=".count($peers));
+    $peers = Peer::getPeersForPropagate2($limit, $ignoreList, $internal, $add_cond);
+    _log("PMM: sender=$sender ignoreList=".json_encode($ignoreList)." peers=".count($peers)." limit=$limit");
     define("FORKED_PROCESS", getmypid());
     $info = Peer::getInfo();
     $i=0;
@@ -361,7 +364,7 @@ if($type == "message") {
                 posix_kill(getmypid(), SIGKILL);
             });
             fclose($socket[0]);
-            $url = $hostname."/peer.php?q=propagateMsg6";
+            $url = $hostname."/peer.php?q=propagateMsg7";
             $data['src']=$_config['hostname'];
             $data['dst']=$hostname;
             $data['envelope']=$envelope;
@@ -371,7 +374,7 @@ if($type == "message") {
             $envelope['extra']['rayId']=$rayId;
             Propagate::propagateSocketEvent2("messageSent", $data);
             $res = peer_post($url, $envelope, 5, $err, $info, $curl_info);
-//            _log("PMM: propagate msg to peer $hostname res=$res err=".json_encode($err));
+            _log("PMM: propagate msg to peer $hostname res=$res err=".json_encode($err));
             $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time']];
             fwrite($socket[1], json_encode($res));
             fclose($socket[1]);
