@@ -1089,7 +1089,7 @@ class Util
             "internal"=>true,
             "add_cond"=>"",
             "onlyLatestVersion"=>true,
-            "notifySent"=>true,
+            "notifySent"=>false,
             "notifyReceived"=>true,
         ];
 

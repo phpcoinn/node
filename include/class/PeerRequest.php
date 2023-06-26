@@ -679,7 +679,7 @@ class PeerRequest
         $requestId=$envelope['id'];
         _log("PMM: requestId=$requestId");
         $requestFile = ROOT . "/tmp/propagate/$requestId";
-        $completed = ($val == $payload);
+        $completed = ($val == $message);
         $rayId = $envelope['extra']['rayId'];
         $src = self::$peer['hostname'];
         $dst = $_config['hostname'];
