@@ -825,6 +825,7 @@ class Util
 	}
 
 	static function update($argv) {
+		global $_config;
 		$branch = trim($argv[2]);
 		$force = trim($argv[3]);
 		if(empty($branch)) {
@@ -833,7 +834,12 @@ class Util
         $currentVersion = BUILD_VERSION;
 		echo "Checking node branch=$branch force=$force update current version = ".BUILD_VERSION.PHP_EOL;
 		$maxPeerBuildNumber = Peer::getMaxBuildNumber();
-		$cmd= "curl -m 30 -H 'Cache-Control: no-cache, no-store' -s https://raw.githubusercontent.com/phpcoinn/node/$branch/include/coinspec.inc.php | grep BUILD_VERSION";
+		$check_url="https://raw.githubusercontent.com/phpcoinn/node/{branch}/include/coinspec.inc.php";
+		if(isset($_config['update_check_url'])){
+		    $check_url=$_config['update_check_url'];
+		}
+		$check_url=str_replace("{branch}",$branch,$check_url);
+		$cmd= "curl -m 30 -H 'Cache-Control: no-cache, no-store' -s $check_url | grep BUILD_VERSION";
 		$res = shell_exec($cmd);
 		$arr= explode(" ", $res);
 		$version = $arr[3];
@@ -846,7 +852,7 @@ class Util
 //            return;
 //        }
 
-        _log("AUTO_UPDATE: call php util branch=$branch force=$force node version=$currentVersion git version=$version maxPeerBuildNumber=$maxPeerBuildNumber user=$user");
+        _log("AUTO_UPDATE: call php util check_url=$check_url branch=$branch force=$force node version=$currentVersion git version=$version maxPeerBuildNumber=$maxPeerBuildNumber user=$user");
 		if($version > $currentVersion || $maxPeerBuildNumber > $currentVersion || !empty($force)) {
 			echo "There is new version: $version - updating node".PHP_EOL;
             _log("AUTO_UPDATE: Updating node");

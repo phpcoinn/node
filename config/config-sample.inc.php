@@ -63,6 +63,8 @@ $_config['initial_peer_list'] = [
     'https://node3.phpcoin.net'
 ];
 
+$_config['update_check_url']="https://raw.githubusercontent.com/phpcoinn/node/{branch}/include/coinspec.inc.php";
+
 // does not peer with any of the peers. Uses the seed peers and syncs only from those peers. Requires a cronjob on sync.php
 $_config['passive_peering'] = false;
 
