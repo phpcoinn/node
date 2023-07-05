@@ -576,7 +576,7 @@ class Masternode extends Daemon
                 if($res !== false) {
                     $ok_responses++;
                 } else {
-                    _log("PM: $err");
+                    _log("PM: $err", 2);
                 }
                 $elapsed_times[]=$elapsed;
                 Peer::storeResponseTime($hostname, $connect_time);
@@ -991,7 +991,7 @@ class Masternode extends Daemon
 
 		} catch(Exception $e) {
 			$error = $e->getMessage();
-			_log($error);
+			_log($error, 2);
 			return false;
 		}
 

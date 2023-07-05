@@ -81,7 +81,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
                 fclose($socket[0]);
 				$cpid = getmypid();
 				$response = peer_post($hostname . "/peer.php?q=submitBlock", $data, 5, $err, $info, $curl_info);
-				_log("PropagateFork: forking child $cpid $hostname end response=".json_encode($response)." err=$err time=".(microtime(true) - $start));
+				_log("PropagateFork: forking child $cpid $hostname end response=".json_encode($response)." err=$err time=".(microtime(true) - $start),5);
 				Propagate::processBlockPropagateResponse($hostname, $ip, $id, $response, $err);
                 $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time']];
                 fwrite($socket[1], json_encode($res));
