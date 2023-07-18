@@ -218,6 +218,20 @@ class Miner {
 				$this->miningStat['rejected']++;
 			}
 
+            if(!isset($this->miningStat['submitted_blocks'])) {
+                $this->miningStat['submitted_blocks']=[];
+            }
+            $this->miningStat['submitted_blocks'][]=[
+                "time"=>date("r"),
+                "height"=>$height,
+                "elapsed"=>$elapsed,
+                "hashes"=>$attempt,
+                "hit"=>(string) $hit,
+                "target"=>(string) $target,
+                "status"=>$data['status']=="ok" ? "accepted" : "rejected",
+                "response"=>$data['data']
+            ];
+
 			sleep(3);
 
 			if($this->block_cnt > 0 && $this->cnt >= $this->block_cnt) {
