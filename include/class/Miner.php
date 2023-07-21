@@ -127,7 +127,9 @@ class Miner {
 			$data = [];
 			$nodeTime = $info['data']['time'];
 			$prev_block_id = $info['data']['block'];
+            $chain_id=$info['data']['chain_id'];
 			$blockFound = false;
+
 
 			$now = time();
 			$offset = $nodeTime - $now;
@@ -146,7 +148,7 @@ class Miner {
 				$new_block_date = $block_date + $elapsed;
 				_log("Time=now=$now nodeTime=$nodeTime offset=$offset elapsed=$elapsed",4);
 				$bl->argon = $bl->calculateArgonHash($block_date, $elapsed);
-				$bl->nonce=$bl->calculateNonce($block_date, $elapsed);
+				$bl->nonce=$bl->calculateNonce($block_date, $elapsed, $chain_id);
 				$bl->date = $block_date;
 				$hit = $bl->calculateHit();
 				$target = $bl->calculateTarget($elapsed);
@@ -178,8 +180,8 @@ class Miner {
 				}
                 $send_interval = 60;
                 $t=time();
-                $elapsed = $t - $start_time;
-                if($elapsed >= $send_interval) {
+                $elapsed_send = $t - $start_time;
+                if($elapsed_send >= $send_interval) {
                     $start_time = time();
                     $hashes = $this->miningStat['hashes'] - $prev_hashes;
                     $prev_hashes = $this->miningStat['hashes'];
