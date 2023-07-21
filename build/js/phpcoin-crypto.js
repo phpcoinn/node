@@ -5,4 +5,8 @@ if(typeof window !== 'undefined')  {
     window.get_public_key = phpcoinCrypto.getPublicKey
     window.get_address = phpcoinCrypto.getAddress
     window.generateAccount = phpcoinCrypto.generateAccount
+    window.encryptString = phpcoinCrypto.encryptString
+    window.decryptString = phpcoinCrypto.decryptString
+    window.importPrivateKey = phpcoinCrypto.importPrivateKey
+    window.getPublicKey = phpcoinCrypto.getPublicKey
 }
