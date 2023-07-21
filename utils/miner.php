@@ -1,7 +1,7 @@
 <?php
 if(php_sapi_name() !== 'cli') exit;
 const DEFAULT_CHAIN_ID = "01";
-const MINER_VERSION = "1.3";
+const MINER_VERSION = "1.4";
 if(Phar::running()) {
 	require_once 'vendor/autoload.php';
 } else {
