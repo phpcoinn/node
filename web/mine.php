@@ -124,7 +124,7 @@ if ($q == "info") {
 
     $res = checkVersion();
     if(!$res) {
-        $generator_stat['miner-version-invalid']++;
+        $generator_stat['rejected']++;
         @$generator_stat['reject-reasons']['miner-version-invalid']++;
         saveGeneratorStat($generator_stat);
         api_err("miner-version-invalid");
@@ -133,7 +133,7 @@ if ($q == "info") {
     $not_found_stat = checkStats($ip);
     if($not_found_stat) {
         $reason = "miner-not-sending-stat";
-        $generator_stat[$reason]++;
+        $generator_stat['rejected']++;
         @$generator_stat['reject-reasons'][$reason]++;
         saveGeneratorStat($generator_stat);
         api_err($reason);
