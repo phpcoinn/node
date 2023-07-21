@@ -293,6 +293,7 @@ class Dapps extends Daemon
 		$file_type = mime_content_type($file);
 		$file_info = pathinfo($file);
 		$ext = $file_info['extension'];
+        if($ext === "css") $file_type = "text/css";
 		_log("Dapps: Resolve file $file content-type:" . $file_type." ext=$ext", 5);
 
 
