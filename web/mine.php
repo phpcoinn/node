@@ -80,8 +80,9 @@ function checkStats($ip) {
     $height=$_REQUEST['height'];
     $miningStat = Nodeutil::readMiningStat();
     $ips=@$miningStat['totals'][$height]['ip'];
+    $ips1=@$miningStat['totals'][$height-1]['ip'];
     $not_found_stat = false;
-    if(!in_array($ip, $ips)) {
+    if(!in_array($ip, $ips) && !in_array($ip, $ips1)) {
         $not_found_stat = true;
     }
     _log("checkStats ip=".$ip." height=".$height." not_found_stat=$not_found_stat");
