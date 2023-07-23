@@ -172,4 +172,3 @@ $_config['dapps_private_key']="";
 $_config['dapps_anonymous']=false;
 $_config['dapps_disable_auto_propagate']=true;
 
-//TEST-123a
