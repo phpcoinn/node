@@ -35,6 +35,12 @@ $mempool = Account::getMempoolTransactions($address);
 
 $addressTypes = Block::getAddressTypes($address);
 
+if(NETWORK == "mainnet") {
+    $url = "http://".$_SERVER['SERVER_NAME']."/dapps.php?url=PoApBr2zi84BEw2wtseaA2DtysEVCUnJd7/labeler/api.php?q=getAddressLabel&address=$address";
+    $res = file_get_contents($url);
+    $res = json_decode($res, true);
+    $label = $res['data'];
+}
 
 ?>
 <?php
@@ -69,6 +75,12 @@ require_once __DIR__. '/../common/include/top.php';
 	        <?php } ?>
         </td>
     </tr>
+    <?php if( NETWORK == "mainnet" && !empty($label)) { ?>
+        <tr>
+            <td>Label</td>
+            <td><?php echo $label ?></td>
+        </tr>
+    <?php } ?>
     <tr>
         <td>Public key</td>
         <td><?php echo $public_key ?></td>

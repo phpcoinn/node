@@ -635,7 +635,7 @@ class PeerRequest
         global $db, $_config;
 
         _log("PMM: received propagateMsg7");
-        
+
         $envelope = self::$data;
         $time=$envelope['time'];
         $payload = $envelope['payload'];
