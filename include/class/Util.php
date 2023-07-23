@@ -1086,18 +1086,31 @@ class Util
 		}
         $db->setConfig('propagate_msg', $message);
 
+        $payload = [
+            "message"=>$message,
+            "type"=>"propagate",
+            "limit"=>3,
+            "maxTime"=>30,
+            "maxHops"=>5,
+            "internal"=>true,
+            "add_cond"=>"",
+            "onlyLatestVersion"=>true,
+            "notifySent"=>true,
+            "notifyReceived"=>true,
+        ];
+
         $base = [
             "id"=>time().uniqid(),
             "origin"=>$_config['hostname'],
             "time"=>microtime(true),
             "public_key"=>$public_key,
-            "payload"=>$message
+            "payload"=>json_encode($payload),
         ];
         $signature = ec_sign(json_encode($base), $private_key);
         $envelope = $base;
         $envelope['signature']=$signature;
         $envelope['hops']=[];
-        _log("PROPAGATE: created envelope ".json_encode($envelope));
+        _log("PM2: created envelope ".json_encode($envelope));
         Propagate::propagateSocketEvent2("messageCreated", ['time'=>microtime(true)]);
         Propagate::message($envelope);
 	}

@@ -99,7 +99,7 @@ class Peer
         return $peers;
     }
 
-    static function getPeersForPropagate2($limit=100, $ignoreList = []) {
+    static function getPeersForPropagate2($limit, $ignoreList = [],$internal=false, $add_cond="") {
         global $db;
         $hostnames = [];
         if(!empty($ignoreList)) {
@@ -110,9 +110,15 @@ class Peer
         } else {
             $hostnames = "''";
         }
+        $cond= "";
+        if($internal) {
+            $cond = " and p.hostname like '%phpcoin%' ";
+        }
         $sql="select * from peers p 
             where p.blacklisted < unix_timestamp() and p.hostname not in ($hostnames)
-            order by response_time/response_cnt limit $limit";
+            $cond
+            $add_cond
+            order by response_time/response_cnt " . (empty($limit) ? "" : " limit $limit");
         $rows = $db->run($sql);
         return $rows;
     }
