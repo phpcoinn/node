@@ -35,6 +35,7 @@ RUN echo "<VirtualHost *:80>\n\
 a2dissite 000-default && \
 a2ensite phpcoin && \
 a2enmod rewrite && \
+rm /etc/apache2/conf-enabled/other-vhosts-access-log.conf && \
 service apache2 restart
 
 RUN cd $NODE_DIR && \
