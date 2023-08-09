@@ -9,11 +9,17 @@ class Miner {
 	public $miningStat;
 	public $cnt = 0;
 	public $block_cnt = 0;
-	public $cpu = 0;
+	public $cpu = 25;
     public $minerid;
     private $forked;
 
 	private $running = true;
+
+    private $hashing_time = 0;
+    private $hashing_cnt = 0;
+    private $speed;
+    private $sleep_time;
+    private $attempt;
 
 	function __construct($address, $node, $forked=false)
 	{
@@ -73,6 +79,24 @@ class Miner {
 		return false;
 	}
 
+    function measureSpeed($t1, $th) {
+        $t2 = microtime(true);
+        $this->hashing_cnt++;
+        $this->hashing_time = $this->hashing_time + ($t2-$th);
+
+        $diff = $t2 - $t1;
+        $this->speed = round($this->attempt / $diff,2);
+
+        $calc_cnt = round($this->speed * 60);
+
+        if($this->hashing_cnt % $calc_cnt == 0) {
+            $this->sleep_time = $this->cpu == 0 ? INF : round((($this->hashing_time/$this->hashing_cnt)*1000)*(100-$this->cpu)/$this->cpu);
+            if($this->sleep_time < 0) {
+                $this->sleep_time = 0;
+            }
+        }
+    }
+
 	function start() {
 		$this->miningStat = [
 			'started'=>time(),
@@ -84,6 +108,8 @@ class Miner {
 		];
         $start_time = time();
         $prev_hashes = null;
+		$this->sleep_time=(100-$this->cpu)*5;
+
 		while($this->running) {
 			$this->cnt++;
 //			_log("Mining cnt: ".$this->cnt);
@@ -134,19 +160,25 @@ class Miner {
 			$now = time();
 			$offset = $nodeTime - $now;
 
-			$attempt = 0;
+			$this->attempt = 0;
 
 			$bl = new Block(null, $this->address, $height, null, null, $data, $difficulty, Block::versionCode($height), null, $prev_block_id);
 
 			$t1 = microtime(true);
 			$prev_elapsed = null;
 			while (!$blockFound) {
-				$attempt++;
-				usleep((100-$this->cpu) * 5 * 1000);
+				$this->attempt++;
+                if($this->sleep_time == INF) {
+                    $this->running = false;
+                    break;
+                }
+		        usleep($this->sleep_time * 1000);
+
 				$now = time();
 				$elapsed = $now - $offset - $block_date;
 				$new_block_date = $block_date + $elapsed;
 				_log("Time=now=$now nodeTime=$nodeTime offset=$offset elapsed=$elapsed",4);
+				$th = microtime(true);
 				$bl->argon = $bl->calculateArgonHash($block_date, $elapsed);
 				$bl->nonce=$bl->calculateNonce($block_date, $elapsed, $chain_id);
 				$bl->date = $block_date;
@@ -154,11 +186,9 @@ class Miner {
 				$target = $bl->calculateTarget($elapsed);
 				$blockFound = ($hit > 0 && $target > 0 && $hit > $target);
 
-				$t2 = microtime(true);
-				$diff = $t2 - $t1;
-				$speed = round($attempt / $diff,2);
+                $this->measureSpeed($t1, $th);
 
-				$s = "PID=".getmypid()." Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed submits=".
+				$s = "PID=".getmypid()." Mining attempt={$this->attempt} height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed={$this->speed} submits=".
                     $this->miningStat['submits']." accepted=".$this->miningStat['accepted']. " rejected=".$this->miningStat['rejected']. " dropped=".$this->miningStat['dropped'];
                 if(!$this->forked){
                     echo "$s \r";
@@ -227,7 +257,7 @@ class Miner {
                 "time"=>date("r"),
                 "height"=>$height,
                 "elapsed"=>$elapsed,
-                "hashes"=>$attempt,
+                "hashes"=>$this->attempt,
                 "hit"=>(string) $hit,
                 "target"=>(string) $target,
                 "status"=>$data['status']=="ok" ? "accepted" : "rejected",
