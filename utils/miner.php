@@ -34,6 +34,9 @@ if(empty($threads)) {
     $threads=1;
 }
 
+$cpu = is_null($cpu) ? 50 : $cpu;
+if($cpu > 100) $cpu = 100;
+
 echo "PHPCoin Miner Version ".MINER_VERSION.PHP_EOL;
 echo "Mining server:  ".$node.PHP_EOL;
 echo "Mining address: ".$address.PHP_EOL;
@@ -77,7 +80,7 @@ function startMiner($address,$node, $forked) {
     global $cpu;
     $miner = new Miner($address, $node, $forked);
     $miner->block_cnt = empty($block_cnt) ? 0 : $block_cnt;
-    $miner->cpu = empty($cpu) ? 0 : $cpu;
+    $miner->cpu = $cpu;
     $miner->start();
 }
 
