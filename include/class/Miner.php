@@ -21,6 +21,8 @@ class Miner {
     private $sleep_time;
     private $attempt;
 
+    private $miningNodes = [];
+
 	function __construct($address, $node, $forked=false)
 	{
 		$this->address = $address;
@@ -38,10 +40,6 @@ class Miner {
 			_log("Error contacting peer");
 			return false;
 		}
-		if(!$info) {
-			_log("Can not retrieve mining info");
-			return false;
-		}
 		_log("Received mining info: ".$info, 3);
 		$info = json_decode($info, true);
 		if ($info['status'] != "ok") {
@@ -50,6 +48,19 @@ class Miner {
 		}
 		return $info;
 	}
+
+    function getMiningNodes() {
+        $url = $this->node."/mine.php?q=getMiningNodes";
+        $info = url_get($url);
+        if(!$info) {
+            return;
+        }
+        $info = json_decode($info, true);
+        if ($info['status'] != "ok") {
+            return;
+        }
+        $this->miningNodes = $info['data'];
+    }
 
     function sendStat($hashes, $height, $interval) {
         $postData = http_build_query([
@@ -109,6 +120,8 @@ class Miner {
         $start_time = time();
         $prev_hashes = null;
 		$this->sleep_time=(100-$this->cpu)*5;
+
+        $this->getMiningNodes();
 
 		while($this->running) {
 			$this->cnt++;
@@ -223,46 +236,44 @@ class Miner {
 				continue;
 			}
 
-			$postData = http_build_query(
-				[
-					'argon' => $bl->argon,
-					'nonce' => $bl->nonce,
-					'height' => $height,
-					'difficulty' => $difficulty,
-					'address' => $this->address,
-					'date'=> $new_block_date,
-					'elapsed' => $elapsed,
-					'minerInfo'=>'phpcoin-miner cli ' . VERSION,
-                    "version"=>MINER_VERSION
-				]
-			);
-
-			$res = url_post($this->node . "/mine.php?q=submitHash&" . XDEBUG, $postData);
-
-
-			$this->miningStat['submits']++;
-			$data = json_decode($res, true);
-			if ($data['status'] == "ok") {
-				_log("Block confirmed", 1);
-				$this->miningStat['accepted']++;
-			} else {
-				_log("Block not confirmed: " . $res, 1);
-				$this->miningStat['rejected']++;
-			}
-
-            if(!isset($this->miningStat['submitted_blocks'])) {
-                $this->miningStat['submitted_blocks']=[];
-            }
-            $this->miningStat['submitted_blocks'][]=[
-                "time"=>date("r"),
-                "height"=>$height,
-                "elapsed"=>$elapsed,
-                "hashes"=>$this->attempt,
-                "hit"=>(string) $hit,
-                "target"=>(string) $target,
-                "status"=>$data['status']=="ok" ? "accepted" : "rejected",
-                "response"=>$data['data']
+            $postData = [
+                'argon' => $bl->argon,
+                'nonce' => $bl->nonce,
+                'height' => $height,
+                'difficulty' => $difficulty,
+                'address' => $this->address,
+                'hit' => (string)$hit,
+                'target' => (string)$target,
+                'date' => $new_block_date,
+                'elapsed' => $elapsed,
+                'minerInfo' => 'phpcoin-miner cli ' . VERSION,
+                "version" => MINER_VERSION
             ];
+
+            $this->miningStat['submits']++;
+            $res = $this->sendHash($this->node, $postData, $response);
+            $accepted = false;
+            if($res) {
+                $accepted = true;
+            } else {
+                if(is_array($this->miningNodes) && count($this->miningNodes)>0) {
+                    foreach ($this->miningNodes as $node) {
+                        $res = $this->sendHash($node, $postData, $response);
+                        if($res) {
+                            $accepted = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if($accepted) {
+                _log("Block confirmed", 1);
+                $this->miningStat['accepted']++;
+            } else {
+                _log("Block not confirmed: " . $res, 1);
+                $this->miningStat['rejected']++;
+            }
 
 			sleep(3);
 
@@ -278,6 +289,31 @@ class Miner {
 
 		_log("Miner stopped");
 	}
+
+    private function sendHash($node, $postData, &$response) {
+        $res = url_post($node . "/mine.php?q=submitHash&", http_build_query($postData), 5);
+        $response = json_decode($res, true);
+        _log("Send hash to node $node response = ".json_encode($response));
+        if(!isset($this->miningStat['submitted_blocks'])) {
+            $this->miningStat['submitted_blocks']=[];
+        }
+        $this->miningStat['submitted_blocks'][]=[
+            "time"=>date("r"),
+            "node"=>$node,
+            "height"=>$postData['height'],
+            "elapsed"=>$postData['elapsed'],
+            "hashes"=>$this->attempt,
+            "hit"=> $postData['hit'],
+            "target"=>$postData['target'],
+            "status"=>@$response['status']=="ok" ? "accepted" : "rejected",
+            "response"=>@$response['data']
+        ];
+        if (@$response['status'] == "ok") {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
 	static function getStatFile() {
 		$file = getcwd() . "/miner_stat.json";
