@@ -132,15 +132,15 @@ if ($q == "info") {
         api_err("miner-version-invalid");
     }
 
-    $not_found_stat = checkStats($ip);
-    if($not_found_stat) {
-        _logf("rejected: miner-not-sending-stat", 0);
-        $reason = "miner-not-sending-stat";
-        $generator_stat['rejected']++;
-        @$generator_stat['reject-reasons'][$reason]++;
-        saveGeneratorStat($generator_stat);
-        api_err($reason);
-    }
+//    $not_found_stat = checkStats($ip);
+//    if($not_found_stat) {
+//        _logf("rejected: miner-not-sending-stat", 0);
+//        $reason = "miner-not-sending-stat";
+//        $generator_stat['rejected']++;
+//        @$generator_stat['reject-reasons'][$reason]++;
+//        saveGeneratorStat($generator_stat);
+//        api_err($reason);
+//    }
 
 	if (empty($_config['generator'])) {
 		_logf("rejected: generator-disabled", 0);
@@ -389,7 +389,7 @@ if ($q == "info") {
     } else {
         api_err("ipcheck-failed");
     }
-} else if ($q="submitStat") {
+} else if ($q=="submitStat") {
 
     $res = checkVersion();
     if(!$res) {
@@ -398,6 +398,9 @@ if ($q == "info") {
 
     _log("submitStat data=".json_encode($_POST));
     Nodeutil::processMiningStat($_POST);
+} else if ($q=="getMiningNodes") {
+    $miners = Peer::getMiningNodes();
+    api_echo($miners);
 } else {
     api_err("invalid command");
 }

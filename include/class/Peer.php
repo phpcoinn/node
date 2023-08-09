@@ -524,4 +524,17 @@ class Peer
 		order by p.height asc, p.response_time / p.response_cnt asc";
 		return $db->run($sql);
 	}
+
+    static function getMiningNodes($limit = 10) {
+        global $db;
+        $sql="select * from peers where miner is not null 
+            and blacklisted < ".DB::unixTimeStamp()." order by response_time/response_cnt
+            limit $limit";
+        $rows = $db->run($sql);
+        $list = [];
+        foreach ($rows as $row) {
+            $list[]=$row['hostname'];
+        }
+        return $list;
+    }
 }
