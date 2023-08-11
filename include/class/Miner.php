@@ -32,24 +32,41 @@ class Miner {
 	}
 
 	function getMiningInfo() {
-
-		$url = $this->node."/mine.php?q=info&".XDEBUG;
-		_log("Getting info from url ". $url, 3);
-		$info = url_get($url);
-		if(!$info) {
-			_log("Error contacting peer");
-			return false;
-		}
-		_log("Received mining info: ".$info, 3);
-		$info = json_decode($info, true);
-		if ($info['status'] != "ok") {
-			_log("Wrong status for node: ".json_encode($info));
-			return false;
-		}
-		return $info;
+        $info = $this->getMiningInfoFromNode($this->node);
+        if($info === false) {
+            if(is_array($this->miningNodes) && count($this->miningNodes)>0) {
+                foreach ($this->miningNodes as $node) {
+                    $info = $this->getMiningInfoFromNode($node);
+                    if($info !== false) {
+                        return $info;
+                    }
+                }
+            }
+            return false;
+        } else {
+            return $info;
+        }
 	}
 
+    function getMiningInfoFromNode($node) {
+        $url = $node."/mine.php?q=info";
+        _log("Getting info from url ". $url, 3);
+        $info = url_get($url);
+        if(!$info) {
+            _log("Error contacting peer");
+            return false;
+        }
+        _log("Received mining info: ".$info, 3);
+        $info = json_decode($info, true);
+        if ($info['status'] != "ok") {
+            _log("Wrong status for node: ".json_encode($info));
+            return false;
+        }
+        return $info;
+    }
+
     function getMiningNodes() {
+        _log("Get mining nodes from ".$this->node, 3);
         $url = $this->node."/mine.php?q=getMiningNodes";
         $info = url_get($url);
         if(!$info) {
@@ -60,6 +77,7 @@ class Miner {
             return;
         }
         $this->miningNodes = $info['data'];
+        _log("Received ".count($this->miningNodes). " mining nodes", 3);
     }
 
     function sendStat($hashes, $height, $interval) {
@@ -109,7 +127,8 @@ class Miner {
     }
 
 	function start() {
-		$this->miningStat = [
+        global $argv;
+        $this->miningStat = [
 			'started'=>time(),
 			'hashes'=>0,
 			'submits'=>0,
@@ -203,7 +222,7 @@ class Miner {
 
 				$s = "PID=".getmypid()." Mining attempt={$this->attempt} height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed={$this->speed} submits=".
                     $this->miningStat['submits']." accepted=".$this->miningStat['accepted']. " rejected=".$this->miningStat['rejected']. " dropped=".$this->miningStat['dropped'];
-                if(!$this->forked){
+                if(!$this->forked && !in_array("--flat-log", $argv)){
                     echo "$s \r";
                 } else {
                     echo $s. PHP_EOL;
