@@ -376,8 +376,8 @@ class Masternode extends Daemon
 			$masternode_id = Account::getAddress($transaction->publicKey);
 			$masternode_existing = Masternode::isExisting($masternode_id, $height);
 			if($masternode_existing) {
-				$total_sent = Transaction::getTotalSent($masternode_id, $height);
-				$total_received = Transaction::getTotalReceived($masternode_id, $height);
+				$total_sent = Transaction::getTotalSent($masternode_id, $verify ? $height-1 : $height);
+				$total_received = Transaction::getTotalReceived($masternode_id, $verify ? $height-1 : $height);
 				$balance = $total_received - $total_sent;
 				$collateral = Block::getMasternodeCollateral($height);
                 $mempool_balance = Mempool::mempoolBalance($masternode_id,$transaction->id);
