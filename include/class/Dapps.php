@@ -379,9 +379,12 @@ class Dapps extends Daemon
 
 		$allowed_files_list = implode(":", $allowed_files);
 
+        $debug="-dxdebug.start_with_request=1";
+        $debug="";
+
 		$cmd = "$server_args GET_DATA=$get_data POST_DATA=$post_data SESSION_ID=$session_id SESSION_DATA=$session_data COOKIE_DATA=$cookie_data" .
 			" DAPPS_ID=$dapps_id DAPPS_LOCAL=$dapps_local " .
-			" php -d disable_functions=exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,set_time_limit,ini_set" .
+			" php $debug -d disable_functions=exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,set_time_limit,ini_set" .
 			" -d open_basedir=" . $dapps_dir . "/$dapps_id:".$tmp_dir.":".$allowed_files_list .
 			" -d max_execution_time=5 -d memory_limit=128M " .
 			" -d auto_prepend_file=$functions_file $file 2>&1";
