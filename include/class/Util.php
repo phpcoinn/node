@@ -1350,7 +1350,7 @@ class Util
 	}
 
 	static function checkAccounts() {
-		global $db;
+		global $db, $argv;
 		Config::setSync(1);
 
 		try {
@@ -1386,7 +1386,7 @@ class Util
 
 			_log("calc_acc_cnt=$calc_acc_cnt real_acc_cnt=$real_acc_cnt calc_acc_sum=$calc_acc_sum real_acc_sum=$real_acc_sum");
 
-			if($calc_acc_cnt <>  $real_acc_cnt) {
+			if($calc_acc_cnt <>  $real_acc_cnt || (!empty($argv) && in_array("--force", $argv))) {
 				_log("Accounts rows are different");
 				_log("delete accounts");
 //				$db->exec("lock tables transactions t write, transactions ts write, blocks b write, accounts write");
