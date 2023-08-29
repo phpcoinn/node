@@ -282,7 +282,7 @@ class Daemon
 					$lock_file = self::getLockFile();
 					$locked = file_exists($lock_file);
 
-					$scmd = "ps -e -o pid,pcpu,pmem,lstart,user,cmd | grep ".ROOT."/cli/$name.php | grep -v grep | grep -v status";
+					$scmd = "TZ=UTC0 ps -e -o pid,pcpu,pmem,lstart,user,cmd | grep ".ROOT."/cli/$name.php | grep -v grep | grep -v status";
 					$res = shell_exec($scmd);
                     $res = trim($res);
 					$data = [];
