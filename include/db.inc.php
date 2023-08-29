@@ -149,17 +149,14 @@ class DB extends PDO
     public function row($sql, $bind = "")
     {
         $query = $this->run($sql, $bind);
+        if(!$query) {
+            return false;
+        }
         if (count($query) == 0) {
             return false;
         }
-        if (count($query) > 1) {
-            return $query;
-        }
-        if (count($query) == 1) {
-            foreach ($query as $row) {
-                $result = $row;
-            }
-            return $result;
+        if (count($query) >= 1) {
+            return $query[0];
         }
     }
 
