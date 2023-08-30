@@ -1011,7 +1011,7 @@ class Util
 
 		global $_config;
 
-		_log("Sync: Util: get-more-peers", 5);
+		_log("Sync: Util: get-more-peers", 3);
 		$peers=Peer::getPeers();
 		$peered = [];
 
@@ -1020,18 +1020,28 @@ class Util
 			$peered[$hostname]=true;
 		}
 
+        _log("Totally peered with " . count($peered)." peers",3);
+
+        $cnt=count($peers);
+        $added = 0;
+        $start = microtime(true);
 		foreach ($peers as $ix => $peer) {
 			$hostname = $peer['hostname'];
 			$url = $hostname."/peer.php?q=";
-			$data = peer_post($url."getPeers", [], 5);
+            _log("Getting peers from $hostname [$ix / $cnt]",5);
+			$data = peer_post($url."getPeers", [], 30, $err);
 			if ($data === false) {
+                _log("Error getting peers from $hostname: $err",2);
 				Peer::blacklist($peer['id'], "Unresponsive");
 				continue;
 			}
 			if(is_array($data) && count($data)==0) {
+                _log("No peers on $hostname",2);
 				Peer::blacklist($peer['id'], "No peers");
 				continue;
 			}
+
+            _log("Found ".count($data)." peers on $hostname",5);
 
 			$new_peers = [];
 			foreach ($data as $ix1 => $peer1) {
@@ -1045,11 +1055,15 @@ class Util
 				$peered[$hostname1] = true;
 			}
 
+            _log("Found ".count($data)." peers on $hostname new=".count($new_peers),5);
+
 			foreach ($new_peers as $ix1 => $new_peer)  {
 				if(!Peer::validate($new_peer['hostname'])) {
+                    _log("Peer with new peer ".$new_peer['hostname']." - not valid",2);
 					continue;
 				}
 				if ($new_peer['hostname'] == $_config['hostname']) {
+                    _log("Peer with new peer ".$new_peer['hostname']." - is me",2);
 					continue;
 				}
 				$single = Peer::getSingle($new_peer['hostname'], $new_peer['ip']);
@@ -1057,11 +1071,19 @@ class Util
 					$res = peer_post($new_peer['hostname']."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1], 30, $err);
 					if($res !== false ){
 						_log("GMP: peered new peer ". $new_peer['hostname']);
-					}
-				}
+                        $added++;
+					} else {
+                        _log("Error peerign new peer ".$new_peer['hostname']." err=$err",2);
+                    }
+				} else {
+                    _log("New peer ".$new_peer['hostname']." already in our db",5);
+                }
 			}
 
 		}
+        $end = microtime(true);
+        $diff = $end - $start;
+        _log("Added $added new peers in $diff");
 	}
 
 	static function setConfig($argv) {
