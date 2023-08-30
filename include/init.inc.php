@@ -88,6 +88,10 @@ if (!extension_loaded("curl")) {
 if (!defined("PASSWORD_ARGON2I")) {
     api_err("The php version is not compiled with argon2i support");
 }
+if(empty(shell_exec("git --version"))) {
+    api_err("git must be installed");
+}
+
 
 $version = $db->getAttribute(PDO::ATTR_SERVER_VERSION);
 if(!$db->isSqlite() && floatval(substr($version, 0, 3)) < 8 && strpos($version, "MariaDB")===false) {
