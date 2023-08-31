@@ -1190,10 +1190,6 @@ class Transaction
 				}
 			}
 
-			if($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_BURN) {
-				Masternode::checkSend($this);
-			}
-
 			$res = $this->add_mempool("local");
 			if(!$res) {
 				throw new Exception("Error adding tansaction to mempool");

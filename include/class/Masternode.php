@@ -381,12 +381,17 @@ class Masternode extends Daemon
 			$masternode_id = Account::getAddress($transaction->publicKey);
 			$masternode_existing = Masternode::isExisting($masternode_id, $height);
 			if($masternode_existing) {
-				$total_sent = Transaction::getTotalSent($masternode_id, $verify ? $height-1 : $height);
-				$total_received = Transaction::getTotalReceived($masternode_id, $verify ? $height-1 : $height);
-				$balance = $total_received - $total_sent;
+				$total_sent = Transaction::getTotalSent($masternode_id, $height);
+				$total_received = Transaction::getTotalReceived($masternode_id, $height);
+				$balance = floatval($total_received) - floatval($total_sent);
 				$collateral = Block::getMasternodeCollateral($height);
-                $mempool_balance = Mempool::mempoolBalance($masternode_id,$transaction->id);
-				if(round(floatval($balance) - $transaction->val + floatval($mempool_balance),8) < $collateral) {
+                if(!$verify) {
+                    $mempool_balance = Mempool::mempoolBalance($masternode_id,$transaction->id);
+                    $remain = $balance - $collateral - floatval($transaction->val) - (floatval($mempool_balance)*(-1));
+                } else {
+                    $remain = $balance - $collateral;
+                }
+				if(round($remain,8) < 0) {
 					throw new Exception("Can not spent more than collateral. Balance=$balance amount=".$transaction->val);
 				}
 			}
