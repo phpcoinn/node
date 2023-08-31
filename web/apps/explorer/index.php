@@ -48,6 +48,7 @@ if (Nodeutil::miningEnabled() && $minepool_enabled) {
 
 $mnEnabled = Masternode::allowedMasternodes($blockCount);
 $masternodesCount = Masternode::getCount();
+$masternodesVerifiedCount = Masternode::getVerifiedCount();
 
 $sql="select count(distinct b.masternode)
 from blocks b
@@ -329,7 +330,7 @@ if(NETWORK == "mainnet") {
                                 <span class="text-muted font-size-13">
                                     Total <strong><?php echo $masternodesCount ?></strong> masternodes
                                     <br/>
-                                    &nbsp;
+                                    Verified <strong><?php echo $masternodesVerifiedCount ?></strong>
                                 </span>
                             </div>
                         </div>

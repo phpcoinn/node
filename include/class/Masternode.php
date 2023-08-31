@@ -157,6 +157,11 @@ class Masternode extends Daemon
 		return $db->single($sql);
 	}
 
+    static function getVerifiedCount() {
+        global $db;
+        $sql="select count(1) from masternode where verified = 1";
+        return $db->single($sql);
+    }
 
 	static function getCountForCollateral($collateral, $height) {
 		global $db;
