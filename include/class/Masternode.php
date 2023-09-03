@@ -1155,10 +1155,10 @@ class Masternode extends Daemon
 	static function isExisting($id, $height) {
 		global $db;
 		$sql="select count(t.id) as cnt_create from transactions t where t.dst = :id and t.type = :type
-			and t.height < :height";
+			and t.height <= :height";
 		$cnt_created = $db->single($sql, [":id"=>$id, ":type"=>TX_TYPE_MN_CREATE, ":height"=>$height]);
 		$sql="select count(t.id) as cnt_remove from transactions t where t.src = :id and t.type = :type
-			and t.height < :height";
+			and t.height <= :height";
 		$cnt_removed = $db->single($sql, [":id"=>$id, ":type"=>TX_TYPE_MN_REMOVE, ":height"=>$height]);
 		if($cnt_created - $cnt_removed > 0) {
 			return true;
