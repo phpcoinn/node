@@ -57,7 +57,7 @@ class Daemon
 			if(empty($res)) {
 				_log("Daemon: $name: process not exists - start it");
 				$dir = ROOT . "/cli";
-				$cmd = Nodeutil::debugEnv()."php $dir/$name.php > /dev/null 2>&1  &";
+				$cmd = "php $dir/$name.php > /dev/null 2>&1  &";
 				_log("Dapps: Start $name daemon: $cmd");
 				system($cmd);
 			} else {

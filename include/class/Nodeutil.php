@@ -360,21 +360,13 @@ class Nodeutil
 		if(empty($check_cmd)) $check_cmd = $cmd;
 		$res = shell_exec("ps uax | grep '$check_cmd' | grep -v grep");
 		if(!$res) {
-			$exec_cmd = self::debugEnv()."$cmd > /dev/null 2>&1  &";
+			$exec_cmd = "$cmd > /dev/null 2>&1  &";
 			system($exec_cmd);
 		}
 	}
 
-    static function debugEnv() {
-        $debug="";
-        if(DEVELOPMENT) {
-            $debug='PHP_IDE_CONFIG=serverName=php1 ';
-        }
-        return $debug;
-    }
-
 	static function runProcess($cmd) {
-        $exec_cmd = self::debugEnv() . "$cmd > /dev/null 2>&1  &";
+        $exec_cmd = "$cmd > /dev/null 2>&1  &";
         system($exec_cmd);
 	}
 
