@@ -38,7 +38,7 @@ if test -f "$FILE"; then
       mv blockchain-testnet.sql blockchain.sql
     fi
     cd $NODE_DIR
-    php cli/util.php importdb tmp/blockchain.sql
+    time php cli/util.php importdb tmp/blockchain.sql
     rm first-run
     > tmp/phpcoin.log
 fi
