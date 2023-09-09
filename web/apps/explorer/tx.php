@@ -10,6 +10,7 @@ $fee_ratio = Blockchain::getFee($tx_height);
 $mempool = false;
 if(!$tx) {
 	$tx = Transaction::getMempoolById($id);
+    $tx_height = $tx['height'];
 	$mempool = true;
     if(!$tx) {
         header("location: /apps/explorer");

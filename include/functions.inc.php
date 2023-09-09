@@ -326,12 +326,13 @@ function url_get($url,$timeout = 30) {
 	return $result;
 }
 
-function url_post($url, $postdata) {
+function url_post($url, $postdata, $timeout=30) {
 	$ch = curl_init();
 	curl_setopt($ch, CURLOPT_URL,$url);
 	curl_setopt($ch, CURLOPT_POST, 1);
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata );
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 	if(DEVELOPMENT) {
