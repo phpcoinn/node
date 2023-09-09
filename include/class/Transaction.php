@@ -1275,13 +1275,13 @@ class Transaction
 
 	static function getTotalSent($address, $height=PHP_INT_MAX) {
 		global $db;
-		$sql="select sum(t.val + t.fee) from transactions t where t.src= :address and t.height < :height";
+		$sql="select sum(t.val + t.fee) from transactions t where t.src= :address and t.height <= :height";
 		return $db->single($sql, [":address"=>$address, ":height"=>$height]);
 	}
 
 	static function getTotalReceived($address, $height=PHP_INT_MAX) {
 		global $db;
-		$sql="select sum(t.val) from transactions t where t.dst= :address and t.height < :height";
+		$sql="select sum(t.val) from transactions t where t.dst= :address and t.height <= :height";
 		return $db->single($sql, [":address"=>$address, ":height"=>$height]);
 	}
 

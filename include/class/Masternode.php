@@ -377,15 +377,18 @@ class Masternode extends Daemon
 
 	static function checkIsSendFromMasternode($height, Transaction $transaction, &$error, $verify) {
 		try {
-
+            $checkHeight = $verify ? $height-1 : $height;
 			$masternode_id = Account::getAddress($transaction->publicKey);
-			$masternode_existing = Masternode::isExisting($masternode_id, $height);
+			$masternode_existing = Masternode::isExisting($masternode_id, $checkHeight);
 			if($masternode_existing) {
-				$total_sent = Transaction::getTotalSent($masternode_id, $height);
-				$total_received = Transaction::getTotalReceived($masternode_id, $height);
+				$total_sent = Transaction::getTotalSent($masternode_id, $checkHeight);
+				$total_received = Transaction::getTotalReceived($masternode_id, $checkHeight);
 				$balance = $total_received - $total_sent;
-				$collateral = Block::getMasternodeCollateral($height);
-                $mempool_balance = Mempool::mempoolBalance($masternode_id,$transaction->id);
+				$collateral = Block::getMasternodeCollateral($checkHeight);
+                $mempool_balance = 0;
+                if(!$verify) {
+                    $mempool_balance = Mempool::mempoolBalance($masternode_id,$transaction->id);
+                }
 				if(round(floatval($balance) - $transaction->val + floatval($mempool_balance),8) < $collateral) {
 					throw new Exception("Can not spent more than collateral. Balance=$balance amount=".$transaction->val);
 				}
@@ -1012,7 +1015,7 @@ class Masternode extends Daemon
 				$memspent = Mempool::getSourceMempoolBalance($transaction->src);
 				$collateral = Block::getMasternodeCollateral($height);
 				if(floatval($balance) - floatval($memspent) - $transaction->val < $collateral) {
-					throw new Exception("Can not spent more than collateral. Balance=$balance memspent=$memspent amount=".$transaction->val);
+//					throw new Exception("Can not spent more than collateral. Balance=$balance memspent=$memspent amount=".$transaction->val);
 				}
 			}
 		}
@@ -1152,10 +1155,10 @@ class Masternode extends Daemon
 	static function isExisting($id, $height) {
 		global $db;
 		$sql="select count(t.id) as cnt_create from transactions t where t.dst = :id and t.type = :type
-			and t.height < :height";
+			and t.height <= :height";
 		$cnt_created = $db->single($sql, [":id"=>$id, ":type"=>TX_TYPE_MN_CREATE, ":height"=>$height]);
 		$sql="select count(t.id) as cnt_remove from transactions t where t.src = :id and t.type = :type
-			and t.height < :height";
+			and t.height <= :height";
 		$cnt_removed = $db->single($sql, [":id"=>$id, ":type"=>TX_TYPE_MN_REMOVE, ":height"=>$height]);
 		if($cnt_created - $cnt_removed > 0) {
 			return true;
