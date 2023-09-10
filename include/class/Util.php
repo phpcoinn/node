@@ -888,11 +888,11 @@ class Util
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-            $cmd="cd ".ROOT." && git fetch";
+            $cmd="cd ".ROOT." && git fetch  2>&1";
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-			$cmd="cd ".ROOT." && git restore .";
+			$cmd="cd ".ROOT." && git restore .  2>&1";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
@@ -904,7 +904,7 @@ class Util
 //			$res = shell_exec($cmd);
 //			_log("AUTO_UPDATE: cmd=$cmd res=$res");
 
-			$cmd="cd ".ROOT." && git pull origin $branch";
+			$cmd="cd ".ROOT." && git pull origin $branch  2>&1";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
@@ -914,11 +914,11 @@ class Util
 
             _log("AUTO_UPDATE: Set node folder user permissions",4);
 
-            $cmd="chown -R www-data:www-data ".ROOT ."/";
+            $cmd="chown -R www-data:www-data ".ROOT ."/  2>&1";
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-            $cmd="chmod -R 755 ".ROOT ."/";
+            $cmd="chmod -R 755 ".ROOT ."/  2>&1";
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
