@@ -888,6 +888,10 @@ class Util
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
+            $cmd="cd ".ROOT." && git status  2>&1";
+            $res = shell_exec($cmd);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
+
             $cmd="cd ".ROOT." && git fetch  2>&1";
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
@@ -908,7 +912,7 @@ class Util
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-            $cmd = "cd ".ROOT." && echo \"". CHAIN_ID ."\" > chain_id";
+            $cmd = "cd ".ROOT." && echo \"". CHAIN_ID ."\" > chain_id 2>&1";
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res", 5);
 
