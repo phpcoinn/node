@@ -484,7 +484,7 @@ class Transaction
 				throw new Exception("Error checking account address");
 			}
 			//allow receive on unverified address
-			if ($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_SEND) {
+			if ($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_SEND || $this->type == TX_TYPE_MN_REMOVE) {
 				$res = Account::checkAccount($this->dst, "", $block, $height);
 				if ($res === false) {
 					throw new Exception("Error checking account address for send");
