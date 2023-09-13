@@ -5,6 +5,8 @@ class NodeMiner extends Daemon {
 	static $name = "miner";
 	static $title = "Miner";
 
+    const CACHE_STAT = "nodeminerStat";
+
 	static $max_run_time = 60 * 60;
 	static $run_interval = 5;
 
@@ -17,7 +19,13 @@ class NodeMiner extends Daemon {
 
 	private $running = true;
 	private $minerid;
-	private $cpu;
+	private $cpu = 25;
+
+    private $hashing_time = 0;
+    private $hashing_cnt = 0;
+    private $speed;
+    private $sleep_time;
+    private $attempt;
 
 	function __construct()
 	{
@@ -35,11 +43,45 @@ class NodeMiner extends Daemon {
 		return $info;
 	}
 
+    function measureSpeed($t1, $th) {
+        $t2 = microtime(true);
+        $this->hashing_cnt++;
+        $this->hashing_time = $this->hashing_time + ($t2-$th);
+
+        $diff = $t2 - $t1;
+        $this->speed = round($this->attempt / $diff,2);
+
+        $calc_cnt = round($this->speed * 60);
+
+        if($this->hashing_cnt % $calc_cnt == 0) {
+            $this->sleep_time = $this->cpu == 0 ? INF : round((($this->hashing_time/$this->hashing_cnt)*1000)*(100-$this->cpu)/$this->cpu);
+            if($this->sleep_time < 0) {
+                $this->sleep_time = 0;
+            }
+            $nodeminerStat=[
+                "hashing_cnt"=>$this->hashing_cnt,
+                "hashing_time"=>$this->hashing_time,
+                "speed"=>$this->speed,
+                "attempt"=>$this->attempt,
+                "sleep_time"=>$this->sleep_time,
+                "cpu"=>$this->cpu,
+            ];
+            Cache::set(NodeMiner::CACHE_STAT, $nodeminerStat);
+        }
+
+        $rem = (floor($this->hashing_cnt / $calc_cnt) +1) * $calc_cnt - $this->hashing_cnt;
+        $l= "measure speed: t1=$t1 t2=$t2 diff=$diff speed=$this->speed hashing_cnt=$this->hashing_cnt calc_cnt=$calc_cnt rem=$rem sleep_time=$this->sleep_time".PHP_EOL;
+        _log($l);
+    }
+
 	function start($mine_blocks = null, $sleep = 3) {
 
 		$this->loadMiningStats();
         $start_time = time();
         $prev_hashes = $this->miningStat['hashes'];
+
+        $this->sleep_time=(100-$this->cpu)*5;
+
 		while($this->running) {
 			$this->cnt++;
 //			_log("Mining cnt: ".$this->cnt);
@@ -78,18 +120,22 @@ class NodeMiner extends Daemon {
 			$prev_block_id = $info['block'];
 			$blockFound = false;
 
-			$attempt = 0;
+			$this->attempt = 0;
 
 			$bl = new Block($generator, $generator, $height, null, null, $data, $difficulty, Block::versionCode($height), null, $prev_block_id);
 			$bl->publicKey = $this->public_key;
 
 			$t1 = microtime(true);
 			while (!$blockFound) {
-				$attempt++;
+				$this->attempt++;
+                if($this->sleep_time == INF) {
+                    $this->running = false;
+                    break;
+                }
 
 				$this->saveMiningStats();
 
-				usleep((100-$this->cpu) * 5 * 1000);
+                usleep($this->sleep_time * 1000);
 				$this->checkRunning();
 				if(!$this->running) {
 					_log("Stop miner because missing lock file");
@@ -98,7 +144,7 @@ class NodeMiner extends Daemon {
 				$now = time();
 				$elapsed = $now - $block_date;
 				$new_block_date = $block_date + $elapsed;
-
+                $th = microtime(true);
 				$bl->argon = $bl->calculateArgonHash($block_date, $elapsed);
 				$bl->nonce=$bl->calculateNonce($block_date, $elapsed);
 				$bl->date = $new_block_date;
@@ -106,14 +152,12 @@ class NodeMiner extends Daemon {
 				$target = $bl->calculateTarget($elapsed);
 				$blockFound = ($hit > 0 && $target > 0 &&  $hit > $target);
 
-				$t2 = microtime(true);
-				$diff = $t2 - $t1;
-				$speed = round($attempt / $diff,2);
+                $this->measureSpeed($t1, $th);
 
-				_log("Mining attempt=$attempt height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed=$speed blockFound=$blockFound", 3);
+				_log("Mining attempt={$this->attempt} height=$height difficulty=$difficulty elapsed=$elapsed hit=$hit target=$target speed={$this->speed} blockFound=$blockFound", 3);
 				$this->miningStat['hashes']++;
 				$mod = 10+$this->cpu;
-				if($attempt % $mod == 0) {
+				if($this->attempt % $mod == 0) {
 					$info = $this->getMiningInfo();
 					if($info!==false) {
 						_log("Checking new block from server ".$info['block']. " with our block $prev_block_id", 4);
