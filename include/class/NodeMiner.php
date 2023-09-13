@@ -69,9 +69,9 @@ class NodeMiner extends Daemon {
             Cache::set(NodeMiner::CACHE_STAT, $nodeminerStat);
         }
 
-        $rem = (floor($this->hashing_cnt / $calc_cnt) +1) * $calc_cnt - $this->hashing_cnt;
-        $l= "measure speed: t1=$t1 t2=$t2 diff=$diff speed=$this->speed hashing_cnt=$this->hashing_cnt calc_cnt=$calc_cnt rem=$rem sleep_time=$this->sleep_time".PHP_EOL;
-        _log($l);
+//        $rem = (floor($this->hashing_cnt / $calc_cnt) +1) * $calc_cnt - $this->hashing_cnt;
+//        $l= "measure speed: t1=$t1 t2=$t2 diff=$diff speed=$this->speed hashing_cnt=$this->hashing_cnt calc_cnt=$calc_cnt rem=$rem sleep_time=$this->sleep_time".PHP_EOL;
+//        _log($l);
     }
 
 	function start($mine_blocks = null, $sleep = 3) {
