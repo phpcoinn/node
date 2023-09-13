@@ -5,8 +5,6 @@ class NodeMiner extends Daemon {
 	static $name = "miner";
 	static $title = "Miner";
 
-    const CACHE_STAT = "nodeminerStat";
-
 	static $max_run_time = 60 * 60;
 	static $run_interval = 5;
 
@@ -58,16 +56,10 @@ class NodeMiner extends Daemon {
             if($this->sleep_time < 0) {
                 $this->sleep_time = 0;
             }
-            $nodeminerStat=[
-                "hashing_cnt"=>$this->hashing_cnt,
-                "hashing_time"=>$this->hashing_time,
-                "speed"=>$this->speed,
-                "attempt"=>$this->attempt,
-                "sleep_time"=>$this->sleep_time,
-                "cpu"=>$this->cpu,
-            ];
-            Cache::set(NodeMiner::CACHE_STAT, $nodeminerStat);
         }
+
+        $this->miningStat['speed']=$this->speed;
+        $this->miningStat['cpu']=$this->cpu;
 
 //        $rem = (floor($this->hashing_cnt / $calc_cnt) +1) * $calc_cnt - $this->hashing_cnt;
 //        $l= "measure speed: t1=$t1 t2=$t2 diff=$diff speed=$this->speed hashing_cnt=$this->hashing_cnt calc_cnt=$calc_cnt rem=$rem sleep_time=$this->sleep_time".PHP_EOL;

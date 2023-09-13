@@ -47,56 +47,11 @@ if($action == "daemon_stop") {
 	exit;
 }
 
-//TODO: replace @1.0.6.85
-if(method_exists(Nodeutil::class, 'getServerData')) {
-    $serverData=Nodeutil::getServerData();
-} else {
-	$serverData = [];
-	$serverData['hostname']=gethostname();
-	$minerStatFile = NodeMiner::getStatFile();
-	if(file_exists($minerStatFile)) {
-		$minerStat = file_get_contents($minerStatFile);
-		$minerStat = json_decode($minerStat, true);
-	}
-// Linux CPU
-	$load = sys_getloadavg();
-	$cpuload = $load[0];
-// Linux MEM
-	$free = shell_exec('free');
-	$free = (string)trim($free);
-	$free_arr = explode("\n", $free);
-	$mem = explode(" ", $free_arr[1]);
-	$mem = array_filter($mem, function($value) { return ($value !== null && $value !== false && $value !== ''); }); // removes nulls from array
-	$mem = array_merge($mem); // puts arrays back to [0],[1],[2] after
-	$memtotal = round($mem[1] / 1000000,2);
-	$memused = round($mem[2] / 1000000,2);
-	$memfree = round($mem[3] / 1000000,2);
-	$memshared = round($mem[4] / 1000000,2);
-	$memcached = round($mem[5] / 1000000,2);
-	$memavailable = round($mem[6] / 1000000,2);
-// Linux Connections
-	$connections = `netstat -ntu | grep :80 | grep ESTABLISHED | grep -v LISTEN | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -rn | grep -v 127.0.0.1 | wc -l`;
-	$totalconnections = `netstat -ntu | grep :80 | grep -v LISTEN | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -rn | grep -v 127.0.0.1 | wc -l`;
-
-	$memusage = round(($memavailable/$memtotal)*100);
-	$phpload = round(memory_get_usage() / 1000000,2);
-	$diskfree = round(disk_free_space(".") / 1000000000);
-	$disktotal = round(disk_total_space(".") / 1000000000);
-	$diskused = round($disktotal - $diskfree);
-	$diskusage = round($diskused/$disktotal*100);
-
-	$serverData['stat']['memusage']=$memusage;
-	$serverData['stat']['cpuload']=$cpuload;
-	$serverData['stat']['diskusage']=$diskusage;
-	$serverData['stat']['connections']=$connections;
-	$serverData['stat']['totalconnections']=$totalconnections;
-	$serverData['stat']['memtotal']=$memtotal;
-	$serverData['stat']['memused']=$memused;
-	$serverData['stat']['memavailable']=$memavailable;
-	$serverData['stat']['diskfree']=$diskfree;
-	$serverData['stat']['diskused']=$diskused;
-	$serverData['stat']['disktotal']=$disktotal;
-	$serverData['stat']['phpload']=$phpload;
+$serverData=Nodeutil::getServerData();
+$minerStatFile = NodeMiner::getStatFile();
+if(file_exists($minerStatFile)) {
+    $minerStat = file_get_contents($minerStatFile);
+    $minerStat = json_decode($minerStat, true);
 }
 
 
@@ -285,6 +240,14 @@ if(method_exists(Daemon::class, "availableDaemons")) {
 									<div class="flex-row d-flex justify-content-between flex-wrap">
 										<div>Rejected:</div>
 										<div><?php echo $minerStat['rejected'] ?></div>
+									</div>
+									<div class="flex-row d-flex justify-content-between flex-wrap">
+										<div>CPU:</div>
+										<div><?php echo $minerStat['cpu'] ?></div>
+									</div>
+									<div class="flex-row d-flex justify-content-between flex-wrap">
+										<div>Speed:</div>
+										<div><?php echo $minerStat['speed'] ?></div>
 									</div>
 								<?php } ?>
 
