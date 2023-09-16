@@ -48,17 +48,6 @@ a2ensite phpcoin-testnet
 a2enmod rewrite
 service apache2 restart
 
-cat << EOF > /etc/mysql/mariadb.conf.d/50-phpcoin.cnf
-[mysqld]
-innodb_buffer_pool_size = 1G
-innodb_log_buffer_size = 500M
-innodb_log_file_size = 500M
-innodb_write_io_threads = 16
-innodb_flush_log_at_trx_commit = 0
-EOF
-
-service mysql restart
-
 echo "PHPCoin: setup config file"
 echo "==================================================================================================="
 CONFIG_FILE=config/config.inc.php
