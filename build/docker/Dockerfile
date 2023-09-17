@@ -38,13 +38,6 @@ a2enmod rewrite && \
 rm /etc/apache2/conf-enabled/other-vhosts-access-log.conf && \
 service apache2 restart
 
-RUN echo "[mysqld]\n\
-innodb_buffer_pool_size = 1G\n\
-innodb_log_buffer_size = 500M\n\
-innodb_log_file_size = 500M\n\
-innodb_write_io_threads = 16\n\
-innodb_flush_log_at_trx_commit = 0" > /etc/mysql/mariadb.conf.d/50-phpcoin.cnf
-
 RUN cd $NODE_DIR && \
 cp config/config-sample.inc.php config/config.inc.php && \
 sed -i "s/ENTER-DB-NAME/$DB_NAME/g" config/config.inc.php && \
