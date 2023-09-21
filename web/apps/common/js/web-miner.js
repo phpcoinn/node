@@ -46,6 +46,31 @@ class WebMiner {
         this.development = options.development
         this.minerid = Math.round(Date.now()/1000) + Math.random().toString(16).slice(2)
         this.prevHashes=0
+
+        this.hashingTime = 0
+        this.hashingCnt = 0
+        this.speed = 0
+        this.attempt = 0
+        this.cpu = options.cpu
+        this.sleepTime = (100 - this.cpu) * 5
+    }
+
+    measureSpeed(t1, th) {
+        let t2 = Date.now()
+        this.hashingCnt++
+        this.hashingTime = this.hashingTime + (t2-th)
+        let diff = (t2-t1)/1000
+        this.speed = Number(this.attempt/diff).toFixed(2)
+        let calcCount = Math.round(this.speed * 60)
+        let mod = this.hashingCnt % calcCount
+        if(mod === 0) {
+            this.sleepTime = this.cpu === 0 ? Infinity : Math.round(((this.hashingTime/this.hashingCnt))*(100-this.cpu)/this.cpu)
+            if(this.sleepTime < 0) {
+                this.sleepTime = 0
+            }
+        }
+        console.log({cpu: this.cpu,t1,th,hashingCnt: this.hashingCnt,
+            hashingTime: this.hashingTime,diff,speed:this.speed,calcCount,rem:this.hashingCnt/calcCount,sleepTime:this.sleepTime})
     }
 
     async start() {
