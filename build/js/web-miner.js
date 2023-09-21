@@ -146,7 +146,7 @@ class WebMiner {
             let submitResponse
             let calOffset = 0
             let blockFound = false
-            let attempt = 0
+            this.attempt = 0
             let speed = 0
 
             this.miner = {
@@ -174,7 +174,7 @@ class WebMiner {
                 json,
                 version,
                 submitResponse,
-                attempt,
+                attempt:this.attempt,
                 speed,
                 block
             }
@@ -191,7 +191,12 @@ class WebMiner {
                     break
                 }
 
-                attempt++
+                this.attempt++
+
+                if(this.sleepTime === Infinity) {
+                    this.running = false
+                    break
+                }
 
                 this.miningStat.hashes++
 
@@ -202,10 +207,8 @@ class WebMiner {
 
                 let t2 = Date.now()
                 let diff = t2 - t1
-                this.miner.speed = ( attempt / (diff / 1000)).toFixed(2)
 
-                let ms = (100 - this.cpu) * 5
-                await new Promise(resolve => setTimeout(resolve, ms));
+                await new Promise(resolve => setTimeout(resolve, this.sleepTime));
 
                 now = Math.round(Date.now() / 1000)
                 elapsed = now + offset - block_date
@@ -213,7 +216,7 @@ class WebMiner {
                 new_block_date = block_date + elapsed
 
                 this.miner.elapsed = elapsed
-                this.miner.attempt = attempt
+                this.miner.attempt = this.attempt
                 this.miner.new_block_date = new_block_date
                 this.miner.height = height
 
@@ -227,6 +230,7 @@ class WebMiner {
                     salt = Buffer.from(salt)
                 }
 
+                let th = Date.now()
                 let hash = await argon2.hash({
                     pass: argonBase,
                     salt,
@@ -261,6 +265,9 @@ class WebMiner {
                 this.miner.hit = hit
                 this.miner.target = target
                 this.miner.blockFound = blockFound
+
+                this.measureSpeed(t1, th)
+                this.miner.speed = this.speed
             }
 
             if(!blockFound || elapsed<0) {
