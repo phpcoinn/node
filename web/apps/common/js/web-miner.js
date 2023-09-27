@@ -69,8 +69,8 @@ class WebMiner {
                 this.sleepTime = 0
             }
         }
-        console.log({cpu: this.cpu,t1,th,hashingCnt: this.hashingCnt,
-            hashingTime: this.hashingTime,diff,speed:this.speed,calcCount,rem:this.hashingCnt/calcCount,sleepTime:this.sleepTime})
+        // console.log({cpu: this.cpu,t1,th,hashingCnt: this.hashingCnt,
+        //     hashingTime: this.hashingTime,diff,speed:this.speed,calcCount,rem:this.hashingCnt/calcCount,sleepTime:this.sleepTime})
     }
 
     async start() {
