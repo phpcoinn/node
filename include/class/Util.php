@@ -888,11 +888,19 @@ class Util
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-			$cmd="cd ".ROOT." && git restore .";
+            $cmd="cd ".ROOT." && git status  2>&1";
+            $res = shell_exec($cmd);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
+
+            $cmd="cd ".ROOT." && git fetch  2>&1";
+            $res = shell_exec($cmd);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
+
+			$cmd="cd ".ROOT." && git restore .  2>&1";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-			$cmd="cd ".ROOT." && git checkout -b $branch";
+			$cmd="cd ".ROOT." && git checkout -b $branch 2>&1";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 //
@@ -900,21 +908,21 @@ class Util
 //			$res = shell_exec($cmd);
 //			_log("AUTO_UPDATE: cmd=$cmd res=$res");
 
-			$cmd="cd ".ROOT." && git pull origin $branch";
+			$cmd="cd ".ROOT." && git pull origin $branch  2>&1";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-            $cmd = "cd ".ROOT." && echo \"". CHAIN_ID ."\" > chain_id";
+            $cmd = "cd ".ROOT." && echo \"". CHAIN_ID ."\" 2>&1 > chain_id ";
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res", 5);
 
             _log("AUTO_UPDATE: Set node folder user permissions",4);
 
-            $cmd="chown -R www-data:www-data ".ROOT ."/";
+            $cmd="chown -R www-data:www-data ".ROOT ."/  2>&1";
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-            $cmd="chmod -R 755 ".ROOT ."/";
+            $cmd="chmod -R 755 ".ROOT ."/  2>&1";
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 

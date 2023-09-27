@@ -26,7 +26,7 @@ class Cron extends Daemon
         $hour = intval(date("H"));
         $min = intval(date("i"));
 
-        if($min % 5 == 0) {
+        if($min % 5 == 0 && !DEVELOPMENT) {
             Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php update");
             Sync::checkLongRunning();
             Dapps::checkLongRunning();
