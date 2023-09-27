@@ -387,7 +387,11 @@ class Dapps extends Daemon
 			" -d auto_prepend_file=$functions_file $file 2>&1";
 		_log("Dapps: Executing dapps file cmd=$cmd", 5);
 
-		session_write_close();
+        if(empty($_SESSION)) {
+            session_destroy();
+        } else {
+            session_write_close();
+        }
 
 		$res = exec ($cmd, $output2);
 //		_log("Dapps: Parsing output ". json_encode($output2), 5);
