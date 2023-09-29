@@ -192,14 +192,14 @@ class NodeMiner extends Daemon {
 			$reward_tx = Transaction::getRewardTransaction($generator, $new_block_date, $this->public_key, $this->private_key, $reward, "nodeminer");
 			$data[$reward_tx['id']]=$reward_tx;
 			if(Masternode::allowedMasternodes($height)) {
-				$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $this->public_key, $this->private_key, $height, $mn_signature);
+				$mn_reward_tx = Masternode::getRewardTx($generator, $new_block_date, $this->public_key, $this->private_key, $height, $mn_signature, $block_masternode);
 				if (!$mn_reward_tx) {
 					_log("No masternode winner - mining dropped");
 					$this->miningStat['rejected']++;
 					break;
 				}
 				$data[$mn_reward_tx['id']]=$mn_reward_tx;
-				$bl->masternode = $mn_signature ? $mn_reward_tx['dst'] : null;
+				$bl->masternode = $mn_signature ? $block_masternode : null;
 				$bl->mn_signature = $mn_signature;
 				$fee_dst = $mn_reward_tx['dst'];
 			} else{

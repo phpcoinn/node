@@ -113,7 +113,8 @@ class Transaction
 					if($res === false) {
 						throw new Exception("Update balance for reverse transaction failed");
 					}
-					$publicKey = Account::publicKey($tx->dst);
+                    $masternode = Masternode::getMasternodeAddress($tx->height, $tx);
+					$publicKey = Account::publicKey($masternode);
                     if($publicKey) {
                         $res = Masternode::delete($publicKey);
                         if(!$res) {
@@ -129,11 +130,21 @@ class Transaction
 					if($res === false) {
 						throw new Exception("Update balance for reverse transaction failed");
 					}
-					$height = Masternode::getMnCreateHeight($tx->publicKey);
-					if(!$height) {
+					$collateralTx = Masternode::getMnCreateTx($tx->publicKey);
+                    $masternode = $collateralTx['dst'];
+                    if($collateralTx['height'] > MN_COLD_START_HEIGHT) {
+                        if($collateralTx['message']!="mncreate" && Account::valid($collateralTx['message'])) {
+                            $masternode = $collateralTx['message'];
+                        }
+                    }
+					if(!$collateralTx) {
 						throw new Exception("Can not find mn create tx height");
 					}
-					$res = Masternode::create($tx->publicKey, $height);
+                    if(!$masternode) {
+                        throw new Exception("Can not find masternode");
+                    }
+                    $publicKey = Account::publicKey($masternode);
+					$res = Masternode::create($publicKey, $collateralTx['height']);
 					if(!$res) {
 						throw new Exception("Can not reverse create masternode");
 					}
@@ -539,7 +550,19 @@ class Transaction
 			}
 
 			if ($type == TX_TYPE_MN_CREATE) {
-				$dstPublicKey = Account::publicKey($this->dst);
+                if($height >= MN_COLD_START_HEIGHT) {
+                    $msg = $this->msg;
+                    if(!empty($msg) && Account::valid($msg)) {
+                        $dstPublicKey = Account::publicKey($msg);
+                        if(!$dstPublicKey) {
+                            throw new Exception("Can not create masternode - address not verified");
+                        }
+                    } else {
+                        $dstPublicKey = Account::publicKey($this->dst);
+                    }
+                } else {
+                    $dstPublicKey = Account::publicKey($this->dst);
+                }
 				$res = Masternode::create($dstPublicKey, $height);
 				if(!$res) {
 					throw new Exception("Can not create masternode");
@@ -554,12 +577,22 @@ class Transaction
 					throw new Exception("Error updating balance for transaction ".$this->id);
 				}
 				$mn = Masternode::get($this->publicKey);
+                $mnPubKey=$this->publicKey;
 				if(!$mn) {
-					throw new Exception("Masternode with public key {$this->publicKey} does not exists");
+                    if($height > MN_COLD_START_HEIGHT) {
+                        $src = $this->src;
+                        $mn=Account::getMasternodeRewardAddress($src);
+                        $mnPubKey = $mn['public_key'];
+				        if(!$mn) {
+                            throw new Exception("Masternode with public key $mnPubKey does not exists");
+                        }
+                    } else {
+					    throw new Exception("Masternode with public key $mnPubKey does not exists");
+				    }
 				}
-				$res = Masternode::delete($this->publicKey);
+				$res = Masternode::delete($mnPubKey);
 				if(!$res) {
-					throw new Exception("Can not delete masternode with public key: ".$this->publicKey);
+					throw new Exception("Can not delete masternode with public key: ".$mnPubKey);
 				}
 			}
 
@@ -755,7 +788,7 @@ class Transaction
 		        throw new Exception("{$this->id} - Invalid signature - $base");
 	        }
 
-			if($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_BURN) {
+			if($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_BURN || $this->type == TX_TYPE_MN_CREATE) {
 				$res = Masternode::checkIsSendFromMasternode($height, $this, $error, $verify);
 				if(!$res) {
 					throw new Exception("Invalid transaction for send: $error");

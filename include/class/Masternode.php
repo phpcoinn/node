@@ -105,6 +105,13 @@ class Masternode extends Daemon
 		return $res > 0;
 	}
 
+	static function existsAddress($address) {
+		global $db;
+		$sql="select count(*) from masternode m where m.id =:address";
+		$res = $db->single($sql, [":address"=>$address]);
+		return $res > 0;
+	}
+
 	function add() {
 		global $db;
 		$sql="insert into masternode (id, public_key, height, signature, win_height, collateral) 
@@ -204,12 +211,12 @@ class Masternode extends Daemon
 		return $res;
 	}
 
-	static function getMnCreateHeight($publicKey) {
+	static function getMnCreateTx($publicKey) {
 		global $db;
 		$dst = Account::getAddress($publicKey);
 		$sql="select * from transactions where dst =:dst and type=:type order by height desc limit 1";
 		$rows = $db->run($sql, [":dst"=>$dst, ":type"=>TX_TYPE_MN_CREATE]);
-		return $rows[0]['height'];
+		return $rows[0];
 	}
 
 	static function getWinner($height) {
@@ -275,9 +282,9 @@ class Masternode extends Daemon
 		global $db;
 		$sql="select max(t.height)
 			from transactions t
-			where t.dst = :id and t.type = :create
+			where (t.dst = :id or t.message = :id2) and t.type = :create
 			and t.height <= :height";
-		return $db->single($sql, [":height"=>$height, ":id"=>$id, ":create"=> TX_TYPE_MN_CREATE]);
+		return $db->single($sql, [":height"=>$height, ":id"=>$id, ":id2"=>$id,  ":create"=> TX_TYPE_MN_CREATE]);
 
 	}
 
@@ -311,8 +318,29 @@ class Masternode extends Daemon
 				if ($res) {
 					throw new Exception("Destination address $dst is already a masternode");
 				}
+                if($height >= MN_COLD_START_HEIGHT) {
+                    $msg = $transaction->msg;
+                    if(Account::valid($msg)) {
+                        $masternodeAddr = $msg;
+                        $res = Masternode::existsAddress($masternodeAddr);
+                        if ($res) {
+                            throw new Exception("Masternode address $dst is already a masternode");
+                        }
+                        $mnPublicKey = Account::publicKey($masternodeAddr);
+                        if (!$mnPublicKey) {
+                            throw new Exception("Masternode address $masternodeAddr is not verified!");
+                        }
+                    }
+                }
 			} else {
-                $res = Masternode::checkExistsMasternode($transaction->dst, $height-1);
+                $masternodeAddr = $transaction->dst;
+                if($height >= MN_COLD_START_HEIGHT) {
+                    $msg = $transaction->msg;
+                    if(!empty($msg) && Account::valid($msg)) {
+                        $masternodeAddr = $msg;
+                    }
+                }
+                $res = Masternode::checkExistsMasternode($masternodeAddr, $height-1);
                 if($res) {
                     throw new Exception("Masternode already created");
                 }
@@ -341,7 +369,15 @@ class Masternode extends Daemon
 				//masternode must exists in database
 				$masternode = Masternode::get($transaction->publicKey);
 				if(!$masternode) {
-					throw new Exception("Can not find masternode with public key ".$transaction->publicKey);
+                    if($height > MN_COLD_START_HEIGHT) {
+                        $src = $transaction->src;
+                        $masternode=Account::getMasternodeRewardAddress($src);
+                        if(!$masternode) {
+                            throw new Exception("Can not find cold masternode for address ".$transaction->src);
+                        }
+                    } else {
+					    throw new Exception("Can not find masternode with public key ".$transaction->publicKey);
+				    }
 				}
 				//masternode must run minimal number of blocks
 				$collateral_changed = $masternode['collateral'] != Block::getMasternodeCollateral($height);
@@ -378,21 +414,24 @@ class Masternode extends Daemon
 	static function checkIsSendFromMasternode($height, Transaction $transaction, &$error, $verify) {
 		try {
             $checkHeight = $verify ? $height-1 : $height;
-			$masternode_id = Account::getAddress($transaction->publicKey);
-			$masternode_existing = Masternode::isExisting($masternode_id, $checkHeight);
-			if($masternode_existing) {
-				$total_sent = Transaction::getTotalSent($masternode_id, $checkHeight);
-				$total_received = Transaction::getTotalReceived($masternode_id, $checkHeight);
-				$balance = $total_received - $total_sent;
-				$collateral = Block::getMasternodeCollateral($checkHeight);
+            $checkAddress = $transaction->src;
+
+            $masternode_existing = Masternode::isExisting($checkAddress, $checkHeight);
+
+            if($masternode_existing) {
+                $total_sent = Transaction::getTotalSent($checkAddress, $checkHeight);
+                $total_received = Transaction::getTotalReceived($checkAddress, $checkHeight);
+                $balance = floatval($total_received) - floatval($total_sent);
+                $collateral = Block::getMasternodeCollateral($checkHeight);
                 $mempool_balance = 0;
                 if(!$verify) {
-                    $mempool_balance = Mempool::mempoolBalance($masternode_id,$transaction->id);
+                    $mempool_balance = floatval(Mempool::mempoolBalance($checkAddress,$transaction->id));
                 }
-				if(round(floatval($balance) - $transaction->val + floatval($mempool_balance),8) < $collateral) {
-					throw new Exception("Can not spent more than collateral. Balance=$balance amount=".$transaction->val);
-				}
-			}
+                $remain = $balance - $collateral - floatval($transaction->val) + $mempool_balance;
+                if(round($remain,8) < 0) {
+                    throw new Exception("Can not spent more than collateral. Balance=$balance amount=".$transaction->val);
+                }
+            }
 
 			return true;
 		} catch (Exception $e) {
@@ -451,13 +490,13 @@ class Masternode extends Daemon
 		}
 		$sql="select max(t.height) as create_height, count(t.id) as created
 			from transactions t
-			where t.type = :create and t.dst = :id and t.height <= :height";
-		$res = $db->row($sql, [":create"=>TX_TYPE_MN_CREATE, ":id"=>$id, ":height"=>$height]);
+			where t.type = :create and (t.dst = :id or t.message =:id2) and t.height <= :height";
+		$res = $db->row($sql, [":create"=>TX_TYPE_MN_CREATE, ":id"=>$id, ":id2"=>$id,":height"=>$height]);
 		$created = $res['created'];
 
 		$sql="select max(t.height), count(t.id) as removed
-		from transactions t where t.src = :count and t.type = :remove and t.height <=:height";
-		$res = $db->row($sql, [":remove"=>TX_TYPE_MN_REMOVE, ":count"=>$id,  ":height"=>$height]);
+		from transactions t where (t.src = :id or t.message =:id2) and t.type = :remove and t.height <=:height";
+		$res = $db->row($sql, [":remove"=>TX_TYPE_MN_REMOVE, ":id"=>$id,  ":id2"=>$id, ":height"=>$height]);
 		$removed = $res['removed'];
 		return ($created>0 && $created != $removed);
 	}
@@ -716,7 +755,7 @@ class Masternode extends Daemon
 
 	}
 
-	static function getRewardTx($generator, $new_block_date, $public_key, $private_key, $height, &$mn_signature) {
+	static function getRewardTx($generator, $new_block_date, $public_key, $private_key, $height, &$mn_signature, &$block_masternode) {
 		if(!Masternode::allowedMasternodes($height)) {
 			return false;
 		}
@@ -737,12 +776,15 @@ class Masternode extends Daemon
 				$dst = $generator;
 			}
 		} else {
-			$res=Masternode::checkCollateral($winner['id'], $height);
-			if($res) {
-				$dst = $winner['id'];
+			$collateralTx=Masternode::checkCollateral($winner['id'], $height);
+			if($collateralTx) {
+                $winnerAddress = $collateralTx['dst'];
+				$dst = $winnerAddress;
 				$mn_signature = $winner['signature'];
+                $block_masternode = Masternode::getMasternodeAddress($height, $collateralTx);
 			} else {
 				$dst = $generator;
+                $block_masternode = $generator;
 			}
 		}
 		$rewardinfo = Block::reward($height);
@@ -751,6 +793,22 @@ class Masternode extends Daemon
 		_log("Masternode: reward tx=".json_encode($reward_tx));
 		return $reward_tx;
 	}
+
+    static function getMasternodeAddress($height, $collateralTx) {
+        if($collateralTx instanceof Transaction) {
+            $collateralTx = $collateralTx->toArray();
+        }
+        if($height >= MN_COLD_START_HEIGHT) {
+            $msg = $collateralTx['message'];
+            if(!empty($msg) && $msg != "mncreate" && Account::valid($msg)) {
+                return $msg;
+            } else {
+                return $collateralTx['dst'];
+            }
+        } else {
+            return $collateralTx['dst'];
+        }
+    }
 
 	static function checkTx(Transaction $transaction, $block, &$error) {
 		$height = $block->height;
@@ -764,7 +822,14 @@ class Masternode extends Daemon
 		try {
 			if($block->masternode) {
 				if($transaction->dst != $block->masternode) {
-					throw new Exception("Transaction dst invalid. Must be masternode");
+                    if($height >= MN_COLD_START_HEIGHT) {
+                        $collateralTx=Masternode::checkCollateral($block->masternode, $height);
+                        if(!$collateralTx || $collateralTx['dst']!=$transaction->dst) {
+                            throw new Exception("Transaction dst invalid. Must be masternode collateral dst address");
+                        }
+                    } else {
+					    throw new Exception("Transaction dst invalid. Must be masternode");
+				    }
 				}
 				$mnPublicKey = Account::publicKey($block->masternode);
 				if(!$mnPublicKey) {
@@ -870,15 +935,17 @@ class Masternode extends Daemon
 
 				foreach ($data as $transaction) {
 					$tx = Transaction::getFromArray($transaction);
-					if($tx->type == TX_TYPE_REWARD && $tx->msg == 'masternode' && $tx->publicKey == $block->publicKey
-						&& $tx->dst == $block->masternode) {
-						$reward = Block::reward($block->height);
-						$mn_reward = $reward['masternode'];
-						if($mn_reward == $tx->val) {
-							$found = true;
-							break;
-						}
-					}
+					if($tx->type == TX_TYPE_REWARD && $tx->msg == 'masternode' && $tx->publicKey == $block->publicKey) {
+                        $collateralTx=Masternode::checkCollateral($block->masternode, $block->height);
+                        if($collateralTx && $tx->dst == $collateralTx['dst']) {
+                            $reward = Block::reward($block->height);
+                            $mn_reward = $reward['masternode'];
+                            if($mn_reward == $tx->val) {
+                                $found = true;
+                                break;
+                            }
+                        }
+                    }
 				}
 				if(!$found) {
 					throw new Exception("Masternode: not found reward transaction");
@@ -995,7 +1062,7 @@ class Masternode extends Daemon
 				throw new Exception("Invalid masternode {$this->id} {$this->ip} win_height saved={$this->win_height} calculated=$win_height");
 			}
 
-			return true;
+            return true;
 
 		} catch(Exception $e) {
 			$error = $e->getMessage();
@@ -1011,14 +1078,16 @@ class Masternode extends Daemon
 		if (Masternode::allowedMasternodes($height)) {
 			$masternode = Masternode::get($transaction->publicKey);
 			if($masternode) {
-				$balance = Account::getBalanceByPublicKey($transaction->publicKey);
-				$memspent = Mempool::getSourceMempoolBalance($transaction->src);
-				$collateral = Block::getMasternodeCollateral($height);
-				if(floatval($balance) - floatval($memspent) - $transaction->val < $collateral) {
-//					throw new Exception("Can not spent more than collateral. Balance=$balance memspent=$memspent amount=".$transaction->val);
-				}
-			}
-		}
+                if(Masternode::isHot($masternode['id'], $height)) {
+                    $balance = Account::getBalanceByPublicKey($transaction->publicKey);
+                    $memspent = Mempool::getSourceMempoolBalance($transaction->src);
+                    $collateral = Block::getMasternodeCollateral($height);
+                    if(floatval($balance) - floatval($memspent) - $transaction->val < $collateral) {
+    //					throw new Exception("Can not spent more than collateral. Balance=$balance memspent=$memspent amount=".$transaction->val);
+                    }
+                }
+            }
+        }
 	}
 
 	static function checkMasternode() {
@@ -1118,10 +1187,21 @@ class Masternode extends Daemon
 	static function checkCollateral($masternode, $height) {
 		global $db;
 		$collateral = Block::getMasternodeCollateral($height);
-		$sql="select * from transactions t where t.dst = :dst and t.type = :type and t.val =:collateral and t.height <= :height";
-		$row = $db->row($sql, [":dst"=>$masternode, ":type"=>TX_TYPE_MN_CREATE, ":collateral"=>$collateral, ":height"=>$height]);
+		$sql="select * from transactions t where (t.dst = :dst or t.message=:dst2) and t.type = :type and t.val =:collateral and t.height <= :height
+            order by t.height desc limit 1";
+		$row = $db->row($sql, [":dst"=>$masternode, ":dst2"=>$masternode, ":type"=>TX_TYPE_MN_CREATE, ":collateral"=>$collateral, ":height"=>$height]);
 		return $row;
 	}
+
+    static function isHot($id, $height) {
+        $transaction = Masternode::checkCollateral($id, $height);
+        if($height >= MN_COLD_START_HEIGHT) {
+            $msg = $transaction['message'];
+            if(!empty($msg) && Account::valid($msg) && $msg == $id) {
+                return false;
+            }
+        }
+    }
 
 	static function checkAnyCollateral($height) {
 		global $db;
@@ -1154,10 +1234,10 @@ class Masternode extends Daemon
 
 	static function isExisting($id, $height) {
 		global $db;
-		$sql="select count(t.id) as cnt_create from transactions t where t.dst = :id and t.type = :type
+		$sql="select count(t.id) as cnt_create from transactions t where (t.dst = :id) and t.type = :type
 			and t.height <= :height";
 		$cnt_created = $db->single($sql, [":id"=>$id, ":type"=>TX_TYPE_MN_CREATE, ":height"=>$height]);
-		$sql="select count(t.id) as cnt_remove from transactions t where t.src = :id and t.type = :type
+		$sql="select count(t.id) as cnt_remove from transactions t where (t.src = :id) and t.type = :type
 			and t.height <= :height";
 		$cnt_removed = $db->single($sql, [":id"=>$id, ":type"=>TX_TYPE_MN_REMOVE, ":height"=>$height]);
 		if($cnt_created - $cnt_removed > 0) {

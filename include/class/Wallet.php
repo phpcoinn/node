@@ -150,7 +150,7 @@ class Wallet
 				$this->loginLink();
 				break;
 			case "masternode-create":
-				$this->createMasternode(@$this->arg2);
+				$this->createMasternode(@$this->arg2, @$this->arg3);
 				break;
 			case "masternode-remove":
 				$this->removeMasternode(@$this->arg2, @$this->arg3);
@@ -410,22 +410,38 @@ class Wallet
 		);
 	}
 
-	function createMasternode($mnAddress) {
+	function createMasternode($mnAddress, $rewardAddress) {
 		if(empty($mnAddress)) {
 			echo "Missing destination address".PHP_EOL;
 			exit;
 		}
 
+        if(strlen($rewardAddress)>0) {
+            $res = $this->wallet_peer_post("/api.php?q=checkAddress". "&XDEBUG_SESSION_START=PHPSTORM",
+                ["address" => $rewardAddress]);
+            if ($res['status']!="ok") {
+                echo "Reward address is invalid or not verified".PHP_EOL;
+                exit;
+            }
+        }
+
+        if(empty($rewardAddress)) {
+            $dst = $mnAddress;
+            $msg = "mncreate";
+        } else {
+            $dst = $rewardAddress;
+            $msg = $mnAddress;
+        }
+
 		$res = $this->wallet_peer_post("/api.php?q=getCollateral");
 		$this->checkApiResponse($res);
 		$collateral = $res['data'];
 		$date=time();
-		$msg = "mncreate";
-		$tx = new Transaction($this->public_key, $mnAddress, $collateral, TX_TYPE_MN_CREATE, $date, $msg);
+		$tx = new Transaction($this->public_key, $dst, $collateral, TX_TYPE_MN_CREATE, $date, $msg);
 		$signature = $tx->sign($this->private_key);
 
 		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
-			array("dst" => $mnAddress, "val" => $collateral, "fee"=>0,  "signature" => $signature,
+			array("dst" => $dst, "val" => $collateral, "fee"=>0,  "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_MN_CREATE,
 				"message" => $msg, "date" => $date));
 		$this->checkApiResponse($res);
@@ -433,10 +449,27 @@ class Wallet
 	}
 
 	function removeMasternode($payoutAddress) {
-		$mn_address = Account::getAddress($this->public_key);
-		$res = $this->wallet_peer_post("/api.php?q=getMasternode" , ["address"=>$mn_address]);
-		$this->checkApiResponse($res);
-		$collateral = $res['data']['collateral'];
+
+        $res = $this->wallet_peer_post("/api.php?q=checkAddress". "&XDEBUG_SESSION_START=PHPSTORM",
+            ["address" => $payoutAddress]);
+        if ($res['status']!="ok") {
+            echo "Payout address is invalid".PHP_EOL;
+            exit;
+        }
+
+        $res = $this->wallet_peer_post("/api.php?q=getAddressInfo" , ["address"=>$this->address]);
+        if ($res['status']!="ok") {
+            echo "Error getting wallet info".PHP_EOL;
+            exit;
+        }
+        $addressInfo = $res['data'];
+        if($addressInfo['type']!="masternode_reward" && $addressInfo['type']!="hot_masternode") {
+            echo "Invalid type of wallet".PHP_EOL;
+            exit;
+        }
+
+        $collateral = $addressInfo['masternode']['collateral'];
+
 		$date=time();
 		$msg = "mnremove";
 		$tx = new Transaction($this->public_key, $payoutAddress, $collateral, TX_TYPE_MN_REMOVE, $date, $msg);
@@ -590,19 +623,19 @@ class Wallet
 
 Commands:
 
-balance                         prints the balance of the wallet 
-balance <address>               prints the balance of the specified address
-export                          prints the wallet data
-block                           show data about the current block
-encrypt                         encrypts the wallet
-decrypt                         decrypts the wallet
-transactions                    show the latest transactions
-transaction <id>                shows data about a specific transaction
-send <address> <value> <msg>    sends a transaction (message optional)
-login-link                      generate login link
-masternode-create <address>     create masternode with address
-masternode-remove <payoutaddress>    remove masternode with address
-sign <message>                  sign message with wallet private key
+balance                                                             prints the balance of the wallet 
+balance <address>                                                   prints the balance of the specified address
+export                                                              prints the wallet data
+block                                                               show data about the current block
+encrypt                                                             encrypts the wallet
+decrypt                                                             decrypts the wallet
+transactions                                                        show the latest transactions
+transaction <id>                                                    shows data about a specific transaction
+send <address> <value> <msg>                                        sends a transaction (message optional)
+login-link                                                          generate login link
+masternode-create <address> <reward_address>                        create masternode with address
+masternode-remove <payoutaddress>                                   remove masternode with address
+sign <message>                                                      sign message with wallet private key
 smart-contract-create <address> <file> <amount> <method> <params>	create smart contract
 smart-contract-exec <address> <amount> <method> <params> 			execute smart contract method
 smart-contract-send <address> <amount> <method> <params> 			transfer coins from smart contract

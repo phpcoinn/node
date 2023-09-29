@@ -564,7 +564,7 @@ class Api
 		if(!$public_key) {
 			api_err("Invalid address");
 		}
-		api_echo(Masternode::getMasternodesForPublicKey($public_key));
+		api_echo(Account::getMasternodes($address));
 	}
 
 	static function getMasternode($data) {
@@ -810,4 +810,32 @@ class Api
 		}
 		api_echo(Block::getMasternodeCollateral($height));
 	}
+
+    static function getAddressInfo($data){
+        $address = $data['address'];
+        if(empty($address)) {
+            api_err("Empty address");
+        }
+        $out['address']=$address;
+        $masternode=Account::getMasternode($address);
+        if(empty($masternode)) {
+            $masternode=Account::getMasternodeRewardAddress($address);
+            if(!empty($masternode)) {
+                $type = "masternode_reward";
+            } else {
+                $type = "no_masternode";
+            }
+        } else {
+            if($masternode['dst']==$address) {
+                $type = "hot_masternode";
+            } else if ($masternode['message']==$address) {
+                $type = "cold_masternode";
+            } else {
+                $type = "unknown";
+            }
+        }
+        $out['type']=$type;
+        $out['masternode']=$masternode;
+        api_echo($out);
+    }
 }
