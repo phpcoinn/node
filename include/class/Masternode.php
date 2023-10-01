@@ -1187,7 +1187,7 @@ class Masternode extends Daemon
 	static function checkCollateral($masternode, $height) {
 		global $db;
 		$collateral = Block::getMasternodeCollateral($height);
-		$sql="select * from transactions t where (t.dst = :dst or t.message=:dst2) and t.type = :type and t.val =:collateral and t.height <= :height
+		$sql="select * from transactions t use index(transactions_type_index) where (t.dst = :dst or t.message=:dst2) and t.type = :type and t.val =:collateral and t.height <= :height
             order by t.height desc limit 1";
 		$row = $db->row($sql, [":dst"=>$masternode, ":dst2"=>$masternode, ":type"=>TX_TYPE_MN_CREATE, ":collateral"=>$collateral, ":height"=>$height]);
 		return $row;
