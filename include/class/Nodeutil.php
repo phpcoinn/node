@@ -774,4 +774,63 @@ class Nodeutil
         }
         return $stat;
     }
+
+    static function initPeers() {
+        $peers = Peer::getInitialPeers();
+        _log("Fork: initPeers ".count($peers));
+        $forker = Forker::instance();
+        $cnt = 0;
+        $responses = [
+            "success"=>0,
+            "failed"=>0
+        ];
+        foreach ($peers as $peer) {
+            $cnt++;
+//            if($cnt > 20) break;
+            $forker->fork(function ($peer) {
+
+                global $_config;
+
+
+                if(!Peer::validate($peer)) {
+                    return ["response"=>false, "error"=>"Peer not validated"];
+                }
+
+                _log("Fork: Process peer ".$peer, 4);
+
+                if($peer === $_config['hostname']) {
+                    return ["response"=>false, "error"=>"Peer is local"];
+                }
+
+                if ($_config['passive_peering'] == true) {
+                    $res=Peer::insert(md5($peer), $peer);
+                } else {
+                    global $db;
+                    $db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
+                    $res = peer_post($peer."/peer.php?q=peer", ["hostname" => $_config['hostname'], "repeer" => 1], 30, $err);
+                    _log("Fork: Response post from peer ".$peer. " res=".json_encode($res));
+                }
+                if ($res !== false) {
+                    _log("Fork: Peering OK - $peer");
+                    return ["response"=>true, "data"=>$res];
+                } else {
+                    _log("Fork: Peering FAIL - $peer Error: $err");
+                    return ["response"=>false, "error"=>$err];
+                }
+
+            }, $peer);
+        }
+        $forker->on(function ($res) use (&$responses) {
+            _log("Fork: Data from fork ".json_encode($res));
+            if($res['response']) {
+                $responses['success']++;
+            } else {
+                $responses['failed']++;
+            }
+        });
+        $forker->exec();
+        _log("Fork: Completed initPeers");
+        _log("Fork: ".json_encode($responses));
+
+    }
 }

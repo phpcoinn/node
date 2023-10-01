@@ -1598,4 +1598,8 @@ class Util
     static function discoverPeers() {
         Nodeutil::discoverPeers();
     }
+
+    static function initPeers() {
+        Nodeutil::initPeers();
+    }
 }

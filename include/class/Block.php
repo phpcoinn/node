@@ -146,7 +146,7 @@ class Block
                     throw new Exception("Block DB insert failed");
                 }
 
-                Masternode::resetVerified();
+//                Masternode::resetVerified();
 
                 // parse the block's transactions and insert them to db
                 $res = $this->parse_block(false, $perr, $syncing);
@@ -162,6 +162,8 @@ class Block
                 Cache::set("height", $this->height);
                 Cache::set("current_export", Block::export($hash));
                 Cache::set("mineInfo", Blockchain::getMineInfo());
+
+                Masternode::resetVerified();
                 return true;
 
             } catch (Exception $e) {
@@ -613,13 +615,13 @@ class Block
                     }
                 }
 
-                Masternode::resetVerified();
                 Config::setSync(0);
                 if($db->inTransaction()) {
                     $db->commit();
                     _log("Unlock delete blocks");
 //				$db->unlockTables();
                 }
+                Masternode::resetVerified();
                 Cache::remove("current");
                 Cache::remove("mineInfo");
                 Cache::remove("height");
