@@ -1226,11 +1226,17 @@ class Util
 
 		try {
 			$sql="select count(*) from (
-			select t.dst, count(t.id) as created,
-			       (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed
-			from transactions t where t.type = 2
-			group by t.dst
-			having created - removed > 0) as mnc";
+                    select mn_created.mn_address, mn_created.dst, case when mn_created.mn_address = mn_created.dst then 'hot' else 'cold' end as mn_type,
+                    count(mn_created.id) as created,
+                    (select count(tr.id) from transactions tr where tr.src = mn_created.dst and tr.type = 3) as removed
+                    from (
+                        select case when t.message != 'mncreate' and t.message != '' then t.message else t.dst end as mn_address, t.id,
+                        t.dst, t.height
+                        from transactions t where t.type=2
+                        ) as mn_created
+                    group by mn_created.mn_address
+                    having created - removed > 0
+                ) as mnc";
 
 			$calc_mn_count = $db->single($sql);
 			$sql="select count(*) from masternode";
@@ -1240,55 +1246,70 @@ class Util
 
 			if($calc_mn_count != $real_mn_count) {
 				_log("Different number of masternodes - recreate");
-//			$db->exec("lock tables masternode write, transactions t write, transactions tr write, transactions ts write, transactions tc write, blocks b write, accounts a write;");
 				$db->exec("delete from masternode");
 				$db->exec("insert into masternode (public_key,height,win_height, id, verified, collateral)
-        	select public_key,height,win_height, id, 0, collateral from (
-             select t.dst as id, max(t.height) as height, count(t.id) as created,
-                    (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
-                    (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
-                    (select a.public_key from accounts a where a.id = t.dst) as public_key,
-                    (select tc.val from transactions tc where tc.dst = t.dst and tc.type = 2 and tc.height = max(t.height)) as collateral
-             from transactions t where t.type = 2
-             group by t.dst
-             having created - removed > 0
-             ) as calc_mn");
-//			$db->exec("unlock tables;");
+                            select (select a.public_key from accounts a where a.id = active_mn.mn_address) as public_key,
+                            active_mn.height, (select max(b.height) from blocks b where b.masternode = active_mn.mn_address)  as win_height,
+                            active_mn.mn_address as id, 0 as verified,
+                            (select tc.val from transactions tc where tc.dst = active_mn.dst and tc.type = 2 and tc.height = active_mn.height) as collateral
+                            from (
+                                select mn_created.mn_address, max(mn_created.height) as height, mn_created.dst, count(mn_created.id) as created,
+                                (select count(tr.id) from transactions tr where tr.src = mn_created.dst and tr.type = 3) as removed
+                                from (
+                                    select case when t.message != 'mncreate' and t.message != '' then t.message else t.dst end as mn_address,
+                                    t.id, t.dst, t.height
+                                    from transactions t where t.type = 2
+                                ) as mn_created
+                                group by mn_created.mn_address
+                                having created - removed > 0
+                            ) as active_mn");
 			} else {
-				$sql="select calc_mn.*, m.*
-				from (
-				    select t.dst as id, max(t.height) as height, count(t.id) as created,
-				           (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
-				           (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
-				           (select a.public_key from accounts a where a.id = t.dst) as public_key,
-				           (select tc.val from transactions tc where tc.dst = t.dst and tc.type = 2 and tc.height = max(t.height)) as collateral
-				    from transactions t where t.type = 2
-				    group by t.dst
-				    having created - removed > 0
-				) as calc_mn
-				left join masternode m on (calc_mn.id = m.id)
-				where calc_mn.height <> m.height
-				or calc_mn.win_height <> m.win_height
-				or calc_mn.collateral <> m.collateral";
+				$sql="select calc_mn.*, m.* from (
+                        select active_mn.height, (select max(b.height) from blocks b where b.masternode = active_mn.mn_address) as win_height,
+                        active_mn.mn_address as id,
+                        (select tc.val from transactions tc where tc.dst = active_mn.dst and tc.type = 2 and tc.height = active_mn.height) as collateral
+                        from (
+                            select mn_created.mn_address, max(mn_created.height) as height, mn_created.dst, count(mn_created.id) as created,
+                            (select count(tr.id) from transactions tr where tr.src = mn_created.dst and tr.type = 3) as removed
+                            from (
+                                select case when t.message != 'mncreate' and t.message != '' then t.message else t.dst end as mn_address,
+                                t.id, t.dst, t.height
+                                from transactions t where t.type = 2
+                            ) as mn_created
+                            group by mn_created.mn_address
+                            having created - removed > 0
+                        ) as active_mn
+                    ) as calc_mn
+                    left join masternode m on (calc_mn.id = m.id)
+                    where calc_mn.height <> m.height
+                       or calc_mn.win_height <> m.win_height
+                       or calc_mn.collateral <> m.collateral";
 				$rows = $db->run($sql);
 				$diff_rows = count($rows);
 				_log("Check different rows = $diff_rows");
 				if($diff_rows > 0) {
 					$sql="update (
-				         select t.dst as id, max(t.height) as height, count(t.id) as created,
-				                (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
-				                (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
-				                (select a.public_key from accounts a where a.id = t.dst) as public_key,
-				                (select tc.val from transactions tc where tc.dst = t.dst and tc.type = 2 and tc.height = max(t.height)) as collateral
-				         from transactions t where t.type = 2
-				         group by t.dst
-				         having created - removed > 0
-				     ) as calc_mn
-				         left join masternode m on (calc_mn.id = m.id)
-				set m.height = calc_mn.height, m.win_height = calc_mn.win_height, m.collateral = calc_mn.collateral
-				where calc_mn.height <> m.height
-				   or calc_mn.win_height <> m.win_height
-				   or calc_mn.collateral <> m.collateral";
+                            select active_mn.height,
+                            (select max(b.height) from blocks b where b.masternode = active_mn.mn_address)  as win_height,
+                            active_mn.mn_address as id,
+                            (select tc.val from transactions tc where tc.dst = active_mn.dst and tc.type = 2 and tc.height = active_mn.height) as collateral
+                            from (
+                                select mn_created.mn_address, max(mn_created.height) as height, mn_created.dst, count(mn_created.id) as created,
+                                (select count(tr.id) from transactions tr where tr.src = mn_created.dst and tr.type = 3) as removed
+                                from (
+                                    select case when t.message != 'mncreate' and t.message != '' then t.message else t.dst end as mn_address,
+                                    t.id, t.dst, t.height
+                                    from transactions t where t.type = 2
+                                ) as mn_created
+                                group by mn_created.mn_address
+                                having created - removed > 0
+                            ) as active_mn
+                        ) as calc_mn
+                        left join masternode m on (calc_mn.id = m.id)
+                            set m.height = calc_mn.height, m.win_height = calc_mn.win_height, m.collateral = calc_mn.collateral
+                            where calc_mn.height <> m.height
+                       or calc_mn.win_height <> m.win_height
+                       or calc_mn.collateral <> m.collateral";
 					$db->run($sql);
 					_log("Updated masternodes");
 				} else {
@@ -1301,24 +1322,6 @@ class Util
 			_log("error recalculateMasternodes");
 			$db->rollBack();
 		}
-
-
-
-
-//		$db->exec("lock tables masternode write, transactions t write, transactions tr write, transactions ts write, transactions tc write, blocks b write, accounts a write;");
-//		$db->exec("delete from masternode;");
-//		$db->exec("insert into masternode (public_key,height,win_height, id, verified, collateral)
-//        	select public_key,height,win_height, id, 0, collateral from (
-//             select t.dst as id, max(t.height) as height, count(t.id) as created,
-//                    (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
-//                    (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
-//                    (select a.public_key from accounts a where a.id = t.dst) as public_key,
-//                    (select tc.val from transactions tc where tc.dst = t.dst and tc.type = 2 and tc.height = max(t.height)) as collateral
-//             from transactions t where t.type = 2
-//             group by t.dst
-//             having created - removed > 0
-//             ) as calc_mn");
-//		$db->exec("unlock tables;");
 	}
 
 	static function propagateApps($argv) {
