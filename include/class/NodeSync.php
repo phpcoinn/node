@@ -846,7 +846,9 @@ class NodeSync
 					$check_cmd = "php $dir/util.php pop";
 					Nodeutil::runSingleProcess($cmd, $check_cmd);
 				}
-			}
+			} else {
+                _log("checkBlocks: sync in process");
+            }
 			return false;
 		}
 	}
