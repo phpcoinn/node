@@ -271,12 +271,18 @@ if(method_exists(Daemon::class, "availableDaemons")) {
 									$valid = $mn->check($height, $err);
 
 									global $db;
-									$sql="select count(t.id) as cnt, sum(t.val) as value, 
+									$sql="select t.dst, count(t.id) as cnt, sum(t.val) as value, 
                                                     (max(t.date) - min(t.date))/60/60/24 as running,
                                                    sum(t.val)  / ((max(t.date) - min(t.date))/60/60/24) as daily
                                             from
                                             transactions t
-                                            where t.dst = :id
+                                            where t.dst = (
+                                                select t.dst
+                                                from masternode m
+                                                         left join transactions t on m.height = t.height and t.type = 2
+                                                            and (t.dst = m.id or t.message = m.id)
+                                                where m.id = :id
+                                                )
                                             and t.type = 0 and t.message = 'masternode'";
 									$mnStat = $db->row($sql, [':id'=>$mn->id]);
 								}
@@ -292,6 +298,12 @@ if(method_exists(Daemon::class, "availableDaemons")) {
 								<?php } ?>
 
 								Address:  <?php echo explorer_address_link(Account::getAddress($_config['masternode_public_key'])) ?>
+
+                                <?php if ($mnStat['dst'] != $mn->id) { ?>
+                                    <br/>
+                                    Reward address: <?php echo explorer_address_link($mnStat['dst']) ?>
+
+                                <?php } ?>
 
 								<?php if ($mnStat) { ?>
 									<br/>

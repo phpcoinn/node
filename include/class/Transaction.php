@@ -433,9 +433,10 @@ class Transaction
 	public static function getTxStatByType($address, $type)
 	{
 		global $db;
-		$sql="select sum(t.val) as total, count(t.id) as tx_cnt from transactions t where t.dst = :address and t.type = 0
-            and t.message = :type
-			and exists (select 1 from blocks b where b.$type = t.dst)";
+		$sql="select sum(t.val) as total, count(t.id) as tx_cnt
+                from blocks b
+                join transactions t on b.id = t.block and t.type = 0 and t.message = :type
+                where b.$type = :address";
 		$res = $db->row($sql, [":address"=>$address, ":type"=>$type]);
 		return $res;
 	}
@@ -456,10 +457,10 @@ class Transaction
 		}
 
 		$res = $db->run(
-			"SELECT * FROM transactions t
-				WHERE t.dst = :address
-				  and t.message = :message
-				and exists (select 1 from blocks b where b.$type = t.dst)
+			"select t.*
+                from blocks b
+                         join transactions t on b.id = t.block and t.type = 0 and t.message = :message
+                where b.$type = :address
 				ORDER by t.height DESC LIMIT :offset, :limit", [":address"=>$address, ":offset"=>$offset, ":limit"=>$limit, ":message"=>$type]
 		);
 		return $res;

@@ -43,7 +43,7 @@ $transactions = Transaction::getByAddressType($address, $type,$dm);
 $rewardStat = Transaction::getRewardsStat($address, $type);
 
 
-global $_config;
+global $_config, $db;
 if($type=="generator") {
     if(!empty($_config['generator_public_key'])) {
         $generator = Account::getAddress($_config['generator_public_key']);
@@ -125,6 +125,70 @@ require_once __DIR__. '/../common/include/top.php';
         <td class="h4"><?php echo $balance ?></td>
     </tr>
 </table>
+
+<?php if($type == "masternode") {
+
+    $sql="select m.*, p.hostname, t.id as createtx_id, case when m.id <> t.dst then 1 else 0 end as cold,
+        t.dst
+        from  masternode m 
+        left join peers p on m.ip = p.ip
+        left join transactions t on m.height = t.height and t.type = 2 and (t.dst = m.id or t.message = m.id)
+           where m.id = :id";
+    $mn = $db->row($sql, [":id" => $address]);
+
+    $height = Block::getHeight();
+
+    ?>
+    <h4>Masternode</h4>
+
+    <table class="table table-sm table-striped">
+        <tr>
+            <td width="20%">IP</td>
+            <td><?php echo $mn['ip'] ?></td>
+        </tr>
+        <tr>
+            <td>Hostname</td>
+            <td>
+                <a href="<?php echo $mn['hostname'] ?>">
+                    <?php echo $mn['hostname'] ?>
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td>Height</td>
+            <td>
+                <a href="/apps/explorer/tx.php?id=<?php echo $mn['createtx_id'] ?>">
+                    <?php echo $mn['height'] ?>
+                </a>
+                (<?php echo $height - $mn['height'] ?> blocks ago)
+            </td>
+        </tr>
+        <tr>
+            <td>Win height</td>
+            <td>
+                <?php echo $mn['win_height'] ?>
+                (<?php echo $height - $mn['win_height'] ?> blocks ago)
+            </td>
+        </tr>
+        <tr>
+            <td>Collateral</td>
+            <td><?php echo $mn['collateral'] ?></td>
+        </tr>
+        <?php if ($mn['cold']) {
+
+            $rewardStat = Transaction::getRewardsStat($mn['dst'], $type);
+
+            ?>
+            <tr>
+                <td>Reward address</td>
+                <td>
+                    <?php echo explorer_address_link($mn['dst']) ?>
+                </td>
+            </tr>
+        <?php } ?>
+    </table>
+
+<?php } ?>
 
 <?php if($type == "generator") { ?>
     <h4>Earned as generator</h4>
