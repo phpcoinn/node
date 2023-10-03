@@ -1015,7 +1015,120 @@ class Util
 		}
 	}
 
-	static function getMorePeers() {
+    static function getMorePeers() {
+        global $_config;
+        _log("Sync: Util: get-more-peers", 3);
+        $peers=Peer::getPeers();
+        $peered = [];
+        foreach ($peers as $peer) {
+            $hostname = $peer['hostname'];
+            $peered[$hostname]=true;
+        }
+        $cnt=count($peers);
+        _log("Totally peered with " . $cnt." peers",3);
+
+        $forker= new Forker();
+        $t1 = microtime(true);
+        $limit = 50;
+        $new_peers = [];
+        foreach ($peers as $ix => $peer) {
+            if($ix > $limit) break;
+            $forker->fork(function ($peer) use ($ix, $cnt, $peered) {
+                global $db;
+                $db = DB::reconnect();
+                $hostname = $peer['hostname'];
+                _log("Getting peers from $hostname [$ix / $cnt]",5);
+                $url = $hostname."/peer.php?q=";
+                $data = peer_post($url."getPeers", [], 30, $err);
+                if ($data === false) {
+                    Peer::blacklist($peer['id'], "Unresponsive");
+                    return [$ix, null, "Error getting peers from $hostname: $err"];
+                }
+                if(is_array($data) && count($data)==0) {
+                    Peer::blacklist($peer['id'], "No peers");
+                    return [$ix, null, "No peers on $hostname"];
+                }
+                $new_peers = [];
+                foreach ($data as $ix1 => $peer1) {
+                    $hostname1 = $peer1['hostname'];
+                    if ($peered[$hostname1]) {
+                        continue;
+                    } else {
+                        $new_peers[]=$peer1;
+                    }
+                    $peered[$hostname1] = true;
+                }
+                _log("Found ".count($data)." peers on $hostname new=".count($new_peers),5);
+                return [$ix, $new_peers, null];
+            }, $peer);
+        }
+        $forker->on(function($data) use (&$new_peers) {
+            _log("Received data ".json_encode($data),5);
+            $ix = $data[0];
+            $res = $data[1];
+            $err = $data[2];
+            if($res) {
+                foreach($res as $item) {
+                    $new_peers[$item['hostname']]=$item;
+                }
+            }
+        });
+        $forker->exec();
+        _log("Received total new peers ".json_encode($new_peers), 5);
+
+        $discovered = 0;
+        $added = 0;
+        $forker= new Forker();
+        foreach ($new_peers as $new_peer) {
+            $hostname1 = $new_peer['hostname'];
+            _log("Peer with new peer $hostname1", 3);
+            if($hostname1 === $_config['hostname']) {
+                _log("Peer is me - skip", 5);
+                continue;
+            }
+            if(!Peer::validate($hostname1)) {
+                _log("Peer with new peer ".$hostname1." - not valid",2);
+                return;
+            }
+            $discovered++;
+            $forker->fork(function($new_peer){
+                $hostname1 = $new_peer['hostname'];
+                _log("Fork peer with new peer $hostname1", 3);
+                global $db, $_config;
+                $db = DB::reconnect();
+                $single = Peer::getSingle($new_peer['hostname'], $new_peer['ip']);
+                if (!$single) {
+                    $res = peer_post($new_peer['hostname']."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1], 30, $err);
+                    if($res !== false ){
+                        _log("GMP: peered new peer ". $new_peer['hostname'], 3);
+                        return true;
+                    } else {
+                        _log("Error peering new peer ".$new_peer['hostname']." err=$err",2);
+                    }
+                } else {
+                    _log("New peer ".$new_peer['hostname']." already in our db",5);
+                }
+                return false;
+            }, $new_peer);
+        }
+        $forker->on(function($res) use (&$added) {
+            if($res) {
+                $added++;
+            }
+            _log("Fork response $res", 5);
+        });
+        $forker->exec();
+
+        $t2 = microtime(true);
+        $diff=round($t2-$t1,2);
+        _log("Get more peers: peers=$cnt discovered=$discovered added=$added Completed in $diff");
+    }
+
+    /**
+     * @deprecated
+     * @return void
+     */
+	static function getMorePeersOld() {
 
 		global $_config;
 
@@ -1369,17 +1482,40 @@ class Util
 	}
 
 	static function refreshPeers() {
+        _log("Refresh peers start", 5);
+        $t1=microtime(true);
 		$peers = Peer::findPeers(false, false);
 		$cnt = count($peers);
-		foreach($peers as $ix=>$peer) {
-			$url = $peer['hostname']. "/peer.php?q=ping";
-			$err = null;
-			$res = peer_post($url, [], 30, $err);
-			_log("refreshPeers: ".($ix+1)."/$cnt hostname=".$peer['hostname']. " res=".json_encode($res). " err=$err");
-			if($res !== "pong") {
-				Peer::blacklist($peer['id'], "Unresponsive");
-			}
+
+        $forker=new Forker();
+        $refreshed = 0;
+		foreach($peers as $peer) {
+
+            $forker->fork(function($peer){
+                _log("Ping peer ".$peer['hostname'], 5);
+                $url = $peer['hostname']. "/peer.php?q=ping";
+                global $db;
+                $db = DB::reconnect();
+                $res = peer_post($url, [], 30, $err);
+                _log("Ping ".$peer['hostname']." response=$res err=$err", 5);
+                if($res !== "pong") {
+                    Peer::blacklist($peer['id'], "Unresponsive");
+                    return false;
+                }
+                return true;
+            }, $peer);
 		}
+        $forker->on(function($res) use (&$refreshed) {
+            if($res) {
+                $refreshed++;
+            }
+        });
+
+        $forker->exec();
+
+        $t2=microtime(true);
+        $diff = round($t2-$t1,2);
+        _log("Refresh peers=$cnt refreshed=$refreshed completed in $diff");
 	}
 
 	static function checkAccounts() {

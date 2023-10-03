@@ -570,9 +570,9 @@ class NodeSync
 		_log("Found ".count($peersForSync)." peer to sync", 3);
 
         if(count($peersForSync)==0) {
-            _log("NO peers for sync - get more peers");
+            _log("NO peers for sync - refresh peers");
             $dir = ROOT."/cli";
-            $cmd = "php $dir/util.php get-more-peers";
+            $cmd = "php $dir/util.php refresh-peers";
             Nodeutil::runSingleProcess($cmd);
             return;
         }

@@ -44,7 +44,7 @@ class Sync extends Daemon
 		Peer::resetResponseTimes();
 
 		self::checkPeers();
-		self::getMorePeers();
+//		self::getMorePeers();
 //		self::refreshPeers();
 
 		$res = NodeSync::checkBlocks();
