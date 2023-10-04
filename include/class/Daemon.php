@@ -414,4 +414,46 @@ class Daemon
 		}
 	}
 
+    static function tick() {
+        $name = static::$name;
+        $lockFile = ROOT . "/tmp/$name.lock";
+
+        $lockFileHandle = fopen($lockFile, 'a+');
+
+        _log("Tick: $name::tick()", 5);
+
+        if ($lockFileHandle === false || !flock($lockFileHandle, LOCK_EX | LOCK_NB)) {
+            if ($lockFileHandle) {
+                fclose($lockFileHandle);
+            }
+            _log("Tick: $name::tick() locked",5);
+            return;
+        }
+
+        $timestamp = (int)@file_get_contents($lockFile);
+        $now = time();
+        $diff = $now - $timestamp;
+
+        _log("Tick: $name::tick() diff=$diff",5);
+
+        if (empty($timestamp) || ($diff >= static::$run_interval)) {
+
+            $t1=microtime(true);
+            static::process();
+            $t2=microtime(true);
+            $d = round($t2-$t1,2);
+            _log("Tick: process $name run after $diff completed in $d",3);
+
+            ftruncate($lockFileHandle, 0);
+            fwrite($lockFileHandle, time());
+        }
+
+
+        flock($lockFileHandle, LOCK_UN);
+        fclose($lockFileHandle);
+
+        _log("Tick: $name::tick() end",5);
+
+    }
+
 }

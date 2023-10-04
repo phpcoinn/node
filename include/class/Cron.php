@@ -13,7 +13,7 @@ class Cron extends Daemon
     }
 
     static function process() {
-        Nodeutil::runSingleProcess("php ".ROOT."/cli/cron.php run");
+        self::run();
     }
 
     static function isDbNeeded() {
@@ -22,16 +22,13 @@ class Cron extends Daemon
 
     static function run() {
         $time = date("H:i");
-        _log("CRON: Run at time: " .$time, 2);
+        _log("Tick:CRON: Run at time: " .$time);
         $hour = intval(date("H"));
         $min = intval(date("i"));
 
         if($min % 5 == 0 && !DEVELOPMENT) {
             Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php update");
-            Sync::checkLongRunning();
-            Dapps::checkLongRunning();
             NodeMiner::checkLongRunning();
-            Masternode::checkLongRunning();
             Cache::resetCache();
             Peer::deleteBlacklisted();
             Peer::deleteWrongHostnames();

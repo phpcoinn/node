@@ -69,15 +69,16 @@ class Transaction
 
 
 	// reverse and remove all transactions from a block
-    public static function reverse($block, &$error = null)
+    public static function reverse($block, &$txerr = null)
     {
         global $db;
 
 		try {
-			$r = $db->run("SELECT * FROM transactions WHERE block=:block ORDER by `type` DESC", [":block" => $block['id']]);
-			foreach ($r as $x) {
-				$tx = Transaction::getFromDbRecord($x);
-				_log("Reversing transaction {$tx->id}", 3);
+			$txs = $db->run("SELECT * FROM transactions WHERE block=:block ORDER by `type` DESC", [":block" => $block['id']]);
+			foreach ($txs as $tx) {
+
+                $t1=microtime(true);
+				$tx = Transaction::getFromDbRecord($tx);
 
 				if(!empty($tx->dst)) {
 					$dst_height = Transaction::getLastHeight($tx->dst, $block['height']);
@@ -191,14 +192,21 @@ class Transaction
 				}
 
 				$res = $db->run("DELETE FROM transactions WHERE id=:id", [":id" => $tx->id]);
+
+                $t2=microtime(true);
+                $diff=round($t2-$t1,2);
+                _log("Reversing transaction {$tx->id} type={$tx->type} time=$diff", 3);
+
 				if ($res != 1) {
 					throw new Exception("Delete transaction failed");
 				}
 			}
+
+
 			return true;
 		} catch (Exception $e) {
-			$err = $e->getMessage();
-			_log($err);
+            $txerr = $e->getMessage();
+			_log($txerr);
 			return false;
 		}
         
@@ -1377,9 +1385,12 @@ class Transaction
 
 	static function getLastHeight($address, $height) {
 		global $db;
-		$sql = "select max(t.height) from transactions t
+
+        $sql = "select t.height from transactions t
 			where (t.src = :src or t.dst = :dst)
-			and t.height < :height";
+			and t.height < :height
+			order by t.height desc
+			limit 1";
 		return $db->single($sql, [":src"=>$address, ":dst"=>$address, ":height"=>$height]);
 	}
 

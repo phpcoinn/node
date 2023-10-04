@@ -1,5 +1,13 @@
 <?php
 $run = @trim(@$argv[1]);
+if ($run == "tick") {
+    require_once dirname(__DIR__) . '/include/init.inc.php';
+    Cron::tick();
+    return;
+}
+
+
+
 if($run == "run") {
     require_once dirname(__DIR__).'/include/init.inc.php';
     Cron::run();
