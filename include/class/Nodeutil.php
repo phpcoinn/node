@@ -808,20 +808,20 @@ class Nodeutil
                     global $db;
                     $db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
                     $res = peer_post($peer."/peer.php?q=peer", ["hostname" => $_config['hostname'], "repeer" => 1], 30, $err);
-                    _log("Fork: Response post from peer ".$peer. " res=".json_encode($res));
+                    _log("Fork: Response post from peer ".$peer. " res=".json_encode($res), 5);
                 }
                 if ($res !== false) {
-                    _log("Fork: Peering OK - $peer");
+                    _log("Peering OK - $peer");
                     return ["response"=>true, "data"=>$res];
                 } else {
-                    _log("Fork: Peering FAIL - $peer Error: $err");
+                    _log("Peering FAIL - $peer Error: $err");
                     return ["response"=>false, "error"=>$err];
                 }
 
             }, $peer);
         }
         $forker->on(function ($res) use (&$responses) {
-            _log("Fork: Data from fork ".json_encode($res));
+            _log("Fork: Data from fork ".json_encode($res),5);
             if($res['response']) {
                 $responses['success']++;
             } else {
@@ -832,5 +832,14 @@ class Nodeutil
         _log("Fork: Completed initPeers");
         _log("Fork: ".json_encode($responses));
 
+    }
+
+    static function measureTime($name, Closure $fn) {
+        $t1=microtime(true);
+        $res = $fn();
+        $t2=microtime(true);
+        $diff = round($t2 - $t1, 2);
+        _log("Measure time $name time=$diff");
+        return $res;
     }
 }
