@@ -288,8 +288,8 @@ class Account
 				}
 			}
 			$height = Block::getHeight();
-			$maturity = STAKING_COIN_MATURITY;
-			$min_balance = STAKING_MIN_BALANCE;
+			$maturity = Blockchain::getStakingMaturity($height);
+			$min_balance = Blockchain::getStakingMinBalance($height);
 			$sql="select *, ($height - a.height) as maturity,
        			case when $height - a.height >= $maturity and a.balance >= $min_balance then ($height - a.height)*a.balance else 0 end as weight
 				from accounts a $sorting limit $start, $limit";
@@ -419,8 +419,8 @@ class Account
 
 	static function getStakeWinner($height) {
 		global $db;
-		$maturity = STAKING_COIN_MATURITY;
-		$min_balance = STAKING_MIN_BALANCE;
+		$maturity = Blockchain::getStakingMaturity($height);
+		$min_balance = Blockchain::getStakingMinBalance($height);
 		$sql = "select a.id, a.height, a.balance,
 		       ($height - a.height) as maturity,
 		       if(($height - a.height) > $maturity and a.balance >= $min_balance, ($height - a.height)*a.balance,0) as weight
