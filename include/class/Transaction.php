@@ -127,11 +127,22 @@ class Transaction
 				if ($type == TX_TYPE_MN_REMOVE) {
 					$res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 					$res = $res && Account::addBalance($tx->src, floatval($tx->val),$src_height);
-					$tx->add_mempool();
 					if($res === false) {
 						throw new Exception("Update balance for reverse transaction failed");
 					}
-					$collateralTx = Masternode::getMnCreateTx($tx->publicKey);
+                    if($tx->msg == "mnremove") {
+                        $mn_address =  Account::getAddress($tx->publicKey);
+                    } else if (Account::valid($tx->msg)) {
+                        $mn_address = $tx->msg;
+                    }
+                    if(empty($mn_address)) {
+                        throw new Exception("Can not find masternode");
+                    }
+
+					$collateralTx = Masternode::getMnCreateTx($mn_address);
+                    if(!$collateralTx) {
+                        throw new Exception("Can not find tx for masternode crete");
+                    }
                     $masternode = $collateralTx['dst'];
                     if($collateralTx['height'] > MN_COLD_START_HEIGHT) {
                         if($collateralTx['message']!="mncreate" && Account::valid($collateralTx['message'])) {
@@ -149,6 +160,7 @@ class Transaction
 					if(!$res) {
 						throw new Exception("Can not reverse create masternode");
 					}
+                    $tx->add_mempool();
 				}
 
 				if ($type == TX_TYPE_SC_CREATE) {
@@ -493,6 +505,26 @@ class Transaction
 		return $data;
 	}
 
+    public static function getMasternodeRewardsStat($mn_address)
+    {
+        global $db;
+        $sql="select min(b.date) as min_date, max(b.date) as max_date, sum(t.val) as total
+            from blocks b
+            join transactions t on b.id = t.block and b.height = t.height and t.type = 0 and t.message = 'masternode'
+            where b.masternode = :address";
+        $data = [];
+        $row = $db->row($sql, [":address"=>$mn_address]);
+        $data['total']['start']=$row['min_date'];
+        $data['total']['start']=$row['max_date'];
+        $data['total']['elapsed']=$row['max_date'] - $row['min_date'];
+        $data['total']['days']=$data['total']['elapsed'] / 86400;
+        $data['total']['daily']=$row['total'] / $data['total']['days'];
+        $data['total']['weekly']=$data['total']['daily'] * 7;
+        $data['total']['monthly']=$data['total']['daily'] * 30;
+        $data['total']['yearly']=$data['total']['monthly'] * 12;
+        return $data;
+    }
+
 	public function add($block, $height, &$error = null)
 	{
 
@@ -579,6 +611,7 @@ class Transaction
 			}
 
 			if ($type == TX_TYPE_MN_REMOVE) {
+
 				$res = true;
 				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
 				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
@@ -590,11 +623,20 @@ class Transaction
 				if(!$mn) {
                     if($height > MN_COLD_START_HEIGHT) {
                         $src = $this->src;
-                        $mn=Account::getMasternodeRewardAddress($src);
-                        $mnPubKey = $mn['public_key'];
+                        $masternodes=Account::getMasternodeRewardAddress($src);
+                        if(!$masternodes) {
+                            throw new Exception("Masternode with public key $mnPubKey does not exists");
+                        }
+                        foreach ($masternodes as $masternode) {
+                            if($masternode['masternode'] == $this->msg) {
+                                $mn = $masternode;
+                                break;
+                            }
+                        }
 				        if(!$mn) {
                             throw new Exception("Masternode with public key $mnPubKey does not exists");
                         }
+                        $mnPubKey = $mn['public_key'];
                     } else {
 					    throw new Exception("Masternode with public key $mnPubKey does not exists");
 				    }

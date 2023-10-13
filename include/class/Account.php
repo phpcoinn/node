@@ -472,7 +472,7 @@ class Account
             $sql.=" and t.height <= :height";
             $params[":height"]=$height;
         }
-        $res = $db->row($sql, $params);
+        $res = $db->run($sql, $params);
         return $res;
     }
 
@@ -488,6 +488,31 @@ class Account
         and exists (select 1 from masternode m where m.height = t.height)) as masternodes
          join accounts a on (masternodes.reward_address = a.id)";
         return $db->run($sql, [":mncreate" => TX_TYPE_MN_CREATE, ":address"=>$address]);
+    }
+
+    static function getAddressInfo($address) {
+        $out['address']=$address;
+        $masternode=Account::getMasternode($address);
+        $masternodes=[$masternode];
+        if(empty($masternode)) {
+            $masternodes=Account::getMasternodeRewardAddress($address);
+            if(!empty($masternodes)) {
+                $type = "masternode_reward";
+            } else {
+                $type = "no_masternode";
+            }
+        } else {
+            if($masternode['dst']==$address) {
+                $type = "hot_masternode";
+            } else if ($masternode['message']==$address) {
+                $type = "cold_masternode";
+            } else {
+                $type = "unknown";
+            }
+        }
+        $out['type']=$type;
+        $out['masternodes']=$masternodes;
+        return $out;
     }
 
 }

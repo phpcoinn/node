@@ -411,74 +411,45 @@ class Wallet
 	}
 
 	function createMasternode($mnAddress, $rewardAddress) {
-		if(empty($mnAddress)) {
-			echo "Missing destination address".PHP_EOL;
-			exit;
-		}
 
-        if(strlen($rewardAddress)>0) {
-            $res = $this->wallet_peer_post("/api.php?q=checkAddress". "&XDEBUG_SESSION_START=PHPSTORM",
-                ["address" => $rewardAddress]);
-            if ($res['status']!="ok") {
-                echo "Reward address is invalid or not verified".PHP_EOL;
-                exit;
-            }
+        $data['address']=$this->address;
+        $data['mn_address']=$mnAddress;
+        if(!empty($rewardAddress)) {
+            $data['reward_address']=$rewardAddress;
         }
+        $debug = "";
+//        $debug="&XDEBUG_SESSION_START=PHPSTORM";
+        $res = $this->wallet_peer_post("/api.php?q=generateMasternodeCreateTx".$debug, $data);
+        $this->checkApiResponse($res);
+        $transaction = $res['data'];
 
-        if(empty($rewardAddress)) {
-            $dst = $mnAddress;
-            $msg = "mncreate";
-        } else {
-            $dst = $rewardAddress;
-            $msg = $mnAddress;
-        }
+        $date=time();
+        $tx = new Transaction($this->public_key, $transaction['dst'], $transaction['val'], TX_TYPE_MN_CREATE, $date, $transaction['msg']);
+        $tx->sign($this->private_key);
 
-		$res = $this->wallet_peer_post("/api.php?q=getCollateral");
-		$this->checkApiResponse($res);
-		$collateral = $res['data'];
-		$date=time();
-		$tx = new Transaction($this->public_key, $dst, $collateral, TX_TYPE_MN_CREATE, $date, $msg);
-		$signature = $tx->sign($this->private_key);
-
-		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
-			array("dst" => $dst, "val" => $collateral, "fee"=>0,  "signature" => $signature,
-				"public_key" => $this->public_key, "type" => TX_TYPE_MN_CREATE,
-				"message" => $msg, "date" => $date));
-		$this->checkApiResponse($res);
-		echo "Transaction created: ".$res['data'].PHP_EOL;
+        $res = $this->wallet_peer_post("/api.php?q=sendTransaction".$debug, ["tx"=>base64_encode(json_encode($tx->toArray()))]);
+        $this->checkApiResponse($res);
+        echo "Transaction created: ".$res['data'].PHP_EOL;
 	}
 
-	function removeMasternode($payoutAddress) {
+	function removeMasternode($payoutAddress, $mnAddress=null) {
 
-        $res = $this->wallet_peer_post("/api.php?q=checkAddress". "&XDEBUG_SESSION_START=PHPSTORM",
-            ["address" => $payoutAddress]);
-        if ($res['status']!="ok") {
-            echo "Payout address is invalid".PHP_EOL;
-            exit;
+        $data['address']=$this->address;
+        $data['payout_address']=$payoutAddress;
+        if(!empty($mnAddress)) {
+            $data['mn_address']=$mnAddress;
         }
-
-        $res = $this->wallet_peer_post("/api.php?q=getAddressInfo" , ["address"=>$this->address]);
-        if ($res['status']!="ok") {
-            echo "Error getting wallet info".PHP_EOL;
-            exit;
-        }
-        $addressInfo = $res['data'];
-        if($addressInfo['type']!="masternode_reward" && $addressInfo['type']!="hot_masternode") {
-            echo "Invalid type of wallet".PHP_EOL;
-            exit;
-        }
-
-        $collateral = $addressInfo['masternode']['collateral'];
+        $debug = "";
+        //$debug="&XDEBUG_SESSION_START=PHPSTORM";
+        $res = $this->wallet_peer_post("/api.php?q=generateMasternodeRemoveTx&$debug", $data);
+        $this->checkApiResponse($res);
+        $transaction = $res['data'];
 
 		$date=time();
-		$msg = "mnremove";
-		$tx = new Transaction($this->public_key, $payoutAddress, $collateral, TX_TYPE_MN_REMOVE, $date, $msg);
-		$signature = $tx->sign($this->private_key);
+		$tx = new Transaction($this->public_key, $payoutAddress, $transaction['val'], TX_TYPE_MN_REMOVE, $date, $transaction['msg']);
+		$tx->sign($this->private_key);
 
-		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
-			array("dst" => $payoutAddress, "val" => $collateral, "fee"=>0,  "signature" => $signature,
-				"public_key" => $this->public_key, "type" => TX_TYPE_MN_REMOVE,
-				"message" => $msg, "date" => $date));
+		$res = $this->wallet_peer_post("/api.php?q=sendTransaction", ["tx"=>base64_encode(json_encode($tx->toArray()))]);
 		$this->checkApiResponse($res);
 		echo "Transaction created: ".$res['data'].PHP_EOL;
 	}
@@ -634,7 +605,7 @@ transaction <id>                                                    shows data a
 send <address> <value> <msg>                                        sends a transaction (message optional)
 login-link                                                          generate login link
 masternode-create <address> <reward_address>                        create masternode with address
-masternode-remove <payoutaddress>                                   remove masternode with address
+masternode-remove <payoutaddress>  <address>                        remove masternode with address
 sign <message>                                                      sign message with wallet private key
 smart-contract-create <address> <file> <amount> <method> <params>	create smart contract
 smart-contract-exec <address> <amount> <method> <params> 			execute smart contract method

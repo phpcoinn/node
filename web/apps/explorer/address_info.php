@@ -138,6 +138,8 @@ require_once __DIR__. '/../common/include/top.php';
 
     $height = Block::getHeight();
 
+    $rewardStat = Transaction::getMasternodeRewardsStat($address);
+
     ?>
     <h4>Masternode</h4>
 
@@ -175,9 +177,6 @@ require_once __DIR__. '/../common/include/top.php';
             <td><?php echo $mn['collateral'] ?></td>
         </tr>
         <?php if ($mn['cold']) {
-
-            $rewardStat = Transaction::getRewardsStat($mn['dst'], $type);
-
             ?>
             <tr>
                 <td>Reward address</td>

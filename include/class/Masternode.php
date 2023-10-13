@@ -211,11 +211,10 @@ class Masternode extends Daemon
 		return $res;
 	}
 
-	static function getMnCreateTx($publicKey) {
+	static function getMnCreateTx($mn_address) {
 		global $db;
-		$dst = Account::getAddress($publicKey);
-		$sql="select * from transactions where dst =:dst and type=:type order by height desc limit 1";
-		$rows = $db->run($sql, [":dst"=>$dst, ":type"=>TX_TYPE_MN_CREATE]);
+		$sql="select * from transactions where (dst =:dst or message =:dst2) and type=:type order by height desc limit 1";
+		$rows = $db->run($sql, [":dst"=>$mn_address, ":dst2"=>$mn_address, ":type"=>TX_TYPE_MN_CREATE]);
 		return $rows[0];
 	}
 
@@ -340,7 +339,7 @@ class Masternode extends Daemon
                         $masternodeAddr = $msg;
                     }
                 }
-                $res = Masternode::checkExistsMasternode($masternodeAddr, $height-1);
+                $res = Masternode::checkExistsMasternode($masternodeAddr, $transaction->mempool ? $height : $height-1);
                 if($res) {
                     throw new Exception("Masternode already created");
                 }
@@ -371,7 +370,16 @@ class Masternode extends Daemon
 				if(!$masternode) {
                     if($height > MN_COLD_START_HEIGHT) {
                         $src = $transaction->src;
-                        $masternode=Account::getMasternodeRewardAddress($src);
+                        $masternodes=Account::getMasternodeRewardAddress($src);
+                        if(!$masternodes) {
+                            throw new Exception("Can not find cold masternode for address ".$transaction->src);
+                        }
+                        foreach($masternodes as $mn) {
+                            if($mn['masternode']==$transaction->msg) {
+                                $masternode = $mn;
+                                break;
+                            }
+                        }
                         if(!$masternode) {
                             throw new Exception("Can not find cold masternode for address ".$transaction->src);
                         }
@@ -413,23 +421,45 @@ class Masternode extends Daemon
 
 	static function checkIsSendFromMasternode($height, Transaction $transaction, &$error, $verify) {
 		try {
+
+            global $db;
+
             $checkHeight = $verify ? $height-1 : $height;
             $checkAddress = $transaction->src;
 
-            $masternode_existing = Masternode::isExisting($checkAddress, $checkHeight);
+            $sql="select * from transactions t where (t.dst = :id) and t.type = :type
+			and t.height <= :height";
+            $createTxs = $db->run($sql, [":id"=>$checkAddress, ":type"=>TX_TYPE_MN_CREATE, ":height"=>$checkHeight]);
+            $sql="select *  from transactions t where (t.src = :id) and t.type = :type
+			and t.height <= :height";
+            $removeTxs = $db->run($sql, [":id"=>$checkAddress, ":type"=>TX_TYPE_MN_REMOVE, ":height"=>$checkHeight]);
+
+            if(count($createTxs) - count($removeTxs) > 0) {
+                $masternode_existing = true;
+            } else {
+                $masternode_existing = false;
+            }
 
             if($masternode_existing) {
+
+                $lockedCollateral = 0;
+                foreach($createTxs as $tx) {
+                    $lockedCollateral+=floatval($tx['val']);
+                }
+                foreach($removeTxs as $tx) {
+                    $lockedCollateral-=floatval($tx['val']);
+                }
+
                 $total_sent = Transaction::getTotalSent($checkAddress, $checkHeight);
                 $total_received = Transaction::getTotalReceived($checkAddress, $checkHeight);
                 $balance = floatval($total_received) - floatval($total_sent);
-                $collateral = Block::getMasternodeCollateral($checkHeight);
                 $mempool_balance = 0;
                 if(!$verify) {
                     $mempool_balance = floatval(Mempool::mempoolBalance($checkAddress,$transaction->id));
                 }
-                $remain = $balance - $collateral - floatval($transaction->val) + $mempool_balance;
+                $remain = $balance - $lockedCollateral - floatval($transaction->val) + $mempool_balance;
                 if(round($remain,8) < 0) {
-                    throw new Exception("Can not spent more than collateral. Balance=$balance amount=".$transaction->val);
+                    throw new Exception("Can not spent more than collateral. Locked=$lockedCollateral Balance=$balance amount=".$transaction->val);
                 }
             }
 
