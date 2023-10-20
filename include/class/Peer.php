@@ -394,7 +394,7 @@ class Peer
         if(empty($connect_time)) {
             return;
         }
-		$res = $db->run("update peers set 
+		$res = $db->run("update peers set ping=".DB::unixTimeStamp().",
 			response_cnt=response_cnt+1, response_time=response_time+:time 
 			where hostname like :hostname",
 			[ ":hostname"=>"%$hostname%",":time"=>$connect_time]);
