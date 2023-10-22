@@ -69,15 +69,16 @@ class Transaction
 
 
 	// reverse and remove all transactions from a block
-    public static function reverse($block, &$error = null)
+    public static function reverse($block, &$txerr = null)
     {
         global $db;
 
 		try {
-			$r = $db->run("SELECT * FROM transactions WHERE block=:block ORDER by `type` DESC", [":block" => $block['id']]);
-			foreach ($r as $x) {
-				$tx = Transaction::getFromDbRecord($x);
-				_log("Reversing transaction {$tx->id}", 3);
+			$txs = $db->run("SELECT * FROM transactions WHERE block=:block ORDER by `type` DESC", [":block" => $block['id']]);
+			foreach ($txs as $tx) {
+
+                $t1=microtime(true);
+				$tx = Transaction::getFromDbRecord($tx);
 
 				if(!empty($tx->dst)) {
 					$dst_height = Transaction::getLastHeight($tx->dst, $block['height']);
@@ -125,7 +126,6 @@ class Transaction
 				if ($type == TX_TYPE_MN_REMOVE) {
 					$res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 					$res = $res && Account::addBalance($tx->src, floatval($tx->val),$src_height);
-					$tx->add_mempool();
 					if($res === false) {
 						throw new Exception("Update balance for reverse transaction failed");
 					}
@@ -180,14 +180,19 @@ class Transaction
 				}
 
 				$res = $db->run("DELETE FROM transactions WHERE id=:id", [":id" => $tx->id]);
+
+                $t2=microtime(true);
+                $diff=round($t2-$t1,2);
+                _log("Reversing transaction {$tx->id} type={$tx->type} time=$diff", 3);
+
 				if ($res != 1) {
 					throw new Exception("Delete transaction failed");
 				}
 			}
 			return true;
 		} catch (Exception $e) {
-			$err = $e->getMessage();
-			_log($err);
+            $txerr = $e->getMessage();
+			_log($txerr);
 			return false;
 		}
         
