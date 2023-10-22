@@ -760,7 +760,7 @@ class Transaction
 		        throw new Exception("{$this->id} - Invalid signature - $base");
 	        }
 
-			if($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_BURN) {
+			if($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_BURN || $this->type == TX_TYPE_MN_CREATE) {
 				$res = Masternode::checkIsSendFromMasternode($height, $this, $error, $verify);
 				if(!$res) {
 					throw new Exception("Invalid transaction for send: $error");
