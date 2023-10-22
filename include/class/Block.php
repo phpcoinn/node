@@ -68,6 +68,8 @@ class Block
 
             try {
 
+                $t1=microtime(true);
+
                 global $db;
 
                 $block = Block::get($this->height);
@@ -146,7 +148,6 @@ class Block
                     throw new Exception("Block DB insert failed");
                 }
 
-                Masternode::resetVerified();
 
                 // parse the block's transactions and insert them to db
                 $res = $this->parse_block(false, $perr, $syncing);
@@ -154,7 +155,7 @@ class Block
                     throw new Exception("Parse block failed ".$this->height." : $perr");
                 }
 
-                _log("Inserted new block height={$this->height} id=$hash ");
+
                 $db->commit();
                 _log("LOCK: unlock 2 block add ".$this->height." ".$this->id. " - ok", 4);
 //                $db->unlockTables();
@@ -162,6 +163,12 @@ class Block
                 Cache::set("height", $this->height);
                 Cache::set("current_export", Block::export($hash));
                 Cache::set("mineInfo", Blockchain::getMineInfo());
+
+                Masternode::resetVerified();
+
+                $t2=microtime(true);
+                $diff=round($t2-$t1,2);
+                _log("Inserted new block height={$this->height} id=$hash time=$diff");
                 return true;
 
             } catch (Exception $e) {
