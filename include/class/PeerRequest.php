@@ -215,16 +215,18 @@ class PeerRequest
 			api_err("sync");
 		}
 
-		// validate transaction data
-		if (!$tx->check(null, false, $txerr)) {
-			api_err("Invalid transaction: $txerr");
-		}
 		$hash = $tx->id;
 		// make sure it's not already in mempool
 		$res = Mempool::existsTx($hash);
 		if ($res != 0) {
 			api_err("The transaction is already in mempool");
 		}
+
+		// validate transaction data
+		if (!$tx->check(null, false, $txerr)) {
+			api_err("Invalid transaction: $txerr");
+		}
+
 		// make sure the peer is not flooding us with transactions
 		$res = Mempool::getSourceTxCount($tx->src);
 		if ($res > 25) {
