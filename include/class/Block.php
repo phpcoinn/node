@@ -586,65 +586,66 @@ class Block
 			$height = $min_height;
 		}
 
-        $r = $db->run("SELECT * FROM blocks WHERE height>=:height ORDER by height DESC", [":height" => $height]);
+        $blocks = $db->run("SELECT * FROM blocks WHERE height>=:height ORDER by height DESC", [":height" => $height]);
 
-        if (count($r) == 0) {
+        if (count($blocks) == 0) {
 	        Config::setSync(0);
             return true;
         }
 
-        return synchronized("block-lock", function() use ($r) {
-            try {
-                global $db;
-                _log("Lock delete blocks");
-//            $db->lockTables();
-                $db->beginTransaction();
+        return synchronized("block-lock", function() use ($blocks) {
 
-                foreach ($r as $x) {
-                    $res = Transaction::reverse($x, $err);
+            _log("Lock delete blocks", 2);
+            global $db;
+            foreach ($blocks as $block) {
+            try {
+
+                    $t1=microtime(true);
+
+                    $res = Transaction::reverse($block, $err);
                     if ($res === false) {
                         _log("A transaction could not be reversed. Delete block failed.");
                         throw new Exception("A transaction could not be reversed");
                     }
 
-                    $res = Masternode::reverseBlock($x, $merr);
+                    $res = Masternode::reverseBlock($block, $merr);
                     if(!$res) {
                         throw new Exception("Reverse masternode winner failed. Error: $merr");
                     }
 
-                    $res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $x['id']]);
+                    $res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $block['id']]);
                     if ($res != 1) {
                         throw new Exception("Delete block failed.");
                     } else {
-                        _log("Deleted block id=".$x['id']." height=".$x['height']);
-                    }
+                        $t2=microtime(true);
+                        $diff = round($t2-$t1, 2);
+                        _log("Deleted block id=".$block['id']." height=".$block['height']." time=$diff");
                 }
 
-                Masternode::resetVerified();
-                Config::setSync(0);
                 if($db->inTransaction()) {
                     $db->commit();
-                    _log("Unlock delete blocks");
-//				$db->unlockTables();
                 }
+
+                    Masternode::resetVerified();
                 Cache::remove("current");
                 Cache::remove("mineInfo");
                 Cache::remove("height");
                 Cache::remove("current_export");
-                return true;
+
             } catch (Exception $e) {
                 _log("Error locking delete blocks ".$e->getMessage());
                 if($db->inTransaction()) {
                     $db->rollback();
-//				$db->unlockTables();
                 }
                 Config::setSync(0);
                 return false;
             }
+            }
+
+            Config::setSync(0);
+            _log("Unlock delete blocks", 2);
+            return true;
         });
-
-
-
     }
 
     public function sign($key)
