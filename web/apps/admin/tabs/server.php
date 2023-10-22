@@ -271,19 +271,12 @@ if(method_exists(Daemon::class, "availableDaemons")) {
 									$valid = $mn->check($height, $err);
 
 									global $db;
-									$sql="select t.dst, count(t.id) as cnt, sum(t.val) as value, 
-                                                    (max(t.date) - min(t.date))/60/60/24 as running,
-                                                   sum(t.val)  / ((max(t.date) - min(t.date))/60/60/24) as daily
-                                            from
-                                            transactions t
-                                            where t.dst = (
-                                                select t.dst
-                                                from masternode m
-                                                         left join transactions t on m.height = t.height and t.type = 2
-                                                            and (t.dst = m.id or t.message = m.id)
-                                                where m.id = :id
-                                                )
-                                            and t.type = 0 and t.message = 'masternode'";
+									$sql="select min(b.date) as min_date, max(b.date) as max_date, sum(t.val) as value, t.dst, count(t.id) as cnt,
+                                           (max(t.date) - min(t.date))/60/60/24 as running,
+                                           sum(t.val)  / ((max(t.date) - min(t.date))/60/60/24) as daily
+                                    from blocks b
+                                             join transactions t on b.id = t.block and b.height = t.height and t.type = 0 and t.message = 'masternode'
+                                    where b.masternode = :id";
 									$mnStat = $db->row($sql, [':id'=>$mn->id]);
 								}
 
