@@ -1343,9 +1343,12 @@ class Transaction
 
 	static function getLastHeight($address, $height) {
 		global $db;
-		$sql = "select max(t.height) from transactions t
+
+        $sql = "select t.height from transactions t
 			where (t.src = :src or t.dst = :dst)
-			and t.height < :height";
+			and t.height < :height
+			order by t.height desc
+			limit 1";
 		return $db->single($sql, [":src"=>$address, ":dst"=>$address, ":height"=>$height]);
 	}
 
