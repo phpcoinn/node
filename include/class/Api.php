@@ -553,11 +553,39 @@ class Api
 		api_echo($peers);
 	}
 
-	//TODO: API update doc
+    /**
+     * @api            {get} /api.php?q=getMasternodes  getMasternodes
+     * @apiName        getMasternodes
+     * @apiGroup       API
+     * @apiDescription Return all masternodes from node
+     *
+     * @apiSuccess {string} [public_key] Public key of masternode
+     * @apiSuccess {numeric} [height] Height at which masternode is created
+     * @apiSuccess {string} [ip] IP address of masternode
+     * @apiSuccess {numeric} [win_height] Last height whem masternode received reward
+     * @apiSuccess {string} [signature] current masternode signature
+     * @apiSuccess {string} [id] Address of masternode
+     * @apiSuccess {numeric} [collateral] Locked collateral in masternode
+     * @apiSuccess {numeric} [verified] 1 if masternode is verified for current height
+     */
 	static function getMasternodes($data) {
 		api_echo(Masternode::getAll());
 	}
 	
+    /**
+     * @api            {get} /api.php?q=getMasternodesForAddress  getMasternodesForAddress
+     * @apiName        getMasternodesForAddress
+     * @apiGroup       API
+     * @apiDescription Return all masternodes created from specified address
+     *
+     * @apiParam {string} address Address
+     *
+     * @apiSuccess {numeric} [collateral] Locked collateral of masternode
+     * @apiSuccess {numeric} [reward_address] Address which receives masternode rewards (if cold masternode)
+     * @apiSuccess {string} [masternode_address] Address of masternode
+     * @apiSuccess {numeric} [masternode_balance] Balance of masternode (hot or cold)
+     *
+     */
 	static function getMasternodesForAddress($data) {
 		$address = $data['address'];
 		$public_key = Account::publicKey($address);
@@ -567,6 +595,23 @@ class Api
 		api_echo(Masternode::getMasternodesForPublicKey($public_key));
 	}
 
+    /**
+     * @api            {get} /api.php?q=getMasternode  getMasternode
+     * @apiName        getMasternode
+     * @apiGroup       API
+     * @apiDescription Return masternode data
+     *
+     * @apiParam {string} address Address
+     *
+     * @apiSuccess {string} [public_key] Public key of masternode
+     * @apiSuccess {numeric} [height] Height at which masternode is created
+     * @apiSuccess {string} [ip] IP address of masternode
+     * @apiSuccess {numeric} [win_height] Last height whem masternode received reward
+     * @apiSuccess {string} [signature] current masternode signature
+     * @apiSuccess {string} [id] Address of masternode
+     * @apiSuccess {numeric} [collateral] Locked collateral in masternode
+     * @apiSuccess {numeric} [verified] 1 if masternode is verified for current height
+     */
 	static function getMasternode($data) {
 		$address = $data['address'];
 		if(empty($address)) {
@@ -577,6 +622,14 @@ class Api
 		api_echo($mn);
 	}
 
+    /**
+     * @api            {get} /api.php?q=getFee  getFee
+     * @apiName        getFee
+     * @apiGroup       API
+     * @apiDescription Get current transaction fee
+     *
+     * @apiSuccess {numeric} Current transaction fee
+     */
 	static function getFee($data) {
 		$fee = Blockchain::getFee($data['height']);
 		api_echo(number_format($fee, 5));
@@ -618,6 +671,20 @@ class Api
 		api_echo($res);
 	}
 
+    /**
+     * @api            {get} /api.php?q=authenticate  authenticate
+     * @apiName        authenticate
+     * @apiGroup       API
+     * @apiDescription Used for checking signed message by public key
+     *
+     * @apiParam {string} public_key Public key of signer
+     * @apiParam {string} signature Generated signature
+     * @apiParam {string} nonce Message to sign
+     *
+     * @apiSuccess {string} [address] Address of account
+     * @apiSuccess {string} [public_key] Public key of account
+     *
+     */
 	static function authenticate($data) {
 		$public_key = $data['public_key'];
 		if(empty($public_key)) {
@@ -645,6 +712,16 @@ class Api
 		api_echo($account);
 	}
 
+    /**
+     * @api {get} /api.php?q=sendTransaction  sendTransaction
+     * @apiName sendTransaction
+     * @apiGroup API
+     * @apiDescription Sends a transaction via JSON.
+     *
+     * @apiParam {string} tx Created transaction data (bse64 encoded JSON)
+     *
+     * @apiSuccess {string} data  Transaction id
+     */
 	static function sendTransaction($data) {
 		$transactionData = $data['tx'];
 		$transactionData = json_decode(base64_decode($transactionData), true);
@@ -802,6 +879,16 @@ class Api
 		api_echo($data);
 	}
 
+    /**
+     * @api {get} /api.php?q=getCollateral  getCollateral
+     * @apiName getCollateral
+     * @apiGroup API
+     * @apiDescription Get masternode collateral for specified height
+     *
+     * @apiParam {numeric} height Height to check
+     *
+     * @apiSuccess {numeric} Collateral value
+     */
 	static function getCollateral($data) {
 		if(isset($data['height'])) {
 			$height = $data['height'];
