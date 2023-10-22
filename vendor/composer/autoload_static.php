@@ -24,6 +24,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         'Cron' => __DIR__ . '/../..' . '/include/class/Cron.php',
         'Daemon' => __DIR__ . '/../..' . '/include/class/Daemon.php',
         'Dapps' => __DIR__ . '/../..' . '/include/class/Dapps.php',
+        'Forker' => __DIR__ . '/../..' . '/include/class/Forker.php',
         'Masternode' => __DIR__ . '/../..' . '/include/class/Masternode.php',
         'Mempool' => __DIR__ . '/../..' . '/include/class/Mempool.php',
         'Minepool' => __DIR__ . '/../..' . '/include/class/Minepool.php',

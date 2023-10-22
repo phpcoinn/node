@@ -80,12 +80,13 @@ class PeerRequest
 				_logf("blacklisted-peer");
 				api_err("blacklisted-peer SERVER=".json_encode($_SERVER). " peer=".json_encode($peer));
 			}
+		} else {
+            _log("Peer with $ip not in list", 2);
 		}
 
 		if(!empty($info)) {
 			$hostname=$info['hostname'];
 			if(!empty($hostname)) {
-				$peer=Peer::getByIp($ip);
 				if(!empty($peer['hostname']) && $peer['hostname'] != $hostname) {
 					Peer::blacklist($peer['id'], "Invalid hostname $hostname");
 					_logf("blocked-invalid-hostname");
@@ -95,6 +96,7 @@ class PeerRequest
 			}
 			_logp("update peer info");
 			Peer::updatePeerInfo($ip, $info);
+            if(!empty($peer['id'])) {
             $peer['height']=$info['height'];
 			if($peer['blacklisted'] < time() && $peer['fails']>0) {
 				_logp("clear blacklist");
@@ -113,6 +115,7 @@ class PeerRequest
                     Peer::clearBlacklist($peer['id']);
                 }
             }
+		}
 		}
 
 		_logf("finish process");

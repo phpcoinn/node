@@ -254,5 +254,9 @@ class DB extends PDO
 	    }
     }
 
+    static function reconnect() {
+        global $_config;
+        return new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
+    }
 
 }
