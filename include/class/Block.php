@@ -600,6 +600,10 @@ class Block
             foreach ($blocks as $block) {
             try {
 
+                    if(!$db->inTransaction()) {
+                        $db->beginTransaction();
+                    }
+
                     $t1=microtime(true);
 
                     $res = Transaction::reverse($block, $err);
