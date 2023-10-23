@@ -1029,7 +1029,7 @@ class Util
 
         $forker= new Forker();
         $t1 = microtime(true);
-        $limit = 50;
+        $limit = PHP_INT_MAX;
         $new_peers = [];
         foreach ($peers as $ix => $peer) {
             if($ix > $limit) break;

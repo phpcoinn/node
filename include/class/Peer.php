@@ -12,7 +12,7 @@ class Peer
 		global $db;
 		$sql="select count(*) as cnt from peers where blacklisted < ".DB::unixTimeStamp();
 		if($live) {
-			$sql.=" AND ping >".DB::unixTimeStamp()."-86400";
+			$sql.=" AND ping >".DB::unixTimeStamp()."-".(60*self::PEER_PING_MAX_MINUTES);
 		}
 		$row = $db->row($sql);
 		return $row['cnt'];

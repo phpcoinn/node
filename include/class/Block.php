@@ -148,7 +148,6 @@ class Block
                     throw new Exception("Block DB insert failed");
                 }
 
-//                Masternode::resetVerified();
 
                 // parse the block's transactions and insert them to db
                 $res = $this->parse_block(false, $perr, $syncing);
@@ -600,6 +599,10 @@ class Block
             global $db;
             foreach ($blocks as $block) {
                 try {
+
+                    if(!$db->inTransaction()) {
+                        $db->beginTransaction();
+                    }
 
                     $t1=microtime(true);
 
