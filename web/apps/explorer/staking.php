@@ -106,6 +106,8 @@ require_once __DIR__. '/../common/include/top.php';
                 <a href="<?php echo $link ?>" class="btn btn-outline-primary btn-sm">Clear</a>
             </div>
         </form>
+        Staking maturity: <?php echo $maturity ?> |
+        Staking minimum balance: <?php echo $min_balance ?>
         <div class="table-responsive">
             <table class="table table-sm table-striped dataTable">
                 <thead class="table-light">
