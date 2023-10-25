@@ -26,7 +26,8 @@ class Cron extends Daemon
         $min = intval(date("i"));
 
         if($min % 5 == 0 && !DEVELOPMENT) {
-            try {
+
+            try_catch(function () {
                 Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php update");
                 Sync::checkLongRunning();
                 Dapps::checkLongRunning();
@@ -37,10 +38,8 @@ class Cron extends Daemon
                 Peer::deleteWrongHostnames();
                 Dapps::createDir();
                 $mnCount = Masternode::getCount();
-            } catch (Error $e) {
-                _log("CRON error: ".$e->getMessage());
-                _log("CRON error: ".$e->getTraceAsString());
-            }
+            });
+
         }
 
         if($hour == 2 && $min == 30) {
@@ -50,7 +49,9 @@ class Cron extends Daemon
             Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php recalculate-masternodes");
         }
         if($min % 60 == 0) {
-            Nodeutil::clearOldMiningStat();
+            try_catch(function() {
+                Nodeutil::clearOldMiningStat();
+            });
             Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php get-more-peers");
         }
         if($hour == 3 && $min == 0) {
