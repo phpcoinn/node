@@ -22,21 +22,25 @@ class Cron extends Daemon
 
     static function run() {
         $time = date("H:i");
-        _log("CRON: Run at time: " .$time, 2);
         $hour = intval(date("H"));
         $min = intval(date("i"));
 
         if($min % 5 == 0 && !DEVELOPMENT) {
-            Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php update");
-            Sync::checkLongRunning();
-            Dapps::checkLongRunning();
-            NodeMiner::checkLongRunning();
-            Masternode::checkLongRunning();
-            Cache::resetCache();
-            Peer::deleteBlacklisted();
-            Peer::deleteWrongHostnames();
-            Dapps::createDir();
-            $mnCount = Masternode::getCount();
+            try {
+                Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php update");
+                Sync::checkLongRunning();
+                Dapps::checkLongRunning();
+                NodeMiner::checkLongRunning();
+                Masternode::checkLongRunning();
+                Cache::resetCache();
+                Peer::deleteBlacklisted();
+                Peer::deleteWrongHostnames();
+                Dapps::createDir();
+                $mnCount = Masternode::getCount();
+            } catch (Error $e) {
+                _log("CRON error: ".$e->getMessage());
+                _log("CRON error: ".$e->getTraceAsString());
+            }
         }
 
         if($hour == 2 && $min == 30) {
@@ -52,5 +56,6 @@ class Cron extends Daemon
         if($hour == 3 && $min == 0) {
             Nodeutil::resetMiningStats();
         }
+        _log("CRON: Run at time: " .$time, 2);
     }
 }
