@@ -842,4 +842,20 @@ class Nodeutil
         _log("Measure time $name time=$diff");
         return $res;
     }
+
+    static function debugError(Error $e) {
+        _log("DEBUG error:" . $e->getMessage());
+        $backtrace = debug_backtrace();
+        $backtrace_str = [];
+        if (!empty($backtrace)) {
+            foreach ($backtrace as $info) {
+                if ($info["file"] != __FILE__) {
+                    $backtrace_str[] = $info["file"]." at line ".$info["line"];
+                }
+            }
+        }
+        foreach ($backtrace_str as $line) {
+            _log("DEBUG error: BACKTRACE: " . $line);
+        }
+    }
 }
