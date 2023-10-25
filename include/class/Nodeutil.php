@@ -787,10 +787,12 @@ class Nodeutil
             "success"=>0,
             "failed"=>0
         ];
+        define("FORKED_PROCESS", getmypid());
+        $info=Peer::getInfo();
         foreach ($peers as $peer) {
             $cnt++;
 //            if($cnt > 20) break;
-            $forker->fork(function ($peer) {
+            $forker->fork(function ($peer) use ($info) {
 
                 global $_config;
 
@@ -806,11 +808,10 @@ class Nodeutil
                 }
 
                 if ($_config['passive_peering'] == true) {
+                    DB::reconnect();
                     $res=Peer::insert(md5($peer), $peer);
                 } else {
-                    global $db;
-                    $db = new DB($_config['db_connect'], $_config['db_user'], $_config['db_pass'], $_config['enable_logging']);
-                    $res = peer_post($peer."/peer.php?q=peer", ["hostname" => $_config['hostname'], "repeer" => 1], 30, $err);
+                    $res = peer_post($peer."/peer.php?q=peer", ["hostname" => $_config['hostname'], "repeer" => 1], 30, $err, $info);
                     _log("Fork: Response post from peer ".$peer. " res=".json_encode($res), 5);
                 }
                 if ($res !== false) {

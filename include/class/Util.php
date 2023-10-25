@@ -1032,22 +1032,20 @@ class Util
         $t1 = microtime(true);
         $limit = PHP_INT_MAX;
         $new_peers = [];
+        define("FORKED_PROCESS", getmypid());
+        $info = Peer::getInfo();
         foreach ($peers as $ix => $peer) {
             if($ix > $limit) break;
-            $forker->fork(function ($peer) use ($ix, $cnt, $peered) {
-                global $db;
-                $db = DB::reconnect();
+            $forker->fork(function ($peer) use ($ix, $cnt, $peered,$info) {
                 $hostname = $peer['hostname'];
                 _log("Getting peers from $hostname [$ix / $cnt]",5);
                 $url = $hostname."/peer.php?q=";
-                $data = peer_post($url."getPeers", [], 30, $err);
+                $data = peer_post($url."getPeers", [], 30, $err, $info);
                 if ($data === false) {
-                    Peer::blacklist($peer['id'], "Unresponsive");
-                    return [$ix, null, "Error getting peers from $hostname: $err"];
+                    return [$peer, null, "Error getting peers from $hostname: $err"];
                 }
                 if(is_array($data) && count($data)==0) {
-                    Peer::blacklist($peer['id'], "No peers");
-                    return [$ix, null, "No peers on $hostname"];
+                    return [$peer, null, "No peers on $hostname"];
                 }
                 $new_peers = [];
                 foreach ($data as $ix1 => $peer1) {
@@ -1060,18 +1058,20 @@ class Util
                     $peered[$hostname1] = true;
                 }
                 _log("Found ".count($data)." peers on $hostname new=".count($new_peers),5);
-                return [$ix, $new_peers, null];
+                return [$peer, $new_peers, null];
             }, $peer);
         }
         $forker->on(function($data) use (&$new_peers) {
             _log("Received data ".json_encode($data),5);
-            $ix = $data[0];
+            $peer = $data[0];
             $res = $data[1];
             $err = $data[2];
             if($res) {
                 foreach($res as $item) {
                     $new_peers[$item['hostname']]=$item;
                 }
+            } else {
+                Peer::blacklist($peer['id'], $err);
             }
         });
         $forker->exec();
@@ -1092,14 +1092,13 @@ class Util
                 return;
             }
             $discovered++;
-            $forker->fork(function($new_peer){
+            $single = Peer::getSingle($new_peer['hostname'], $new_peer['ip']);
+            $forker->fork(function($new_peer) use ($single, $info){
+                global $_config;
                 $hostname1 = $new_peer['hostname'];
                 _log("Fork peer with new peer $hostname1", 3);
-                global $db, $_config;
-                $db = DB::reconnect();
-                $single = Peer::getSingle($new_peer['hostname'], $new_peer['ip']);
                 if (!$single) {
-                    $res = peer_post($new_peer['hostname']."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1], 30, $err);
+                    $res = peer_post($new_peer['hostname']."/peer.php?q=peer", ["hostname" => $_config['hostname'], 'repeer'=>1], 30, $err, $info);
                     if($res !== false ){
                         _log("GMP: peered new peer ". $new_peer['hostname'], 3);
                         return true;
@@ -1469,25 +1468,27 @@ class Util
 
         $forker=new Forker();
         $refreshed = 0;
+        define("FORKED_PROCESS", getmypid());
+        $info = Peer::getInfo();
 		foreach($peers as $peer) {
-
-            $forker->fork(function($peer){
+            $forker->fork(function($peer) use ($info){
                 _log("Ping peer ".$peer['hostname'], 5);
 			$url = $peer['hostname']. "/peer.php?q=ping";
-                global $db;
-                $db = DB::reconnect();
-			$res = peer_post($url, [], 30, $err);
+                $res = peer_post($url, [], 30, $err, $info);
                 _log("Ping ".$peer['hostname']." response=$res err=$err", 5);
 			if($res !== "pong") {
-				Peer::blacklist($peer['id'], "Unresponsive");
-                    return false;
+                    return [false, $peer['id']];
 			}
-                return true;
+                return [true, $peer['id']];
             }, $peer);
 		}
         $forker->on(function($res) use (&$refreshed) {
-            if($res) {
+            $success = $res[0];
+            $peer_id = $res[1];
+            if($success) {
                 $refreshed++;
+            } else {
+                Peer::blacklist($peer_id, "Unresponsive");
             }
         });
 
