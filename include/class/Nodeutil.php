@@ -675,6 +675,9 @@ class Nodeutil
 
     static function clearOldMiningStat() {
         $miningStat = Nodeutil::readMiningStat();
+        if(!isset($miningStat['totals'])) {
+            return;
+        }
         $current_height = Block::getHeight();
         $count1 = count(array_keys($miningStat['totals']));
         foreach ($miningStat['totals'] as $height => $stat) {
