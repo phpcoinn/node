@@ -6,6 +6,7 @@ echo "PHPCoin node Installation"
 echo "==================================================================================================="
 echo "PHPCoin: define db user and pass"
 echo "==================================================================================================="
+export DEBIAN_FRONTEND=noninteractive
 export DB_NAME=phpcoin
 export DB_USER=phpcoin
 export DB_PASS=phpcoin
@@ -15,6 +16,7 @@ echo "PHPCoin: update system"
 echo "==================================================================================================="
 apt update
 echo "install php with apache server"
+apt install curl wget nano git -y
 apt install apache2 php libapache2-mod-php php-mysql php-gmp php-bcmath php-curl unzip -y
 apt install mariadb-server -y
 
