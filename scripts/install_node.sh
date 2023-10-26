@@ -38,7 +38,7 @@ git config core.fileMode false
 echo "PHPCoin: Configure apache"
 echo "==================================================================================================="
 cat << EOF > /etc/apache2/sites-available/phpcoin-testnet.conf
-<VirtualHost *:80>
+<VirtualHost *:81>
         ServerAdmin webmaster@localhost
         DocumentRoot $NODE_DIR/web
         ErrorLog ${APACHE_LOG_DIR}/phpcoin-testnet.error.log
@@ -46,6 +46,8 @@ cat << EOF > /etc/apache2/sites-available/phpcoin-testnet.conf
         RewriteRule ^/dapps/(.*)$ /dapps.php?url=$1
 </VirtualHost>
 EOF
+echo "Listen 81" >> /etc/apache2/ports.conf
+
 a2dissite 000-default
 a2ensite phpcoin-testnet
 a2enmod rewrite
@@ -69,10 +71,10 @@ chown -R www-data:www-data .
 export IP=$(curl -s http://whatismyip.akamai.com/)
 echo "PHPCoin: open start page"
 echo "==================================================================================================="
-curl "http://$IP" > /dev/null 2>&1
+curl "http://$IP:81" > /dev/null 2>&1
 
 sleep 5
-mysql $DB_NAME -e "update config set val='http://$IP' where cfg='hostname';"
+mysql $DB_NAME -e "update config set val='http://$IP:81' where cfg='hostname';"
 
 echo "PHPCoin: import blockchain"
 echo "==================================================================================================="
