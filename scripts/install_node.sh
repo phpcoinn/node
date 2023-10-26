@@ -19,7 +19,7 @@ echo "install php with apache server"
 apt install curl wget nano git -y
 apt install apache2 php libapache2-mod-php php-mysql php-gmp php-bcmath php-curl unzip -y
 apt install mariadb-server -y
-
+service mysql start
 echo "PHPCoin: create database and set user"
 echo "==================================================================================================="
 mysql -e "create database $DB_NAME;"
