@@ -6,6 +6,7 @@ echo "PHPCoin Testnet node Installation"
 echo "==================================================================================================="
 echo "PHPCoin: define db user and pass"
 echo "==================================================================================================="
+export DEBIAN_FRONTEND=noninteractive
 export DB_NAME=phpcointest
 export DB_USER=phpcoin
 export DB_PASS=phpcoin
@@ -14,9 +15,11 @@ export NODE_DIR=/var/www/phpcoin-testnet
 echo "PHPCoin: update system"
 echo "==================================================================================================="
 apt update
+apt install curl wget git -y
 echo "install php with apache server"
 apt install apache2 php libapache2-mod-php php-mysql php-gmp php-bcmath php-curl unzip -y
 apt install mariadb-server -y
+service mysql start
 
 echo "PHPCoin: create database and set user"
 echo "==================================================================================================="
