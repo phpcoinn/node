@@ -745,8 +745,8 @@ require_once __DIR__. '/../common/include/top.php';
                     <thead class="table-light">
                     <tr>
                         <th>Action</th>
-                        <th>Id</th>
-                        <th>Hostname</th>
+                        <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'id', 'ID' ,'') ?>
+                        <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'hostname', 'Hostname' ,'') ?>
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'blacklisted', 'Blacklisted' ,'') ?>
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'ping', 'Ping' ,'') ?>
 	                    <?php echo sort_column("/apps/admin/index.php?view=peers", $dm, 'height', 'Height' ,'') ?>
