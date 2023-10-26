@@ -88,4 +88,4 @@ rm -rf $NODE_DIR/tmp/sync-lock
 
 echo "==================================================================================================="
 echo "PHPCoin: Install finished"
-echo "PHPCoin: Open your node at http://$IP"
+echo "PHPCoin: Open your node at http://$IP:81"
