@@ -818,10 +818,10 @@ class NodeSync
 
 	static function checkBlocks() {
 		global $db;
-		$sql="select count(id) from blocks";
-		$count = $db->single($sql);
-		$sql="select max(height) from blocks";
-		$max = $db->single($sql);
+        $sql="select count(id) as cnt, max(height) as max_height from blocks";
+        $res = $db->row($sql);
+        $count = $res['cnt'];
+        $max = $res['max_height'];
 		_log("checkBlocks count=$count max=$max", 3);
 		if($count == $max) {
 			return true;
