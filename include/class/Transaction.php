@@ -881,7 +881,7 @@ class Transaction
 			if($msg == "stake" && $height >= STAKING_START_HEIGHT) {
 				$winner_is_generator = $block->generator==$this->dst;
 				if(!$winner_is_generator) {
-					$last_height = Account::getLastTxHeight($this->dst, $height);
+					$last_height = self::getLastHeight($this->dst, $height);
 					if(!$last_height) {
 						throw new Exception("Staking winner check failed: Can not found last height for address ".$this->dst);
 					}
