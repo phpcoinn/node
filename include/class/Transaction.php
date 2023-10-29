@@ -886,12 +886,12 @@ class Transaction
 						throw new Exception("Staking winner check failed: Can not found last height for address ".$this->dst);
 					}
 					$maturity = $height - $last_height;
-					if($maturity < STAKING_COIN_MATURITY) {
+					if($maturity < Blockchain::getStakingMaturity($height)) {
 						throw new Exception("Staking winner check failed: Staking maturity not valid ".$maturity);
 					}
 
 					$balance = Account::getBalanceAtHeight($this->dst, $height);
-					if(floatval($balance) < STAKING_MIN_BALANCE) {
+					if(floatval($balance) < Blockchain::getStakingMinBalance($height)) {
 						throw new Exception("Staking winner check failed: Staking balance not valid ".$balance);
 					}
 				}

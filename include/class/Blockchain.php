@@ -170,4 +170,21 @@ class Blockchain
 		$last = array_pop($phases);
 		return $last['total'];
 	}
+
+    static function getStakingMaturity($height) {
+        if($height >= UPDATE_11_STAKING_MATURITY_REDUCE) {
+            return 60;
+        } else {
+            return 600;
+        }
+    }
+
+    static function getStakingMinBalance($height) {
+        if($height >= UPDATE_12_STAKING_DYNAMIC_THRESHOLD) {
+            $collateral = Block::getMasternodeCollateral($height);
+            return 2 * $collateral;
+        } else {
+            return 100;
+        }
+    }
 }

@@ -54,8 +54,12 @@ $sorting limit $start, $limit";
 
 $staking_stat = $db->run($sql, $params);
 
+$height=Block::getHeight();
+$maturity=Blockchain::getStakingMaturity($height);
+$min_balance=Blockchain::getStakingMinBalance($height);
+
 $sql="select a1.id, a1.balance, a1.max_height - a1.height as maturity,
-       case when a1.max_height - a1.height >= 600 then (a1.max_height - a1.height)*a1.balance else 0 end as weight
+       case when a1.max_height - a1.height >= $maturity then (a1.max_height - a1.height)*a1.balance else 0 end as weight
 from (
   select a.id,
          a.balance,
@@ -63,7 +67,7 @@ from (
          (select max(height) from blocks b) as max_height
   from accounts a
   where a.height is not null
-    and a.balance >= 100
+    and a.balance >= $min_balance
 ) as a1
 order by weight desc, maturity desc, a1.balance
  limit 10";
@@ -102,6 +106,8 @@ require_once __DIR__. '/../common/include/top.php';
                 <a href="<?php echo $link ?>" class="btn btn-outline-primary btn-sm">Clear</a>
             </div>
         </form>
+        Staking maturity: <?php echo $maturity ?> |
+        Staking minimum balance: <?php echo $min_balance ?>
         <div class="table-responsive">
             <table class="table table-sm table-striped dataTable">
                 <thead class="table-light">
