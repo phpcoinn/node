@@ -520,6 +520,8 @@ class Account
         }
         $out['type']=$type;
         $out['masternodes']=$masternodes;
+        $height=Block::getHeight();
+        $out['cold_masternode_enabled']=$height > MN_COLD_START_HEIGHT;
         return $out;
     }
 
