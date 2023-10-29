@@ -49,6 +49,19 @@ if(isset($_POST['action'])) {
 	        exit;
         }
     }
+    if($action == "private-key-login") {
+        $nonce = $_POST['nonce'];
+        $signature = $_POST['signature'];
+        $public_key = $_POST['public_key'];
+        $res = ec_verify($nonce, $signature, $public_key);
+        if(!$res) {
+            $msg=[['type'=>'danger', 'msg'=>'Invalid private key']];
+        } else {
+            $_SESSION['login']=true;
+            header("location: ".APP_URL);
+            exit;
+        }
+    }
     if($action == "add_peer") {
         $peer = $_POST['peer'];
 	    $cmd = "php ".ROOT."/cli/util.php peer " . $peer . " > /dev/null 2>&1 &";
@@ -277,6 +290,8 @@ if($view == "peers") {
 
 $minepool_enabled = Minepool::enabled();
 
+$pubKeyLogin = isset($_config['admin_public_key']) && strlen($_config['admin_public_key']) > 0;
+$nonce = uniqid();
 ?>
 
 <?php
@@ -304,6 +319,99 @@ require_once __DIR__. '/../common/include/top.php';
 }
 ?>
 
+<?php if ($pubKeyLogin) { ?>
+    <?php if (!$login) { ?>
+        <div class="row">
+            <div class="col-sm-4"></div>
+            <div class="col-sm-4">
+                <div class="card mt-5">
+                    <div class="card-header">
+                        <h4 class="card-title">Login</h4>
+                        <p class="card-title-desc">Login and administer your node server</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <form method="post" action="">
+                                    <input type="hidden" value="" name="public_key">
+                                    <input type="hidden" value="<?php echo $nonce ?>" name="nonce">
+                                    <input type="hidden" value="" name="signature">
+                                    <input type="hidden" value="private-key-login" name="action">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="password">Private key</label>
+                                        <input type="password" class="form-control" id="private_key" name="private_key" value="" required/>
+                                    </div>
+                                    <div class="row mb-4">
+                                        <div class="col">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="rememberPrivateKey">
+                                                <label class="form-check-label" for="rememberPrivateKey">
+                                                    Remember private key
+                                                </label>
+                                            </div>
+                                            <div class="help-block text-muted text-info">
+                                                Private key will be stored only locally in browser
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <button type="button" class="btn btn-primary w-md" onclick="login()">Login</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4"></div>
+        </div>
+
+        <script src="/apps/common/js/jquery.min.js"></script>
+        <script src="/apps/common/js/phpcoin-crypto.js" type="text/javascript"></script>
+        <script type="text/javascript">
+
+            $(function(){
+                let privateKey = localStorage.getItem("adminPrivateKey")
+                if(privateKey) {
+                    $("form [name=private_key]").val(privateKey)
+                    $("#rememberPrivateKey").attr("checked", true)
+                }
+            })
+
+            function login() {
+                try {
+                    let chainId = "<?php echo CHAIN_ID ?>"
+                    let privateKey = $("form [name=private_key]").val().trim()
+                    if(!privateKey) {
+                        throw new Error("Empty private key");
+                    }
+                    let nonce = $("form [name=nonce]").val().trim()
+                    let sig = sign(chainId+nonce, privateKey)
+                    let publicKey = get_public_key(privateKey)
+                    $("form [name=signature]").val(sig)
+                    $("form [name=public_key]").val(publicKey)
+                    $("form [name=private_key]").val("")
+                    if($("#rememberPrivateKey").is(":checked")) {
+                        localStorage.setItem("adminPrivateKey", privateKey)
+                    } else {
+                        localStorage.removeItem("adminPrivateKey")
+                    }
+                    $("form").submit();
+                } catch (e) {
+                    console.log(e)
+                    Swal.fire(
+                        {
+                            title: 'Login failed',
+                            text: e.message,
+                            icon: 'error'
+                        }
+                    )
+                    event.preventDefault()
+                }
+            }
+        </script>
+    <?php } ?>
+<?php } else { ?>
 
 <?php if (!$setAdminPass) { ?>
     <?php if(empty($passwordHash)) { ?>
@@ -377,6 +485,8 @@ require_once __DIR__. '/../common/include/top.php';
 
     <?php } ?>
 <?php } ?>
+
+<?php }  ?>
 
 <?php if ($login) { ?>
 

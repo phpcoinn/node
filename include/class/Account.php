@@ -457,4 +457,70 @@ class Account
 
 	}
 
+    static function getMasternode($address) {
+        global $db;
+        $sql="select a.id, m.height, t.src, t.dst, t.message, t.val as collateral, t.block
+            from accounts a
+            join transactions t on (t.type = :mncreate and (t.dst = a.id or t.message = a.id))
+            join masternode m  on (m.height = t.height and m.id = a.id)
+            where a.id = :address";
+        $res = $db->row($sql, [":address"=>$address, ":mncreate"=>TX_TYPE_MN_CREATE]);
+        return $res;
+    }
+
+    static function getMasternodeRewardAddress($address, $height = null) {
+        global $db;
+        $sql="select a.id, t.message, t.height, t.src, t.val as collateral, t.dst, m.id as masternode, m.public_key
+            from accounts a
+                     join transactions t on (t.type = :mncreate and t.dst = a.id)
+            join masternode m on (m.height = t.height and m.id = t.message)
+            where a.id= :address";
+        $params = [":address"=>$address, ":mncreate"=>TX_TYPE_MN_CREATE];
+        if(!empty($height)) {
+            $sql.=" and t.height <= :height";
+            $params[":height"]=$height;
+        }
+        $res = $db->run($sql, $params);
+        return $res;
+    }
+
+    static function getMasternodes($address) {
+        global $db;
+        $sql="select masternodes.*, a.balance as masternode_balance
+            from (select t.val                                                          as collateral,
+             t.dst                                                          as reward_address,
+             case when t.message = 'mncreate' then t.dst else t.message end as masternode_address
+        from accounts a
+               join transactions t on (t.type = :mncreate and t.src = a.id)
+        where a.id = :address
+        and exists (select 1 from masternode m where m.height = t.height)) as masternodes
+         join accounts a on (masternodes.reward_address = a.id)";
+        return $db->run($sql, [":mncreate" => TX_TYPE_MN_CREATE, ":address"=>$address]);
+    }
+
+    static function getAddressInfo($address) {
+        $out['address']=$address;
+        $masternode=Account::getMasternode($address);
+        $masternodes=[$masternode];
+        if(empty($masternode)) {
+            $masternodes=Account::getMasternodeRewardAddress($address);
+            if(!empty($masternodes)) {
+                $type = "masternode_reward";
+            } else {
+                $type = "no_masternode";
+            }
+        } else {
+            if($masternode['dst']==$address) {
+                $type = "hot_masternode";
+            } else if ($masternode['message']==$address) {
+                $type = "cold_masternode";
+            } else {
+                $type = "unknown";
+            }
+        }
+        $out['type']=$type;
+        $out['masternodes']=$masternodes;
+        return $out;
+    }
+
 }

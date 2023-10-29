@@ -1016,7 +1016,6 @@ class Util
 	}
 
 	static function getMorePeers() {
-
 		global $_config;
         _log("Sync: Util: get-more-peers", 3);
         $peers=Peer::getPeers();
@@ -1336,14 +1335,171 @@ class Util
 		global $db;
 		_log("start recalculateMasternodes");
 		$db->beginTransaction();
+        try {
+
+            $sql="select * from transactions t where t.type = :mncreate or t.type=:mnremove order by t.height, t.id";
+            $txs = $db->run($sql, [":mncreate"=>TX_TYPE_MN_CREATE, ":mnremove"=>TX_TYPE_MN_REMOVE]);
+
+            $calc_masternodes = [];
+            foreach($txs as $tx) {
+                if($tx['type']==TX_TYPE_MN_CREATE) {
+                    if($tx['message']=="mncreate" || $tx['message']=="") {
+                        $masternode['id'] = $tx['dst'];
+                        $masternode['height'] = $tx['height'];
+                        $masternode['collateral'] = $tx['val'];
+                    } else if (Account::valid($tx['message'])) {
+                        $masternode['id']=$tx['message'];
+                        $masternode['height']=$tx['height'];
+                        $masternode['collateral']=$tx['val'];
+                    } else {
+                        throw new Error("invalid tx ".$tx['id']);
+                    }
+                    $calc_masternodes[$masternode['id']] = $masternode;
+                } else if ($tx['type']==TX_TYPE_MN_REMOVE) {
+                    if($tx['message']=="mnremove" || $tx['message']=="") {
+                        $masternode['id']=$tx['src'];
+                    } else if (Account::valid($tx['message'])) {
+                        $masternode['id']=$tx['message'];
+                    } else {
+                        throw new Error("invalid tx ".$tx['id']);
+                    }
+                    if(!isset($calc_masternodes[$masternode['id']])) {
+                        throw new Error("can not find masternode " . $masternode['id']);
+                    }
+                    unset ($calc_masternodes[$masternode['id']]);
+                }
+            }
+
+            foreach($calc_masternodes as &$mn) {
+                $public_key = Account::publicKey($mn['id']);
+                if(!$public_key) {
+                    throw new Error("not found public key fro masternode ".$mn['id']);
+                }
+                $mn['public_key']=$public_key;
+                $sql="select max(b.height) from blocks b where b.masternode = :mn_address";
+                $height = $db->single($sql, [":mn_address"=>$mn['id']]);
+                $mn['win_height']=$height;
+                $mn['collateral']=floatval($mn['collateral']);
+            }
+
+            $sql = "select * from masternode";
+            $mns = $db->run($sql);
+
+            $calc_mn_count=count($calc_masternodes);
+            $real_mn_count=count($mns);
+            _log("calc_mn_count=$calc_mn_count real_mn_count=$real_mn_count");
+
+            $mns_map = [];
+            $recreate = false;
+            unset($mn);
+            foreach ($mns as $mn) {
+                $id = $mn['id'];
+                if(!isset($calc_masternodes[$id])) {
+                    _log("missing masternode ".$id);
+                    $recreate = true;
+                    break;
+                }
+                $calc_masternode = $calc_masternodes[$id];
+                if($calc_masternode['public_key']!=$mn['public_key']) {
+                    _log("different public_key for masternode ".$id);
+                    $recreate = true;
+                    break;
+                }
+                if($calc_masternode['win_height']!=$mn['win_height']) {
+                    _log("different win_height for masternode ".$id);
+                    $recreate = true;
+                    break;
+                }
+                if($calc_masternode['height']!=$mn['height']) {
+                    _log("different height for masternode ".$id);
+                    $recreate = true;
+                    break;
+                }
+                if($calc_masternode['collateral']!=$mn['collateral']) {
+                    _log("different collateral for masternode ".$id);
+                    $recreate = true;
+                    break;
+                }
+                $mns_map[$id]=$mn;
+            }
+
+            foreach ($calc_masternodes as $calc_masternode) {
+                $id = $calc_masternode['id'];
+                if(!isset($mns_map[$id])) {
+                    _log("missing masternode ".$id);
+                    $recreate = true;
+                    break;
+                }
+                $mn = $mns_map[$id];
+                if($calc_masternode['public_key']!=$mn['public_key']) {
+                    _log("different public_key for masternode ".$id);
+                    $recreate = true;
+                    break;
+                }
+                if($calc_masternode['win_height']!=$mn['win_height']) {
+                    _log("different win_height for masternode ".$id);
+                    $recreate = true;
+                    break;
+                }
+                if($calc_masternode['height']!=$mn['height']) {
+                    _log("different height for masternode ".$id);
+                    $recreate = true;
+                    break;
+                }
+                if($calc_masternode['collateral']!=$mn['collateral']) {
+                    _log("different collateral for masternode ".$id);
+                    $recreate = true;
+                    break;
+                }
+            }
+
+            if($recreate) {
+                _log("Need to recreate masternodes");
+                $db->exec("delete from masternode");
+                foreach ($calc_masternodes as $calc_mn) {
+                    $mn1=new Masternode();
+                    $mn1->public_key=$calc_mn['public_key'];
+                    $mn1->height=$calc_mn['height'];
+                    $mn1->win_height=$calc_mn['win_height'];
+                    $mn1->id=$calc_mn['id'];
+                    $mn1->verified=0;
+                    $mn1->collateral=$calc_mn['collateral'];
+                    $res = $mn1->add();
+                    if(!$res) {
+                        throw new Error("Can not add masternode ".$calc_mn['id']);
+                    }
+                }
+                _log("Masternodes recreated");
+            } else {
+                _log("No need to recreate masternodes");
+            }
+
+            _log("finish recalculateMasternodes");
+            $db->commit();
+        } catch (Error $e) {
+            _log("error recalculateMasternodes ". $e->getMessage());
+            $db->rollBack();
+        }
+    }
+
+	static function recalculateMasternodesOld() {
+		global $db;
+		_log("start recalculateMasternodes");
+		$db->beginTransaction();
 
 		try {
 			$sql="select count(*) from (
-			select t.dst, count(t.id) as created,
-			       (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed
+                    select mn_created.mn_address, mn_created.dst, case when mn_created.mn_address = mn_created.dst then 'hot' else 'cold' end as mn_type,
+                    count(mn_created.id) as created,
+                    (select count(tr.id) from transactions tr where tr.src = mn_created.dst and tr.type = 3) as removed
+                    from (
+                        select case when t.message != 'mncreate' and t.message != '' then t.message else t.dst end as mn_address, t.id,
+                        t.dst, t.height
 			from transactions t where t.type = 2
-			group by t.dst
-			having created - removed > 0) as mnc";
+                        ) as mn_created
+                    group by mn_created.mn_address
+                    having created - removed > 0
+                ) as mnc";
 
 			$calc_mn_count = $db->single($sql);
 			$sql="select count(*) from masternode";
@@ -1353,31 +1509,39 @@ class Util
 
 			if($calc_mn_count != $real_mn_count) {
 				_log("Different number of masternodes - recreate");
-//			$db->exec("lock tables masternode write, transactions t write, transactions tr write, transactions ts write, transactions tc write, blocks b write, accounts a write;");
 				$db->exec("delete from masternode");
 				$db->exec("insert into masternode (public_key,height,win_height, id, verified, collateral)
-        	select public_key,height,win_height, id, 0, collateral from (
-             select t.dst as id, max(t.height) as height, count(t.id) as created,
-                    (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
-                    (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
-                    (select a.public_key from accounts a where a.id = t.dst) as public_key,
-                    (select tc.val from transactions tc where tc.dst = t.dst and tc.type = 2 and tc.height = max(t.height)) as collateral
+                            select (select a.public_key from accounts a where a.id = active_mn.mn_address) as public_key,
+                            active_mn.height, (select max(b.height) from blocks b where b.masternode = active_mn.mn_address)  as win_height,
+                            active_mn.mn_address as id, 0 as verified,
+                            (select tc.val from transactions tc where tc.dst = active_mn.dst and tc.type = 2 and tc.height = active_mn.height) as collateral
+                            from (
+                                select mn_created.mn_address, max(mn_created.height) as height, mn_created.dst, count(mn_created.id) as created,
+                                (select count(tr.id) from transactions tr where tr.src = mn_created.dst and tr.type = 3) as removed
+                                from (
+                                    select case when t.message != 'mncreate' and t.message != '' then t.message else t.dst end as mn_address,
+                                    t.id, t.dst, t.height
              from transactions t where t.type = 2
-             group by t.dst
+                                ) as mn_created
+                                group by mn_created.mn_address
              having created - removed > 0
-             ) as calc_mn");
-//			$db->exec("unlock tables;");
+                            ) as active_mn");
 			} else {
-				$sql="select calc_mn.*, m.*
+				$sql="select calc_mn.*, m.* from (
+                        select active_mn.height, (select max(b.height) from blocks b where b.masternode = active_mn.mn_address) as win_height,
+                        active_mn.mn_address as id,
+                        (select tc.val from transactions tc where tc.dst = active_mn.dst and tc.type = 2 and tc.height = active_mn.height) as collateral
+                        from (
+                            select mn_created.mn_address, max(mn_created.height) as height, mn_created.dst, count(mn_created.id) as created,
+                            (select count(tr.id) from transactions tr where tr.src = mn_created.dst and tr.type = 3) as removed
 				from (
-				    select t.dst as id, max(t.height) as height, count(t.id) as created,
-				           (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
-				           (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
-				           (select a.public_key from accounts a where a.id = t.dst) as public_key,
-				           (select tc.val from transactions tc where tc.dst = t.dst and tc.type = 2 and tc.height = max(t.height)) as collateral
+                                select case when t.message != 'mncreate' and t.message != '' then t.message else t.dst end as mn_address,
+                                t.id, t.dst, t.height
 				    from transactions t where t.type = 2
-				    group by t.dst
+                            ) as mn_created
+                            group by mn_created.mn_address
 				    having created - removed > 0
+                        ) as active_mn
 				) as calc_mn
 				left join masternode m on (calc_mn.id = m.id)
 				where calc_mn.height <> m.height
@@ -1388,14 +1552,21 @@ class Util
 				_log("Check different rows = $diff_rows");
 				if($diff_rows > 0) {
 					$sql="update (
-				         select t.dst as id, max(t.height) as height, count(t.id) as created,
-				                (select count(tr.id) from transactions tr where tr.src = t.dst and tr.type = 3) as removed,
-				                (select max(b.height) from blocks b where b.masternode = t.dst) as win_height,
-				                (select a.public_key from accounts a where a.id = t.dst) as public_key,
-				                (select tc.val from transactions tc where tc.dst = t.dst and tc.type = 2 and tc.height = max(t.height)) as collateral
+                            select active_mn.height,
+                            (select max(b.height) from blocks b where b.masternode = active_mn.mn_address)  as win_height,
+                            active_mn.mn_address as id,
+                            (select tc.val from transactions tc where tc.dst = active_mn.dst and tc.type = 2 and tc.height = active_mn.height) as collateral
+                            from (
+                                select mn_created.mn_address, max(mn_created.height) as height, mn_created.dst, count(mn_created.id) as created,
+                                (select count(tr.id) from transactions tr where tr.src = mn_created.dst and tr.type = 3) as removed
+                                from (
+                                    select case when t.message != 'mncreate' and t.message != '' then t.message else t.dst end as mn_address,
+                                    t.id, t.dst, t.height
 				         from transactions t where t.type = 2
-				         group by t.dst
+                                ) as mn_created
+                                group by mn_created.mn_address
 				         having created - removed > 0
+                            ) as active_mn
 				     ) as calc_mn
 				         left join masternode m on (calc_mn.id = m.id)
 				set m.height = calc_mn.height, m.win_height = calc_mn.win_height, m.collateral = calc_mn.collateral

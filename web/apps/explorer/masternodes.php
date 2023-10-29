@@ -22,9 +22,10 @@ if(!empty($search['masternode'])) {
 }
 
 global $db, $_config;
-$sql = "select m.*, p.hostname
+$sql = "select m.*, p.hostname, case when m.id <> t.dst then 1 else 0 end as cold
 from masternode m
     left join peers p on (m.ip = p.ip)
+    left join transactions t on (m.height = t.height and t.type = 2 and (t.dst = m.id or t.message = m.id))
     $condition
     $sorting ";
 $masternodes = $db->run($sql, $params);
@@ -152,7 +153,12 @@ require_once __DIR__. '/../common/include/top.php';
                 foreach($masternodes as $masternode) { ?>
                 <tr class="table-<?php echo $masternode['row_class'] ?>">
                     <td><?php echo explorer_address_pubkey($masternode['public_key']) ?></td>
-                    <td><?php echo explorer_address_link($masternode['id']) ?></td>
+                    <td>
+                        <?php echo explorer_address_link($masternode['id']) ?>
+                        <?php if ($masternode['cold']) { ?>
+                            <span class="badge rounded-pill badge-soft-secondary font-size-12">Cold</span>
+                        <?php } ?>
+                    </td>
                     <td>
                         <span class="badge rounded-pill badge-soft-<?php echo $masternode['status_class'] ?> font-size-12"><?php echo $masternode['status'] ?></span>
                         <?php if ($masternode['local']) { ?>

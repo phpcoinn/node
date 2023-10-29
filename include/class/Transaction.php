@@ -114,7 +114,8 @@ class Transaction
 					if($res === false) {
 						throw new Exception("Update balance for reverse transaction failed");
 					}
-					$publicKey = Account::publicKey($tx->dst);
+                    $masternode = Masternode::getMasternodeAddress($tx->height, $tx);
+					$publicKey = Account::publicKey($masternode);
                     if($publicKey) {
                         $res = Masternode::delete($publicKey);
                         if(!$res) {
@@ -129,14 +130,37 @@ class Transaction
 					if($res === false) {
 						throw new Exception("Update balance for reverse transaction failed");
 					}
-					$height = Masternode::getMnCreateHeight($tx->publicKey);
-					if(!$height) {
+                    if($tx->msg == "mnremove") {
+                        $mn_address =  Account::getAddress($tx->publicKey);
+                    } else if (Account::valid($tx->msg)) {
+                        $mn_address = $tx->msg;
+                    }
+                    if(empty($mn_address)) {
+                        throw new Exception("Can not find masternode");
+                    }
+
+					$collateralTx = Masternode::getMnCreateTx($mn_address);
+                    if(!$collateralTx) {
+                        throw new Exception("Can not find tx for masternode crete");
+                    }
+                    $masternode = $collateralTx['dst'];
+                    if($collateralTx['height'] > MN_COLD_START_HEIGHT) {
+                        if($collateralTx['message']!="mncreate" && Account::valid($collateralTx['message'])) {
+                            $masternode = $collateralTx['message'];
+                        }
+                    }
+					if(!$collateralTx) {
 						throw new Exception("Can not find mn create tx height");
 					}
-					$res = Masternode::create($tx->publicKey, $height);
+                    if(!$masternode) {
+                        throw new Exception("Can not find masternode");
+                    }
+                    $publicKey = Account::publicKey($masternode);
+					$res = Masternode::create($publicKey, $collateralTx['height']);
 					if(!$res) {
 						throw new Exception("Can not reverse create masternode");
 					}
+                    $tx->add_mempool();
 				}
 
 				if ($type == TX_TYPE_SC_CREATE) {
@@ -189,6 +213,8 @@ class Transaction
 					throw new Exception("Delete transaction failed");
 				}
 			}
+
+
 			return true;
 		} catch (Exception $e) {
             $txerr = $e->getMessage();
@@ -427,9 +453,10 @@ class Transaction
 	public static function getTxStatByType($address, $type)
 	{
 		global $db;
-		$sql="select sum(t.val) as total, count(t.id) as tx_cnt from transactions t where t.dst = :address and t.type = 0
-            and t.message = :type
-			and exists (select 1 from blocks b where b.$type = t.dst)";
+		$sql="select sum(t.val) as total, count(t.id) as tx_cnt
+                from blocks b
+                join transactions t on b.id = t.block and t.type = 0 and t.message = :type
+                where b.$type = :address";
 		$res = $db->row($sql, [":address"=>$address, ":type"=>$type]);
 		return $res;
 	}
@@ -450,10 +477,10 @@ class Transaction
 		}
 
 		$res = $db->run(
-			"SELECT * FROM transactions t
-				WHERE t.dst = :address
-				  and t.message = :message
-				and exists (select 1 from blocks b where b.$type = t.dst)
+			"select t.*
+                from blocks b
+                         join transactions t on b.id = t.block and t.type = 0 and t.message = :message
+                where b.$type = :address
 				ORDER by t.height DESC LIMIT :offset, :limit", [":address"=>$address, ":offset"=>$offset, ":limit"=>$limit, ":message"=>$type]
 		);
 		return $res;
@@ -477,6 +504,26 @@ class Transaction
 		$data['total']['yearly']=$data['total']['monthly'] * 12;
 		return $data;
 	}
+
+    public static function getMasternodeRewardsStat($mn_address)
+    {
+        global $db;
+        $sql="select min(b.date) as min_date, max(b.date) as max_date, sum(t.val) as total
+            from blocks b
+            join transactions t on b.id = t.block and b.height = t.height and t.type = 0 and t.message = 'masternode'
+            where b.masternode = :address";
+        $data = [];
+        $row = $db->row($sql, [":address"=>$mn_address]);
+        $data['total']['start']=$row['min_date'];
+        $data['total']['start']=$row['max_date'];
+        $data['total']['elapsed']=$row['max_date'] - $row['min_date'];
+        $data['total']['days']=$data['total']['elapsed'] / 86400;
+        $data['total']['daily']=$row['total'] / $data['total']['days'];
+        $data['total']['weekly']=$data['total']['daily'] * 7;
+        $data['total']['monthly']=$data['total']['daily'] * 30;
+        $data['total']['yearly']=$data['total']['monthly'] * 12;
+        return $data;
+    }
 
 	public function add($block, $height, &$error = null)
 	{
@@ -544,7 +591,19 @@ class Transaction
 			}
 
 			if ($type == TX_TYPE_MN_CREATE) {
+                if($height >= MN_COLD_START_HEIGHT) {
+                    $msg = $this->msg;
+                    if(!empty($msg) && Account::valid($msg)) {
+                        $dstPublicKey = Account::publicKey($msg);
+                        if(!$dstPublicKey) {
+                            throw new Exception("Can not create masternode - address not verified");
+                        }
+                    } else {
+                        $dstPublicKey = Account::publicKey($this->dst);
+                    }
+                } else {
 				$dstPublicKey = Account::publicKey($this->dst);
+                }
 				$res = Masternode::create($dstPublicKey, $height);
 				if(!$res) {
 					throw new Exception("Can not create masternode");
@@ -552,6 +611,7 @@ class Transaction
 			}
 
 			if ($type == TX_TYPE_MN_REMOVE) {
+
 				$res = true;
 				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
 				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
@@ -559,12 +619,31 @@ class Transaction
 					throw new Exception("Error updating balance for transaction ".$this->id);
 				}
 				$mn = Masternode::get($this->publicKey);
+                $mnPubKey=$this->publicKey;
 				if(!$mn) {
-					throw new Exception("Masternode with public key {$this->publicKey} does not exists");
+                    if($height > MN_COLD_START_HEIGHT) {
+                        $src = $this->src;
+                        $masternodes=Account::getMasternodeRewardAddress($src);
+                        if(!$masternodes) {
+                            throw new Exception("Masternode with public key $mnPubKey does not exists");
+                        }
+                        foreach ($masternodes as $masternode) {
+                            if($masternode['masternode'] == $this->msg) {
+                                $mn = $masternode;
+                                break;
 				}
-				$res = Masternode::delete($this->publicKey);
+                        }
+				        if(!$mn) {
+                            throw new Exception("Masternode with public key $mnPubKey does not exists");
+                        }
+                        $mnPubKey = $mn['public_key'];
+                    } else {
+					    throw new Exception("Masternode with public key $mnPubKey does not exists");
+				    }
+				}
+				$res = Masternode::delete($mnPubKey);
 				if(!$res) {
-					throw new Exception("Can not delete masternode with public key: ".$this->publicKey);
+					throw new Exception("Can not delete masternode with public key: ".$mnPubKey);
 				}
 			}
 

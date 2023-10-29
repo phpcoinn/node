@@ -592,7 +592,7 @@ class Api
 		if(!$public_key) {
 			api_err("Invalid address");
 		}
-		api_echo(Masternode::getMasternodesForPublicKey($public_key));
+		api_echo(Account::getMasternodes($address));
 	}
 
     /**
@@ -897,4 +897,135 @@ class Api
 		}
 		api_echo(Block::getMasternodeCollateral($height));
 	}
+
+    /**
+     * @api {get} /api.php?q=getAddressInfo  getAddressInfo
+     * @apiName getAddressInfo
+     * @apiGroup API
+     * @apiDescription Get information about specified address
+     *
+     * @apiParam {string} address Address to check
+     *
+     * @apiSuccess {string} type Type of address: masternode_reward,no_masternode,cold_masternode,unknown
+     * @apiSuccess {string} [id] Masternode address
+     * @apiSuccess {numeric} [height] Height at which masternode is created
+     * @apiSuccess {string} [src] Create masternode source
+     * @apiSuccess {string} [dst] Create masternode destination
+     * @apiSuccess {string} [message] Create masternode message
+     * @apiSuccess {numeric} [collateral] Create masternode collateral
+     * @apiSuccess {string} [block] Create masternode block
+     */
+    static function getAddressInfo($data){
+        $address = $data['address'];
+        if(empty($address)) {
+            api_err("Empty address");
+        }
+        $out = Account::getAddressInfo($address);
+        api_echo($out);
+    }
+
+    static function generateMasternodeRemoveTx($data) {
+        $address=$data['address'];
+        if(empty($address)) {
+            api_err("Empty wallet address");
+        }
+        if (!Account::valid($address)) {
+            api_err("Invalid wallet address");
+        }
+        $payout_address = $data['payout_address'];
+        if(empty($payout_address)) {
+            api_err("Empty payout address");
+        }
+        if (!Account::valid($payout_address)) {
+            api_err("Invalid payout address");
+        }
+        $addressInfo = Account::getAddressInfo($address);
+        if($addressInfo['type']!="masternode_reward" && $addressInfo['type']!="hot_masternode") {
+            api_err("Invalid type of wallet address");
+        }
+        if($addressInfo['type'] == "hot_masternode") {
+            $masternode=$addressInfo['masternodes'][0];
+            $message="mnremove";
+        } else if ($addressInfo['type'] == "masternode_reward") {
+
+            if(count($addressInfo['masternodes'])==0) {
+                api_err("No masternodes on address");
+            }
+
+            if(count($addressInfo['masternodes'])==1) {
+                $masternode = $addressInfo['masternodes'][0];
+                $message=$masternode['masternode'];
+            } else {
+                if(!isset($data['mn_address'])) {
+                    api_err("Empty masternodes address");
+                }
+                $mn_address = $data['mn_address'];
+                $valid = Account::valid($mn_address);
+                if(!$valid) {
+                    api_err('Invalid masternode address');
+                }
+                $masternode = false;
+                foreach($addressInfo['masternodes'] as $mn) {
+                    if($mn['masternode'] == $mn_address) {
+                        $masternode = $mn;
+                        break;
+                    }
+                }
+                if(!$masternode) {
+                    api_err('Not found masternode address');
+                }
+                $message=$masternode['masternode'];
+            }
+
+        }
+        $collateral = $masternode['collateral'];
+        $transaction = [
+            "val"=>$collateral,
+            "fee"=>0,
+            "dst"=>$payout_address,
+            "src"=>$address,
+            "msg"=>$message,
+            "type"=>TX_TYPE_MN_REMOVE,
+        ];
+        api_echo($transaction);
+    }
+
+    static function generateMasternodeCreateTx($data) {
+        $address=$data['address'];
+        if(empty($address)) {
+            api_err("Empty wallet address");
+        }
+        if (!Account::valid($address)) {
+            api_err("Invalid wallet address");
+        }
+        $mn_address=$data['mn_address'];
+        if(empty($mn_address)) {
+            api_err("Missing masternode address");
+        }
+        if (!Account::valid($mn_address)) {
+            api_err("Invalid masternode address");
+        }
+        $height = Block::getHeight();
+        if(isset($data['reward_address']) && $height >= MN_COLD_START_HEIGHT) {
+            $reward_address = $data['reward_address'];
+            if(!Account::valid($reward_address)) {
+                api_err("Invalid reward address");
+            }
+            $dst = $reward_address;
+            $msg = $mn_address;
+        } else {
+            $dst = $mn_address;
+            $msg = "mncreate";
+        }
+        $collateral = Block::getMasternodeCollateral($height);
+        $transaction = [
+            "val"=>$collateral,
+            "fee"=>0,
+            "dst"=>$dst,
+            "src"=>$address,
+            "msg"=>$msg,
+            "type"=>TX_TYPE_MN_CREATE,
+        ];
+        api_echo($transaction);
+    }
 }

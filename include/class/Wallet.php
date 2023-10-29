@@ -150,7 +150,7 @@ class Wallet
 				$this->loginLink();
 				break;
 			case "masternode-create":
-				$this->createMasternode(@$this->arg2);
+				$this->createMasternode(@$this->arg2, @$this->arg3);
 				break;
 			case "masternode-remove":
 				$this->removeMasternode(@$this->arg2, @$this->arg3);
@@ -410,42 +410,46 @@ class Wallet
 		);
 	}
 
-	function createMasternode($mnAddress) {
-		if(empty($mnAddress)) {
-			echo "Missing destination address".PHP_EOL;
-			exit;
+	function createMasternode($mnAddress, $rewardAddress) {
+
+        $data['address']=$this->address;
+        $data['mn_address']=$mnAddress;
+        if(!empty($rewardAddress)) {
+            $data['reward_address']=$rewardAddress;
 		}
-
-		$res = $this->wallet_peer_post("/api.php?q=getCollateral");
+        $debug = "";
+//        $debug="&XDEBUG_SESSION_START=PHPSTORM";
+        $res = $this->wallet_peer_post("/api.php?q=generateMasternodeCreateTx".$debug, $data);
 		$this->checkApiResponse($res);
-		$collateral = $res['data'];
-		$date=time();
-		$msg = "mncreate";
-		$tx = new Transaction($this->public_key, $mnAddress, $collateral, TX_TYPE_MN_CREATE, $date, $msg);
-		$signature = $tx->sign($this->private_key);
+        $transaction = $res['data'];
 
-		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
-			array("dst" => $mnAddress, "val" => $collateral, "fee"=>0,  "signature" => $signature,
-				"public_key" => $this->public_key, "type" => TX_TYPE_MN_CREATE,
-				"message" => $msg, "date" => $date));
+		$date=time();
+        $tx = new Transaction($this->public_key, $transaction['dst'], $transaction['val'], TX_TYPE_MN_CREATE, $date, $transaction['msg']);
+        $tx->sign($this->private_key);
+
+        $res = $this->wallet_peer_post("/api.php?q=sendTransaction".$debug, ["tx"=>base64_encode(json_encode($tx->toArray()))]);
 		$this->checkApiResponse($res);
 		echo "Transaction created: ".$res['data'].PHP_EOL;
 	}
 
-	function removeMasternode($payoutAddress) {
-		$mn_address = Account::getAddress($this->public_key);
-		$res = $this->wallet_peer_post("/api.php?q=getMasternode" , ["address"=>$mn_address]);
-		$this->checkApiResponse($res);
-		$collateral = $res['data']['collateral'];
-		$date=time();
-		$msg = "mnremove";
-		$tx = new Transaction($this->public_key, $payoutAddress, $collateral, TX_TYPE_MN_REMOVE, $date, $msg);
-		$signature = $tx->sign($this->private_key);
+	function removeMasternode($payoutAddress, $mnAddress=null) {
 
-		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
-			array("dst" => $payoutAddress, "val" => $collateral, "fee"=>0,  "signature" => $signature,
-				"public_key" => $this->public_key, "type" => TX_TYPE_MN_REMOVE,
-				"message" => $msg, "date" => $date));
+        $data['address']=$this->address;
+        $data['payout_address']=$payoutAddress;
+        if(!empty($mnAddress)) {
+            $data['mn_address']=$mnAddress;
+        }
+        $debug = "";
+        //$debug="&XDEBUG_SESSION_START=PHPSTORM";
+        $res = $this->wallet_peer_post("/api.php?q=generateMasternodeRemoveTx&$debug", $data);
+		$this->checkApiResponse($res);
+        $transaction = $res['data'];
+
+		$date=time();
+		$tx = new Transaction($this->public_key, $payoutAddress, $transaction['val'], TX_TYPE_MN_REMOVE, $date, $transaction['msg']);
+		$tx->sign($this->private_key);
+
+		$res = $this->wallet_peer_post("/api.php?q=sendTransaction", ["tx"=>base64_encode(json_encode($tx->toArray()))]);
 		$this->checkApiResponse($res);
 		echo "Transaction created: ".$res['data'].PHP_EOL;
 	}
@@ -600,8 +604,8 @@ transactions                    show the latest transactions
 transaction <id>                shows data about a specific transaction
 send <address> <value> <msg>    sends a transaction (message optional)
 login-link                      generate login link
-masternode-create <address>     create masternode with address
-masternode-remove <payoutaddress>    remove masternode with address
+masternode-create <address> <reward_address>                        create masternode with address
+masternode-remove <payoutaddress>  <address>                        remove masternode with address
 sign <message>                  sign message with wallet private key
 smart-contract-create <address> <file> <amount> <method> <params>	create smart contract
 smart-contract-exec <address> <amount> <method> <params> 			execute smart contract method
