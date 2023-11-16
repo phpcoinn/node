@@ -59,6 +59,8 @@ class Block
 		$data['is_generator']=$db->single($sql, [":generator"=>$address]) == 1;
 		$sql="select 1 from blocks b where b.miner = :miner limit 1";
 		$data['is_miner']=$db->single($sql, [":miner"=>$address]) == 1;
+        $sql="select 1 from transactions t where t.dst = :address and t.type = 0 and t.message = 'stake' limit 1";
+        $data['is_stake']=$db->single($sql, [":address"=>$address]) == 1;
 		return $data;
 	}
 

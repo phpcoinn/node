@@ -73,6 +73,11 @@ require_once __DIR__. '/../common/include/top.php';
                     <span class="badge rounded-pill bg-info font-size-12">Masternode</span>
                 </a>
 	        <?php } ?>
+	        <?php if($addressTypes['is_stake']) { ?>
+                <a href="/apps/explorer/address_info.php?address=<?php echo $address ?>&type=stake">
+                    <span class="badge rounded-pill bg-pink font-size-12">Stake</span>
+                </a>
+	        <?php } ?>
         </td>
     </tr>
     <?php if( NETWORK == "mainnet" && !empty($label)) { ?>
