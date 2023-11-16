@@ -4,6 +4,8 @@ require_once ROOT. '/web/apps/explorer/include/functions.php';
 define("PAGE", true);
 define("APP_NAME", "Explorer");
 
+global $db;
+
 if(isset($_GET['address'])) {
 	$address = $_GET['address'];
 }
@@ -17,7 +19,7 @@ if(isset($_GET['type'])) {
 	$type = $_GET['type'];
 }
 
-if(!in_array($type, ["generator", "miner", "masternode"])) {
+if(!in_array($type, ["generator", "miner", "masternode","stake"])) {
 	header("location: /apps/explorer");
 	exit;
 }
@@ -33,14 +35,66 @@ $addressStat = Transaction::getAddressStat($address);
 $public_key = Account::publicKey($address);
 $balance = Account::pendingBalance($address);
 
-$txStat = Transaction::getTxStatByType($address, $type);
+if(in_array($type, ["generator", "miner", "masternode"])) {
+    $txStat = Transaction::getTxStatByType($address, $type);
+    $dm=get_data_model($txStat['tx_cnt'],
+        '/apps/explorer/address_info.php?address='.$address.'&type='.$type);
+    $transactions = Transaction::getByAddressType($address, $type,$dm);
+    $rewardStat = Transaction::getRewardsStat($address, $type);
+} else {
+    //stake
+    $sql="select s2.*, s2.total / s2.days as daily, 30*s2.total / s2.days as monthly,
+       100 * 30*s2.total / s2.days / s2.start_balance as roi
+     from (select stake_stat.*, stake_stat.balance - stake_stat.total as start_balance, stake_stat.diff / (1440 * 60) as days
+          from (select max(t.date) - min(t.date)                                                            as diff,
+                       count(t.id)                                                                          as tx_cnt,
+                       sum(t.val)                                                                           as total,
+                       (select a.balance from accounts a where a.id = '$address') as balance,
+                       (max(height) - min(height)) / count(t.id) as avg_maturity
+                from transactions t
+                where t.dst = '$address'
+                  and t.message = 'stake'
+                  and t.type = 0
+                  and t.height > (select max(t.height)
+                                  from transactions t
+                                  where (t.src = '$address'
+                                      or t.dst = '$address')
+                                    and (t.message != 'stake' or t.type != 0))
+                order by t.height desc)
+                   as stake_stat) as s2;";
+    $txStat=$db->row($sql);
 
-$dm=get_data_model($txStat['tx_cnt'],
-	'/apps/explorer/address_info.php?address='.$address.'&type='.$type);
+    $dm=get_data_model($txStat['tx_cnt'],
+        '/apps/explorer/address_info.php?address='.$address.'&type='.$type);
+    if(is_array($dm)) {
+        $page = $dm['page'];
+        $limit = $dm['limit'];
+        $offset = ($page-1)*$limit;
+    } else {
+        $limit = intval($dm);
+        if ($limit > 100 || $limit < 1) {
+            $limit = 100;
+        }
+    }
+    $sql="select * from transactions t
+        where t.dst = '$address'
+          and t.message = 'stake'
+          and t.type = 0
+          and t.height > (select max(t.height)
+                          from transactions t
+                          where (t.src = '$address'
+                              or t.dst = '$address')
+                            and (t.message != 'stake' or t.type != 0))
+        order by t.height desc limit $offset, $limit";
+    $transactions=$db->run($sql);
+    $rewardStat['total']['daily']=$txStat['daily'];
+    $rewardStat['total']['weekly']=$txStat['daily']*7;
+    $rewardStat['total']['monthly']=$txStat['daily']*30;
+    $rewardStat['total']['yearly']=$txStat['monthly']*12;
+}
 
-$transactions = Transaction::getByAddressType($address, $type,$dm);
 
-$rewardStat = Transaction::getRewardsStat($address, $type);
+
 
 
 global $_config, $db;
@@ -92,6 +146,11 @@ require_once __DIR__. '/../common/include/top.php';
 	        <?php if($addressTypes['is_masternode']) { ?>
                 <a href="/apps/explorer/address_info.php?address=<?php echo $address ?>&type=masternode">
                     <span class="badge rounded-pill bg-info font-size-12">Masternode</span>
+                </a>
+	        <?php } ?>
+	        <?php if($addressTypes['is_stake']) { ?>
+                <a href="/apps/explorer/address_info.php?address=<?php echo $address ?>&type=stake">
+                    <span class="badge rounded-pill bg-pink font-size-12">Stake</span>
                 </a>
 	        <?php } ?>
         </td>
@@ -212,6 +271,27 @@ require_once __DIR__. '/../common/include/top.php';
         <td><?php echo num($txStat['total'] / $txStat['tx_cnt']) ?></td>
     </tr>
 </table>
+
+<?php if($type=="stake") { ?>
+    <table class="table table-sm table-striped">
+        <tr>
+            <td width="20%">Stake duration</td>
+            <td><?php echo round($txStat['days'],2) ?> day</td>
+        </tr>
+        <tr>
+            <td>Start balance:</td>
+            <td><?php echo $txStat['start_balance'] ?></td>
+        </tr>
+        <tr>
+            <td>Monhly Roi:</td>
+            <td><?php echo round($txStat['roi'],2) ?> %</td>
+        </tr>
+        <tr>
+            <td>Average maturity:</td>
+            <td><?php echo round($txStat['avg_maturity']) ?></td>
+        </tr>
+    </table>
+<?php } ?>
 
 <div class="row">
     <div class="col">
