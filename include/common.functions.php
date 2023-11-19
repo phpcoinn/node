@@ -135,3 +135,20 @@ function hex2coin($hex)
 	$data = hex2bin($hex);
 	return base58_encode($data);
 }
+
+function valid($address)
+{
+    $addressBin=base58_decode($address);
+    $addressHex=bin2hex($addressBin);
+    $addressChecksum=substr($addressHex, -8);
+    $baseAddress = substr($addressHex, 0, -8);
+    if(substr($baseAddress, 0, 2) != CHAIN_PREFIX) {
+        return false;
+    }
+    $checksumCalc1=hash('sha256', $baseAddress);
+    $checksumCalc2=hash('sha256', $checksumCalc1);
+    $checksumCalc3=hash('sha256', $checksumCalc2);
+    $checksum=substr($checksumCalc3, 0, 8);
+    $valid = $addressChecksum == $checksum;
+    return $valid;
+}

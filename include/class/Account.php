@@ -393,6 +393,18 @@ class Account
 		return num($res);
 	}
 
+    public static function getBalances($addresses) {
+        global $db;
+        $params = [];
+        foreach ($addresses as $index=>$address) {
+            $name=":p".$index;
+            $params[$name]=$address;
+        }
+        $in_params=implode(",", array_keys($params));
+        $sql="select a.id, a.balance from accounts a where a.id in ($in_params)";
+        return $db->run($sql, $params);
+    }
+
 	public static function getBalanceByPublicKey($publicKey)
 	{
 		global $db;
