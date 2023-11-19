@@ -85,6 +85,19 @@ class Api
 		}
 	}
 
+    static function getBalances($data) {
+        $addresses = $data['addresses'];
+        if (empty($addresses)) {
+            api_err("Missing addresses");
+        }
+        $addresses=json_decode($addresses, true);
+        if (empty($addresses)) {
+            api_err("Empty addresses");
+        }
+        api_echo(Account::getBalances($addresses));
+    }
+
+
 	/**
 	 * @api {get} /api.php?q=getPendingBalance  getPendingBalance
 	 * @apiName getPendingBalance
