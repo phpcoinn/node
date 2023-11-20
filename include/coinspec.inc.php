@@ -10,7 +10,7 @@ const NETWORK = "mainnet";
 const CHAIN_ID = "00";
 const COIN_PORT = "";
 const VERSION = "1.2.3";
-const BUILD_VERSION = 351;
+const BUILD_VERSION = 352;
 const MIN_VERSION = "1.2.1";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -85,7 +85,7 @@ const FEATURE_APPS = false;
 const MAIN_DAPPS_ID = "PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3";
 const TOTAL_INITIAL_SUPPLY = 103200000;
 
-const STOP_CHAIN_HEIGHT = 300118;
+const STOP_CHAIN_HEIGHT = 301000;
 
 const MN_CREATE_IGNORE_HEIGHT = [30234];
 const MN_COLD_START_HEIGHT = 290000;
