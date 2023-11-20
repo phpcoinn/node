@@ -213,7 +213,7 @@ class Masternode extends Daemon
 
 	static function getMnCreateTx($mn_address) {
 		global $db;
-		$sql="select * from transactions where (dst =:dst or message =:dst2) and type=:type order by height desc limit 1";
+		$sql="select * from transactions where ((dst =:dst and message ='mncreate') or message =:dst2) and type=:type order by height desc limit 1";
 		$rows = $db->run($sql, [":dst"=>$mn_address, ":dst2"=>$mn_address, ":type"=>TX_TYPE_MN_CREATE]);
 		return $rows[0];
 	}
@@ -281,7 +281,7 @@ class Masternode extends Daemon
 		global $db;
 		$sql="select max(t.height)
 			from transactions t
-			where (t.dst = :id or t.message = :id2) and t.type = :create
+			where ((t.dst = :id and t.message='mncreate') or t.message = :id2) and t.type = :create
 			and t.height <= :height";
 		return $db->single($sql, [":height"=>$height, ":id"=>$id, ":id2"=>$id,  ":create"=> TX_TYPE_MN_CREATE]);
 
@@ -496,15 +496,15 @@ class Masternode extends Daemon
 		$id = Account::getAddress($publicKey);
 		$sql="select max(t.height) as create_height, count(t.id) as created
 			from transactions t
-			where t.type = :create and t.dst = :id";
-		$res = $db->row($sql, [":create"=>TX_TYPE_MN_CREATE, ":id"=>$id]);
+			where t.type = :create and ((t.dst = :id and t.message='mncreate') or t.message = :id1)";
+		$res = $db->row($sql, [":create"=>TX_TYPE_MN_CREATE, ":id"=>$id,  ":id1"=>$id]);
 		$created = $res['created'];
 		$create_height = $res['create_height'];
 
 		$sql="select max(t.height), count(t.id) as removed
-		from transactions t where t.public_key = :public_key and t.type = :remove;
+		from transactions t where ((t.src = :src and (t.message='mnremove' or t.message='')) or t.message = :src1) and t.type = :remove;
 		";
-		$res = $db->row($sql, [":remove"=>TX_TYPE_MN_REMOVE, ":public_key"=>$publicKey]);
+		$res = $db->row($sql, [":remove"=>TX_TYPE_MN_REMOVE, ":src"=>$id, ":src1"=>$id]);
 		$removed = $res['removed'];
 		if($created == $removed ) {
 			_log("Masternode: No new masternode to create created=$created removed=$removed");
@@ -520,12 +520,12 @@ class Masternode extends Daemon
 		}
 		$sql="select max(t.height) as create_height, count(t.id) as created
 			from transactions t
-			where t.type = :create and (t.dst = :id or t.message =:id2) and t.height <= :height";
+			where t.type = :create and ((t.dst = :id and t.message='mncreate') or t.message =:id2) and t.height <= :height";
 		$res = $db->row($sql, [":create"=>TX_TYPE_MN_CREATE, ":id"=>$id, ":id2"=>$id,":height"=>$height]);
 		$created = $res['created'];
 
 		$sql="select max(t.height), count(t.id) as removed
-		from transactions t where (t.src = :id or t.message =:id2) and t.type = :remove and t.height <=:height";
+		from transactions t where ((t.src = :id and (t.message='mnremove' or t.message='')) or t.message =:id2) and t.type = :remove and t.height <=:height";
 		$res = $db->row($sql, [":remove"=>TX_TYPE_MN_REMOVE, ":id"=>$id,  ":id2"=>$id, ":height"=>$height]);
 		$removed = $res['removed'];
 		return ($created>0 && $created != $removed);
@@ -1217,7 +1217,8 @@ class Masternode extends Daemon
 	static function checkCollateral($masternode, $height) {
 		global $db;
 		$collateral = Block::getMasternodeCollateral($height);
-		$sql="select * from transactions t use index(transactions_type_index) where (t.dst = :dst or t.message=:dst2) and t.type = :type and t.val =:collateral and t.height <= :height
+		$sql="select * from transactions t use index(transactions_type_index) 
+            where (t.dst = :dst or t.message=:dst2) and t.type = :type and t.val =:collateral and t.height <= :height
             order by t.height desc limit 1";
 		$row = $db->row($sql, [":dst"=>$masternode, ":dst2"=>$masternode, ":type"=>TX_TYPE_MN_CREATE, ":collateral"=>$collateral, ":height"=>$height]);
 		return $row;
