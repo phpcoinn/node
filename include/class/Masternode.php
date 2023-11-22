@@ -213,7 +213,7 @@ class Masternode extends Daemon
 
 	static function getMnCreateTx($mn_address) {
 		global $db;
-		$sql="select * from transactions where ((dst =:dst and message ='mncreate') or message =:dst2) and type=:type order by height desc limit 1";
+		$sql="select * from transactions where ((dst =:dst and (message ='mncreate' or message='')) or message =:dst2) and type=:type order by height desc limit 1";
 		$rows = $db->run($sql, [":dst"=>$mn_address, ":dst2"=>$mn_address, ":type"=>TX_TYPE_MN_CREATE]);
 		return $rows[0];
 	}
@@ -496,7 +496,7 @@ class Masternode extends Daemon
 		$id = Account::getAddress($publicKey);
 		$sql="select max(t.height) as create_height, count(t.id) as created
 			from transactions t
-			where t.type = :create and ((t.dst = :id and t.message='mncreate') or t.message = :id1)";
+			where t.type = :create and ((t.dst = :id and (t.message='mncreate' or t.message='')) or t.message = :id1)";
 		$res = $db->row($sql, [":create"=>TX_TYPE_MN_CREATE, ":id"=>$id,  ":id1"=>$id]);
 		$created = $res['created'];
 		$create_height = $res['create_height'];
@@ -520,7 +520,7 @@ class Masternode extends Daemon
 		}
 		$sql="select max(t.height) as create_height, count(t.id) as created
 			from transactions t
-			where t.type = :create and ((t.dst = :id and t.message='mncreate') or t.message =:id2) and t.height <= :height";
+			where t.type = :create and ((t.dst = :id and (t.message='mncreate' or t.message='')) or t.message =:id2) and t.height <= :height";
 		$res = $db->row($sql, [":create"=>TX_TYPE_MN_CREATE, ":id"=>$id, ":id2"=>$id,":height"=>$height]);
 		$created = $res['created'];
 
