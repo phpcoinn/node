@@ -191,7 +191,7 @@ require_once __DIR__. '/../common/include/top.php';
         t.dst
         from  masternode m 
         left join peers p on m.ip = p.ip
-        left join transactions t on m.height = t.height and t.type = 2 and (t.dst = m.id or t.message = m.id)
+        left join transactions t on m.height = t.height and t.type = 2 and ((t.dst = m.id and (t.message='mncreate' or t.message='')) or t.message = m.id)
            where m.id = :id";
     $mn = $db->row($sql, [":id" => $address]);
 
