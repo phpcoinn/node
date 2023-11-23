@@ -25,7 +25,7 @@ global $db, $_config;
 $sql = "select m.*, p.hostname, case when m.id <> t.dst then 1 else 0 end as cold
 from masternode m
     left join peers p on (m.ip = p.ip)
-    left join transactions t on (m.height = t.height and t.type = 2 and (t.dst = m.id or t.message = m.id))
+    left join transactions t on (m.height = t.height and t.type = 2 and ((t.dst = m.id and (t.message='mncreate' or t.message='')) or t.message = m.id))
     $condition
     $sorting ";
 $masternodes = $db->run($sql, $params);
