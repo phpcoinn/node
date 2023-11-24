@@ -1,7 +1,7 @@
 <?php
 
-function num($val) {
-	return number_format($val, COIN_DECIMALS, '.', '');
+function num($val, $dec = COIN_DECIMALS) {
+	return number_format($val, $dec, '.', '');
 }
 
 // sign data with private key
