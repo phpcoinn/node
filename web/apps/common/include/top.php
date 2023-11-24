@@ -12,7 +12,17 @@ $theme = ($theme == "dark" ? "dark" : "light");
 $menuPeers = Peer::findPeers(false, null);
 usort($menuPeers, function($p1, $p2) {
     return strcmp($p2['hostname'], $p1['hostname']);
-})
+});
+
+
+if(NETWORK == "mainnet") {
+    $res = file_get_contents("https://main1.phpcoin.net/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/api.php?q=coinInfo");
+    $res = json_decode($res, true);
+    $btcPrice = num($res['rate'], 8);
+    $usdPrice = num($res['usdPrice'], 6);
+}
+
+
 ?>
 <!doctype html>
 <html lang="en">

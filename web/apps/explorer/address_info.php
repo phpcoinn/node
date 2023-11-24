@@ -116,7 +116,7 @@ if($type=="generator") {
     }
 }
 
-
+global $usdPrice, $btcPrice;
 
 require_once __DIR__. '/../common/include/top.php';
 ?>
@@ -299,6 +299,8 @@ require_once __DIR__. '/../common/include/top.php';
             <div class="card-body p-3">
                 <h5>Daily</h5>
                 <h3><?php echo num($rewardStat['total']['daily']) ?></h3>
+                <h6><?php echo num($btcPrice * $rewardStat['total']['daily'],8) ?> ₿</h6>
+                <h6><?php echo num($usdPrice * $rewardStat['total']['daily'],4) ?> $</h6>
             </div>
         </div>
     </div>
@@ -307,6 +309,8 @@ require_once __DIR__. '/../common/include/top.php';
             <div class="card-body p-3">
                 <h5>Weekly</h5>
                 <h3><?php echo num($rewardStat['total']['weekly']) ?></h3>
+                <h6><?php echo num($btcPrice * $rewardStat['total']['weekly'],8) ?> ₿</h6>
+                <h6><?php echo num($usdPrice * $rewardStat['total']['weekly'],4) ?> $</h6>
             </div>
         </div>
     </div>
@@ -315,6 +319,8 @@ require_once __DIR__. '/../common/include/top.php';
             <div class="card-body p-3">
                 <h5>Monthly</h5>
                 <h3><?php echo num($rewardStat['total']['monthly']) ?></h3>
+                <h6><?php echo num($btcPrice * $rewardStat['total']['monthly'],8) ?> ₿</h6>
+                <h6><?php echo num($usdPrice * $rewardStat['total']['monthly'],4) ?> $</h6>
             </div>
         </div>
     </div>
@@ -323,6 +329,8 @@ require_once __DIR__. '/../common/include/top.php';
             <div class="card-body p-3">
                 <h5>Yearly</h5>
                 <h3><?php echo num($rewardStat['total']['yearly']) ?></h3>
+                <h6><?php echo num($btcPrice * $rewardStat['total']['yearly'],8) ?> ₿</h6>
+                <h6><?php echo num($usdPrice * $rewardStat['total']['yearly'],4) ?> $</h6>
             </div>
         </div>
     </div>
