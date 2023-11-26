@@ -119,9 +119,9 @@ class Sync extends Daemon
             $dir = ROOT."/cli";
             $cmd = "php $dir/util.php init-peers";
             Nodeutil::runSingleProcess($cmd);
-				$db->setConfig('node_score', 0);
+            $db->setConfig('node_score', 0);
             return false;
-			}
+		}
         return true;
 	}
 

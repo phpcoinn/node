@@ -413,78 +413,78 @@ require_once __DIR__. '/../common/include/top.php';
     <?php } ?>
 <?php } else { ?>
 
-<?php if (!$setAdminPass) { ?>
-    <?php if(empty($passwordHash)) { ?>
+    <?php if (!$setAdminPass) { ?>
+        <?php if(empty($passwordHash)) { ?>
 
-        <div class="row">
-            <div class="col-sm-4"></div>
-            <div class="col-sm-4">
-                <div class="card mt-5">
-                    <div class="card-header">
-                        <h4 class="card-title">Login</h4>
-                        <p class="card-title-desc">Please generate and save admin password</p>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="row">
-                            <div class="col-lg-12">
-                                <form method="post" action="">
-                                    <div class="mb-3">
-                                        <label class="form-label" for="password">Enter password:</label>
-                                        <input type="password" class="form-control" id="password" name="password" value="" required/>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label" for="password2">Repeat password:</label>
-                                        <input type="password" class="form-control" id="password2" name="password2" value="" required/>
-                                    </div>
-                                    <div class="mt-4">
-                                        <button type="submit" class="btn btn-primary w-md">Generate</button>
-                                    </div>
-                                    <input type="hidden" name="action" value="generate">
-                                </form>
+            <div class="row">
+                <div class="col-sm-4"></div>
+                <div class="col-sm-4">
+                    <div class="card mt-5">
+                        <div class="card-header">
+                            <h4 class="card-title">Login</h4>
+                            <p class="card-title-desc">Please generate and save admin password</p>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <form method="post" action="">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="password">Enter password:</label>
+                                            <input type="password" class="form-control" id="password" name="password" value="" required/>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label" for="password2">Repeat password:</label>
+                                            <input type="password" class="form-control" id="password2" name="password2" value="" required/>
+                                        </div>
+                                        <div class="mt-4">
+                                            <button type="submit" class="btn btn-primary w-md">Generate</button>
+                                        </div>
+                                        <input type="hidden" name="action" value="generate">
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <div class="col-sm-4"></div>
             </div>
-            <div class="col-sm-4"></div>
-        </div>
 
-    <?php } ?>
-<?php } else { ?>
-    <?php if (!$login) { ?>
+        <?php } ?>
+    <?php } else { ?>
+        <?php if (!$login) { ?>
 
-        <div class="row">
-            <div class="col-sm-4"></div>
-            <div class="col-sm-4">
-                <div class="card mt-5">
-                    <div class="card-header">
-                        <h4 class="card-title">Login</h4>
-                        <p class="card-title-desc">Login and administer your node server</p>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="row">
-                            <div class="col-lg-12">
-                                <form method="post" action="">
-                                    <div class="mb-3">
-                                        <label class="form-label" for="password">Node password</label>
-                                        <input type="text" class="d-none" id="username" value="<?php echo $_config['hostname'] ?>">
-                                        <input type="password" class="form-control" id="password" name="password" value="" required/>
-                                    </div>
-                                    <div class="mt-4">
-                                        <button type="submit" class="btn btn-primary w-md">Login</button>
-                                    </div>
-                                    <input type="hidden" name="action" value="login">
-                                </form>
+            <div class="row">
+                <div class="col-sm-4"></div>
+                <div class="col-sm-4">
+                    <div class="card mt-5">
+                        <div class="card-header">
+                            <h4 class="card-title">Login</h4>
+                            <p class="card-title-desc">Login and administer your node server</p>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <form method="post" action="">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="password">Node password</label>
+                                            <input type="text" class="d-none" id="username" value="<?php echo $_config['hostname'] ?>">
+                                            <input type="password" class="form-control" id="password" name="password" value="" required/>
+                                        </div>
+                                        <div class="mt-4">
+                                            <button type="submit" class="btn btn-primary w-md">Login</button>
+                                        </div>
+                                        <input type="hidden" name="action" value="login">
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <div class="col-sm-4"></div>
             </div>
-            <div class="col-sm-4"></div>
-        </div>
 
+        <?php } ?>
     <?php } ?>
-<?php } ?>
 
 <?php }  ?>
 

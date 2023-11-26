@@ -602,7 +602,7 @@ class Transaction
                         $dstPublicKey = Account::publicKey($this->dst);
                     }
                 } else {
-				$dstPublicKey = Account::publicKey($this->dst);
+                    $dstPublicKey = Account::publicKey($this->dst);
                 }
 				$res = Masternode::create($dstPublicKey, $height);
 				if(!$res) {
@@ -631,7 +631,7 @@ class Transaction
                             if($masternode['masternode'] == $this->msg) {
                                 $mn = $masternode;
                                 break;
-				}
+                            }
                         }
 				        if(!$mn) {
                             throw new Exception("Masternode with public key $mnPubKey does not exists");

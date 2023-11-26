@@ -1015,8 +1015,8 @@ class Util
 		}
 	}
 
-	static function getMorePeers() {
-		global $_config;
+    static function getMorePeers() {
+        global $_config;
         _log("Sync: Util: get-more-peers", 3);
         $peers=Peer::getPeers();
         $peered = [];
@@ -1331,10 +1331,10 @@ class Util
 		Dapps::downloadDapps($dapps_id);
 	}
 
-	static function recalculateMasternodes() {
-		global $db;
-		_log("start recalculateMasternodes");
-		$db->beginTransaction();
+    static function recalculateMasternodes() {
+        global $db;
+        _log("start recalculateMasternodes");
+        $db->beginTransaction();
         try {
 
             $sql="select * from transactions t where t.type = :mncreate or t.type=:mnremove order by t.height, t.id";
@@ -1495,7 +1495,7 @@ class Util
                     from (
                         select case when t.message != 'mncreate' and t.message != '' then t.message else t.dst end as mn_address, t.id,
                         t.dst, t.height
-			from transactions t where t.type = 2
+                        from transactions t where t.type=2
                         ) as mn_created
                     group by mn_created.mn_address
                     having created - removed > 0
@@ -1521,10 +1521,10 @@ class Util
                                 from (
                                     select case when t.message != 'mncreate' and t.message != '' then t.message else t.dst end as mn_address,
                                     t.id, t.dst, t.height
-             from transactions t where t.type = 2
+                                    from transactions t where t.type = 2
                                 ) as mn_created
                                 group by mn_created.mn_address
-             having created - removed > 0
+                                having created - removed > 0
                             ) as active_mn");
 			} else {
 				$sql="select calc_mn.*, m.* from (
@@ -1534,19 +1534,19 @@ class Util
                         from (
                             select mn_created.mn_address, max(mn_created.height) as height, mn_created.dst, count(mn_created.id) as created,
                             (select count(tr.id) from transactions tr where tr.src = mn_created.dst and tr.type = 3) as removed
-				from (
+                            from (
                                 select case when t.message != 'mncreate' and t.message != '' then t.message else t.dst end as mn_address,
                                 t.id, t.dst, t.height
-				    from transactions t where t.type = 2
+                                from transactions t where t.type = 2
                             ) as mn_created
                             group by mn_created.mn_address
-				    having created - removed > 0
+                            having created - removed > 0
                         ) as active_mn
-				) as calc_mn
-				left join masternode m on (calc_mn.id = m.id)
-				where calc_mn.height <> m.height
-				or calc_mn.win_height <> m.win_height
-				or calc_mn.collateral <> m.collateral";
+                    ) as calc_mn
+                    left join masternode m on (calc_mn.id = m.id)
+                    where calc_mn.height <> m.height
+                       or calc_mn.win_height <> m.win_height
+                       or calc_mn.collateral <> m.collateral";
 				$rows = $db->run($sql);
 				$diff_rows = count($rows);
 				_log("Check different rows = $diff_rows");
@@ -1562,17 +1562,17 @@ class Util
                                 from (
                                     select case when t.message != 'mncreate' and t.message != '' then t.message else t.dst end as mn_address,
                                     t.id, t.dst, t.height
-				         from transactions t where t.type = 2
+                                    from transactions t where t.type = 2
                                 ) as mn_created
                                 group by mn_created.mn_address
-				         having created - removed > 0
+                                having created - removed > 0
                             ) as active_mn
-				     ) as calc_mn
-				         left join masternode m on (calc_mn.id = m.id)
-				set m.height = calc_mn.height, m.win_height = calc_mn.win_height, m.collateral = calc_mn.collateral
-				where calc_mn.height <> m.height
-				   or calc_mn.win_height <> m.win_height
-				   or calc_mn.collateral <> m.collateral";
+                        ) as calc_mn
+                        left join masternode m on (calc_mn.id = m.id)
+                            set m.height = calc_mn.height, m.win_height = calc_mn.win_height, m.collateral = calc_mn.collateral
+                            where calc_mn.height <> m.height
+                       or calc_mn.win_height <> m.win_height
+                       or calc_mn.collateral <> m.collateral";
 					$db->run($sql);
 					_log("Updated masternodes");
 				} else {
@@ -1644,12 +1644,12 @@ class Util
 		foreach($peers as $peer) {
             $forker->fork(function($peer) use ($info){
                 _log("Ping peer ".$peer['hostname'], 5);
-			$url = $peer['hostname']. "/peer.php?q=ping";
+                $url = $peer['hostname']. "/peer.php?q=ping";
                 $res = peer_post($url, [], 30, $err, $info);
                 _log("Ping ".$peer['hostname']." response=$res err=$err", 5);
-			if($res !== "pong") {
+                if($res !== "pong") {
                     return [false, $peer['id']];
-			}
+                }
                 return [true, $peer['id']];
             }, $peer);
 		}

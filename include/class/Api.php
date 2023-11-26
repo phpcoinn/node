@@ -584,7 +584,7 @@ class Api
 	static function getMasternodes($data) {
 		api_echo(Masternode::getAll());
 	}
-	
+
     /**
      * @api            {get} /api.php?q=getMasternodesForAddress  getMasternodesForAddress
      * @apiName        getMasternodesForAddress

@@ -82,7 +82,7 @@ class PeerRequest
 			}
 		} else {
             _log("Peer with $ip not in list", 2);
-		}
+        }
 
 		if(!empty($info)) {
 			$hostname=$info['hostname'];
@@ -97,25 +97,25 @@ class PeerRequest
 			_logp("update peer info");
 			Peer::updatePeerInfo($ip, $info);
             if(!empty($peer['id'])) {
-            $peer['height']=$info['height'];
-			if($peer['blacklisted'] < time() && $peer['fails']>0) {
-				_logp("clear blacklist");
-				Peer::clearFails($peer['id']);
-				Peer::clearStuck($peer['id']);
-			}
-			_log("check peer height hostname=$hostname height=".$peer['height'], 5);
-			$current_height = Block::getHeight();
-			if(isset($peer['height']) && ($current_height - $peer['height'] > 100)) {
-				Peer::blacklist($peer['id'], "100 blocks behind");
-			}
-            if($peer['blacklisted'] > time() && $peer['blacklist_reason'] == "100 blocks behind") {
-                if($current_height - $peer['height'] < 10) {
-                _log("PBH: Check peer if is still blocks behind current_height = $current_height peer_height=".$peer['height']." blacklisted=".($peer['blacklisted'] > time()).
-                    " reason=".$peer['blacklist_reason']. " - remove form blacklist", 5);
-                    Peer::clearBlacklist($peer['id']);
+                $peer['height'] = $info['height'];
+                if ($peer['blacklisted'] < time() && $peer['fails'] > 0) {
+                    _logp("clear blacklist");
+                    Peer::clearFails($peer['id']);
+                    Peer::clearStuck($peer['id']);
+                }
+                _log("check peer height hostname=$hostname height=" . $peer['height'], 5);
+                $current_height = Block::getHeight();
+                if (isset($peer['height']) && ($current_height - $peer['height'] > 100)) {
+                    Peer::blacklist($peer['id'], "100 blocks behind");
+                }
+                if ($peer['blacklisted'] > time() && $peer['blacklist_reason'] == "100 blocks behind") {
+                    if ($current_height - $peer['height'] < 10) {
+                        _log("PBH: Check peer if is still blocks behind current_height = $current_height peer_height=" . $peer['height'] . " blacklisted=" . ($peer['blacklisted'] > time()) .
+                            " reason=" . $peer['blacklist_reason'] . " - remove form blacklist", 5);
+                        Peer::clearBlacklist($peer['id']);
+                    }
                 }
             }
-		}
 		}
 
 		_logf("finish process");
@@ -215,12 +215,12 @@ class PeerRequest
 			api_err("sync");
 		}
 
-		$hash = $tx->id;
-		// make sure it's not already in mempool
-		$res = Mempool::existsTx($hash);
-		if ($res != 0) {
-			api_err("The transaction is already in mempool");
-		}
+        $hash = $tx->id;
+        // make sure it's not already in mempool
+        $res = Mempool::existsTx($hash);
+        if ($res != 0) {
+            api_err("The transaction is already in mempool");
+        }
 
 		// validate transaction data
 		if (!$tx->check(null, false, $txerr)) {

@@ -848,8 +848,8 @@ class NodeSync
 				}
 			} else {
                 _log("checkBlocks: sync in process");
-			}
-			return false;
+            }
+            return false;
 		}
 	}
 

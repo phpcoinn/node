@@ -384,8 +384,8 @@ class Masternode extends Daemon
                             throw new Exception("Can not find cold masternode for address ".$transaction->src);
                         }
                     } else {
-					throw new Exception("Can not find masternode with public key ".$transaction->publicKey);
-				}
+					    throw new Exception("Can not find masternode with public key ".$transaction->publicKey);
+				    }
 				}
 				//masternode must run minimal number of blocks
 				$collateral_changed = $masternode['collateral'] != Block::getMasternodeCollateral($height);
@@ -440,7 +440,7 @@ class Masternode extends Daemon
                 $masternode_existing = false;
             }
 
-			if($masternode_existing) {
+            if($masternode_existing) {
 
                 $lockedCollateral = 0;
                 foreach($createTxs as $tx) {
@@ -460,8 +460,8 @@ class Masternode extends Daemon
                 $remain = $balance - $lockedCollateral - floatval($transaction->val) + $mempool_balance;
                 if(round($remain,8) < 0) {
                     throw new Exception("Can not spent more than collateral. Locked=$lockedCollateral Balance=$balance amount=".$transaction->val);
-				}
-			}
+                }
+            }
 
 			return true;
 		} catch (Exception $e) {
@@ -858,8 +858,8 @@ class Masternode extends Daemon
                             throw new Exception("Transaction dst invalid. Must be masternode collateral dst address");
                         }
                     } else {
-					throw new Exception("Transaction dst invalid. Must be masternode");
-				}
+					    throw new Exception("Transaction dst invalid. Must be masternode");
+				    }
 				}
 				$mnPublicKey = Account::publicKey($block->masternode);
 				if(!$mnPublicKey) {
@@ -968,14 +968,14 @@ class Masternode extends Daemon
 					if($tx->type == TX_TYPE_REWARD && $tx->msg == 'masternode' && $tx->publicKey == $block->publicKey) {
                         $collateralTx=Masternode::checkCollateral($block->masternode, $block->height);
                         if($collateralTx && $tx->dst == $collateralTx['dst']) {
-						$reward = Block::reward($block->height);
-						$mn_reward = $reward['masternode'];
-						if($mn_reward == $tx->val) {
-							$found = true;
-							break;
-						}
-					}
-				}
+                            $reward = Block::reward($block->height);
+                            $mn_reward = $reward['masternode'];
+                            if($mn_reward == $tx->val) {
+                                $found = true;
+                                break;
+                            }
+                        }
+                    }
 				}
 				if(!$found) {
 					throw new Exception("Masternode: not found reward transaction");
@@ -1092,7 +1092,7 @@ class Masternode extends Daemon
 				throw new Exception("Invalid masternode {$this->id} {$this->ip} win_height saved={$this->win_height} calculated=$win_height");
 			}
 
-			return true;
+            return true;
 
 		} catch(Exception $e) {
 			$error = $e->getMessage();
@@ -1109,15 +1109,15 @@ class Masternode extends Daemon
 			$masternode = Masternode::get($transaction->publicKey);
 			if($masternode) {
                 if(Masternode::isHot($masternode['id'], $height)) {
-				$balance = Account::getBalanceByPublicKey($transaction->publicKey);
-				$memspent = Mempool::getSourceMempoolBalance($transaction->src);
-				$collateral = Block::getMasternodeCollateral($height);
-				if(floatval($balance) - floatval($memspent) - $transaction->val < $collateral) {
-//					throw new Exception("Can not spent more than collateral. Balance=$balance memspent=$memspent amount=".$transaction->val);
-				}
-			}
-		}
-	}
+                    $balance = Account::getBalanceByPublicKey($transaction->publicKey);
+                    $memspent = Mempool::getSourceMempoolBalance($transaction->src);
+                    $collateral = Block::getMasternodeCollateral($height);
+                    if(floatval($balance) - floatval($memspent) - $transaction->val < $collateral) {
+    //					throw new Exception("Can not spent more than collateral. Balance=$balance memspent=$memspent amount=".$transaction->val);
+                    }
+                }
+            }
+        }
 	}
 
 	static function checkMasternode() {

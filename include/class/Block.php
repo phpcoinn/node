@@ -600,7 +600,7 @@ class Block
             _log("Lock delete blocks", 2);
             global $db;
             foreach ($blocks as $block) {
-            try {
+                try {
 
                     if(!$db->inTransaction()) {
                         $db->beginTransaction();
@@ -626,26 +626,26 @@ class Block
                         $t2=microtime(true);
                         $diff = round($t2-$t1, 2);
                         _log("Deleted block id=".$block['id']." height=".$block['height']." time=$diff");
-                }
+                    }
 
-                if($db->inTransaction()) {
-                    $db->commit();
-                }
+                    if($db->inTransaction()) {
+                        $db->commit();
+                    }
 
                     Masternode::resetVerified();
-                Cache::remove("current");
-                Cache::remove("mineInfo");
-                Cache::remove("height");
-                Cache::remove("current_export");
+                    Cache::remove("current");
+                    Cache::remove("mineInfo");
+                    Cache::remove("height");
+                    Cache::remove("current_export");
 
-            } catch (Exception $e) {
-                _log("Error locking delete blocks ".$e->getMessage());
-                if($db->inTransaction()) {
-                    $db->rollback();
+                } catch (Exception $e) {
+                    _log("Error locking delete blocks ".$e->getMessage());
+                    if($db->inTransaction()) {
+                        $db->rollback();
+                    }
+                    Config::setSync(0);
+                    return false;
                 }
-                Config::setSync(0);
-                return false;
-            }
             }
 
             Config::setSync(0);

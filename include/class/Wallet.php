@@ -416,20 +416,20 @@ class Wallet
         $data['mn_address']=$mnAddress;
         if(!empty($rewardAddress)) {
             $data['reward_address']=$rewardAddress;
-		}
+        }
         $debug = "";
 //        $debug="&XDEBUG_SESSION_START=PHPSTORM";
         $res = $this->wallet_peer_post("/api.php?q=generateMasternodeCreateTx".$debug, $data);
-		$this->checkApiResponse($res);
+        $this->checkApiResponse($res);
         $transaction = $res['data'];
 
-		$date=time();
+        $date=time();
         $tx = new Transaction($this->public_key, $transaction['dst'], $transaction['val'], TX_TYPE_MN_CREATE, $date, $transaction['msg']);
         $tx->sign($this->private_key);
 
         $res = $this->wallet_peer_post("/api.php?q=sendTransaction".$debug, ["tx"=>base64_encode(json_encode($tx->toArray()))]);
-		$this->checkApiResponse($res);
-		echo "Transaction created: ".$res['data'].PHP_EOL;
+        $this->checkApiResponse($res);
+        echo "Transaction created: ".$res['data'].PHP_EOL;
 	}
 
 	function removeMasternode($payoutAddress, $mnAddress=null) {
@@ -442,7 +442,7 @@ class Wallet
         $debug = "";
         //$debug="&XDEBUG_SESSION_START=PHPSTORM";
         $res = $this->wallet_peer_post("/api.php?q=generateMasternodeRemoveTx&$debug", $data);
-		$this->checkApiResponse($res);
+        $this->checkApiResponse($res);
         $transaction = $res['data'];
 
 		$date=time();
@@ -594,19 +594,19 @@ class Wallet
 
 Commands:
 
-balance                         prints the balance of the wallet 
-balance <address>               prints the balance of the specified address
-export                          prints the wallet data
-block                           show data about the current block
-encrypt                         encrypts the wallet
-decrypt                         decrypts the wallet
-transactions                    show the latest transactions
-transaction <id>                shows data about a specific transaction
-send <address> <value> <msg>    sends a transaction (message optional)
-login-link                      generate login link
+balance                                                             prints the balance of the wallet 
+balance <address>                                                   prints the balance of the specified address
+export                                                              prints the wallet data
+block                                                               show data about the current block
+encrypt                                                             encrypts the wallet
+decrypt                                                             decrypts the wallet
+transactions                                                        show the latest transactions
+transaction <id>                                                    shows data about a specific transaction
+send <address> <value> <msg>                                        sends a transaction (message optional)
+login-link                                                          generate login link
 masternode-create <address> <reward_address>                        create masternode with address
 masternode-remove <payoutaddress>  <address>                        remove masternode with address
-sign <message>                  sign message with wallet private key
+sign <message>                                                      sign message with wallet private key
 smart-contract-create <address> <file> <amount> <method> <params>	create smart contract
 smart-contract-exec <address> <amount> <method> <params> 			execute smart contract method
 smart-contract-send <address> <amount> <method> <params> 			transfer coins from smart contract
