@@ -459,11 +459,6 @@ class Block
 	        $balance = [];
 	        $mns = [];
 
-			$res = SmartContract::cleanState($this->height, $err);
-			if(!$res) {
-				throw new Exception("Error clear smart contract state: $err");
-			}
-
 	        foreach ($this->data as $x) {
 		        //validate the transaction
 		        $tx = Transaction::getFromArray($x);

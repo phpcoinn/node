@@ -138,6 +138,16 @@ class Nodeutil
 		];
 	}
 	
+	static function calculateSmartContractsHash() {
+		global $db;
+        $res=$db->run("SELECT * FROM smart_contract_state order by height, sc_address, variable, var_key, var_value");
+		$current=Block::current();
+		return [
+			'height'=>$current['height'],
+			'hash'=>md5(json_encode($res))
+		];
+	}
+
 	static function calculateBlocksHash($height) {
 		global $db;
 		if(empty($height)) {

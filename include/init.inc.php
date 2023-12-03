@@ -31,6 +31,7 @@ if($version[0] > 7) {
 // not accessible directly
 if (php_sapi_name() !== 'cli' && substr_count($_SERVER['PHP_SELF'], "/") > 1
 	&& substr($_SERVER['PHP_SELF'], 0, 5) != "/apps"
+	&& substr($_SERVER['PHP_SELF'], 0, 7) != "/atheos"
 	&& substr($_SERVER['PHP_SELF'], 0, 6) != "/dapps") {
     die("This application should only be run in the main directory /");
 }

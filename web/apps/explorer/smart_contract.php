@@ -17,9 +17,18 @@ if(!$smartContract) {
 	exit;
 }
 
-$code = htmlspecialchars(base64_decode($smartContract['code']), ENT_IGNORE);
+$data = base64_decode($smartContract['code']);
+$data = json_decode($data, true);
+$code=$data['code'];
+$code = htmlspecialchars(base64_decode($code), ENT_IGNORE);
 
 $state = SmartContractEngine::loadState($id);
+
+global $db;
+$sql="select * from transactions t where t.type in (5,6,7)
+and (t.src = '$id' or t.dst='$id')
+order by t.height desc";
+$txs = $db->run($sql);
 
 require_once __DIR__. '/../common/include/top.php';
 ?>
@@ -40,12 +49,12 @@ require_once __DIR__. '/../common/include/top.php';
             <td>Height</td>
             <td><?php echo $smartContract['height'] ?></td>
         </tr>
-        <tr>
-            <td>Code</td>
-            <td>
-                <pre><?php echo $code ?></pre>
-            </td>
-        </tr>
+<!--        <tr>-->
+<!--            <td>Code</td>-->
+<!--            <td>-->
+<!--                <pre>--><?php //echo $code ?><!--</pre>-->
+<!--            </td>-->
+<!--        </tr>-->
         <tr>
             <td>Signature</td>
             <td><?php echo $smartContract['signature'] ?></td>
@@ -73,6 +82,47 @@ require_once __DIR__. '/../common/include/top.php';
     </table>
 </div>
 
+<h3>Transactions</h3>
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th>Height</th>
+                <th>ID</th>
+                <th>From/To</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Params</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($txs as $tx) {
+                if($tx['type']==TX_TYPE_SC_CREATE) {
+                    $data = base64_decode($tx['data']);
+                    $data = json_decode($data, true);
+                    $method="deploy";
+                    $params=$data["params"];
+                } else {
+                    $data = base64_decode($tx['message']);
+                    $data = json_decode($data, true);
+                    $method=$data['method'];
+                    $params=$data["params"];
+                }
+                ?>
+            <tr>
+                <td><?php echo $tx['height'] ?></td>
+                <td><?php echo $tx['id'] ?></td>
+                <td><?php echo $tx['src']==$id ? $tx['dst'] : $tx['src'] ?></td>
+                <td><?php echo Transaction::typeLabel($tx['type']) ?></td>
+                <td><?php echo $tx['val'] ?></td>
+                <td><?php echo $method ?></td>
+                <td><?php echo implode(", ", $params) ?></td>
+            </tr>
+            <?php } ?>
+        </tbody>
+    </table>
+</div>
 <?php
 require_once __DIR__ . '/../common/include/bottom.php';
 ?>

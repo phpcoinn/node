@@ -512,8 +512,19 @@ class Util
 
 	static function accountsHash() {
 		$res=Nodeutil::calculateAccountsHash();
+        global $argv;
+        if(in_array("--json", $argv)) {
+            echo json_encode($res);
+            exit;
+        }
 		echo "Height:\t\t".$res['height']."\n";
 		echo "Hash:\t\t".$res['hash']."\n\n";
+	}
+
+	static function scStateHash() {
+		$res=Nodeutil::calculateSmartContractsHash();
+        echo json_encode($res);
+        exit;
 	}
 
 	static function blocksHash($argv) {
@@ -1296,7 +1307,7 @@ class Util
 			exit;
 		}
 		$params = array_slice($argv, 4);
-		$res = SmartContractEngine::call($sc_address, $method, $params, $error);
+		$res = SmartContractEngine::view($sc_address, $method, $params, $error);
 		if($res === false) {
 			echo "Error calling Smart Contract view: $error".PHP_EOL;
 		}
@@ -1315,7 +1326,7 @@ class Util
 			exit;
 		}
 		$key = $argv[4];
-		$res = SmartContractEngine::SCGet($sc_address, $property, $key, $error);
+		$res = SmartContractEngine::get($sc_address, $property, $key, $error);
 		if($res === false) {
 			echo "Error getting Smart Contract property: $error".PHP_EOL;
 		}

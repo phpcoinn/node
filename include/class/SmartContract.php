@@ -35,13 +35,18 @@ class SmartContract
 				throw new Exception("Invalid fee for transaction");
 			}
 
-			$data = $transaction->data;
+			$data_encoded = $transaction->data;
 			$sc_signature = $transaction->msg;
-			_log("Check SC signature data=$data signature=$sc_signature pk=".$transaction->publicKey);
-			$res = ec_verify($data, $sc_signature, $transaction->publicKey);
+//			_log("Check SC signature data=$data_encoded signature=$sc_signature pk=".$transaction->publicKey, 3);
+			$res = ec_verify($data_encoded, $sc_signature, $transaction->publicKey);
 			if(!$res) {
 				throw new Exception("Invalid signature for smart contract");
 			}
+
+            $data = json_decode(base64_decode($data_encoded), true);
+            if(floatval($data['amount'])!=$transaction->val) {
+                throw new Exception("Invalid transaction amount");
+            }
 
 			return true;
 		} catch (Exception $e) {
@@ -94,38 +99,10 @@ class SmartContract
 
 	public static function createSmartContract(Transaction &$transaction, $height, &$error = null, $test = false) {
 		try {
-			global $db;
-			if($test) {
-				if(!$db->inTransaction()) {
-					$db->beginTransaction();
-				}
-			}
-			$sql="insert into smart_contracts (address, height, code, signature)
-				values (:address, :height, :code, :signature)";
-
-			$bind = [
-				":address" => $transaction->dst,
-				":height" => $height,
-				":code" => $transaction->data,
-				":signature" => $transaction->msg,
-			];
-
-			$res = $db->run($sql, $bind);
-			_log("INSERT CS = $res");
-			if(!$res) {
-				throw new Exception("Error inserting smart contract: ".$db->errorInfo()[2]);
-			}
 
 			$res = SmartContractEngine::deploy($transaction, $height,  $err, $test);
 			if(!$res) {
 				throw new Exception("Error calling deploy method of smart contract: $err");
-			}
-
-			if($test) {
-				$db->rollback();
-				if(!$db->inTransaction()) {
-					$db->beginTransaction();
-				}
 			}
 
 			return true;
@@ -144,7 +121,7 @@ class SmartContract
 			$method = $exec_params['method'];
 			$params = $exec_params['params'];
 
-			$res = SmartContractEngine::exec($transaction, $method, $height, $params, $err);
+			$res = SmartContractEngine::exec($transaction, $method, $height, $params, $err, $test);
 			if(!$res) {
 				throw new Exception("Error calling method $method of smart contract: $err");
 			}
@@ -152,15 +129,15 @@ class SmartContract
 		}, $error);
 	}
 
-	public static function sendSmartContract(Transaction $transaction, $height, &$error = null) {
-		return try_catch(function () use ($error, $transaction, $height) {
+	public static function sendSmartContract(Transaction $transaction, $height, &$error = null, $test=false) {
+		return try_catch(function () use ($error, $transaction, $height,$test) {
 			global $db;
 			$message = $transaction->msg;
 			$exec_params = json_decode(base64_decode($message), true);
 			$method = $exec_params['method'];
 			$params = $exec_params['params'];
 
-			$res = SmartContractEngine::send($transaction, $method, $height, $params, $err);
+			$res = SmartContractEngine::send($transaction, $method, $height, $params, $err, $test);
 			if(!$res) {
 				throw new Exception("Error calling method $method of smart contract: $err");
 			}
@@ -258,5 +235,11 @@ class SmartContract
 		}, $error);
 	}
 
+    static function getDeployedSmartContracts($address) {
+        global $db;
+        $sql = "select s.* from smart_contracts s
+                where exists (select 1 from transactions t where t.src = :address and t.type = :sccreate)";
+        return $db->run($sql,[":address"=>$address, ":sccreate"=>TX_TYPE_SC_CREATE]);
+    }
 
 }

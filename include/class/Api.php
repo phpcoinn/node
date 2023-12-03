@@ -660,7 +660,7 @@ class Api
 		$key = $data['key'];
 		if(empty($sc_address)) api_err("Smart contract address not specified");
 		if(empty($property)) api_err("Smart contract property not specified");
-		$res = SmartContractEngine::SCGet($sc_address, $property, $key, $error);
+		$res = SmartContractEngine::get($sc_address, $property, $key, $error);
 		if(!$res) {
 			api_err("Error getting Smart contract property: $error");
 		}
@@ -680,7 +680,7 @@ class Api
 		if(isset($data['params'])) {
 			$params = json_decode(base64_decode($data['params']));
 		}
-		$res = SmartContractEngine::call($sc_address, $method, $params, $err);
+		$res = SmartContractEngine::view($sc_address, $method, $params, $err);
 		api_echo($res);
 	}
 
@@ -1040,5 +1040,11 @@ class Api
             "type"=>TX_TYPE_MN_CREATE,
         ];
         api_echo($transaction);
+    }
+
+    static function getDeployedSmartContracts($data) {
+        $address = $data['address'];
+        $smartContracts = SmartContract::getDeployedSmartContracts($address);
+        api_echo($smartContracts);
     }
 }

@@ -43,7 +43,7 @@ class Propagate
 	static function transactionToAll($id) {
 		_log("Propagate: transaction $id to all", 4);
 		$dir = ROOT."/cli";
-		$cmd ="php $dir/propagate.php transaction '$id'";
+		$cmd ="php $dir/propagate.php transaction $id";
 		Nodeutil::runSingleProcess($cmd);
 	}
 

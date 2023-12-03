@@ -181,7 +181,7 @@ class Wallet
 		} else {
 			$address = $this->address;
 		}
-		$res=$this->wallet_peer_post("/api.php?q=getPendingBalance&" . XDEBUG, array("address"=>$address));
+		$res=$this->wallet_peer_post("/api.php?q=getPendingBalance", array("address"=>$address));
 		$this->checkApiResponse($res);
 		echo "Balance: {$res['data']}\n";
 	}
@@ -235,7 +235,7 @@ class Wallet
 	}
 
 	function transactions() {
-		$res=$this->wallet_peer_post("/api.php?q=getTransactions&".XDEBUG, array("address"=>$this->address));
+		$res=$this->wallet_peer_post("/api.php?q=getTransactions", array("address"=>$this->address));
 		$this->checkApiResponse($res);
 		echo "ID\tTo\tType\tSum\n";
 		foreach ($res['data'] as $x) {
@@ -286,7 +286,7 @@ class Wallet
 		$transaction = new Transaction($this->public_key,$address,$amount,TX_TYPE_SEND,$date,$msg,$fee);
 		$signature = $transaction->sign($this->private_key);
 
-		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
+		$res = $this->wallet_peer_post("/api.php?q=send",
 			array("dst" => $address, "val" => $amount, "fee"=>$fee, "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_SEND,
 				"message" => $msg, "date" => $date));
@@ -463,7 +463,7 @@ class Wallet
 		echo $res . PHP_EOL;
 	}
 
-	function createSmartContract($sc_address, $file, $amount, $params = null) {
+	function createSmartContract($sc_address, $file, $amount, $params = []) {
 		if(empty($sc_address)) {
 			echo "Smart contract address not specified".PHP_EOL;
 			exit;
@@ -494,10 +494,11 @@ class Wallet
 			exit;
 		}
 
-		$data = ["code"=>base64_encode($contents)];
-		if(!empty($params)) {
-			$data['params']=$params;
-		}
+		$data = [
+            "code"=>base64_encode($contents),
+            "amount"=>num($amount),
+            "params"=>$params
+        ];
 
 		$text = base64_encode(json_encode($data));
 		$sc_signature = ec_sign($text, $this->private_key);
@@ -509,7 +510,9 @@ class Wallet
 		$tx->data = $text;
 		$signature = $tx->sign($this->private_key);
 
-		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
+        $debug="&XDEBUG_SESSION_START=PHPSTORM";
+        $debug="";
+		$res = $this->wallet_peer_post("/api.php?q=send" . $debug,
 			array("dst" => $sc_address, "val" => $amount, "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_SC_CREATE,
 				"message" => $msg, "date" => $date, "fee" => $tx->fee, "data" => $tx->data));
@@ -526,12 +529,12 @@ class Wallet
 			echo "Smart contract Address not valid".PHP_EOL;
 			exit;
 		}
-		if(empty($method)) {
-			echo "Smart contract method not specified".PHP_EOL;
-			exit;
-		}
 		if(strlen($amount)==0) {
 			echo "Smart contract amount not specified".PHP_EOL;
+			exit;
+		}
+		if(empty($method)) {
+			echo "Smart contract method not specified".PHP_EOL;
 			exit;
 		}
 		$date=time();
@@ -543,7 +546,9 @@ class Wallet
 		$tx->fee = TX_SC_EXEC_FEE;
 		$signature = $tx->sign($this->private_key);
 
-		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
+        $debug="&XDEBUG_SESSION_START=PHPSTORM";
+        $debug="";
+		$res = $this->wallet_peer_post("/api.php?q=send" . $debug,
 			array("dst" => $dst_address, "val" => $amount, "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_SC_EXEC,
 				"message" => $msg, "date" => $date, "fee" => $tx->fee));
@@ -562,12 +567,12 @@ class Wallet
 			echo "Smart contract Address not valid".PHP_EOL;
 			exit;
 		}
-		if(empty($method)) {
-			echo "Smart contract method not specified".PHP_EOL;
-			exit;
-		}
 		if(strlen($amount)==0) {
 			echo "Smart contract amount not specified".PHP_EOL;
+			exit;
+		}
+		if(empty($method)) {
+			echo "Smart contract method not specified".PHP_EOL;
 			exit;
 		}
 		$date=time();
@@ -579,7 +584,7 @@ class Wallet
 		$tx->fee = TX_SC_EXEC_FEE;
 		$signature = $tx->sign($this->private_key);
 
-		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
+		$res = $this->wallet_peer_post("/api.php?q=send",
 			array("dst" => $dst_address, "val" => $amount, "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_SC_SEND,
 				"message" => $msg, "date" => $date, "fee" => $tx->fee));

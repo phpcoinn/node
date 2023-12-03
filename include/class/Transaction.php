@@ -253,7 +253,13 @@ class Transaction
     }
 
 	public static function getFromArray($x) {
-		$trans = new Transaction($x['public_key'],$x['dst'],floatval($x['val']),$x['type'],$x['date'],$x['message']);
+        $msg = null;
+        if(isset($x['message'])) {
+            $msg = $x['message'];
+        } else if (isset($x['msg'])) {
+            $msg = $x['msg'];
+        }
+		$trans = new Transaction($x['public_key'],$x['dst'],floatval($x['val']),$x['type'],$x['date'],$msg);
 		$trans->id = $x['id'];
 		$trans->src = $x['src'];
 		$trans->fee = floatval($x['fee']);
@@ -750,6 +756,7 @@ class Transaction
 				$allowedTypes[]=TX_TYPE_SC_CREATE;
 				$allowedTypes[]=TX_TYPE_SC_EXEC;
 				$allowedTypes[]=TX_TYPE_SC_SEND;
+                $allowedTypes[]=TX_TYPE_FEE;
 			}
 			if($height >= TX_TYPE_BURN_START_HEIGHT) {
 				$allowedTypes[]=TX_TYPE_BURN;
@@ -798,7 +805,7 @@ class Transaction
 			}
 
 
-            if ($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_MN_CREATE || $this->type == TX_TYPE_MN_REMOVE) {
+            if ($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_MN_CREATE || $this->type == TX_TYPE_MN_REMOVE || $this->type == TX_TYPE_SC_SEND) {
 	            // invalid destination address
 	            if (!Account::valid($this->dst)) {
 		            throw new Exception("{$this->id} - Invalid destination address");
@@ -1285,8 +1292,7 @@ class Transaction
 
 			$db->commit();
 
-			$hashp=escapeshellarg(san($hash));
-			Propagate::transactionToAll($hashp);
+			Propagate::transactionToAll($hash);
 			return $hash;
 
 		} catch (Exception $e) {
