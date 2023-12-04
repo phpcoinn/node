@@ -65,6 +65,9 @@ class SmartContractBase
     }
 
     static function setStateVar($db, $address, $height, $name, $value, $key=null) {
+        if(strlen($value) > 1000) {
+            throw new Exception("Storing value for variable $name key $key exceeds 1000 characters");
+        }
         if(self::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
@@ -77,9 +80,6 @@ class SmartContractBase
             return;
         }
 
-        if(strlen($value) > 1000) {
-            throw new Exception("Storing value for variable $name key $key exceeds 1000 characters");
-        }
 
         $sql="replace into smart_contract_state (sc_address, variable, var_key, var_value, height)
 					values (:sc_address, :variable, :var_key, :var_value, :height)";
@@ -146,7 +146,7 @@ class SmartContractBase
         if(self::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
-            return count($state[$name]);
+            return @count($state[$name]);
         }
 
         $sql="select count(distinct s.var_key) from smart_contract_state s 

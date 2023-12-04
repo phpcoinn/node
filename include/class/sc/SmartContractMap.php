@@ -25,6 +25,9 @@ class SmartContractMap implements ArrayAccess, Countable
 
     public function offsetSet($offset, $value)
     {
+        if($offset == null) {
+            $offset = $this->count();
+        }
         SmartContractBase::setStateVar($this->db, SC_ADDRESS, $this->height, $this->name, $value, $offset);
     }
 
