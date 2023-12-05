@@ -110,7 +110,7 @@ class SmartContractWrapper
             if($this->hasAnnotation($prop, "SmartContractVar")) {
                 $name = $prop->getName();
                 $value = $prop->getValue($this->smartContract);
-                if($this->state[$name]!=$value) {
+                if((string)$this->state[$name]!==(string)$value) {
                     SmartContractBase::setStateVar($this->db, SC_ADDRESS, $height, $name, $value, null);
                 }
             }
