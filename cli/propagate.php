@@ -83,7 +83,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
 				$response = peer_post($hostname . "/peer.php?q=submitBlock", $data, 5, $err, $info, $curl_info);
 				_log("PropagateFork: forking child $cpid $hostname end response=".json_encode($response)." err=$err time=".(microtime(true) - $start),5);
 				Propagate::processBlockPropagateResponse($hostname, $ip, $id, $response, $err);
-                $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time']];
+                $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time'], "response"=>$response, "err"=>$err];
                 fwrite($socket[1], json_encode($res));
                 fclose($socket[1]);
                 exit();
@@ -96,7 +96,10 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
             $output = json_decode($output, true);
             $hostname = $output['hostname'];
             $connect_time = $output['connect_time'];
-            Peer::storeResponseTime($hostname, $connect_time);
+            $response = $output['response'];
+            if($response !== false) {
+                Peer::storeResponseTime($hostname, $connect_time);
+            }
         }
         _log("PropagateFork: Total time = ".(microtime(true)-$start),5);
         _log("PropagateFork: process " . getmypid() . " exit",5);
@@ -223,8 +226,9 @@ if ($type == "transaction") {
             $count++;
             if($output['status']=="error") {
                 $error++;
+            } else {
+                Peer::storeResponseTime($hostname, $connect_time);
             }
-            Peer::storeResponseTime($hostname, $connect_time);
         }
         //TODO: check if is correct
 		if($error < 1/3 * $count) {
@@ -378,8 +382,8 @@ if($type == "message") {
             }
             $res = peer_post($url, $envelope, 5, $err, $info, $curl_info);
             _log("PMM: propagate msg to peer $hostname res=$res err=".json_encode($err));
-            $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time']];
-            fwrite($socket[1], json_encode($res));
+            $output = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time'], "res"=>$res, "err"=>$err];
+            fwrite($socket[1], json_encode($output));
             fclose($socket[1]);
             exit();
         }
@@ -391,7 +395,10 @@ if($type == "message") {
         $output = json_decode($output, true);
         $hostname = $output['hostname'];
         $connect_time = $output['connect_time'];
-        Peer::storeResponseTime($hostname, $connect_time);
+        $res = $output['res'];
+        if($res!==false) {
+            Peer::storeResponseTime($hostname, $connect_time);
+        }
     }
     exit;
 }

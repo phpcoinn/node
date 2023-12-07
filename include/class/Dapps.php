@@ -178,8 +178,8 @@ class Dapps extends Daemon
 							$hostname = $peer['hostname'];
 							$url = $hostname."/peer.php?q=updateDapps";
 							$res = peer_post($url, $data, 30, $err, $info, $curl_info);
-                            $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time'], "res"=>$res];
-                            fwrite($socket[1], json_encode($res));
+                            $output = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time'], "res"=>$res, "err"=>$err];
+                            fwrite($socket[1], json_encode($output));
                             exit();
 						}
 					}
@@ -195,7 +195,10 @@ class Dapps extends Daemon
                         if(!empty($connect_time)) {
                             $responded++;
                         }
-                        Peer::storeResponseTime($hostname, $connect_time);
+                        $res = $output['res'];
+                        if($res !== false) {
+                            Peer::storeResponseTime($hostname, $connect_time);
+                        }
                     }
 
 					_log("Dapps: Total time = ".(microtime(true)-$start)." total=".count($pipes)." responded=".$responded);

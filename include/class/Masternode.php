@@ -652,11 +652,11 @@ class Masternode extends Daemon
                 $err = $output['err'];
                 if($res !== false) {
                     $ok_responses++;
+                    Peer::storeResponseTime($hostname, $connect_time);
                 } else {
                     _log("PM: $err", 2);
                 }
                 $elapsed_times[]=$elapsed;
-                Peer::storeResponseTime($hostname, $connect_time);
             }
             $avg_connect_time = array_sum($connect_times) / count($connect_times);
             $avg_elapsed_times = array_sum($elapsed_times) / count($elapsed_times);
