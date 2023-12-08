@@ -104,8 +104,12 @@ class Sync extends Daemon
 		_log("Sync process finished in time ".round($t2-$t1, 3));
 	}
 
-	static function process() {
+	static function run() {
 		self::processNew();
+	}
+
+	static function process() {
+        Nodeutil::runSingleProcess("php ".ROOT."/cli/sync.php run");
 	}
 
 	static function checkPeers() {

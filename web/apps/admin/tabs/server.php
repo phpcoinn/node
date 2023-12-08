@@ -132,11 +132,12 @@ if(method_exists(Daemon::class, "availableDaemons")) {
 
 <div class="row">
 	<?php foreach($daemons as $daemon) {
-		$status = daemon_get_status($daemon);
+		$status = Daemon::getDaemonStatus($daemon);
 		$running = $status['running'];
 		$locked = $status['locked'];
 		$enabled = $status['enabled'];
 		$error = $status['error'];
+		$executing = $status['executing'];
 		?>
 		<div class="col-md-6 col-lg-4">
 			<div class="card">
@@ -157,6 +158,11 @@ if(method_exists(Daemon::class, "availableDaemons")) {
 							<span class="badge bg-success">Locked</span>
 						<?php } else { ?>
 							<span class="badge bg-danger">No lock</span>
+						<?php } ?>
+						<?php if ($executing) { ?>
+							<span class="badge bg-success">Exec</span>
+						<?php } else { ?>
+							<span class="badge bg-danger">Exec</span>
 						<?php } ?>
 						<a href="#" class="ml-2" role="button" data-bs-toggle="collapse" data-bs-target="#details_<?php echo $daemon ?>">
 							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">

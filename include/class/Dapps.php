@@ -59,7 +59,11 @@ class Dapps extends Daemon
 		}
 	}
 
-	static function process($force = false) {
+    static function process() {
+        Nodeutil::runSingleProcess("php ".ROOT."/cli/dapps.php run");
+    }
+
+	static function run($force = false) {
 		global $_config, $db;
 		_log("Dapps: start process" , 5);
 		$dapps_public_key = $_config['dapps_public_key'];

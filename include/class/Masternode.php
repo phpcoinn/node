@@ -1175,7 +1175,7 @@ class Masternode extends Daemon
 		return $db->run($sql, [":mn_create" => TX_TYPE_MN_CREATE, ":public_key" => $public_key]);
 	}
 
-	static function process() {
+	static function run() {
 		_log("Masternode: start process",5);
 		$height = Block::getHeight();
 		if(!Masternode::allowedMasternodes($height)) {
@@ -1184,6 +1184,10 @@ class Masternode extends Daemon
 		}
 		Masternode::checkLocalMasternode();
 		Masternode::processBlock();
+	}
+
+	static function process() {
+        Nodeutil::runSingleProcess("php ".ROOT."/cli/masternode.php run");
 	}
 
 	static function checkSynced($signature, $public_key) {

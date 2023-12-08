@@ -354,4 +354,10 @@ class NodeMiner extends Daemon {
 		return $minerStat;
 	}
 
+    static function isExecuting() {
+        $check_cmd = "php ".ROOT."/cli/miner.php";
+        $res = shell_exec("ps uax | grep '$check_cmd' | grep -v grep");
+        return !empty($res);
+    }
+
 }

@@ -22,6 +22,13 @@ class Daemon
 		return isset($_config[$name]) && $_config[$name];
 	}
 
+    static function isExecuting() {
+        $name = static::$name;
+        $check_cmd = "php ".ROOT."/cli/$name.php run";
+        $res = shell_exec("ps uax | grep '$check_cmd' | grep -v grep");
+        return !empty($res);
+    }
+
 	static function enable() {
 		global $db;
 		$name = static::$name;
@@ -319,6 +326,7 @@ class Daemon
 					if($error) {
 						$data['error']=$error['message'];
 					}
+                    $data['executing'] = static::isExecuting();
 					echo json_encode($data) . PHP_EOL;
 					exit;
 				} else if ($cmd == "stop") {
