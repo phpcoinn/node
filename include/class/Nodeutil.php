@@ -862,4 +862,19 @@ class Nodeutil
             _log("DEBUG error: BACKTRACE: " . $line);
         }
     }
+
+    static function checkStuckMempool() {
+        $block = Block::current();
+        $date = $block['date'];
+        $elapsed = time() - $date;
+        _log("checkStuckMempool elapsed=$elapsed");
+        if($elapsed > 60*60) {
+            $size = Mempool::getSize();
+            _log("checkStuckMempool size=$size");
+            if($size > 0) {
+                Mempool::empty_mempool();
+                _log("checkStuckMempool cleared mempool");
+            }
+        }
+    }
 }
