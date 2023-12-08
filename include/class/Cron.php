@@ -57,6 +57,9 @@ class Cron extends Daemon
         if($hour == 3 && $min == 0) {
             Nodeutil::resetMiningStats();
         }
+        if($min % 60 == 0) {
+            Nodeutil::checkStuckMempool();
+        }
         _log("CRON: Run at time: " .$time, 2);
     }
 }

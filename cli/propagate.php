@@ -230,11 +230,6 @@ if ($type == "transaction") {
                 Peer::storeResponseTime($hostname, $connect_time);
             }
         }
-        //TODO: check if is correct
-		if($error < 1/3 * $count) {
-			$current = Block::current();
-			Mempool::updateMempool($id, $current['height']);
-		}
 		_log("PropagateFork: Total time = ".(microtime(true)-$start),5);
 		_log("PropagateFork: process " . getmypid() . " exit",5);
 		exit;
