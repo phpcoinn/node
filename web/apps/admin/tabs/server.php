@@ -122,12 +122,7 @@ if(file_exists($minerStatFile)) {
 <hr/>
 
 <?php
-//TODO: replace @1.0.6.85
-if(method_exists(Daemon::class, "availableDaemons")) {
-	$daemons = Daemon::availableDaemons();
-} else {
-    $daemons = ["dapps", "miner", "sync","masternode"];
-}
+$daemons = Daemon::availableDaemons();
 ?>
 
 <div class="row">
@@ -152,18 +147,18 @@ if(method_exists(Daemon::class, "availableDaemons")) {
 						<?php if ($running) { ?>
 							<span class="badge bg-success">Running</span>
 						<?php } else { ?>
-							<span class="badge bg-danger">Stopped</span>
+							<span class="badge bg-danger">Running</span>
 						<?php } ?>
-						<?php if ($locked) { ?>
-							<span class="badge bg-success">Locked</span>
-						<?php } else { ?>
-							<span class="badge bg-danger">No lock</span>
-						<?php } ?>
-						<?php if ($executing) { ?>
-							<span class="badge bg-success">Exec</span>
-						<?php } else { ?>
-							<span class="badge bg-danger">Exec</span>
-						<?php } ?>
+<!--						--><?php //if ($locked) { ?>
+<!--							<span class="badge bg-success">Locked</span>-->
+<!--						--><?php //} else { ?>
+<!--							<span class="badge bg-danger">No lock</span>-->
+<!--						--><?php //} ?>
+<!--						--><?php //if ($executing) { ?>
+<!--							<span class="badge bg-success">Exec</span>-->
+<!--						--><?php //} else { ?>
+<!--							<span class="badge bg-danger">Exec</span>-->
+<!--						--><?php //} ?>
 						<a href="#" class="ml-2" role="button" data-bs-toggle="collapse" data-bs-target="#details_<?php echo $daemon ?>">
 							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
 								<path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
@@ -179,46 +174,48 @@ if(method_exists(Daemon::class, "availableDaemons")) {
 					</div>
 				</div>
 				<div class="card-body p-0 border-bottom collapse" id="details_<?php echo $daemon ?>">
-					<div class="row p-4">
-						<div class="col-sm-12">
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Started:</div>
-								<div><?php echo display_date($status['started']) ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Running:</div>
-								<div><?php if (!empty($status['started'])) echo date("H:i:s", time() - $status['started']) ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>PID:</div>
-								<div><?php echo $status['pid'] ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>CPU:</div>
-								<div><?php echo $status['cpu'] ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Memory:</div>
-								<div><?php echo $status['memory'] ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Owner:</div>
-								<div><?php echo $status['owner'] ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Locked time:</div>
-								<div><?php echo display_date($status['locked_time']) ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Lock file:</div>
-								<div><?php echo $status['lock_file'] ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Lock owner:</div>
-								<div><?php echo $status['lock_owner'] ?></div>
-							</div>
-						</div>
-					</div>
+                    <?php if ($running) { ?>
+                        <div class="row p-4">
+                            <div class="col-sm-12">
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>Started:</div>
+                                    <div><?php echo display_date($status['started']) ?></div>
+                                </div>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>Running:</div>
+                                    <div><?php if (!empty($status['started'])) echo date("H:i:s", time() - $status['started']) ?></div>
+                                </div>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>PID:</div>
+                                    <div><?php echo $status['pid'] ?></div>
+                                </div>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>CPU:</div>
+                                    <div><?php echo $status['cpu'] ?></div>
+                                </div>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>Memory:</div>
+                                    <div><?php echo $status['memory'] ?></div>
+                                </div>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>Owner:</div>
+                                    <div><?php echo $status['owner'] ?></div>
+                                </div>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>Locked time:</div>
+                                    <div><?php echo display_date($status['locked_time']) ?></div>
+                                </div>
+<!--                                <div class="flex-row d-flex justify-content-between flex-wrap">-->
+<!--                                    <div>Lock file:</div>-->
+<!--                                    <div>--><?php //echo $status['lock_file'] ?><!--</div>-->
+<!--                                </div>-->
+<!--                                <div class="flex-row d-flex justify-content-between flex-wrap">-->
+<!--                                    <div>Lock owner:</div>-->
+<!--                                    <div>--><?php //echo $status['lock_owner'] ?><!--</div>-->
+<!--                                </div>-->
+                            </div>
+                        </div>
+                    <?php } ?>
 				</div>
 				<?php if ($daemon == "miner") { ?>
 					<div class="card-body">
@@ -263,7 +260,7 @@ if(method_exists(Daemon::class, "availableDaemons")) {
 				<?php } ?>
 				<?php if ($daemon == "masternode") { ?>
 					<div class="card-body">
-						<?php if($running) { ?>
+						<?php if($running || true) { ?>
 							<p class="card-text">
 							<?php if (Masternode::isLocalMasternode()) {
 
@@ -361,12 +358,12 @@ if(method_exists(Daemon::class, "availableDaemons")) {
 						<?php if ($enabled) { ?>
 							<a href="/apps/admin/?view=server&daemon=<?php echo $daemon ?>&action=daemon_restart" class="btn btn-sm btn-danger">Kill</a>
 						<?php } ?>
-						<?php if ($locked && !$running) { ?>
-							<a href="/apps/admin/?view=server&daemon=<?php echo $daemon ?>&action=daemon_unlock" class="btn btn-sm btn-danger">Unlock</a>
-						<?php } ?>
-						<?php if ($running) { ?>
-							<a href="/apps/admin/?view=server&daemon=<?php echo $daemon ?>&action=daemon_stop" class="btn btn-sm btn-warning">Stop</a>
-						<?php } ?>
+<!--						--><?php //if ($locked && !$running) { ?>
+<!--							<a href="/apps/admin/?view=server&daemon=--><?php //echo $daemon ?><!--&action=daemon_unlock" class="btn btn-sm btn-danger">Unlock</a>-->
+<!--						--><?php //} ?>
+<!--						--><?php //if ($running) { ?>
+<!--							<a href="/apps/admin/?view=server&daemon=--><?php //echo $daemon ?><!--&action=daemon_stop" class="btn btn-sm btn-warning">Stop</a>-->
+<!--						--><?php //} ?>
 					</div>
 				</div>
 			</div>

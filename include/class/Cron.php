@@ -29,10 +29,10 @@ class Cron extends Daemon
 
             try_catch(function () {
                 Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php update");
-                Sync::checkLongRunning();
-                Dapps::checkLongRunning();
-                NodeMiner::checkLongRunning();
-                Masternode::checkLongRunning();
+//                Sync::checkLongRunning();
+//                Dapps::checkLongRunning();
+//                NodeMiner::checkLongRunning();
+//                Masternode::checkLongRunning();
                 Cache::resetCache();
                 Peer::deleteBlacklisted();
                 Peer::deleteWrongHostnames();

@@ -128,11 +128,11 @@ class NodeMiner extends Daemon {
 				$this->saveMiningStats();
 
                 usleep($this->sleep_time * 1000);
-				$this->checkRunning();
-				if(!$this->running) {
-					_log("Stop miner because missing lock file");
-					break;
-				}
+//				$this->checkRunning();
+//				if(!$this->running) {
+//					_log("Stop miner because missing lock file");
+//					break;
+//				}
 				$now = time();
 				$elapsed = $now - $block_date;
 				$new_block_date = $block_date + $elapsed;
@@ -295,6 +295,10 @@ class NodeMiner extends Daemon {
 		$file = ROOT . "/tmp/miner_stat.json";
 		return $file;
 	}
+
+    static function run() {
+        self::process();
+    }
 
 	static function process() {
 		global $_config;

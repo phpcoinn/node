@@ -45,6 +45,17 @@ class Daemon
 		return null;
 	}
 
+    static function checkAndRunDaemon() {
+        $name = static::$name;
+
+        if(!static::isEnabled()) {
+            _log("Daemon: $name: not enabled", 5);
+            return;
+        }
+
+        static::run();
+    }
+
 	static function checkDaemon() {
 		$name = static::$name;
 
@@ -398,7 +409,7 @@ class Daemon
 	}
 
 	static function availableDaemons() {
-		$daemons = ["dapps", "miner", "sync","masternode"];
+		$daemons = ["dapps", "miner", "sync","masternode", "cron"];
 		return $daemons;
 	}
 
