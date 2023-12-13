@@ -18,7 +18,7 @@ usort($menuPeers, function($p1, $p2) {
 if(NETWORK == "mainnet") {
     $res = file_get_contents("https://main1.phpcoin.net/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/api.php?q=coinInfo");
     $res = json_decode($res, true);
-    $btcPrice = num($res['rate'], 8);
+    $btcPrice = num($res['btcPrice'], 8);
     $usdPrice = num($res['usdPrice'], 6);
 }
 
