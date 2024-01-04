@@ -4,6 +4,7 @@ class SmartContractBase
 {
 
     public static $virtual = false;
+    public static $sc_state_updates = [];
 
 	protected $src;
 
@@ -27,11 +28,12 @@ class SmartContractBase
 		$this->value = floatval($tx['val']);
 		$this->height = intval($args['height'])+1;
 		$this->address = SC_ADDRESS;
+        $this->id = $tx['id'];
 	}
 
 	public function log($s) {
 		$log_file = ROOT . "/tmp/sc/smart_contract.log";
-		$s = date("r")." ".$this->address.": ".$s.PHP_EOL;
+		$s = $this->height." ".$this->address.": ".$s.PHP_EOL;
 		@file_put_contents($log_file, $s, FILE_APPEND);
 	}
 
@@ -81,19 +83,46 @@ class SmartContractBase
         }
 
 
-        $sql="replace into smart_contract_state (sc_address, variable, var_key, var_value, height)
-					values (:sc_address, :variable, :var_key, :var_value, :height)";
-        $bind = [
-            ":sc_address"=>$address,
-            ":variable"=>$name,
-            ":var_key"=>$key,
-            ":var_value"=> $value === null ? null : "$value",
-            ":height"=>$height
-        ];
-        $res = $db->run($sql, $bind);
-        if($res === false) {
-            throw new Exception("Error storing variable $name key=$key for Smart Contract ".$address.": ".$db->errorInfo()[2]);
+        $var_value = $value === null ? null : "$value";
+        if($key === null) {
+            $sql="select * from smart_contract_state sc where sc_address=:address
+                and variable = :variable and var_key is null and height = :height";
+            $row = $db->row($sql, [":address"=>$address, ":variable"=>$name, ":height"=>$height]);
+            if($row) {
+                $sql="update smart_contract_state set var_value=:var_value where sc_address=:address
+                and variable = :variable and var_key is null and height = :height";
+            } else {
+                $sql="insert into smart_contract_state set var_value=:var_value, sc_address=:address
+                , variable = :variable , var_key = null, height = :height";
+            }
+            $res = $db->run($sql, [":address"=>$address, ":variable"=>$name, ":height"=>$height, ":var_value"=>$var_value]);
+            if($res === false) {
+                throw new Exception("Error storing variable $name key=$key for Smart Contract ".$address.": ".$db->errorInfo()[2]);
+            }
+        } else {
+            $sql="select * from smart_contract_state sc where sc_address=:address
+                and variable = :variable and var_key =:var_key and height = :height";
+            $row = $db->row($sql, [":address"=>$address, ":variable"=>$name, ":height"=>$height,":var_key"=>$key]);
+            if($row) {
+                $sql="update smart_contract_state set var_value=:var_value where sc_address=:address
+                and variable = :variable and var_key =:var_key and height = :height";
+            } else {
+                $sql="insert into smart_contract_state set var_value=:var_value, sc_address=:address
+                , variable = :variable, var_key =:var_key, height = :height";
+            }
+            $res = $db->run($sql, [":address"=>$address, ":variable"=>$name, ":height"=>$height, ":var_value"=>$var_value,":var_key"=>$key]);
+            if($res === false) {
+                throw new Exception("Error storing variable $name key=$key for Smart Contract ".$address.": ".$db->errorInfo()[2]);
+            }
         }
+        $sc_state_update = [
+            "address"=>$address,
+            "height"=>$height,
+            "name"=>$name,
+            "value"=>$value,
+            "key"=>$key
+        ];
+        self::$sc_state_updates[]=$sc_state_update;
     }
 
     static function insertSmartContract($db, $transaction, $height) {
@@ -102,14 +131,21 @@ class SmartContractBase
             return;
         }
 
-        $sql="insert into smart_contracts (address, height, code, signature)
-            values (:address, :height, :code, :signature)";
+        $sql="insert into smart_contracts (address, height, code, signature, name, description)
+            values (:address, :height, :code, :signature, :name, :description)";
+
+        $data=$transaction['data'];
+        $data = json_decode(base64_decode($data), true);
+        $name = $data['name'];
+        $description = $data['description'];
 
         $bind = [
             ":address" => $transaction['dst'],
             ":height" => $height,
             ":code" => $transaction['data'],
             ":signature" => $transaction['msg'],
+            ":name"=>$name,
+            ":description"=>$description,
         ];
 
         $res = $db->run($sql, $bind);

@@ -661,7 +661,7 @@ class Api
 		if(empty($sc_address)) api_err("Smart contract address not specified");
 		if(empty($property)) api_err("Smart contract property not specified");
 		$res = SmartContractEngine::get($sc_address, $property, $key, $error);
-		if(!$res) {
+		if($res === false) {
 			api_err("Error getting Smart contract property: $error");
 		}
 		api_echo($res);

@@ -12,7 +12,7 @@ if(!function_exists('_log')) {
     function _log($log)
     {
         $log_file = ROOT . "/tmp/sc/smart_contract.log";
-        $log = date("r") . " " .  getmypid() . " - " .  $log . PHP_EOL;
+        $log = @date("r") . " " .  getmypid() . " - " .  $log . PHP_EOL;
         file_put_contents($log_file, $log, FILE_APPEND);
     }
 }

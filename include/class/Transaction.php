@@ -21,6 +21,8 @@ class Transaction
 
 	public $mempool = false;
 
+    public $schash;
+
 	public function __construct($publicKey=null,$dst=null,$val=null,$type=null,$date = null,$msg = null, $fee=0)
 	{
 		$this->val = $val;
@@ -249,6 +251,7 @@ class Transaction
 	    $trans->height = $x['height'];
 	    $trans->peer = $x['peer'];
 	    $trans->data = $x['data'];
+	    $trans->schash = $x['schash'];
 	    return $trans;
     }
 
@@ -266,6 +269,7 @@ class Transaction
 		$trans->signature = $x['signature'];
 		$trans->data = @$x['data'];
 		$trans->height = @$x['height'];
+		$trans->schash = @$x['schash'];
 		return $trans;
 	}
 
@@ -284,6 +288,9 @@ class Transaction
 	    ];
 		if(!empty($this->data)) {
 			$trans['data']=$this->data;
+		}
+		if(!empty($this->schash)) {
+			$trans['schash']=$this->schash;
 		}
 	    ksort($trans);
 	    return $trans;
@@ -441,13 +448,14 @@ class Transaction
 			":date"      => $this->date,
 			":message"   => $this->msg,
 			":data"   => $this->data,
+			":schash"   => $this->schash,
 		];
 
 
 		$res = $db->run(
 			"INSERT into mempool  
-			    (peer, id, public_key, height, src, dst, val, fee, signature, type, message, `date`, data)
-			    values (:peer, :id, :public_key, :height, :src, :dst, :val, :fee, :signature, :type, :message, :date, :data)",
+			    (peer, id, public_key, height, src, dst, val, fee, signature, type, message, `date`, data, schash)
+			    values (:peer, :id, :public_key, :height, :src, :dst, :val, :fee, :signature, :type, :message, :date, :data, :schash)",
 			$bind
 		);
 		if($res === false) {
@@ -542,7 +550,9 @@ class Transaction
 				throw new Exception("Error checking account address");
 			}
 			//allow receive on unverified address
-			if ($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_SEND || $this->type == TX_TYPE_MN_REMOVE) {
+			if ($this->type == TX_TYPE_SEND ||
+                $this->type == TX_TYPE_SC_CREATE || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_SEND ||
+                $this->type == TX_TYPE_MN_REMOVE) {
 				$res = Account::checkAccount($this->dst, "", $block, $height);
 				if ($res === false) {
 					throw new Exception("Error checking account address for send");
@@ -565,6 +575,7 @@ class Transaction
 				":message"    => $this->msg,
 				":src"        => $src,
 				":data"    => $this->data,
+				":schash"    => $this->schash,
 			];
 			$res = Transaction::insert($bind);
 			if ($res != 1) {
@@ -661,24 +672,14 @@ class Transaction
 			}
 
 			if ($type == TX_TYPE_SC_CREATE) {
-				$res = SmartContract::createSmartContract($this, $height, $error);
-				if(!$res) {
+                $schash = SmartContract::createSmartContract($this, $height, $error, false, $this->schash);
+				if(!$schash) {
 					throw new Exception("Can not process create smart contract: $error");
 				}
-			}
-
-			if ($type == TX_TYPE_SC_EXEC) {
-				$res = SmartContract::execSmartContract($this, $height, $error);
-				if(!$res) {
-					throw new Exception("Can not process exec smart contract: $error");
-				}
-			}
-
-			if ($type == TX_TYPE_SC_SEND) {
-				$res = SmartContract::sendSmartContract($this, $height, $error);
-				if(!$res) {
-					throw new Exception("Can not process send smart contract: $error");
-				}
+                if(!empty($this->schash) && $this->schash != $schash) {
+                    throw new Exception("Invalid smart contract hash");
+                }
+                $this->schash = $schash;
 			}
 
 			Mempool::delete($this->id);
@@ -1075,6 +1076,7 @@ class Transaction
 		    "date"       => $x['date'],
 		    "public_key" => $x['public_key'],
 		    "data" => $x['data'],
+		    "schash" => $x['schash'],
 	    ];
 	    $trans['confirmations'] = $height - $x['height'];
 
@@ -1144,6 +1146,9 @@ class Transaction
         $trans['src'] = $x['src'];
 		if(!empty($x['data'])) {
 			$trans['data']=$x['data'];
+		}
+		if(!empty($x['schash'])) {
+			$trans['schash']=$x['schash'];
 		}
 
         $trans['type_label'] = "mempool";
@@ -1256,30 +1261,25 @@ class Transaction
 			    }
 		    }
 
-			if($this->type == TX_TYPE_SC_CREATE) {
-				$cnt = Mempool::getByDstAndType($this->dst, $this->type);
-				if($cnt > 0) {
-					throw new Exception("Similar transaction already in mempool: smart-contract-create ".$this->dst);
-				}
-				$res = SmartContract::createSmartContract($this, Block::getHeight()+1, $error, true);
-				if(!$res) {
-					throw new Exception("Create smart contract transaction failed: ".$error);
-				}
-			}
+            if($this->type == TX_TYPE_SC_CREATE) {
+                $cnt = Mempool::getByDstAndType($this->dst, $this->type);
+                if($cnt > 0) {
+                    throw new Exception("Similar transaction already in mempool: smart-contract-create ".$this->dst);
+                }
+                $schash = SmartContract::createSmartContract($this, Block::getHeight()+1, $error, true, $this->schash);
+                if(!$schash) {
+                    throw new Exception("Create smart contract transaction failed: ".$error);
+                }
+                $this->schash = $schash;
+            }
 
-			if($this->type == TX_TYPE_SC_EXEC) {
-				$res = SmartContract::execSmartContract($this, Block::getHeight()+1, $error, true);
-				if(!$res) {
-					throw new Exception("Execute smart contract transaction failed: ".$error);
-				}
-			}
-
-			if($this->type == TX_TYPE_SC_SEND) {
-				$res = SmartContract::sendSmartContract($this, Block::getHeight()+1, $error, true);
-				if(!$res) {
-					throw new Exception("Execute smart contract transaction failed: ".$error);
-				}
-			}
+            if($this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_SEND) {
+                $schash = SmartContract::processSmartContractTx($this, $error, $this->schash);
+                if(!$schash) {
+                    throw new Exception("Execute smart contract transaction failed: ".$error);
+                }
+                $this->schash=$schash;
+            }
 
 			if($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_BURN) {
 				Masternode::checkSend($this);
@@ -1343,8 +1343,8 @@ class Transaction
     	global $db;
 	    $res = $db->run(
 		    "INSERT into transactions 
-    			(id, public_key, block,  height, dst, val, fee, signature, type, message, `date`, src, data)
-    			values (:id, :public_key, :block, :height, :dst, :val, :fee, :signature, :type, :message, :date, :src, :data)
+    			(id, public_key, block,  height, dst, val, fee, signature, type, message, `date`, src, data, schash)
+    			values (:id, :public_key, :block, :height, :dst, :val, :fee, :signature, :type, :message, :date, :src, :data, :schash)
     			",
 		    $bind
 	    );

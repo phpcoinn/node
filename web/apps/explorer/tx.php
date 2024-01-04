@@ -95,8 +95,12 @@ require_once __DIR__. '/../common/include/top.php';
             <td>
                 <?php echo TransactionTypeLabel($tx['type']) ?> (<?php echo $tx['type'] ?>)
                 <?php
-                if($tx['type']==TX_TYPE_SC_CREATE) {
-                    echo '<a href="/apps/explorer/smart_contract.php?id='.$tx['dst'].'">More info</a>';
+                if($tx['type']==TX_TYPE_SC_CREATE || $tx['type']==TX_TYPE_SC_EXEC) {
+                    echo '<a href="/apps/explorer/smart_contract.php?id='.$tx['dst'].'">'.$tx['dst'].'</a>';
+                }
+                if($tx['type']==TX_TYPE_SC_SEND) {
+                    $src = Account::getAddress($tx['public_key']);
+                    echo '<a href="/apps/explorer/smart_contract.php?id='.$src.'">'.$src.'</a>';
                 }
                 ?>
             </td>
@@ -129,6 +133,10 @@ require_once __DIR__. '/../common/include/top.php';
         <tr>
             <td>Data</td>
             <td style="word-break: break-all"><?php echo $tx['data'] ?></td>
+        </tr>
+        <tr>
+            <td>SC Hash</td>
+            <td><?php echo $tx['schash'] ?></td>
         </tr>
     </table>
 

@@ -41,16 +41,14 @@ class SmartContractWrapper
 		$this->smartContract->log("RUN $method");
         $this->initSmartContractVars();
 		try {
-			if($method == "exec") {
-				$this->exec_method();
-			} elseif ($method == "view") {
+			if ($method == "view") {
 				$this->view_method();
-			} elseif ($method == "interface") {
-				$this->getInterface();
 			} elseif ($method == "deploy") {
 				$this->deploy();
 			} elseif ($method == "verify") {
 				$this->verify();
+			} elseif ($method == "process") {
+				$this->process();
 			}
 		} catch (Throwable $e) {
 			$this->error($e, $method);
@@ -60,7 +58,7 @@ class SmartContractWrapper
     private function loadState() {
         $reflect = new ReflectionClass($this->smartContract);
         $props = $reflect->getProperties(ReflectionProperty::IS_PUBLIC);
-        $this->state = $this->readState();
+        $this->state = $this->readVarsState();
         foreach($props as $prop) {
             if($this->hasAnnotation($prop, "SmartContractVar")) {
                 $name = $prop->getName();
@@ -69,7 +67,7 @@ class SmartContractWrapper
         }
     }
 
-    private function readState() {
+    private function readVarsState() {
         $virtual=$this->args['virtual'];
         if($virtual) {
             $state = [];
@@ -80,21 +78,17 @@ class SmartContractWrapper
             }
         } else {
             $state = [];
-            $sql="select ss.variable, ss.var_key, ss.var_value
-            from (select s.sc_address, s.variable, ifnull(s.var_key, 'null') as var_key, max(s.height) as height
-                  from smart_contract_state s
-                  where s.sc_address = :address
-                  group by s.variable, s.var_key) as last_vars
-                     join smart_contract_state ss on (ss.sc_address = last_vars.sc_address and ss.variable = last_vars.variable
-                and ifnull(ss.var_key, 'null') = last_vars.var_key and ss.height = last_vars.height);
+            $sql="select * from (
+                select s.variable, s.var_value,
+                       row_number() over (partition by s.sc_address, s.variable order by s.height desc) as rn
+                from smart_contract_state s
+                where s.sc_address = :address
+                  and s.var_key is null ) as ranked
+                where ranked.rn = 1
             ";
             $rows = $this->db->run($sql, [":address"=> SC_ADDRESS]);
             foreach ($rows as $row) {
-                if($row['var_key']!==null) {
-                    $state[$row['variable']][$row['var_key']]=$row['var_value'];
-                } else {
-                    $state[$row['variable']]=$row['var_value'];
-                }
+                $state[$row['variable']]=$row['var_value'];
             }
         }
 
@@ -103,7 +97,7 @@ class SmartContractWrapper
 
 
     private function saveState() {
-        $height=intval($this->args['height'])+1;
+        $height=intval($this->args['height']);
         $reflect = new ReflectionClass($this->smartContract);
         $props = $reflect->getProperties(ReflectionProperty::IS_PUBLIC);
         foreach($props as $prop) {
@@ -148,20 +142,28 @@ class SmartContractWrapper
 		}
 	}
 
-	public function exec_method() {
-		$methodName = $this->args['method'];
-		$params = $this->args['params'];
-		$this->smartContract->setFields($this->args);
-		$reflect = new ReflectionClass($this->smartContract);
-		$method = $reflect->getMethod($methodName);
-		if(!$this->hasAnnotation($method, "SmartContractTransact")) {
-			throw new Exception("Method $methodName is not executable");
-		}
-		$this->smartContract->log("Invoke method $methodName params=".json_encode($params));
+
+    public function process() {
+        $transactions = $this->args['transactions'];
         $this->startTx();
-        $this->loadState();
-		$this->invoke($method, $params);
-        $this->saveState();
+
+        $reflect = new ReflectionClass($this->smartContract);
+        foreach ($transactions as $transaction) {
+            $this->loadState();
+            $args['transaction']=$transaction;
+            $args['height']=$this->args['height'];
+            $this->smartContract->setFields($args);
+            $msg = $transaction['msg'];
+            $data = json_decode(base64_decode($msg), true);
+            $methodName = $data['method'];
+            $params = $data['params'];
+            $method = $reflect->getMethod($methodName);
+            if(!$this->hasAnnotation($method, "SmartContractTransact")) {
+                throw new Exception("Method $methodName is not executable");
+            }
+            $this->invoke($method, $params);
+            $this->saveState();
+        }
         $this->endTx();
 		$this->store();
 	}
@@ -183,7 +185,8 @@ class SmartContractWrapper
 
 	private function outResponse() {
 		$out = [
-			"response" => $this->response
+			"response" => $this->response,
+            "hash"=>hash("sha256", json_encode(SmartContractBase::$sc_state_updates))
 		];
 		$this->out($out);
 	}
@@ -215,10 +218,10 @@ class SmartContractWrapper
 		if(!$deploy_method) {
             throw new Error("Deploy method not found");
 		}
-		$this->out("OK");
+		$this->out($this->readInterface());
 	}
 
-	public function getInterface() {
+	public function readInterface() {
 		$interface = [];
 		$reflect = new ReflectionClass($this->smartContract);
 
@@ -294,7 +297,7 @@ class SmartContractWrapper
 			}
 		}
 
-		$this->out(["interface"=>$interface]);
+        return $interface;
 	}
 
 	private function getAnnotations($obj) {
@@ -334,9 +337,18 @@ class SmartContractWrapper
         $this->loadState();
 		$this->invoke($deploy_method, $params);
         $this->saveState();
+        $this->checkHash();
         $this->endTx();
 		$this->store();
 	}
+
+    function checkHash() {
+        $hash = hash("sha256", json_encode(SmartContractBase::$sc_state_updates));
+        $cshash = $this->args['cshash'];
+        if(!empty($cshash) && $cshash != $hash) {
+            throw new Exception("State hash not matched");
+        }
+    }
 
     private function startTx() {
         $this->db->beginTransaction();

@@ -157,6 +157,10 @@ class Block
                     throw new Exception("Parse block failed ".$this->height." : $perr");
                 }
 
+                $res = $this->processSmartContractTxs();
+                if ($res == false) {
+                    throw new Exception("Parse block failed ".$this->height." : $perr");
+                }
 
                 $db->commit();
                 _log("LOCK: unlock 2 block add ".$this->height." ".$this->id. " - ok", 4);
@@ -188,6 +192,25 @@ class Block
         });
 
 
+    }
+
+    function processSmartContractTxs() {
+        $smart_contracts = [];
+        foreach ($this->data as $x) {
+            $tx = Transaction::getFromArray($x);
+            $type = $tx->type;
+            if ($type == TX_TYPE_SC_EXEC) {
+                $smart_contracts[$tx->dst][$tx->id]=$tx;
+            }
+            if ($type == TX_TYPE_SC_SEND) {
+                $smart_contracts[$tx->src][$tx->id]=$tx;
+            }
+        }
+        if(empty($smart_contracts)){
+            return true;
+        }
+        $res = SmartContract::process($smart_contracts, $this->height, false);
+        return $res;
     }
 
     static function getFromArray($b) {
@@ -707,6 +730,9 @@ class Block
             ];
 			if(!empty($x['data'])) {
 				$trans['data']=$x['data'];
+			}
+			if(!empty($x['schash'])) {
+				$trans['schash']=$x['schash'];
 			}
             ksort($trans);
             $transactions[$x['id']] = $trans;

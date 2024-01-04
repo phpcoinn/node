@@ -22,13 +22,20 @@ $data = json_decode($data, true);
 $code=$data['code'];
 $code = htmlspecialchars(base64_decode($code), ENT_IGNORE);
 
-$state = SmartContractEngine::loadState($id);
+$state = SmartContract::getState($id);
 
 global $db;
 $sql="select * from transactions t where t.type in (5,6,7)
 and (t.src = '$id' or t.dst='$id')
 order by t.height desc";
 $txs = $db->run($sql);
+
+$balance = Account::pendingBalance($smartContract['address']);
+$interface = SmartContractEngine::getInterface($id);
+
+$smartContract = SmartContract::getById($id);
+$name = $smartContract['name'];
+$description = $smartContract['description'];
 
 require_once __DIR__. '/../common/include/top.php';
 ?>
@@ -59,6 +66,18 @@ require_once __DIR__. '/../common/include/top.php';
             <td>Signature</td>
             <td><?php echo $smartContract['signature'] ?></td>
         </tr>
+        <tr>
+            <td>Balance</td>
+            <td><?php echo $balance ?></td>
+        </tr>
+        <tr>
+            <td>Name</td>
+            <td><?php echo $name ?></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td><?php echo $description ?></td>
+        </tr>
     </table>
 </div>
 
@@ -81,6 +100,65 @@ require_once __DIR__. '/../common/include/top.php';
         </tbody>
     </table>
 </div>
+
+<h3>Interface</h3>
+
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+      <tr>
+        <td class="fw-bold">Version</td>
+        <td><?php echo $interface['version'] ?></td>
+      </tr>
+      <tr>
+        <td class="fw-bold">Properties</td>
+        <td>
+            <table class="table table-sm table-striped">
+                <?php foreach ($interface['properties'] as $property) { ?>
+                    <tr>
+                        <td>
+                            <?php
+                                echo '$'.$property['name'];
+                                if($property['type'=="map"]) {
+                                    echo "[]";
+                                }
+                            ?>
+                        </td>
+                    </tr>
+                <?php } ?>
+            </table>
+        </td>
+      </tr>
+      <tr>
+        <td class="fw-bold">Methods</td>
+        <td>
+            <table class="table table-sm table-striped">
+                <?php foreach ($interface['methods'] as $method) { ?>
+                    <tr>
+                        <td>
+                            <?php
+                            echo $method['name'];
+                            echo "(";
+                            if(!empty($method['params'])) {
+                                foreach ($method['params'] as $ix => $param) {
+                                    echo '$'.$param;
+                                    if($ix < count($method['params'])-1) echo ", ";
+                                }
+                            }
+                            echo ")";
+                            ?>
+                        </td>
+                    </tr>
+                <?php } ?>
+            </table>
+        </td>
+      </tr>
+    </table>
+</div>
+
+<!--<pre>-->
+<!--    --><?php //print_r($interface) ?>
+<!--</pre>-->
+
 
 <h3>Transactions</h3>
 <div class="table-responsive">

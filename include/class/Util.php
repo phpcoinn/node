@@ -1286,8 +1286,8 @@ class Util
 		}
 		$code = file_get_contents($phar_file);
 		$code = base64_encode($code);
-		$res = SmartContractEngine::verifyCode($code, $error);
-		if(!$res) {
+        $interface = SmartContractEngine::verifyCode($code, $error);
+		if(!$interface) {
 			echo "Smart Contract can not be verified: $error".PHP_EOL;
 			exit;
 		}
