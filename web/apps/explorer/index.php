@@ -217,10 +217,10 @@ global $btcPrice, $usdPrice;
                             <a href="https://xeggex.com/market/PHP_USDT" target="_blank">Price</a>
                         </span>
                         <h2 class="my-2">
-                            <?php echo $btcPrice ?> ₿
+                            <?php echo empty(floatval($btcPrice)) ? "-" : $btcPrice ?> ₿
                         </h2>
                         <div class="text-nowrap">
-                            <span class="text-muted font-size-13"><?php echo $usdPrice ?> $</span>
+                            <span class="text-muted font-size-13"><?php echo empty(floatval($usdPrice)) ? "-" : $usdPrice ?> $</span>
                         </div>
                     </div>
                 </div>
