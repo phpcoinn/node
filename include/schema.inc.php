@@ -86,7 +86,8 @@ if (empty($dbversion)) {
 		public_key varchar(255) not null,
 		date bigint not null,
 		peer varchar(64) null,
-		data text null
+		data text null,
+		schash varchar(128) null
 	)");
 
     $db->run("create index height on mempool (height);");
@@ -144,6 +145,7 @@ if (empty($dbversion)) {
 		date int not null,
 		public_key varchar(255) not null,
 		data text null,
+		schash varchar(128) null,
 		constraint block_id
 			foreign key (block) references blocks (id)
 				on delete cascade
@@ -185,7 +187,9 @@ if (empty($dbversion)) {
 	address varchar(128) not null,
 	height int not null,
 	code text not null,
-	signature varchar(255) not null
+	signature varchar(255) not null,
+	name varchar(255) null,
+	description varchar(1000) null
 	)");
 
     $db->run("create unique index smart_contracts_address_uindex
@@ -206,6 +210,22 @@ if (empty($dbversion)) {
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync_last', '0');");
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync', '0');");
 	$dbversion = 35;
+}
+
+if($dbversion == 35) {
+    try {
+        $db->run("alter table mempool add schash varchar(128) null");
+    } catch (Throwable $e) {}
+    try {
+        $db->run("alter table transactions add schash varchar(128) null");
+    } catch (Throwable $e) {}
+    try {
+        $db->run("alter table smart_contracts add name varchar(255) null;");
+    } catch (Throwable $e) {}
+    try {
+        $db->run("alter table smart_contracts add description varchar(1000) null;");
+    } catch (Throwable $e) {}
+    $dbversion = 36;
 }
 
 // update the db version to the latest one
