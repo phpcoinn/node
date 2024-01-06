@@ -406,4 +406,13 @@ class SmartContractEngine
 
 	}
 
+    public static function getState($sc_address) {
+        if(self::$virtual) {
+            $state_file = ROOT . '/tmp/sc/'.$sc_address.'.state.json';
+            $state = @json_decode(@file_get_contents($state_file), true);
+            return $state;
+        }
+        return SmartContract::getState($sc_address);
+    }
+
 }
