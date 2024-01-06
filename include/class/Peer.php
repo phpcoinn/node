@@ -540,4 +540,10 @@ class Peer
         }
         return $list;
     }
+
+    static function updatePing($id) {
+        global $db;
+        $sql="update peers set ping = UNIX_TIMESTAMP() where id = :id";
+        $db->run($sql, [":id"=>$id]);
+    }
 }
