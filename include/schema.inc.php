@@ -212,20 +212,20 @@ if (empty($dbversion)) {
 	$dbversion = 35;
 }
 
-if($dbversion == 35) {
-    try {
+if($dbversion <= 36) {
+    $lock_dir = ROOT . "/tmp/db-migrate-37";
+    if (mkdir($lock_dir, 0700)) {
+        _log("Start migrate 36");
+        _log("mempool add schash");
         $db->run("alter table mempool add schash varchar(128) null");
-    } catch (Throwable $e) {}
-    try {
+        _log("transactions add schash");
         $db->run("alter table transactions add schash varchar(128) null");
-    } catch (Throwable $e) {}
-    try {
         $db->run("alter table smart_contracts add name varchar(255) null;");
-    } catch (Throwable $e) {}
-    try {
         $db->run("alter table smart_contracts add description varchar(1000) null;");
-    } catch (Throwable $e) {}
-    $dbversion = 36;
+        @rmdir($lock_dir);
+        $dbversion = 37;
+        _log("Finish migrate 37");
+    }
 }
 
 // update the db version to the latest one
