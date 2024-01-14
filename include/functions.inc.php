@@ -423,6 +423,7 @@ function decodeHostname($hash) {
 function synchronized($name, $handler)
 {
     $filename = ROOT.'/tmp/'.$name.'.lock';
+    _logr();
     _logp("synchronized: ".$name);
 
     if (!@mkdir($filename, 0700)) {
