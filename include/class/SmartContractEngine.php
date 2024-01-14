@@ -128,8 +128,8 @@ class SmartContractEngine
 	}
 
 	static function isolateCmd($cmd) {
-        $debug="-dxdebug.start_with_request=1";
         $debug="";
+        $debug="-dxdebug.start_with_request=1";
 
 
         $allowed_files = [
