@@ -1047,4 +1047,53 @@ class Api
         $smartContracts = SmartContract::getDeployedSmartContracts($address);
         api_echo($smartContracts);
     }
+
+    static function generateSmartContractDeployTx($data) {
+        $public_key = @$data['public_key'];
+        $sc_address = @$data['sc_address'];
+        $amount = @$data['amount'];
+        $sc_signature = @$data['sc_signature'];
+        $code=@$data['code'];
+        $params=@$data['params'];
+        $name=@$data['name'];
+        $description=@$data['description'];
+        if(empty($public_key)) {
+            api_err("Missing public_key");
+        }
+        if(empty($sc_address)) {
+            api_err("Missing sc_address");
+        }
+        if(empty($amount)) {
+            $amount = 0;
+        }
+        $date = time();
+        if(empty($sc_signature)) {
+            api_err("Missing sc_signature");
+        }
+        if(empty($code)) {
+            api_err("Missing code");
+        }
+        if(empty($params)) {
+            $params=[];
+        }
+        $interface = SmartContractEngine::verifyCode($code, $error, $sc_address);
+        if(!$interface) {
+            api_err("Error verifying contract code: $error");
+        }
+
+        $deploy_data=[
+            "code"=>$code,
+            "amount"=>num($amount),
+            "params"=>$params,
+            "interface"=>$interface,
+            "name"=>$name,
+            "description"=>$description
+        ];
+
+        $text = base64_encode(json_encode($deploy_data));
+        $tx = new Transaction($public_key, $sc_address, $amount, TX_TYPE_SC_CREATE, $date, $sc_signature);
+        $tx->fee = TX_SC_CREATE_FEE;
+        $tx->data = $text;
+        api_echo($tx->toArray());
+    }
 }
