@@ -415,4 +415,16 @@ class SmartContractEngine
         return SmartContract::getState($sc_address);
     }
 
+    static function parseCmdLineArgs($args) {
+        $args = trim($args);
+        $arr=str_getcsv($args, " ");
+
+        $arr = array_map('trim', $arr);
+        $arr = array_map('stripslashes', $arr);
+        $arr = array_filter($arr, function($item) {
+            return strlen(trim($item))>0;
+        });
+        return $arr;
+    }
+
 }

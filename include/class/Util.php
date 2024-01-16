@@ -1294,7 +1294,7 @@ class Util
 		echo "Created compiled smart contract file".PHP_EOL;
 	}
 
-	static function smartContractCall($argv)
+	static function smartContractView($argv)
 	{
 		$sc_address = $argv[2];
 		if(empty($sc_address)) {
@@ -1307,6 +1307,9 @@ class Util
 			exit;
 		}
 		$params = array_slice($argv, 4);
+        $params = array_filter($params, function($item) {
+            return strlen(trim($item))>0;
+        });
 		$res = SmartContractEngine::view($sc_address, $method, $params, $error);
 		if($res === false) {
 			echo "Error calling Smart Contract view: $error".PHP_EOL;

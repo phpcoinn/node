@@ -38,7 +38,6 @@ class SmartContractWrapper
 	public function run() {
         $this->connectDb();
 		$method = $this->args['type'];
-		$this->smartContract->log("RUN $method");
         $this->initSmartContractVars();
 		try {
 			if ($method == "view") {
@@ -268,7 +267,19 @@ class SmartContractWrapper
 				continue;
 			}
 			if($this->hasAnnotation($method, "SmartContractDeploy")) {
-				continue;
+                $ref_params = $method->getParameters();
+                $params = [];
+                foreach($ref_params as $ref_param) {
+                    $params[]=[
+                        "name"=>$ref_param->getName(),
+                        "value"=> $ref_param->isDefaultValueAvailable() ? $ref_param->getDefaultValue() : null,
+                        "required"=> !$ref_param->isDefaultValueAvailable()
+                    ];
+                }
+                $interface["deploy"]=[
+                    "name"=>$name,
+                    "params"=>$params
+                ];
 			}
 			if($this->hasAnnotation($method, "SmartContractIgnore")) {
 				continue;
