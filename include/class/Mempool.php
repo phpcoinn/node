@@ -133,4 +133,51 @@ class Mempool
 		return $db->run($sql);
 	}
 
+    static function checkMempoolBalance(Transaction $transaction, &$error) {
+        $mempool_txs = Transaction::mempool(Block::max_transactions(), false);
+        $transactions = [];
+        foreach ($mempool_txs as $mempool_tx) {
+            $mempool_tx = Transaction::getFromArray($mempool_tx);
+            $transactions[$mempool_tx->id]=$mempool_tx;
+        }
+        $transactions[$transaction->id]=$transaction;
+        ksort($transactions);
+
+        try {
+
+            $balances = [];
+
+            foreach ($transactions as $transaction) {
+                $src = $transaction->src;
+                $dst = $transaction->dst;
+                if(!isset($balances[$src])) $balances[$src]=floatval(Account::getBalance($src));
+                if(!isset($balances[$dst])) $balances[$dst]=floatval(Account::getBalance($dst));
+                $type = $transaction->type;
+                if($type == TX_TYPE_REWARD) {
+                    throw new Error("Invalid transaction in mempool");
+                } else if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE || $type == TX_TYPE_MN_REMOVE || $type == TX_TYPE_SC_CREATE
+                    || $type == TX_TYPE_SC_EXEC || $type == TX_TYPE_SC_SEND) {
+                    $balances[$src] -= $transaction->val + $transaction->fee;
+                    $balances[$dst] += $transaction->val;
+                } else if ($type == TX_TYPE_FEE) {
+                    $balances[$dst] += $transaction->val;
+                } else if ($type == TX_TYPE_BURN) {
+                    $balances[$src] -= $transaction->val + $transaction->fee;
+                }
+                foreach ($balances as $address => $balance) {
+                    if($balance <0 ) {
+                        throw new Exception("Invalid future balance for address $address = $balance");
+                    }
+                }
+            }
+
+            return true;
+        } catch (Throwable $e) {
+            $error = $e->getMessage();
+            return false;
+        }
+
+
+    }
+
 }

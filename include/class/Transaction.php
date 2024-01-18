@@ -1207,6 +1207,24 @@ class Transaction
 
 		try {
 
+            $res = Mempool::existsTx($hash);
+            if ($res != 0) {
+                throw new Exception("The transaction $hash is already in mempool");
+            }
+
+            $res = $db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $hash]);
+            if ($res != 0) {
+                throw new Exception("The $hash transaction is already in a block");
+            }
+
+		    if($mempool_size + 1 > $max_txs) {
+			    throw new Exception("Not added transaction to mempool because is full: max_txs=$max_txs mempool_size=$mempool_size");
+		    }
+
+            if($this->type === null) {
+                throw new Exception("Missing transaction type");
+            }
+
 			if ($this->date < time() - (3600 * 24 * 48)) {
 				throw new Exception("The date is too old");
 			}
@@ -1214,31 +1232,14 @@ class Transaction
 				throw new Exception("Invalid Date");
 			}
 
-		    if($mempool_size + 1 > $max_txs) {
-			    throw new Exception("Not added transaction to mempool because is full: max_txs=$max_txs mempool_size=$mempool_size");
-		    }
 		    if (!$this->check(null, false, $err)) {
 			    throw new Exception("Transaction check failed. Error: $err");
 		    }
-			$res = Mempool::existsTx($hash);
-		    if ($res != 0) {
-			    throw new Exception("The transaction $hash is already in mempool");
-		    }
 
-		    $res = $db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $hash]);
-		    if ($res != 0) {
-			    throw new Exception("The $hash transaction is already in a block");
-		    }
-
-		    $balance = $db->single("SELECT balance FROM accounts WHERE id=:id", [":id" => $this->src]);
-		    if (floatval($balance) < $this->val + $this->fee) {
-			    throw new Exception("Not enough funds, expected=".($this->val + $this->fee)  . " balance=$balance");
-		    }
-
-			$memspent = Mempool::getSourceMempoolBalance($this->src);
-		    if (floatval($balance) - floatval($memspent) < $this->val + $this->fee) {
-			    throw new Exception("Not enough funds (mempool) expected=".($this->val + $this->fee). " balance=$balance mempool=$memspent");
-		    }
+            $res = Mempool::checkMempoolBalance($this, $error);
+            if(!$res) {
+                throw new Exception("Error processing new transaction in mempool: $error");
+            }
 
 			if($this->type == TX_TYPE_REWARD) {
 				throw new Exception("Not allowed type in mempool");
