@@ -856,6 +856,16 @@ class Util
 		$version = $arr[3];
 		$version = str_replace(";", "", $version);
 		$version = intval($version);
+
+        if(empty($version)) {
+            $check_url = "https://phpcoin.net/version.php?branch={branch}";
+            $check_url=str_replace("{branch}",$branch,$check_url);
+            $cmd= "curl -m 30 -H 'Cache-Control: no-cache, no-store' -s $check_url";
+            $res = shell_exec($cmd);
+            $version = intval($res);
+            _log("AUTO_UPDATE: check fallback url $check_url version=$version",4);
+        }
+
         $user = shell_exec("whoami");
 
 //        if(trim($user)=="root" && $currentVersion >= 317) {
