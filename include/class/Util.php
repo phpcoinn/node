@@ -845,26 +845,13 @@ class Util
         $currentVersion = BUILD_VERSION;
 		echo "Checking node branch=$branch force=$force update current version = ".BUILD_VERSION.PHP_EOL;
 		$maxPeerBuildNumber = Peer::getMaxBuildNumber();
-		$check_url="https://raw.githubusercontent.com/phpcoinn/node/{branch}/include/coinspec.inc.php";
-		if(isset($_config['update_check_url'])){
-		    $check_url=$_config['update_check_url'];
-		}
-		$check_url=str_replace("{branch}",$branch,$check_url);
-		$cmd= "curl -m 30 -H 'Cache-Control: no-cache, no-store' -s $check_url | grep BUILD_VERSION";
-		$res = shell_exec($cmd);
-		$arr= explode(" ", $res);
-		$version = $arr[3];
-		$version = str_replace(";", "", $version);
-		$version = intval($version);
 
-        if(empty($version)) {
-            $check_url = "https://phpcoin.net/version.php?branch={branch}";
-            $check_url=str_replace("{branch}",$branch,$check_url);
-            $cmd= "curl -m 30 -H 'Cache-Control: no-cache, no-store' -s $check_url";
-            $res = shell_exec($cmd);
-            $version = intval($res);
-            _log("AUTO_UPDATE: check fallback url $check_url version=$version",4);
-        }
+        $check_url = "https://phpcoin.net/version.php?branch={branch}";
+        $check_url=str_replace("{branch}",$branch,$check_url);
+        $cmd= "curl -m 30 -H 'Cache-Control: no-cache, no-store' -s $check_url";
+        $res = shell_exec($cmd);
+        $version = intval($res);
+        _log("AUTO_UPDATE: check url $check_url version=$version",4);
 
         $user = shell_exec("whoami");
 
@@ -896,6 +883,10 @@ class Util
                 _log("AUTO_UPDATE: cron cmd=$cmd res=$res");
 
             }
+
+            $cmd="git remote set-url origin https://git.phpcoin.net/node";
+            $res = shell_exec($cmd);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
             $cmd="cd ".ROOT." && git config --unset-all safe.directory ".ROOT;
             $res = shell_exec($cmd);
