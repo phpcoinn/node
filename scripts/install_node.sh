@@ -1,6 +1,39 @@
 #!/bin/bash
 # setup node on ubuntu server 21.04, 20.04, 18.04
-# one liner: curl -s https://raw.githubusercontent.com/phpcoinn/node/main/scripts/install_node.sh | bash
+# one liner: curl -s https://phpcoin.net/scripts/main/install_node.sh | bash
+servers=("phpcoin.net" "cn.phpcoin.net")
+declare -A git_urls
+declare -A server_urls
+
+git_urls["phpcoin.net"]="https://git.phpcoin.net/node"
+git_urls["cn.phpcoin.net"]="https://cn.phpcoin.net/git/phpcoin-node.git"
+
+server_urls["phpcoin.net"]="https://phpcoin.net"
+server_urls["cn.phpcoin.net"]="https://cn.phpcoin.net"
+
+find_best_server() {
+    get_ping_time() {
+        local server=$1
+        local ping_result=$(ping -c 1 "$server" | tail -1| awk '{print $4}' | cut -d '/' -f 2)
+
+        if [ -z "$ping_result" ]; then
+            echo "1000"
+        else
+            echo "$ping_result"
+        fi
+    }
+    local best_server=""
+    local min_ping_time=1000
+    for server in "${servers[@]}"; do
+        ping_time=$(get_ping_time "$server")
+        echo "Ping time for $server: $ping_time ms"
+        if [ "$(echo "$ping_time < $min_ping_time" | bc)" -eq 1 ]; then
+            min_ping_time=$ping_time
+            best_server=$server
+        fi
+    done
+    best_server_result=$best_server
+}
 
 echo "PHPCoin node Installation"
 echo "==================================================================================================="
@@ -26,12 +59,17 @@ mysql -e "create database $DB_NAME;"
 mysql -e "create user '$DB_USER'@'localhost' identified by '$DB_PASS';"
 mysql -e "grant all privileges on $DB_NAME.* to '$DB_USER'@'localhost';"
 
+echo "PHPCoin: find best network server"
+echo "==================================================================================================="
+find_best_server
+echo "Best server: $best_server_result"
+
 echo "PHPCoin: download node"
 echo "==================================================================================================="
 mkdir $NODE_DIR
 cd $NODE_DIR
 git config --global --add safe.directory $NODE_DIR
-git clone https://github.com/phpcoinn/node .
+git clone ${git_urls[$best_server_result]} .
 git config core.fileMode false
 
 echo "PHPCoin: Configure apache"
@@ -74,11 +112,13 @@ mysql $DB_NAME -e "update config set val='http://$IP' where cfg='hostname';"
 
 echo "PHPCoin: import blockchain"
 echo "==================================================================================================="
-cd $NODE_DIR/tmp
-wget https://phpcoin.net/download/blockchain.sql.zip -O blockchain.sql.zip
+cd $NODE_DIR
+wget ${server_urls[$best_server_result]}/download/blockchain.sql.zip -O blockchain.sql.zip
 unzip -o blockchain.sql.zip
 cd $NODE_DIR
-php cli/util.php importdb tmp/blockchain.sql
+php cli/util.php importdb blockchain.sql
+rm blockchain.sql
+rm blockchain.sql.zip
 
 rm -rf $NODE_DIR/tmp/sync-lock
 
