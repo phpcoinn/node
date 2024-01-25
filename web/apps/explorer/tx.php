@@ -134,10 +134,6 @@ require_once __DIR__. '/../common/include/top.php';
             <td>Data</td>
             <td style="word-break: break-all"><?php echo $tx['data'] ?></td>
         </tr>
-        <tr>
-            <td>SC Hash</td>
-            <td><?php echo $tx['schash'] ?></td>
-        </tr>
     </table>
 
     <?php if ($tx['type']==TX_TYPE_SC_EXEC) {

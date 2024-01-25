@@ -21,8 +21,6 @@ class Transaction
 
 	public $mempool = false;
 
-    public $schash;
-
 	public function __construct($publicKey=null,$dst=null,$val=null,$type=null,$date = null,$msg = null, $fee=0)
 	{
 		$this->val = $val;
@@ -251,7 +249,6 @@ class Transaction
 	    $trans->height = $x['height'];
 	    $trans->peer = $x['peer'];
 	    $trans->data = $x['data'];
-	    $trans->schash = $x['schash'];
 	    return $trans;
     }
 
@@ -269,7 +266,6 @@ class Transaction
 		$trans->signature = $x['signature'];
 		$trans->data = @$x['data'];
 		$trans->height = @$x['height'];
-		$trans->schash = @$x['schash'];
 		return $trans;
 	}
 
@@ -288,9 +284,6 @@ class Transaction
 	    ];
 		if(!empty($this->data)) {
 			$trans['data']=$this->data;
-		}
-		if(!empty($this->schash)) {
-			$trans['schash']=$this->schash;
 		}
 	    ksort($trans);
 	    return $trans;
@@ -448,14 +441,13 @@ class Transaction
 			":date"      => $this->date,
 			":message"   => $this->msg,
 			":data"   => $this->data,
-			":schash"   => $this->schash,
 		];
 
 
 		$res = $db->run(
 			"INSERT into mempool  
-			    (peer, id, public_key, height, src, dst, val, fee, signature, type, message, `date`, data, schash)
-			    values (:peer, :id, :public_key, :height, :src, :dst, :val, :fee, :signature, :type, :message, :date, :data, :schash)",
+			    (peer, id, public_key, height, src, dst, val, fee, signature, type, message, `date`, data)
+			    values (:peer, :id, :public_key, :height, :src, :dst, :val, :fee, :signature, :type, :message, :date, :data)",
 			$bind
 		);
 		if($res === false) {
@@ -574,8 +566,7 @@ class Transaction
 				":date"       => $this->date,
 				":message"    => $this->msg,
 				":src"        => $src,
-				":data"    => $this->data,
-				":schash"    => $this->schash,
+				":data"    => $this->data
 			];
 			$res = Transaction::insert($bind);
 			if ($res != 1) {
@@ -1076,7 +1067,6 @@ class Transaction
 		    "date"       => $x['date'],
 		    "public_key" => $x['public_key'],
 		    "data" => $x['data'],
-		    "schash" => $x['schash'],
 	    ];
 	    $trans['confirmations'] = $height - $x['height'];
 
@@ -1146,9 +1136,6 @@ class Transaction
         $trans['src'] = $x['src'];
 		if(!empty($x['data'])) {
 			$trans['data']=$x['data'];
-		}
-		if(!empty($x['schash'])) {
-			$trans['schash']=$x['schash'];
 		}
 
         $trans['type_label'] = "mempool";
@@ -1344,8 +1331,8 @@ class Transaction
     	global $db;
 	    $res = $db->run(
 		    "INSERT into transactions 
-    			(id, public_key, block,  height, dst, val, fee, signature, type, message, `date`, src, data, schash)
-    			values (:id, :public_key, :block, :height, :dst, :val, :fee, :signature, :type, :message, :date, :src, :data, :schash)
+    			(id, public_key, block,  height, dst, val, fee, signature, type, message, `date`, src, data)
+    			values (:id, :public_key, :block, :height, :dst, :val, :fee, :signature, :type, :message, :date, :src, :data)
     			",
 		    $bind
 	    );
