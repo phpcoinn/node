@@ -98,8 +98,7 @@ if (empty($dbversion)) {
 		public_key varchar(255) not null,
 		date bigint not null,
 		peer varchar(64) null,
-		data text null,
-		schash varchar(128) null
+		data text null
 	)");
 
     $db->run("create index height on mempool (height);");
@@ -157,7 +156,6 @@ if (empty($dbversion)) {
 		date int not null,
 		public_key varchar(255) not null,
 		data text null,
-		schash varchar(128) null,
 		constraint block_id
 			foreign key (block) references blocks (id)
 				on delete cascade
@@ -244,6 +242,14 @@ if($dbversion <= 37) {
     migrate_with_lock($dbversion, function() {
         global $db;
         $db->run("alter table blocks add schash varchar(128) null");
+    });
+}
+
+if($dbversion <= 38) {
+    migrate_with_lock($dbversion, function() {
+        global $db;
+        $db->run("alter table transactions drop column schash;");
+        $db->run("alter table mempool drop column schash;");
     });
 }
 
