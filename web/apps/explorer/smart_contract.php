@@ -27,7 +27,7 @@ $state = SmartContract::getState($id);
 global $db;
 $sql="select * from transactions t where t.type in (5,6,7)
 and (t.src = '$id' or t.dst='$id')
-order by t.height desc";
+order by t.height desc, t.id desc";
 $txs = $db->run($sql);
 
 $balance = Account::pendingBalance($smartContract['address']);

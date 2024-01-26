@@ -26,7 +26,7 @@ class SmartContractBase
 		$this->src = $tx['src'];
 		$this->dst = $tx['dst'];
 		$this->value = floatval($tx['val']);
-		$this->height = intval($args['height'])+1;
+		$this->height = intval($args['height']);
 		$this->address = SC_ADDRESS;
         $this->tx = $tx;
         $this->id = $tx['id'];

@@ -78,13 +78,34 @@ class SmartContractEngine
 
     static function process($sc_address, $transactions, $height, $test, &$error=null) {
         return try_catch(function () use ($sc_address, $transactions, $height, $test) {
-            $sc_exec_file = SmartContractEngine::buildRunCode($sc_address);
+
+            $smartContract = SmartContract::getById($sc_address, self::$virtual);
+            $code =  null;
+            if(!$smartContract) {
+                if(count($transactions)>1) {
+                    throw new Exception("Not allowed multiple smart contract create transactions");
+                }
+                foreach ($transactions as $tx) {
+                    $code = $tx->data;
+                }
+            } else {
+                $smartContract = SmartContractEngine::verifySmartContract($sc_address, $test);
+                $code = $smartContract['code'];
+            }
+
+            $data = json_decode(base64_decode($code), true);
+            $code = base64_decode($data['code']);
+            if(empty($code)) {
+                throw new Exception("Invalid code for smart contract process");
+            }
+
+            $sc_exec_file = SmartContractEngine::buildRunCode($sc_address, $code);
             $cmd_args = [
                 'type'=>'process',
                 'transactions' => $transactions,
                 'height'=>$height,
                 "test"=>$test,
-                "virtual"=>self::$virtual
+                "virtual"=>self::$virtual,
 			];
 
 			$cmd_args = base64_encode(json_encode($cmd_args));
@@ -193,12 +214,14 @@ class SmartContractEngine
         ];
 	}
 
-	static function buildRunCode($sc_address, $test=false) {
+	static function buildRunCode($sc_address, $code = null, $test=false) {
 
-		$smartContract = SmartContractEngine::verifySmartContract($sc_address, $test);
-		$code = $smartContract['code'];
-		$data = json_decode(base64_decode($code), true);
-		$code = base64_decode($data['code']);
+        if($code == null) {
+            $smartContract = SmartContractEngine::verifySmartContract($sc_address, $test);
+            $code = $smartContract['code'];
+            $data = json_decode(base64_decode($code), true);
+            $code = base64_decode($data['code']);
+        }
 
 		return self::buildRunFile($sc_address, $code);
 	}
@@ -352,7 +375,7 @@ class SmartContractEngine
 
 	static function getInterface($sc_address, &$error = null) {
 
-        $smartContract = SmartContract::getById($sc_address);
+        $smartContract = SmartContract::getById($sc_address, self::$virtual);
         if(!$smartContract) {
             return false;
         }
@@ -361,49 +384,6 @@ class SmartContractEngine
         $data = json_decode(base64_decode($code),true);
         $interface = $data['interface'];
         return $interface;
-	}
-
-
-	static function deploy($transaction, $height, &$error = null, $test = false, $cshash=null)
-	{
-		$sc_address = $transaction->dst;
-		return try_catch(function () use ($sc_address, $height, $test, $transaction, $cshash) {
-
-			$sc_exec_file = SmartContractEngine::buildDeployCode($transaction, $test);
-
-            if(self::$virtual) {
-                $state_file = ROOT . '/tmp/sc/'.$sc_address.'.state.json';
-                @unlink($state_file);
-            }
-
-			$data = $transaction->data;
-			$data = json_decode(base64_decode($data), true);
-
-			$cmd_args = [
-				'type'=>'deploy',
-				'transaction' => $transaction,
-				'height'=>$height,
-                "test"=>$test,
-                "virtual"=>self::$virtual,
-                "cshash"=>$cshash
-			];
-
-			if(isset($data['params'])) {
-				$cmd_args['params']=$data['params'];
-			}
-
-			$cmd_args = base64_encode(json_encode($cmd_args));
-
-			$cmd = "$sc_exec_file $cmd_args";
-            $res = self::isolateCmd($cmd);
-			$data = self::processOutput($res);
-			if(!self::$virtual && !DEVELOPMENT) {
-				unlink($sc_exec_file);
-			}
-			return $data['hash'];
-		}, $error);
-
-
 	}
 
     public static function getState($sc_address) {

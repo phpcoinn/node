@@ -191,6 +191,10 @@ require_once __DIR__. '/../common/include/top.php';
                     <?php echo $block_time; ?>
                 </td>
             </tr>
+            <tr>
+                <td>SC hash</td>
+                <td><?php echo $block['schash'] ?></td>
+            </tr>
         </tbody>
     </table>
 </div>

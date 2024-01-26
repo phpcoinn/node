@@ -662,17 +662,6 @@ class Transaction
 				}
 			}
 
-			if ($type == TX_TYPE_SC_CREATE) {
-                $schash = SmartContract::createSmartContract($this, $height, $error, false, $this->schash);
-				if(!$schash) {
-					throw new Exception("Can not process create smart contract: $error");
-				}
-                if(!empty($this->schash) && $this->schash != $schash) {
-                    throw new Exception("Invalid smart contract hash");
-                }
-                $this->schash = $schash;
-			}
-
 			Mempool::delete($this->id);
 			return true;
 		}, $error);
@@ -717,7 +706,7 @@ class Transaction
 
 	        // the value must be >=0
 	        if ($this->val <= 0 && in_array($phase, ["genesis","launch","mining","combined","deflation","increasing","decreasing","main"]) && $height > UPDATE_10_ZERO_TX_NOT_ALLOWED) {
-				if($this->type != TX_TYPE_SC_CREATE && $this->type != TX_TYPE_SC_EXEC) {
+				if($this->type != TX_TYPE_SC_CREATE && $this->type != TX_TYPE_SC_EXEC && $this->type != TX_TYPE_SC_SEND) {
 		            throw new Exception("Transaction type {$this->val} - Value <= 0", 3);
 		        }
 	        }
@@ -1249,24 +1238,11 @@ class Transaction
 			    }
 		    }
 
-            if($this->type == TX_TYPE_SC_CREATE) {
-                $cnt = Mempool::getByDstAndType($this->dst, $this->type);
-                if($cnt > 0) {
-                    throw new Exception("Similar transaction already in mempool: smart-contract-create ".$this->dst);
-                }
-                $schash = SmartContract::createSmartContract($this, Block::getHeight()+1, $error, true, $this->schash);
-                if(!$schash) {
-                    throw new Exception("Create smart contract transaction failed: ".$error);
-                }
-                $this->schash = $schash;
-            }
-
-            if($this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_SEND) {
-                $schash = SmartContract::processSmartContractTx($this, $error, $this->schash);
-                if(!$schash) {
+            if($this->type == TX_TYPE_SC_CREATE || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_SEND) {
+                $schash = SmartContract::processSmartContractTx($this, Block::getHeight()+1, $error);
+                if($schash === false) {
                     throw new Exception("Execute smart contract transaction failed: ".$error);
                 }
-                $this->schash=$schash;
             }
 
 			if($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_BURN) {

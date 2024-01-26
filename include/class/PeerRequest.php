@@ -270,8 +270,8 @@ class PeerRequest
 		}
 
         if($tx->type == TX_TYPE_SC_EXEC || $tx->type == TX_TYPE_SC_SEND) {
-            $schash = SmartContract::processSmartContractTx($tx,  $error, $tx->schash);
-            if($schash != $tx->schash) {
+            $schash = SmartContract::processSmartContractTx($tx, Block::getHeight()+1,$error);
+            if($schash === false) {
                 throw new Exception("Error processing smart contract transaction: Invalid transaction schash: ".$error);
             }
         }

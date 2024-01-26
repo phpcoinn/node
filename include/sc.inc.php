@@ -7,6 +7,9 @@ require_once ROOT . "/include/class/sc/SmartContractWrapper.php";
 require_once ROOT . "/include/class/sc/SmartContractMap.php";
 
 const CHAIN_PREFIX = "38";
+const TX_TYPE_SC_CREATE = 5;
+const TX_TYPE_SC_EXEC = 6;
+const TX_TYPE_SC_SEND = 7;
 
 if(!function_exists('_log')) {
     function _log($log)

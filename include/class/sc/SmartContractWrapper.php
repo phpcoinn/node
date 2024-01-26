@@ -42,8 +42,6 @@ class SmartContractWrapper
 		try {
 			if ($method == "view") {
 				$this->view_method();
-			} elseif ($method == "deploy") {
-				$this->deploy();
 			} elseif ($method == "verify") {
 				$this->verify();
 			} elseif ($method == "process") {
@@ -144,15 +142,34 @@ class SmartContractWrapper
 
     public function process() {
         $transactions = $this->args['transactions'];
+        $height=$this->args['height'];
         $this->startTx();
+        $res = $this->cleanState($height);
+        if($res === false) {
+            throw new Exception("Error cleaning SmartContract state");
+        }
 
         $reflect = new ReflectionClass($this->smartContract);
         foreach ($transactions as $transaction) {
             $this->loadState();
             $args['transaction']=$transaction;
-            $args['height']=$this->args['height'];
+            $args['height']=$height;
             $this->smartContract->setFields($args);
             $msg = $transaction['msg'];
+            $type = $transaction['type'];
+            if($type == TX_TYPE_SC_CREATE) {
+                $data=$transaction['data'];
+                $data = json_decode(base64_decode($data), true);
+                $deploy_method = $this->get_deploy_method();
+                if(!$deploy_method) {
+                    throw new Exception("Deploy method not found");
+                }
+                $this->createSmartContract($transaction, $height);
+                $params = $data['params'];
+                $this->invoke($deploy_method, $params);
+                $this->log("::deploy params=".json_encode($params));
+                $this->saveState();
+            } else {
             $data = json_decode(base64_decode($msg), true);
             $methodName = $data['method'];
             $params = $data['params'];
@@ -160,8 +177,10 @@ class SmartContractWrapper
             if(!$this->hasAnnotation($method, "SmartContractTransact")) {
                 throw new Exception("Method $methodName is not executable");
             }
+                $this->log("::$methodName params=".json_encode($params));
             $this->invoke($method, $params);
             $this->saveState();
+        }
         }
         $this->endTx();
 		$this->store();
@@ -175,7 +194,7 @@ class SmartContractWrapper
         foreach($props as $prop) {
             if($this->hasAnnotation($prop, "SmartContractMap")) {
                 $name = $prop->getName();
-                $height=intval($this->args['height'])+1;
+                $height=intval($this->args['height']);
                 $smartContractMap = new SmartContractMap($this->db, $name, $height);
                 $prop->setValue($this->smartContract, $smartContractMap);
             }
@@ -183,9 +202,11 @@ class SmartContractWrapper
     }
 
 	private function outResponse() {
+        $hash = hash("sha256", json_encode(SmartContractBase::$sc_state_updates));
+        $this->log("SC:".SC_ADDRESS." hash=".$hash);
 		$out = [
 			"response" => $this->response,
-            "hash"=>hash("sha256", json_encode(SmartContractBase::$sc_state_updates))
+            "hash"=>$hash
 		];
 		$this->out($out);
 	}
@@ -334,35 +355,15 @@ class SmartContractWrapper
 		return in_array($annotation, $annotations);
 	}
 
-	public function deploy() {
-        $deploy_method = $this->get_deploy_method();
-		if(!$deploy_method) {
-			throw new Exception("Deploy method not found");
-		}
-        $this->startTx();
-        $this->createSmartContract();
-
-		$this->smartContract->setFields($this->args);
-
-		$params = $this->args['params'];
-        $this->loadState();
-		$this->invoke($deploy_method, $params);
-        $this->saveState();
-        $this->checkHash();
-        $this->endTx();
-		$this->store();
-	}
-
-    function checkHash() {
-        $hash = hash("sha256", json_encode(SmartContractBase::$sc_state_updates));
-        $cshash = $this->args['cshash'];
-        if(!empty($cshash) && $cshash != $hash) {
-            throw new Exception("State hash not matched");
-        }
-    }
-
     private function startTx() {
         $this->db->beginTransaction();
+    }
+
+    private function cleanState($height) {
+
+        $sql="delete from smart_contract_state where height >= :height and sc_address = :sc_address";
+        $res = $this->db->run($sql, [":height"=>$height, ":sc_address"=>SC_ADDRESS]);
+        return $res;
     }
 
     private function endTx() {
@@ -374,9 +375,7 @@ class SmartContractWrapper
         }
     }
 
-    private function createSmartContract() {
-        $transaction=$this->args['transaction'];
-        $height=$this->args['height'];
+    private function createSmartContract($transaction, $height) {
         SmartContractBase::insertSmartContract($this->db, $transaction, $height);
     }
 
@@ -405,6 +404,7 @@ class SmartContractWrapper
         @ob_end_clean();
         ob_start();
         $error = "Error running smart contract method=$method: ".$e->getMessage();
+        $this->log($error);
 		echo json_encode(["status" => "error", "error" => $error, "trace"=>$e->getTraceAsString()]);
 		exit;
 	}

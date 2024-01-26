@@ -93,47 +93,35 @@ class SmartContract
 		}, $error);
 	}
 
-	public static function createSmartContract(Transaction &$transaction, $height, &$error = null, $test = false, $cshash = null) {
-		try {
 
-
-
-            $hash = SmartContractEngine::deploy($transaction, $height,  $err, $test, $cshash);
-			if(!$hash) {
-				throw new Exception("Error calling deploy method of smart contract: $err");
-			}
-
-			return $hash;
-		} catch (Exception $e) {
-			$error = $e->getMessage();
-			_log("createSmartContract error=$error");
-			return false;
-		}
-	}
-
-	public static function processSmartContractTx(Transaction $transaction, &$error = null, $cshash = null) {
-		return try_catch(function () use ($error, $transaction, $cshash) {
+	public static function processSmartContractTx(Transaction $transaction,$height, &$error = null) {
+		return try_catch(function () use ($error, $transaction,$height) {
 			$message = $transaction->msg;
-            $height = Block::getHeight();
+			$type = $transaction->type;
 			$exec_params = json_decode(base64_decode($message), true);
 			$method = $exec_params['method'];
+
+            if($type == TX_TYPE_SC_EXEC || $type == TX_TYPE_SC_CREATE) {
+                $sc_address = $transaction->dst;
+            } else {
+                $sc_address = $transaction->src;
+            }
 
             $mempool_txs = Transaction::mempool(Block::max_transactions(), false);
             $transactions = [];
             foreach ($mempool_txs as $mempool_tx) {
                 $mempool_tx = Transaction::getFromArray($mempool_tx);
-                if($mempool_tx->type === TX_TYPE_SC_EXEC || $mempool_tx->type === TX_TYPE_SC_SEND) {
+                if($mempool_tx->type === TX_TYPE_SC_CREATE && $mempool_tx->dst === $sc_address) {
+                    $transactions[$mempool_tx->id]=$mempool_tx;
+                } else if ( $mempool_tx->type === TX_TYPE_SC_EXEC && $mempool_tx->dst === $sc_address) {
+                    $transactions[$mempool_tx->id]=$mempool_tx;
+                } else if ($mempool_tx->type === TX_TYPE_SC_SEND && $mempool_tx->src == $sc_address) {
                     $transactions[$mempool_tx->id]=$mempool_tx;
                 }
             }
             $transactions[$transaction->id]=$transaction;
             ksort($transactions);
 
-            if($transaction->type == TX_TYPE_SC_EXEC) {
-                $sc_address = $transaction->dst;
-            } else {
-                $sc_address = $transaction->src;
-            }
             $hash = SmartContractEngine::process($sc_address, $transactions, $height, true, $err);
             if(!$hash) {
                 throw new Exception("Error calling method $method of smart contract: ".$err);
@@ -145,13 +133,17 @@ class SmartContract
 
     public static function process($smart_contracts, $height, $test, &$error = null) {
         return try_catch(function () use ($smart_contracts, $height, $test) {
+            $schashes = [];
             foreach ($smart_contracts as $sc_address => $txs) {
-                $res = SmartContractEngine::process($sc_address, $txs, $height, $test);
-                if(!$res) {
-                    throw new Exception("Error processing smart contract $sc_address transactions");
+                $schash = SmartContractEngine::process($sc_address, $txs, $height, $test, $error);
+                if(!$schash) {
+                    throw new Exception("Error processing smart contract $sc_address transactions: $error");
                 }
+                $schashes[$sc_address]=$schash;
             }
-            return true;
+            ksort($schashes);
+            $schash=hash("sha256", json_encode($schashes));
+            return $schash;
         }, $error);
     }
 
@@ -161,7 +153,10 @@ class SmartContract
 		return $db->run($sql);
 	}
 
-	static function getById($id) {
+	static function getById($id, $virtual = false) {
+        if($virtual) {
+            return SmartContractEngine::$smartContract;
+        }
 		global $db;
 		$sql = "select * from smart_contracts where address = :address";
 		return $db->row($sql, [":address"=>$id]);

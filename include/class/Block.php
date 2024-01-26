@@ -23,6 +23,8 @@ class Block
 	public $masternode;
 	public $mn_signature;
 
+    public $schash;
+
 	/**
 	 * @param $generator
 	 * @param $miner
@@ -140,6 +142,7 @@ class Block
                     ":argon"        => $this->argon,
                     ":version"        => $this->version,
                     ":transactions" => $total,
+                    ":schash" => $this->schash,
                 ];
                 $res = Block::insert($bind);
                 if ($res != 1) {
@@ -157,9 +160,14 @@ class Block
                     throw new Exception("Parse block failed ".$this->height." : $perr");
                 }
 
-                $res = $this->processSmartContractTxs();
-                if ($res == false) {
-                    throw new Exception("Parse block failed ".$this->height." : $perr");
+
+                $schash = $this->processSmartContractTxs($this->height);
+                _log("SCHASH: block=".$this->schash." calc=".$schash);
+                if ($schash === false) {
+                    throw new Exception("Parse block failed ".$this->height." Missing schash");
+                }
+                if(!empty($this->schash) && $this->schash != $schash) {
+                    throw new Exception("Invalid schash block=".$this->schash." calculated=".$schash);
                 }
 
                 $db->commit();
@@ -179,6 +187,7 @@ class Block
 
             } catch (Exception $e) {
                 $error = $e->getMessage();
+                SmartContract::cleanState($this->height);
                 _log("LOCK: Block ".$this->height." ".$this->id." add error: $error", 4);
                 if($db->inTransaction()) {
                     $db->rollback();
@@ -194,11 +203,14 @@ class Block
 
     }
 
-    function processSmartContractTxs() {
+    function processSmartContractTxs($height, $test = false) {
         $smart_contracts = [];
         foreach ($this->data as $x) {
             $tx = Transaction::getFromArray($x);
             $type = $tx->type;
+            if ($type == TX_TYPE_SC_CREATE) {
+                $smart_contracts[$tx->dst][$tx->id]=$tx;
+            }
             if ($type == TX_TYPE_SC_EXEC) {
                 $smart_contracts[$tx->dst][$tx->id]=$tx;
             }
@@ -207,10 +219,10 @@ class Block
             }
         }
         if(empty($smart_contracts)){
-            return true;
+            return null;
         }
-        $res = SmartContract::process($smart_contracts, $this->height, false);
-        return $res;
+        $schash = SmartContract::process($smart_contracts, $height, $test);
+        return $schash;
     }
 
     static function getFromArray($b) {
@@ -222,6 +234,7 @@ class Block
 	    $block->transactions = $b['transactions'];
 	    $block->masternode = $b['masternode'];
 	    $block->mn_signature = $b['mn_signature'];
+	    $block->schash = $b['schash'];
 	    return $block;
     }
 
@@ -731,9 +744,6 @@ class Block
 			if(!empty($x['data'])) {
 				$trans['data']=$x['data'];
 			}
-			if(!empty($x['schash'])) {
-				$trans['schash']=$x['schash'];
-			}
             ksort($trans);
             $transactions[$x['id']] = $trans;
         }
@@ -820,6 +830,9 @@ class Block
 			$parts[]=$this->masternode;
 			$parts[]=$this->mn_signature;
 		}
+        if($this->height >= SC_START_HEIGHT && !empty($this->schash)) {
+            $parts[]=$this->schash;
+        }
 		$info = implode("-", $parts);
 		_log("getSignatureBase=$info",5);
 		return $info;
@@ -892,8 +905,8 @@ class Block
     	global $db;
 	    $res = $db->run(
 		    "INSERT into blocks 
-				(id, generator, miner, height, `date`, nonce, signature, difficulty, argon, transactions, version, masternode, mn_signature)	
-				values (:id, :generator, :miner, :height, :date, :nonce, :signature, :difficulty, :argon, :transactions, :version, :masternode, :mn_signature)",
+				(id, generator, miner, height, `date`, nonce, signature, difficulty, argon, transactions, version, masternode, mn_signature, schash)	
+				values (:id, :generator, :miner, :height, :date, :nonce, :signature, :difficulty, :argon, :transactions, :version, :masternode, :mn_signature, :schash)",
 		    $bind
 	    );
 	    return $res;
