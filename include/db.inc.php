@@ -111,10 +111,10 @@ class DB extends PDO
         }
     }
 
-    public function run($sql, $bind = "")
+    public function run($sql, $bind = "", $param=true)
     {
         $this->sql = trim($sql);
-        $this->bind = $this->cleanup($bind, $sql);
+        $this->bind = $param ?  $this->cleanup($bind, $sql) : $bind;
         $this->error = "";
 	    $time1 = @microtime(true);
 
@@ -146,9 +146,9 @@ class DB extends PDO
 //		_log("SQL EXEC time=$diff ms sql=$sql", 5);
 	}
 
-    public function row($sql, $bind = "")
+    public function row($sql, $bind = "", $param = true)
     {
-        $query = $this->run($sql, $bind);
+        $query = $this->run($sql, $bind, $param);
         if(!$query) {
             return false;
         }
