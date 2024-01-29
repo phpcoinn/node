@@ -226,29 +226,29 @@ class SmartContractEngine
 		return self::buildRunFile($sc_address, $code);
 	}
 
-    static function buildDeployCode(Transaction  $transaction, $test=false) {
-
-        $sc_address=$transaction->dst;
-        $data = json_decode(base64_decode($transaction->data), true);
-        $code = base64_decode($data['code']);
-
-        return self::buildRunFile($sc_address, $code);
-    }
-
     static function buildRunFile($sc_address, $code) {
         $sc_dir = self::getRunFolder();
         if(!file_exists($sc_dir)) {
-            @mkdir($sc_dir);
+            $res = @mkdir($sc_dir);
+            if(!$res) {
+                throw new Exception("Unalbe to create smart contracts run dir");
+            }
         }
 
         $phar_file = $sc_dir . "/$sc_address.phar";
-        if(!file_exists($phar_file) || DEVELOPMENT) {
-            file_put_contents($phar_file, $code);
-            @chmod($phar_file, 0777);
+        if(!file_exists($phar_file)) {
+            $res = file_put_contents($phar_file, $code);
+            if(!$res) {
+                throw new Exception("Enable to write phar file");
+            }
+            $res = @chmod($phar_file, 0777);
+            if(!$res) {
+                throw new Exception("Enable to set permissions to phar file");
+            }
         }
 
         $sc_run_file = $sc_dir. "/{$sc_address}_run.php";
-        if(file_exists($sc_run_file) && !DEVELOPMENT) {
+        if(file_exists($sc_run_file)) {
             return $sc_run_file;
         }
 
@@ -270,7 +270,10 @@ class SmartContractEngine
 		";
 
         $sc_run_file = $sc_dir. "/{$sc_address}_run.php";
-        file_put_contents($sc_run_file, $run_code);
+        $res = file_put_contents($sc_run_file, $run_code);
+        if(!$res) {
+            throw new Exception("Enable to write run file");
+        }
 
         return $sc_run_file;
     }
@@ -348,9 +351,7 @@ class SmartContractEngine
             $res = self::isolateCmd($cmd);
 			$interface = self::processOutput($res);
 
-			if(!DEVELOPMENT) {
-				unlink($sc_verify_file);
-			}
+            unlink($sc_verify_file);
 
 			return $interface;
 

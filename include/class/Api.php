@@ -668,8 +668,13 @@ class Api
 	}
 
 	static function getSmartContractInterface($data) {
-		$sc_address = $data['address'];
-		$interface = SmartContractEngine::getInterface($sc_address);
+		$sc_address = @$data['address'];
+		$code = @$data['code'];
+        if(!empty($sc_address)) {
+		    $interface = SmartContractEngine::getInterface($sc_address);
+        } else if (!empty($code)) {
+            $interface = SmartContractEngine::verifyCode($code, $error, $sc_address);
+        }
 		api_echo($interface);
 	}
 
@@ -731,7 +736,7 @@ class Api
      * @apiGroup API
      * @apiDescription Sends a transaction via JSON.
      *
-     * @apiParam {string} tx Created transaction data (bse64 encoded JSON)
+     * @apiParam {string} tx Created transaction data (base64 encoded JSON)
      *
      * @apiSuccess {string} data  Transaction id
      */
@@ -1094,6 +1099,80 @@ class Api
         $tx = new Transaction($public_key, $sc_address, $amount, TX_TYPE_SC_CREATE, $date, $sc_signature);
         $tx->fee = TX_SC_CREATE_FEE;
         $tx->data = $text;
-        api_echo($tx->toArray());
+        $out = [
+            "signature_base"=>$tx->getSignatureBase(),
+            "tx"=>$tx->toArray()
+        ];
+        api_echo($out);
+    }
+
+    static function generateSmartContractExecTx($data) {
+        $public_key = @$data['public_key'];
+        $sc_address = @$data['sc_address'];
+        $amount = @$data['amount'];
+        $method = @$data['method'];
+        $params = @$data['params'];
+        if(empty($public_key)) {
+            api_err("Missing public_key");
+        }
+        if(empty($sc_address)) {
+            api_err("Missing sc_address");
+        }
+        if(empty($amount)) {
+            $amount = 0;
+        }
+        if(empty($method)) {
+            api_err("Missing method");
+        }
+        if(empty($params)) {
+            $params=[];
+        }
+        $date=time();
+        $msg = base64_encode(json_encode([
+            "method"=>$method,
+            "params"=>$params
+        ]));
+        $tx = new Transaction($public_key, $sc_address, $amount, TX_TYPE_SC_EXEC, $date, $msg);
+        $tx->fee = TX_SC_EXEC_FEE;
+        $out = [
+            "signature_base"=>$tx->getSignatureBase(),
+            "tx"=>$tx->toArray()
+        ];
+        api_echo($out);
+    }
+
+    static function generateSmartContractSendTx($data) {
+        $public_key = @$data['public_key'];
+        $address = @$data['address'];
+        $amount = @$data['amount'];
+        $method = @$data['method'];
+        $params = @$data['params'];
+        if(empty($public_key)) {
+            api_err("Missing public_key");
+        }
+        if(empty($address)) {
+            api_err("Missing address");
+        }
+        if(empty($amount)) {
+            $amount = 0;
+        }
+        if(empty($method)) {
+            api_err("Missing method");
+        }
+        if(empty($params)) {
+            $params=[];
+        }
+        $date=time();
+        $msg = base64_encode(json_encode([
+            "method"=>$method,
+            "params"=>$params
+        ]));
+        $tx = new Transaction($public_key, $address, $amount, TX_TYPE_SC_SEND, $date, $msg);
+        $tx->fee = TX_SC_EXEC_FEE;
+        $out = [
+            "signature_base"=>$tx->getSignatureBase(),
+            "tx"=>$tx->toArray()
+        ];
+        api_echo($out);
     }
 }

@@ -37,15 +37,19 @@ class SmartContract
 
 			$data_encoded = $transaction->data;
 			$sc_signature = $transaction->msg;
+            $data = json_decode(base64_decode($data_encoded), true);
 //			_log("Check SC signature data=$data_encoded signature=$sc_signature pk=".$transaction->publicKey, 3);
 			$res = ec_verify($data_encoded, $sc_signature, $transaction->publicKey);
 			if(!$res) {
 				throw new Exception("Invalid signature for smart contract");
 			}
 
-            $data = json_decode(base64_decode($data_encoded), true);
             if(floatval($data['amount'])!=$transaction->val) {
                 throw new Exception("Invalid transaction amount");
+            }
+
+            if(empty($data['interface'])) {
+                throw new Exception("Missing smart contract interface");
             }
 
 			return true;

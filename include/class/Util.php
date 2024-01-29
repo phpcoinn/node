@@ -1307,10 +1307,11 @@ class Util
 			echo "Smart contract view not specified".PHP_EOL;
 			exit;
 		}
-		$params = array_slice($argv, 4);
-        $params = array_filter($params, function($item) {
-            return strlen(trim($item))>0;
-        });
+        $namedAgs = process_cmdline_args($argv);
+        $params=$namedAgs['params'];
+        if(!empty($params)) {
+            $params=SmartContractEngine::parseCmdLineArgs($params);
+        }
 		$res = SmartContractEngine::view($sc_address, $method, $params, $error);
 		if($res === false) {
 			echo "Error calling Smart Contract view: $error".PHP_EOL;
@@ -1329,7 +1330,8 @@ class Util
 			echo "Smart contract property not specified".PHP_EOL;
 			exit;
 		}
-		$key = $argv[4];
+        $namedAgs = process_cmdline_args($argv);
+        $key=$namedAgs['key'];
 		$res = SmartContractEngine::get($sc_address, $property, $key, $error);
 		if($res === false) {
 			echo "Error getting Smart Contract property: $error".PHP_EOL;
