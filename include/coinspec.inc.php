@@ -8,8 +8,8 @@ if($_config['chain_id'] != DEFAULT_CHAIN_ID && file_exists(__DIR__ . "/coinspec.
 const NETWORK = "testnet";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
-const VERSION = "1.3.2";
-const BUILD_VERSION = 395;
+const VERSION = "1.3.3";
+const BUILD_VERSION = 396;
 const MIN_VERSION = "1.3.1";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -57,7 +57,7 @@ const FEE_DIVIDER = 100;
 # Smart contracts
 const TX_SC_CREATE_FEE = 100;
 const TX_SC_EXEC_FEE = 0.01;
-const SC_START_HEIGHT = PHP_INT_MAX;
+const SC_START_HEIGHT = 1038000;
 const TX_TYPE_BURN_START_HEIGHT = 440000;
 const STAKING_START_HEIGHT = 500001;
 
