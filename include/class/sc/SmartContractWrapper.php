@@ -410,7 +410,9 @@ class SmartContractWrapper
 	}
 
 	private function log($s) {
-		$this->smartContract->log($s);
+        if(method_exists($this->smartContract, 'log')) {
+            $this->smartContract->log($s);
+        }
 	}
 
 
