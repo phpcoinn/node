@@ -341,7 +341,7 @@ class Nodeutil
 		opcache_reset();
 	}
 
-	static function measure() {
+	static function measure($out=false) {
 		if(isset($GLOBALS['start_time'])) {
 			$GLOBALS['end_time']=microtime(true);
 			$time = $GLOBALS['end_time'] - $GLOBALS['start_time'];
