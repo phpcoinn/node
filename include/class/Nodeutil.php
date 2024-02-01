@@ -351,6 +351,9 @@ class Nodeutil
 				foreach($GLOBALS['measure'] as $section => $t) {
 					$diff = $t - $prev_time;
 					_log("Time: url=".$_SERVER['REQUEST_URI']." section=$section time=$t diff=$diff");
+                    if($out) {
+                        echo "section=$section time=$t diff=$diff <br/>";
+                    }
 					$prev_time = $t;
 				}
 			}
