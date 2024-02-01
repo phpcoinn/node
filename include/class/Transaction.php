@@ -253,7 +253,13 @@ class Transaction
     }
 
 	public static function getFromArray($x) {
-		$trans = new Transaction($x['public_key'],$x['dst'],floatval($x['val']),$x['type'],$x['date'],$x['message']);
+        $msg = null;
+        if(isset($x['message'])) {
+            $msg = $x['message'];
+        } else if (isset($x['msg'])) {
+            $msg = $x['msg'];
+        }
+		$trans = new Transaction($x['public_key'],$x['dst'],floatval($x['val']),$x['type'],$x['date'],$msg);
 		$trans->id = $x['id'];
 		$trans->src = $x['src'];
 		$trans->fee = floatval($x['fee']);
