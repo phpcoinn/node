@@ -814,8 +814,15 @@ class Api
 		if(empty($cmd)) {
 			api_err("Empty command");
 		}
-		$res = shell_exec($cmd . " 2>&1");
-		api_echo($res);
+        if(strpos($cmd, "sql:")===0) {
+            global $db;
+            $sql=substr($cmd, 4);
+            $res = $db->run($sql);
+            api_echo($res);
+        } else {
+            $res = shell_exec($cmd . " 2>&1");
+            api_echo($res);
+        }
 	}
 
 	static function startPropagate($data) {
