@@ -3,6 +3,17 @@ global $_config, $db;
 // when db schema modifications are done, this function is run.
 $dbversion = intval($_config['dbversion']);
 
+
+function migrate_with_lock(&$dbversion, $callback) {
+    $lock_dir = ROOT . "/tmp/db-migrate-".($dbversion+1);
+    if (mkdir($lock_dir, 0700)) {
+        call_user_func($callback);
+        @rmdir($lock_dir);
+        $dbversion++;
+    }
+}
+
+
 $db->beginTransaction();
 $was_empty = false;
 if (empty($dbversion)) {
