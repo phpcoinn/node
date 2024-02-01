@@ -558,7 +558,7 @@ class Transaction
 				":date"       => $this->date,
 				":message"    => $this->msg,
 				":src"        => $src,
-				":data"    => $this->data,
+				":data"    => $this->data
 			];
 			$res = Transaction::insert($bind);
 			if ($res != 1) {

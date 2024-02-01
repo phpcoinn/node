@@ -96,7 +96,7 @@ class DB extends PDO
         $this->sql = trim($sql);
         $this->bind = $this->cleanup($bind, $sql);
         $this->error = "";
-        $time1 = microtime(true);
+        $time1 = @microtime(true);
         try {
             $pdostmt = $this->prepare($this->sql);
             if ($pdostmt->execute($this->bind) !== false) {
@@ -116,7 +116,7 @@ class DB extends PDO
         $this->sql = trim($sql);
         $this->bind = $this->cleanup($bind, $sql);
         $this->error = "";
-	    $time1 = microtime(true);
+	    $time1 = @microtime(true);
 
         try {
             $pdostmt = $this->prepare($this->sql);
