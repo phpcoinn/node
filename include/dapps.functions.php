@@ -366,3 +366,34 @@ function dapps_response($content_type, $data) {
 	echo "action:" . json_encode($action);
 	exit;
 }
+
+function dapps_api_post($api=null, $node=null, $data=null, &$error = null) {
+    if(empty($node)) {
+        $node = $_SERVER['DAPPS_HOSTNAME'];
+    }
+    $url = $node. "/api.php?q=".$api;
+    $postdata = http_build_query(
+        [
+            'data' => json_encode($data)
+        ]
+    );
+    $opts = [
+        'http' =>
+            [
+                'method'  => 'POST',
+                'header'  => 'content-type: application/x-www-form-urlencoded',
+                'content' => $postdata,
+            ]
+    ];
+    $context = stream_context_create($opts);
+    $res = file_get_contents($url, false, $context);
+    $res = json_decode($res, true);
+    if($res !== false && $res['status']=="ok") {
+        $data = $res['data'];
+        return $data;
+    } else {
+        $error = $res;
+        return false;
+    }
+
+}
