@@ -181,7 +181,7 @@ class Wallet
 		} else {
 			$address = $this->address;
 		}
-		$res=$this->wallet_peer_post("/api.php?q=getPendingBalance&" . XDEBUG, array("address"=>$address));
+		$res=$this->wallet_peer_post("/api.php?q=getPendingBalance", array("address"=>$address));
 		$this->checkApiResponse($res);
 		echo "Balance: {$res['data']}\n";
 	}
@@ -235,7 +235,7 @@ class Wallet
 	}
 
 	function transactions() {
-		$res=$this->wallet_peer_post("/api.php?q=getTransactions&".XDEBUG, array("address"=>$this->address));
+		$res=$this->wallet_peer_post("/api.php?q=getTransactions", array("address"=>$this->address));
 		$this->checkApiResponse($res);
 		echo "ID\tTo\tType\tSum\n";
 		foreach ($res['data'] as $x) {
@@ -286,7 +286,7 @@ class Wallet
 		$transaction = new Transaction($this->public_key,$address,$amount,TX_TYPE_SEND,$date,$msg,$fee);
 		$signature = $transaction->sign($this->private_key);
 
-		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
+		$res = $this->wallet_peer_post("/api.php?q=send",
 			array("dst" => $address, "val" => $amount, "fee"=>$fee, "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_SEND,
 				"message" => $msg, "date" => $date));
@@ -579,7 +579,7 @@ class Wallet
 		$tx->fee = TX_SC_EXEC_FEE;
 		$signature = $tx->sign($this->private_key);
 
-		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
+		$res = $this->wallet_peer_post("/api.php?q=send",
 			array("dst" => $dst_address, "val" => $amount, "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_SC_SEND,
 				"message" => $msg, "date" => $date, "fee" => $tx->fee));
