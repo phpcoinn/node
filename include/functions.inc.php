@@ -437,3 +437,24 @@ function synchronized($name, $handler)
     @rmdir($filename);
     return $result;
 }
+
+function process_cmdline_args($argv) {
+    $params = [];
+    foreach ($argv as $index=>$arg) {
+        $arg = trim($arg);
+        if(substr($arg, 0, 2) == "--") {
+            $arg = substr($arg, 2);
+            if(strpos($arg, "=")!== false) {
+                $parts=explode("=",$arg);
+                $key=trim($parts[0]);
+                $val=trim($parts[1]);
+                $params[$key]=$val;
+            } else {
+                $key=trim($arg);
+                $val=true;
+                $params[$key]=true;
+            }
+        }
+    }
+    return $params;
+}

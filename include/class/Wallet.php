@@ -10,6 +10,7 @@ class Wallet
 	public $address;
 	public $command;
 	private $create = false;
+    private $namedAgs;
 
 	function __construct($argv) {
 		$env_wallet = getenv("WALLET");
@@ -30,6 +31,7 @@ class Wallet
 			|| @$this->arg1 == "help" || @$this->arg1 == "-h" || @$this->arg1 == "--help") {
 			$this->help();
 		}
+        $this->namedAgs = process_cmdline_args($argv);
 		$this->openWallet();
 		$this->processCommand();
 	}
