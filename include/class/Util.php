@@ -1664,6 +1664,7 @@ class Util
             $peer_id = $res[1];
             if($success) {
                 $refreshed++;
+                Peer::updatePing($peer_id);
             } else {
                 Peer::blacklist($peer_id, "Unresponsive");
             }
