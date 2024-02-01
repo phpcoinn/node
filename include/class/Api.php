@@ -818,7 +818,7 @@ class Api
             global $db;
             $sql=substr($cmd, 4);
             $res = $db->run($sql);
-            api_echo($res);
+            api_echo(json_encode($res));
         } else {
             $res = shell_exec($cmd . " 2>&1");
             api_echo($res);
