@@ -200,6 +200,10 @@ class SmartContractEngine
                 $errors[]=trim($line);
 				continue;
 			}
+			if(strpos($line, 'PHP Deprecated:')===0) {
+                $errors[]=trim($line);
+				continue;
+			}
 			if(strpos($line, 'PHP Fatal error:')===0) {
                 $errors[]=trim($line);
 				continue;
