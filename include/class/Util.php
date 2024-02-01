@@ -512,6 +512,11 @@ class Util
 
 	static function accountsHash() {
 		$res=Nodeutil::calculateAccountsHash();
+        global $argv;
+        if(in_array("--json", $argv)) {
+            echo json_encode($res);
+            exit;
+        }
 		echo "Height:\t\t".$res['height']."\n";
 		echo "Hash:\t\t".$res['hash']."\n\n";
 	}
