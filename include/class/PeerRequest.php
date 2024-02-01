@@ -222,6 +222,11 @@ class PeerRequest
             api_err("The transaction is already in mempool");
         }
 
+        $res = Mempool::checkMempoolBalance($tx, $error);
+        if(!$res) {
+            api_err("Error processing new transaction in mempool: $error");
+        }
+
 		// validate transaction data
 		if (!$tx->check(null, false, $txerr)) {
 			api_err("Invalid transaction: $txerr");
