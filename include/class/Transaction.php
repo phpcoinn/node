@@ -1285,8 +1285,7 @@ class Transaction
 
 			$db->commit();
 
-			$hashp=escapeshellarg(san($hash));
-			Propagate::transactionToAll($hashp);
+			Propagate::transactionToAll($hash);
 			return $hash;
 
 		} catch (Exception $e) {
