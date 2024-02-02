@@ -29,6 +29,7 @@ $mempoolCount = Mempool::getSize();
 $addressAccount = Account::getCount();
 $circulation = Account::getCirculation();
 $peersCount = Peer::getCount();
+$scCount=SmartContract::getCount();
 
 $hashRate10 = round(Blockchain::getHashRate(10),2);
 $hashRate100 = round(Blockchain::getHashRate(100),2);
@@ -233,8 +234,8 @@ global $btcPrice, $usdPrice;
         <div class="col-xl-3 col-lg-4 col-md-6">
             <div class="card card-h-100">
                 <div class="card-body p-3">
-                    <div class="row align-items-center">
-                        <div class="col-12">
+                    <div class="row align-items-start">
+                        <div class="col-6">
                             <i class="fas fa-exchange-alt me-1 h4"></i>
                             <span class="text-muted mb-3 lh-1 text-truncate h4">
                             <a href="/apps/explorer/txs.php">Transactions</a>
@@ -245,6 +246,15 @@ global $btcPrice, $usdPrice;
                             <div class="text-nowrap">
                                 <span class="text-muted font-size-13">Fee <?php echo number_format($fee,5) ?></span>
                             </div>
+                        </div>
+                        <div class="col-6">
+                            <i class="fas fa-file-code  me-1 h4"></i>
+                            <span class="text-muted mb-3 lh-1 text-truncate h4">
+                                <a href="/apps/explorer/smart_contracts.php" style="letter-spacing: -1.5px">Smart Contracts</a>
+                            </span>
+                            <h2 class="my-2">
+                                <?php echo $scCount ?>
+                            </h2>
                         </div>
                     </div>
                 </div>

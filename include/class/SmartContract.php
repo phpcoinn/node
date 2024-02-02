@@ -278,4 +278,11 @@ class SmartContract
         }
         return $state;
     }
+
+    static function getCount() {
+        global $db;
+        $sql="select count(*) from smart_contracts";
+        return $db->single($sql);
+    }
+
 }
