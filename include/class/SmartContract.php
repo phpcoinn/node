@@ -219,6 +219,13 @@ class SmartContract
 				return false;
 			}
 
+            $sql="delete from smart_contracts where height >= :height";
+            $res = $db->run($sql, [":height"=>$height]);
+            if($res === false) {
+                $error = $db->errorInfo()[2];
+                return false;
+            }
+
 			return true;
 		}, $error);
 	}
