@@ -50,11 +50,11 @@ require_once __DIR__. '/../common/include/top.php';
     <table class="table table-sm table-striped">
         <tr>
             <td>Address</td>
-            <td><?php echo $smartContract['address'] ?></td>
+            <td><?php echo explorer_address_link($smartContract['address']) ?></td>
         </tr>
         <tr>
             <td>Height</td>
-            <td><?php echo $smartContract['height'] ?></td>
+            <td><?php echo explorer_height_link($smartContract['height']) ?></td>
         </tr>
 <!--        <tr>-->
 <!--            <td>Code</td>-->
@@ -189,9 +189,9 @@ require_once __DIR__. '/../common/include/top.php';
                 }
                 ?>
             <tr>
-                <td><?php echo $tx['height'] ?></td>
-                <td><?php echo $tx['id'] ?></td>
-                <td><?php echo $tx['src']==$id ? $tx['dst'] : $tx['src'] ?></td>
+                <td><?php echo explorer_height_link($tx['height']) ?></td>
+                <td><?php echo explorer_tx_link($tx['id']) ?></td>
+                <td><?php echo explorer_address_link($tx['src']==$id ? $tx['dst'] : $tx['src']) ?></td>
                 <td><?php echo Transaction::typeLabel($tx['type']) ?></td>
                 <td><?php echo $tx['val'] ?></td>
                 <td><?php echo $method ?></td>
