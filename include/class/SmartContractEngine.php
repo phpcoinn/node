@@ -184,36 +184,53 @@ class SmartContractEngine
 		$exec_cmd.= " -d memory_limit=".SC_MEMORY_LIMIT." -d max_execution_time=".SC_MAX_EXEC_TIME." -d error_reporting=$error_reporting";
 		$exec_cmd.= " -d open_basedir=".self::getRunFolder().":".$allowed_files_list;
 		$exec_cmd.= " -f $cmd ";
-		$exec_cmd.= " 2>&1";
-		$output = shell_exec ($exec_cmd);
-		$lines2 = [];
-		$lines = explode(PHP_EOL, $output);
-        $errors=[];
-		foreach($lines as $line) {
-			if(strpos($line, 'PHP Startup:')===0) {
-                $errors[]=trim($line);
-				continue;
-			}
-			if(strpos($line, 'PHP Warning:')===0) {
-                $errors[]=trim($line);
-				continue;
-			}
-			if(strpos($line, 'PHP Deprecated:')===0) {
-                $errors[]=trim($line);
-				continue;
-			}
-			if(strpos($line, 'PHP Fatal error:')===0) {
-                $errors[]=trim($line);
-				continue;
-			}
-			$lines2[]=$line;
-		}
-		$output = implode(PHP_EOL, $lines2);
-		$output = trim($output);
-		return [
-            "output"=>$output,
-            "errors"=>$errors
+
+        $proc = proc_open($exec_cmd,[
+            0 => ['pipe','r'],
+            1 => ['pipe','w'],
+            2 => ['pipe','w'],
+        ],$pipes);
+        $stdout = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[2]);
+        proc_close($proc);
+        $res= [
+            "output"=>$stdout,
+            "errors"=>$stderr
         ];
+        return $res;
+
+//		$exec_cmd.= " 2>&1";
+//		$output = shell_exec ($exec_cmd);
+//		$lines2 = [];
+//		$lines = explode(PHP_EOL, $output);
+//        $errors=[];
+//		foreach($lines as $line) {
+//			if(strpos($line, 'PHP Startup:')===0) {
+//                $errors[]=trim($line);
+//				continue;
+//			}
+//			if(strpos($line, 'PHP Warning:')===0) {
+//                $errors[]=trim($line);
+//				continue;
+//			}
+//			if(strpos($line, 'PHP Deprecated:')===0) {
+//                $errors[]=trim($line);
+//				continue;
+//			}
+//			if(strpos($line, 'PHP Fatal error:')===0) {
+//                $errors[]=trim($line);
+//				continue;
+//			}
+//			$lines2[]=$line;
+//		}
+//		$output = implode(PHP_EOL, $lines2);
+//		$output = trim($output);
+//		return [
+//            "output"=>$output,
+//            "errors"=>$errors
+//        ];
 	}
 
 	static function buildRunCode($sc_address, $code = null, $test=false) {
