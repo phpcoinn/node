@@ -152,3 +152,9 @@ function valid($address)
     $valid = $addressChecksum == $checksum;
     return $valid;
 }
+
+function get_sc_disable_functions() {
+    return 'exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,'.
+        'show_source,ini_set,getenv,sleep,set_time_limit,error_reporting,'.
+        'rand,shuffle,array_rand,mt_rand,uniqid,date,time,microtime,gettimeofday,sleep,usleep,getrandmax';
+}

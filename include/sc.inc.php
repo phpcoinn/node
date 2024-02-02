@@ -21,4 +21,11 @@ if(!function_exists('_log')) {
     }
 }
 
+if (defined('PHP_MAJOR_VERSION') && PHP_MAJOR_VERSION >= 8) {
+    $disable_functions=get_sc_disable_functions();
+    foreach (explode(",",$disable_functions) as $fn) {
+        eval("if (!function_exists('$fn')) { function $fn() {}; };");
+    }
+}
+
 

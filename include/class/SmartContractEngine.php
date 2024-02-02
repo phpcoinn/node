@@ -178,9 +178,7 @@ class SmartContractEngine
         $config=base64_encode(json_encode($config));
         $error_reporting=E_ALL^E_NOTICE;
 
-        $disable_functions='exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,'.
-            'show_source,ini_set,getenv,sleep,set_time_limit,error_reporting,'.
-            'rand,shuffle,array_rand,mt_rand,uniqid,date,time,microtime,gettimeofday,sleep,usleep,getrandmax';
+        $disable_functions=get_sc_disable_functions();
 
 		$exec_cmd = "CONFIG=$config php $debug -d disable_functions=$disable_functions ";
 		$exec_cmd.= " -d memory_limit=".SC_MEMORY_LIMIT." -d max_execution_time=".SC_MAX_EXEC_TIME." -d error_reporting=$error_reporting";
