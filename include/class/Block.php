@@ -99,6 +99,14 @@ class Block
                     $this->generator = Account::getAddress($this->publicKey);
                 }
 
+                if($this->height >= UPDATE_13_LIMIT_GENERATOR) {
+                    $prevBlock = Block::current();
+                    _log("GEN: Check generator: block=".$prevBlock['generator']. " new=".$this->generator, 5);
+                    if($prevBlock['generator'] == $this->generator) {
+                        throw new Exception("Generator must nob be consecutive in blocks");
+                    }
+                }
+
                 // the transactions are always sorted in the same way, on all nodes, as they are hashed as json
                 ksort($this->data);
 
@@ -981,6 +989,13 @@ class Block
 			if(!$res && $height > UPDATE_3_ARGON_HARD) {
 				throw new Exception("Mine check failed hit=$hit target=$target");
 			}
+
+            if($height >= UPDATE_13_LIMIT_GENERATOR) {
+                _log("GEN: Verify generator: block=".$prev_block['generator']. " new=".$this->generator, 5);
+                if($prev_block['generator'] == $this->generator) {
+                    throw new Exception("Generator must nob be consecutive in blocks");
+                }
+            }
 
 			ksort($data);
 			foreach ($data as $transaction) {
