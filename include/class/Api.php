@@ -1182,4 +1182,9 @@ class Api
         ];
         api_echo($out);
     }
+
+    static function getScStateHash() {
+        $res=Nodeutil::calculateSmartContractsHash();
+        api_echo($res);
+    }
 }
