@@ -309,7 +309,7 @@ class SmartContractEngine
 			}
 
             if($map) {
-                if(empty($key)) {
+                if($key == null) {
                     return count($state[$property]);
                 } else {
 				    return $state[$property][$key];
@@ -321,7 +321,7 @@ class SmartContractEngine
 		} else {
 
             if($map) {
-                if(empty($key)) {
+                if($key == null) {
                     $sql="select count(*) as cnt
                         from (select s.variable,
                                      s.var_value,
