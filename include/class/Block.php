@@ -658,6 +658,11 @@ class Block
                         throw new Exception("Reverse masternode winner failed. Error: $merr");
                     }
 
+                    $res = SmartContract::cleanState($block['height'], $cerr);
+                    if(!$res) {
+                        throw new Exception("Clear smart contract state failed. Error: $cerr");
+                    }
+
                     $res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $block['id']]);
                     if ($res != 1) {
                         throw new Exception("Delete block failed.");
