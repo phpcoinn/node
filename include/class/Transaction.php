@@ -786,14 +786,17 @@ class Transaction
 			}
 
 
-            if ($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_MN_CREATE || $this->type == TX_TYPE_MN_REMOVE || $this->type == TX_TYPE_SC_SEND) {
+            if ($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_MN_CREATE || $this->type == TX_TYPE_MN_REMOVE || $this->type == TX_TYPE_SC_SEND
+                || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_CREATE) {
 	            // invalid destination address
 	            if (!Account::valid($this->dst)) {
 		            throw new Exception("{$this->id} - Invalid destination address");
 	            }
 	            $src = Account::getAddress($this->publicKey);
 	            if($src==$this->dst) {
-		            throw new Exception("{$this->id} - Invalid source address");
+                    if($this->id != "9RyNs6AUnByz4iuWfVAz6mTMCGiPUuqZ6c6nxQZzYEXh") {
+		                throw new Exception("{$this->id} - Invalid source address");
+                    }
 	            }
 	        }
 
