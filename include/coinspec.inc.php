@@ -9,7 +9,7 @@ const NETWORK = "testnet";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
 const VERSION = "1.3.7";
-const BUILD_VERSION = 404;
+const BUILD_VERSION = 405;
 const MIN_VERSION = "1.3.6";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -85,7 +85,7 @@ const FEATURE_APPS = false;
 const MAIN_DAPPS_ID = "PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3";
 const TOTAL_INITIAL_SUPPLY = 103200000;
 
-const STOP_CHAIN_HEIGHT = PHP_INT_MAX;
+const STOP_CHAIN_HEIGHT = 1042215;
 
 const MN_CREATE_IGNORE_HEIGHT = [];
 const MN_COLD_START_HEIGHT = 879000;
