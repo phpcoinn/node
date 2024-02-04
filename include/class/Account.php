@@ -140,6 +140,7 @@ class Account
 			        "date" => $x['date'],
 			        "public_key" => $x['public_key'],
 			        "src" => Account::getAddress($x['public_key']),
+			        "data" => $x['data']
 		        ];
 		        $trans['confirmations'] = $current['height'] - $x['height'];
 
@@ -179,7 +180,7 @@ class Account
 		        } elseif ($x['type'] == TX_TYPE_BURN) {
 			        $sign="-";
 			        $trans['type_label'] = "burn";
-                } elseif ($x['type'] == TX_TYPE_SC_CREATE) {
+                } elseif ($x['type'] == TX_TYPE_SC_CREATE || $x['type'] == TX_TYPE_SC_EXEC) {
                     if ($x['dst'] == $id) {
                         $sign="+";
                         $trans['type_label'] = "credit";
