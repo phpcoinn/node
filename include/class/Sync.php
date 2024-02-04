@@ -40,7 +40,7 @@ class Sync extends Daemon
 
         $height = Block::getHeight();
         if($height >= DELETE_CHAIN_HEIGHT) {
-            $diff = DELETE_CHAIN_HEIGHT - $height;
+            $diff = $height - DELETE_CHAIN_HEIGHT;
             _log("Pop $diff blocks at demand");
             Block::pop($diff);
             return;
