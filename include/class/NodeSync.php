@@ -816,6 +816,20 @@ class NodeSync
 		}
 	}
 
+    static function compareScHashes() {
+        global $sc_hashes;
+        require_once ROOT . "/include/checkpoints.php";
+        foreach($sc_hashes as $height => $schash) {
+            $res = Nodeutil::calculateSmartContractsHash($height);
+            $calc_schash = $res['hash'];
+            _log("Compare sc hashes height=$height cshash=$schash calc=$calc_schash ",3);
+            if($calc_schash != $schash) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 	static function checkBlocks() {
 		global $db;
         $sql="select count(id) as cnt, max(height) as max_height from blocks";

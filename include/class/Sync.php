@@ -41,9 +41,11 @@ class Sync extends Daemon
         $height = Block::getHeight();
         if($height >= DELETE_CHAIN_HEIGHT) {
             $diff = $height - DELETE_CHAIN_HEIGHT;
-            _log("Pop $diff blocks at demand");
-            Block::pop($diff);
-            return;
+            if($diff > 0) {
+                _log("Pop $diff blocks at demand");
+                Block::pop($diff);
+                return;
+            }
         }
 
 		Peer::deleteDeadPeers();
@@ -69,6 +71,12 @@ class Sync extends Daemon
 			Config::setVal("blockchain_invalid", 1);
 			return;
 		}
+        $res = NodeSync::compareScHashes();
+        if(!$res) {
+            _log("Blockchain is invalid - smart contract hashes are not correct");
+            Config::setVal("blockchain_invalid", 1);
+            return;
+        }
         NodeSync::recheckLastBlocks();
 		Config::setVal("blockchain_invalid", 0);
 

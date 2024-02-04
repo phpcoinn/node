@@ -49,3 +49,7 @@ $checkpoints = [
     587000 => "Dm4ZMMogsE6dHX1ThWVAaAxz6XYu9M5yVVAwoD594cj1",
     588000 => "HDZFNBTAgV5PmGymV3fRN2hZDB8feteUHpNGwTLkBeri"
 ];
+
+$sc_hashes = [
+    1042199 => "b12f4db06d4ff83c07e0b6ca533d8aa6"
+];
