@@ -521,8 +521,9 @@ class Util
 		echo "Hash:\t\t".$res['hash']."\n\n";
 	}
 
-	static function scStateHash() {
-		$res=Nodeutil::calculateSmartContractsHash();
+	static function scStateHash($argv) {
+        $height=intval($argv[2]);
+		$res=Nodeutil::calculateSmartContractsHash($height);
         echo json_encode($res);
         exit;
 	}

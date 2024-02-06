@@ -71,12 +71,6 @@ class Sync extends Daemon
 			Config::setVal("blockchain_invalid", 1);
 			return;
 		}
-        $res = NodeSync::compareScHashes();
-        if(!$res) {
-            _log("Blockchain is invalid - smart contract hashes are not correct");
-            Config::setVal("blockchain_invalid", 1);
-            return;
-        }
         NodeSync::recheckLastBlocks();
 		Config::setVal("blockchain_invalid", 0);
 
