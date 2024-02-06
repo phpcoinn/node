@@ -8,14 +8,15 @@ if($_config['chain_id'] != DEFAULT_CHAIN_ID && file_exists(__DIR__ . "/coinspec.
 const NETWORK = "testnet";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
-const VERSION = "1.3.10";
-const BUILD_VERSION = 412;
-const MIN_VERSION = "1.3.8";
+const VERSION = "1.3.11";
+const BUILD_VERSION = 413;
+const MIN_VERSION = "1.3.11";
+const GIT_BRANCH = "test";
+const MIN_MINER_VERSION = "1.3";
+
 const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
-const GIT_BRANCH = "test";
-const MIN_MINER_VERSION = "1.3";
 
 const COIN = "phpcoin";
 const COIN_NAME="PHPCoin";
@@ -78,7 +79,7 @@ const UPDATE_10_ZERO_TX_NOT_ALLOWED = 671000;
 const UPDATE_11_STAKING_MATURITY_REDUCE = 898000;
 const UPDATE_12_STAKING_DYNAMIC_THRESHOLD = 911000;
 const UPDATE_13_LIMIT_GENERATOR=1041000;
-const UPDATE_14_EXTENDED_SC_HASH=PHP_INT_MAX;
+const UPDATE_14_EXTENDED_SC_HASH=1044500;
 
 const DEV_PUBLIC_KEY = "PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCyao5hHHJd9axKhC1c5emTgT4hT7k7EvXiZrjTJSGEPmz9K1swEDQi8j14vCRwUisMsvHr4P5kirrDawM3NJiknWR";
 const FEATURE_APPS = false;
