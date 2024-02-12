@@ -255,7 +255,7 @@ class SmartContractEngine
         }
 
         $phar_file = $sc_dir . "/$sc_address.phar";
-        if(!file_exists($phar_file)) {
+        if(!file_exists($phar_file) || self::$virtual) {
             $res = file_put_contents($phar_file, $code);
             if(!$res) {
                 throw new Exception("Enable to write phar file");
@@ -413,6 +413,13 @@ class SmartContractEngine
             return $state;
         }
         return SmartContract::getState($sc_address);
+    }
+
+    public static function cleanVirtualState($sc_address) {
+        if(self::$virtual) {
+            $state_file = ROOT . '/tmp/sc/'.$sc_address.'.state.json';
+            unlink($state_file);
+        }
     }
 
     static function parseCmdLineArgs($args) {
