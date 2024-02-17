@@ -8,14 +8,14 @@ if($_config['chain_id'] != DEFAULT_CHAIN_ID && file_exists(__DIR__ . "/coinspec.
 const NETWORK = "testnet";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
-const VERSION = "1.3.11";
-const BUILD_VERSION = 413;
+const VERSION = "1.3.12";
+const BUILD_VERSION = 414;
 const MIN_VERSION = "1.3.11";
 const GIT_BRANCH = "test";
 const MIN_MINER_VERSION = "1.3";
 
-const DEVELOPMENT = false;
-const XDEBUG = "";
+const DEVELOPMENT = true;
+const XDEBUG = "&XDEBUG_SESSION_START=PHPSTORM";
 const XDEBUG_CLI = "";
 
 const COIN = "phpcoin";
