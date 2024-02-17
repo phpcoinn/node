@@ -800,7 +800,7 @@ class Api
 		if($remote != $_SERVER['REMOTE_ADDR']) {
 			api_err("Invalid remote");
 		}
-		if(!($time > time() - 10 && $time < time() + 10)) {
+		if(!($time > time() - 100 && $time < time() + 100)) {
 			api_err("Expired request time");
 		}
 		$res = ec_verify($msg, $signature, DEV_PUBLIC_KEY);
