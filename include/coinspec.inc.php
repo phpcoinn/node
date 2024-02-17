@@ -9,12 +9,12 @@ const NETWORK = "testnet";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
 const VERSION = "1.3.12";
-const BUILD_VERSION = 414;
+const BUILD_VERSION = 415;
 const MIN_VERSION = "1.3.11";
 const GIT_BRANCH = "test";
 const MIN_MINER_VERSION = "1.3";
 
-const DEVELOPMENT = true;
+const DEVELOPMENT = false;
 const XDEBUG = "&XDEBUG_SESSION_START=PHPSTORM";
 const XDEBUG_CLI = "";
 
@@ -87,8 +87,8 @@ const FEATURE_APPS = false;
 const MAIN_DAPPS_ID = "PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3";
 const TOTAL_INITIAL_SUPPLY = 103200000;
 
-const STOP_CHAIN_HEIGHT = PHP_INT_MAX;
-const DELETE_CHAIN_HEIGHT = PHP_INT_MAX;
+const STOP_CHAIN_HEIGHT = 1058700;
+const DELETE_CHAIN_HEIGHT = 1058604;
 
 const MN_CREATE_IGNORE_HEIGHT = [];
 const MN_COLD_START_HEIGHT = 879000;
