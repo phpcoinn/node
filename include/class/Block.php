@@ -102,7 +102,7 @@ class Block
                 if($this->height >= UPDATE_13_LIMIT_GENERATOR) {
                     $prevBlock = Block::current();
                     _log("GEN: Check generator: block=".$prevBlock['generator']. " new=".$this->generator, 5);
-                    if($prevBlock['generator'] == $this->generator) {
+                    if($prevBlock['generator'] == $this->generator && !DEVELOPMENT) {
                         throw new Exception("Generator must nob be consecutive in blocks");
                     }
                 }
@@ -1005,7 +1005,7 @@ class Block
 
             if($height >= UPDATE_13_LIMIT_GENERATOR) {
                 _log("GEN: Verify generator: block=".$prev_block['generator']. " new=".$this->generator, 5);
-                if($prev_block['generator'] == $this->generator) {
+                if($prev_block['generator'] == $this->generator && !DEVELOPMENT) {
                     throw new Exception("Generator must nob be consecutive in blocks");
                 }
             }

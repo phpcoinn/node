@@ -1078,7 +1078,6 @@ class Api
         if(empty($amount)) {
             $amount = 0;
         }
-        $date = time();
         if(empty($sc_signature)) {
             api_err("Missing sc_signature");
         }
@@ -1093,19 +1092,8 @@ class Api
             api_err("Error verifying contract code: $error");
         }
 
-        $deploy_data=[
-            "code"=>$code,
-            "amount"=>num($amount),
-            "params"=>$params,
-            "interface"=>$interface,
-            "name"=>$name,
-            "description"=>$description
-        ];
+        $tx=Transaction::generateSmartContractDeployTx($code, $sc_signature, $public_key, $sc_address, $amount, $params, $name, $description);
 
-        $text = base64_encode(json_encode($deploy_data));
-        $tx = new Transaction($public_key, $sc_address, $amount, TX_TYPE_SC_CREATE, $date, $sc_signature);
-        $tx->fee = TX_SC_CREATE_FEE;
-        $tx->data = $text;
         $out = [
             "signature_base"=>$tx->getSignatureBase(),
             "tx"=>$tx->toArray()
@@ -1134,13 +1122,7 @@ class Api
         if(empty($params)) {
             $params=[];
         }
-        $date=time();
-        $msg = base64_encode(json_encode([
-            "method"=>$method,
-            "params"=>$params
-        ]));
-        $tx = new Transaction($public_key, $sc_address, $amount, TX_TYPE_SC_EXEC, $date, $msg);
-        $tx->fee = TX_SC_EXEC_FEE;
+        $tx=Transaction::generateSmartContractExecTx($public_key, $sc_address, $method, $amount, $params);
         $out = [
             "signature_base"=>$tx->getSignatureBase(),
             "tx"=>$tx->toArray()
@@ -1169,13 +1151,7 @@ class Api
         if(empty($params)) {
             $params=[];
         }
-        $date=time();
-        $msg = base64_encode(json_encode([
-            "method"=>$method,
-            "params"=>$params
-        ]));
-        $tx = new Transaction($public_key, $address, $amount, TX_TYPE_SC_SEND, $date, $msg);
-        $tx->fee = TX_SC_EXEC_FEE;
+        $tx=Transaction::generateSmartContractSendTx($public_key, $address, $method, $amount, $params);
         $out = [
             "signature_base"=>$tx->getSignatureBase(),
             "tx"=>$tx->toArray()

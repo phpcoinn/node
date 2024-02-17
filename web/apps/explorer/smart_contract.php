@@ -152,6 +152,30 @@ require_once __DIR__. '/../common/include/top.php';
             </table>
         </td>
       </tr>
+      <tr>
+        <td class="fw-bold">Views</td>
+        <td>
+            <table class="table table-sm table-striped">
+                <?php foreach ($interface['views'] as $view) { ?>
+                    <tr>
+                        <td>
+                            <?php
+                            echo $view['name'];
+                            echo "(";
+                            if(!empty($view['params'])) {
+                                foreach ($view['params'] as $ix => $param) {
+                                    echo '$'.$param;
+                                    if($ix < count($view['params'])-1) echo ", ";
+                                }
+                            }
+                            echo ")";
+                            ?>
+                        </td>
+                    </tr>
+                <?php } ?>
+            </table>
+        </td>
+      </tr>
     </table>
 </div>
 
