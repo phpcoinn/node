@@ -25,6 +25,13 @@ $code = htmlspecialchars(base64_decode($code), ENT_IGNORE);
 $state = SmartContract::getState($id);
 
 global $db;
+
+$sql="select * from mempool t where t.type in (5,6,7)
+and (t.src = '$id' or t.dst='$id')
+order by t.height desc, t.id desc";
+$mempool_txs = $db->run($sql);
+
+
 $sql="select * from transactions t where t.type in (5,6,7)
 and (t.src = '$id' or t.dst='$id')
 order by t.height desc, t.id desc";
@@ -37,7 +44,110 @@ $smartContract = SmartContract::getById($id);
 $name = $smartContract['name'];
 $description = $smartContract['description'];
 
+$base_url="/apps/explorer/smart_contract.php?id=$id";
+if(isset($_GET['sc_get_property_read'])) {
+    $sc_get_property_name = $_GET['sc_get_property_read'];
+    $sc_get_property_key = $_GET['sc_property_key'][$sc_get_property_name];
+    $sc_get_property_result = SmartContractEngine::get($id, $sc_get_property_name, $sc_get_property_key, $sc_get_property_error);
+} else if (isset($_GET['sc_exec'])) {
+    session_start();
+    $public_key = $_SESSION['account']['public_key'];
+    $method = $_GET['sc_exec'];
+    $amount = $_GET['sc_exec_amount'][$method];
+    $params=[];
+    foreach ($_GET['sc_exec_params'][$method] as $name => $val) {
+        $params[]=$val;
+    }
+    $tx=Transaction::generateSmartContractExecTx($public_key, $id, $method, $amount, $params);
+    $tx = base64_encode(json_encode($tx));
+    $request_code = uniqid("signtx");
+    $redirect = urlencode($base_url);
+    $approve_link = "/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/gateway/approve.php?app=".APP_NAME."&request_code=$request_code&tx=$tx&redirect=$redirect";
+    header("location: $approve_link");
+    exit;
+} else if (isset($_GET['sc_send'])) {
+    session_start();
+    $method = $_GET['sc_send'];
+    $public_key = $_SESSION['account']['public_key'];
+    $dst_address=$_GET['sc_send_dst'][$method];
+    $amount = $_GET['sc_exec_amount'][$method];
+    $params=[];
+    foreach ($_GET['sc_exec_params'][$method] as $name => $val) {
+        $params[]=$val;
+    }
+    $tx=Transaction::generateSmartContractSendTx($public_key, $dst_address, $method, $amount, $params);
+    $tx = base64_encode(json_encode($tx));
+    $request_code = uniqid("signtx");
+    $redirect = urlencode($base_url);
+    $approve_link = "/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/gateway/approve.php?app=".APP_NAME."&request_code=$request_code&tx=$tx&redirect=$redirect";
+    header("location: $approve_link");
+    exit;
+} else if (isset($_GET['sc_view'])) {
+    $view = $_GET['sc_view'];
+    $params=[];
+    foreach ($_GET['sc_view_params'][$view] as $name => $val) {
+        $params[]=$val;
+    }
+    $sv_view_name=$view;
+    $sv_view_res = SmartContractEngine::view($id, $view, $params, $sv_view_err);
+} else if (isset($_GET['action']) && $_GET['action']=="download_code") {
+    $code=$smartContract['code'];
+    $decoded=json_decode(base64_decode($code), true);
+    $code=base64_decode($decoded['code']);
+
+    $phar_file = ROOT . "/tmp/".$id.".phar";
+    file_put_contents($phar_file, $code);
+
+    ob_end_clean();
+    header("Content-Description: File Transfer");
+    header("Content-Type: application/octet-stream");
+    header("Content-Disposition: attachment; filename=\"". basename($phar_file) ."\"");
+
+    readfile ($phar_file);
+    exit;
+}
+
+
+session_start();
+
+if(isset($_GET['auth_data'])) {
+    $auth_data = json_decode(base64_decode($_GET['auth_data']), true);
+    if($auth_data['request_code']==$_SESSION['request_code']) {
+        $_SESSION['account']=$auth_data['account'];
+    }
+    header("location: ".$auth_data['redirect']);
+    exit;
+}
+
+if(isset($_GET['action'])) {
+    $action = $_GET['action'];
+    if($action == "logout") {
+        session_destroy();
+        header("location: ".$base_url);
+        exit;
+    }
+}
+
+
+$loggedIn = false;
+if(isset($_SESSION['account'])) {
+    $balance = Account::getBalance($_SESSION['account']['address']);
+    $loggedIn = true;
+    $logout_link = $base_url . "&action=logout";
+} else {
+    $app_name = APP_NAME;
+    $request_code = uniqid();
+    $_SESSION['request_code']=$request_code;
+    $uri = $_SERVER['REQUEST_URI'];
+    if(substr($uri, -1) == "/") $uri = $uri . "?";
+    $redirect_url = urlencode($uri);
+    $login_link = "/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/gateway/auth.php?app=$app_name&request_code=$request_code&redirect=$redirect_url";
+}
+
+
 require_once __DIR__. '/../common/include/top.php';
+
+global $loggedIn;
 ?>
 
 <ol class="breadcrumb m-0 ps-0 h4">
@@ -56,12 +166,19 @@ require_once __DIR__. '/../common/include/top.php';
             <td>Height</td>
             <td><?php echo explorer_height_link($smartContract['height']) ?></td>
         </tr>
-<!--        <tr>-->
-<!--            <td>Code</td>-->
-<!--            <td>-->
-<!--                <pre>--><?php //echo $code ?><!--</pre>-->
-<!--            </td>-->
-<!--        </tr>-->
+        <tr>
+            <td>Code</td>
+            <td>
+                <pre style="max-height: 100px; overflow: auto; background-color: #fff">
+                    <?php
+                    $p1=strpos($code, "__HALT_COMPILER");
+                    $p2=strpos($code, "lt;?php", $p1);
+                    $c=substr($code, $p2+7, 1000);
+                    echo $c . PHP_EOL ?>...
+                </pre>
+                <a href="<?php echo $base_url ?>&action=download_code" class="btn btn-soft-primary btn-sm">Download code</a>
+            </td>
+        </tr>
         <tr>
             <td>Signature</td>
             <td><?php echo $smartContract['signature'] ?></td>
@@ -101,88 +218,217 @@ require_once __DIR__. '/../common/include/top.php';
     </table>
 </div>
 
-<h3>Interface</h3>
 
-<div class="table-responsive">
-    <table class="table table-sm table-striped">
-      <tr>
-        <td class="fw-bold">Version</td>
-        <td><?php echo $interface['version'] ?></td>
-      </tr>
-      <tr>
-        <td class="fw-bold">Properties</td>
-        <td>
-            <table class="table table-sm table-striped">
-                <?php foreach ($interface['properties'] as $property) { ?>
-                    <tr>
-                        <td>
-                            <?php
-                                echo '$'.$property['name'];
-                                if($property['type'=="map"]) {
-                                    echo "[]";
-                                }
-                            ?>
-                        </td>
-                    </tr>
-                <?php } ?>
-            </table>
-        </td>
-      </tr>
-      <tr>
-        <td class="fw-bold">Methods</td>
-        <td>
-            <table class="table table-sm table-striped">
-                <?php foreach ($interface['methods'] as $method) { ?>
-                    <tr>
-                        <td>
-                            <?php
-                            echo $method['name'];
-                            echo "(";
-                            if(!empty($method['params'])) {
-                                foreach ($method['params'] as $ix => $param) {
-                                    echo '$'.$param;
-                                    if($ix < count($method['params'])-1) echo ", ";
-                                }
-                            }
-                            echo ")";
-                            ?>
-                        </td>
-                    </tr>
-                <?php } ?>
-            </table>
-        </td>
-      </tr>
-      <tr>
-        <td class="fw-bold">Views</td>
-        <td>
-            <table class="table table-sm table-striped">
-                <?php foreach ($interface['views'] as $view) { ?>
-                    <tr>
-                        <td>
-                            <?php
-                            echo $view['name'];
-                            echo "(";
-                            if(!empty($view['params'])) {
-                                foreach ($view['params'] as $ix => $param) {
-                                    echo '$'.$param;
-                                    if($ix < count($view['params'])-1) echo ", ";
-                                }
-                            }
-                            echo ")";
-                            ?>
-                        </td>
-                    </tr>
-                <?php } ?>
-            </table>
-        </td>
-      </tr>
-    </table>
+<div class="d-flex align-items-center">
+    <h3>Interface</h3>
+    <?php if (!$loggedIn) { ?>
+        <div class="ms-auto">
+            Login to interact with this contract
+            <a href="<?php echo $login_link ?>" class="btn btn-primary btn-sm ms-2">Login</a>
+        </div>
+    <?php } else { ?>
+        <div class="ms-auto d-flex align-items-center gap-2">
+            <?php echo explorer_address_link($_SESSION['account']['address']) ?>
+            <div><?php echo $balance ?></div>
+            <a href="<?php echo $logout_link ?>" class="btn btn-primary btn-sm ms-2">Logout</a>
+        </div>
+    <?php } ?>
 </div>
 
+
+
+<form method="get" action="">
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+          <tr>
+            <td class="fw-bold">Version</td>
+            <td><?php echo $interface['version'] ?></td>
+          </tr>
+          <tr>
+            <td class="fw-bold">Properties</td>
+            <td>
+                <input type="hidden" name="id" value="<?php echo $id ?>">
+                <table class="table table-sm table-striped">
+                    <?php foreach ($interface['properties'] as $property) { ?>
+                        <tr>
+                            <td>
+                                <?php
+                                    echo '$'.$property['name'];
+                                    if($property['type']=="map") {
+                                        echo "[]";
+                                    }
+                                ?>
+                            </td>
+                            <td class="text-end nowrap">
+                                <?php if($property['type']=="map") { ?>
+                                    <input class="form-control w-auto d-inline form-control-sm" type="text"
+                                           name="sc_property_key[<?php echo $property['name'] ?>]" value="<?php echo $sc_get_property_key ?>" placeholder="Key">
+                                <?php } ?>
+                                <button type="submit" name="sc_get_property_read" value="<?php echo $property['name'] ?>" class="btn btn-sm btn-soft-primary">Read</button>
+                            </td>
+                            <td>
+                                <?php if (isset($sc_get_property_result) && $sc_get_property_name == $property['name']) { ?>
+                                    <?php if(!empty($sc_get_property_error)) { ?>
+                                            <span class="fa fa-exclamation-triangle text-danger"></span>
+                                            <?php echo $sc_get_property_error ?>
+                                        <?php } else { ?>
+                                            <span><?php echo $sc_get_property_result ?></span>
+                                    <?php } ?>
+
+                                <?php } ?>
+                            </td>
+                            <td class="text-end">
+                                <?php if (isset($sc_get_property_result) && $sc_get_property_name == $property['name']) { ?>
+                                    <a class="btn btn-sm btn-soft-primary" href="<?php echo $base_url ?>">Clear</a>
+                                <?php } ?>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                </table>
+            </td>
+          </tr>
+          <tr>
+            <td class="fw-bold">Methods</td>
+            <td>
+                <table class="table table-sm table-striped">
+                    <?php foreach ($interface['methods'] as $method) { ?>
+                        <tr>
+                            <td>
+                                <?php
+                                echo $method['name'];
+                                echo "(";
+                                if(!empty($method['params'])) {
+                                    foreach ($method['params'] as $ix => $param) {
+                                        echo '$'.$param;
+                                        if($ix < count($method['params'])-1) echo ", ";
+                                    }
+                                }
+                                echo ")";
+                                ?>
+                            </td>
+                            <td>
+                                <?php if($loggedIn) { ?>
+                                    <input type="text" class="form-control form-control-sm w-auto" name="sc_exec_amount[<?php echo $method['name'] ?>]" value="" placeholder="PHPCoin amount">
+                                <?php } ?>
+                            </td>
+
+                            <td class="text-end">
+                                <?php if($loggedIn) { ?>
+                                    <?php foreach ($method['params'] as $ix => $param) { ?>
+                                        <input type="text" class="form-control form-control-sm d-inline w-auto"
+                                               name="sc_exec_params[<?php echo $method['name'] ?>][<?php echo $param ?>]" value="" placeholder="<?php echo $param ?>">
+                                    <?php } ?>
+                                    <button type="submit" class="btn btn-sm btn-soft-primary" name="sc_exec" value="<?php echo $method['name'] ?>">Execute</button>
+                                <?php } ?>
+                            </td>
+                            <td class="text-end">
+                                <?php if($loggedIn && $id == $_SESSION['account']['address']) { ?>
+                                    <input type="text" class="form-control form-control-sm w-auto d-inline" name="sc_send_dst[<?php echo $method['name'] ?>]" placeholder="Dst address">
+                                    <button type="submit" class="btn btn-sm btn-soft-primary" name="sc_send" value="<?php echo $method['name'] ?>">Send</button>
+                                <?php } ?>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                </table>
+            </td>
+          </tr>
+          <tr>
+            <td class="fw-bold">Views</td>
+            <td>
+                <table class="table table-sm table-striped">
+                    <?php foreach ($interface['views'] as $view) { ?>
+                        <tr>
+                            <td>
+                                <?php
+                                echo $view['name'];
+                                echo "(";
+                                if(!empty($view['params'])) {
+                                    foreach ($view['params'] as $ix => $param) {
+                                        echo '$'.$param;
+                                        if($ix < count($view['params'])-1) echo ", ";
+                                    }
+                                }
+                                echo ")";
+                                ?>
+                            </td>
+                            <td class="text-end">
+                                <?php foreach ($view['params'] as $ix => $param) { ?>
+                                    <input type="text" class="form-control form-control-sm d-inline w-auto"
+                                           name="sc_view_params[<?php echo $view['name'] ?>][<?php echo $param ?>]" value="" placeholder="<?php echo $param ?>">
+                                <?php } ?>
+                                <button type="submit" class="btn btn-sm btn-soft-primary" name="sc_view" value="<?php echo $view['name'] ?>">Call</button>
+                            </td>
+                            <td>
+                                <?php if (isset($sv_view_res) && $sv_view_name == $view['name']) { ?>
+                                    <?php if(!empty($sv_view_err)) { ?>
+                                        <span class="fa fa-exclamation-triangle text-danger"></span>
+                                        <?php echo $sv_view_err ?>
+                                    <?php } else { ?>
+                                        <span><?php echo $sv_view_res ?></span>
+                                    <?php } ?>
+
+                                <?php } ?>
+                            </td>
+                            <td class="text-end">
+                                <?php if (isset($sv_view_res) && $sv_view_name == $view['name']) { ?>
+                                    <a class="btn btn-sm btn-soft-primary" href="<?php echo $base_url ?>">Clear</a>
+                                <?php } ?>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                </table>
+            </td>
+          </tr>
+        </table>
+    </div>
+</form>
 <!--<pre>-->
 <!--    --><?php //print_r($interface) ?>
 <!--</pre>-->
 
+<?php if(!empty($mempool_txs)) { ?>
+    <h3>Mempool transactions</h3>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead>
+            <tr>
+                <th>Height</th>
+                <th>ID</th>
+                <th>From/To</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Params</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($mempool_txs as $tx) {
+                if($tx['type']==TX_TYPE_SC_CREATE) {
+                    $data = base64_decode($tx['data']);
+                    $data = json_decode($data, true);
+                    $method="deploy";
+                    $params=$data["params"];
+                } else {
+                    $data = base64_decode($tx['message']);
+                    $data = json_decode($data, true);
+                    $method=$data['method'];
+                    $params=$data["params"];
+                }
+                ?>
+                <tr>
+                    <td><?php echo explorer_height_link($tx['height']) ?></td>
+                    <td><?php echo explorer_tx_link($tx['id']) ?></td>
+                    <td><?php echo explorer_address_link($tx['src']==$id ? $tx['dst'] : $tx['src']) ?></td>
+                    <td><?php echo Transaction::typeLabel($tx['type']) ?></td>
+                    <td><?php echo $tx['val'] ?></td>
+                    <td><?php echo $method ?></td>
+                    <td><?php echo implode(", ", $params) ?></td>
+                </tr>
+            <?php } ?>
+            </tbody>
+        </table>
+    </div>
+<?php } ?>
 
 <h3>Transactions</h3>
 <div class="table-responsive">
