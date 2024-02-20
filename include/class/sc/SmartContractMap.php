@@ -41,4 +41,36 @@ class SmartContractMap implements ArrayAccess, Countable
         return SmartContractBase::countStateVar($this->db, SC_ADDRESS, $this->name);
     }
 
+    public function keys() {
+        return SmartContractBase::stateVarKeys($this->db, SC_ADDRESS, $this->name);
+    }
+
+    public function all() {
+        return SmartContractBase::stateAll($this->db, SC_ADDRESS, $this->name);
+    }
+
+    public function clear($key=null) {
+        return SmartContractBase::stateClear($this->db, SC_ADDRESS, $this->name,$key);
+    }
+
+    public function inc($key) {
+        if (isset($this[$key])) {
+            $pw = $this[$key];
+        } else {
+            $pw = 0;
+        }
+        $pw ++;
+        $this[$key] = $pw;
+    }
+
+    public function add($key, $n) {
+        if (isset($this[$key])) {
+            $pw = $this[$key];
+        } else {
+            $pw = 0;
+        }
+        $pw += $n;
+        $this[$key] = $pw;
+    }
+
 }
