@@ -4,6 +4,7 @@ class SmartContractEngine
 {
 
 	public static $virtual = false;
+	public static $debug_logs = [];
 	public static $smartContract;
 
 
@@ -114,6 +115,11 @@ class SmartContractEngine
 
             $res = self::isolateCmd($cmd);
             $data = self::processOutput($res);
+
+            if(self::$virtual) {
+                self::$debug_logs = $data['debug_logs'];
+            }
+
             return $data['hash'];
 
 		}, $error);

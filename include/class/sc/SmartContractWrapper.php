@@ -208,6 +208,9 @@ class SmartContractWrapper
 			"response" => $this->response,
             "hash"=>$hash
 		];
+        if(SmartContractBase::$virtual) {
+            $out["debug_logs"]=SmartContractBase::$debug_logs;
+        }
 		$this->out($out);
 	}
 

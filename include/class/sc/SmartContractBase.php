@@ -265,4 +265,12 @@ class SmartContractBase
         return $res;
     }
 
+    public static $debug_logs = [];
+
+    public function debug($log) {
+        if(self::$virtual) {
+            self::$debug_logs[]=$log;
+        }
+    }
+
 }
