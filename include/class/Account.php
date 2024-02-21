@@ -498,15 +498,17 @@ class Account
 
     static function getMasternodes($address) {
         global $db;
-        $sql="select masternodes.*, a.balance as masternode_balance
-            from (select t.val                                                          as collateral,
-             t.dst                                                          as reward_address,
-             case when t.message = 'mncreate' then t.dst else t.message end as masternode_address
-        from accounts a
-               join transactions t on (t.type = :mncreate and t.src = a.id)
-        where a.id = :address
-        and exists (select 1 from masternode m where m.height = t.height)) as masternodes
-         join accounts a on (masternodes.reward_address = a.id)";
+        $sql="select addr_mns.*, a.balance as masternode_balance
+            from (
+            select t.val                                                          as collateral,
+                   t.dst                                                          as reward_address,
+                   case when t.message = 'mncreate' then t.dst else t.message end as masternode_address
+            from accounts a
+                     join transactions t on (t.type = :mncreate and t.src = a.id)
+            where a.id = :address) as addr_mns
+                              join accounts a on (addr_mns.reward_address = a.id)
+            where exists (select 1 from masternode m where m.id = addr_mns.masternode_address and addr_mns.collateral = m.collateral );";
+
         return $db->run($sql, [":mncreate" => TX_TYPE_MN_CREATE, ":address"=>$address]);
     }
 
