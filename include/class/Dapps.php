@@ -410,6 +410,9 @@ class Dapps extends Daemon
         $out = trim($out);
 		_log("Dapps: Parsing output $out", 5);
 
+		header("Access-Control-Allow-Origin: *");
+
+		
 		if(strpos($out, "action:")===0) {
 			self::processAction($out, $dapps_id);
 		}
