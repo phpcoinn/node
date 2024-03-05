@@ -9,4 +9,5 @@ if(typeof window !== 'undefined')  {
     window.decryptString = phpcoinCrypto.decryptString
     window.importPrivateKey = phpcoinCrypto.importPrivateKey
     window.getPublicKey = phpcoinCrypto.getPublicKey
+    window.generateRandomString = phpcoinCrypto.generateRandomString
 }
