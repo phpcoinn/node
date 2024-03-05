@@ -107,18 +107,6 @@ if(isset($_GET['sc_get_property_read'])) {
     exit;
 }
 
-
-session_start();
-
-if(isset($_GET['auth_data'])) {
-    $auth_data = json_decode(base64_decode($_GET['auth_data']), true);
-    if($auth_data['request_code']==$_SESSION['request_code']) {
-        $_SESSION['account']=$auth_data['account'];
-    }
-    header("location: ".$auth_data['redirect']);
-    exit;
-}
-
 if(isset($_GET['action'])) {
     $action = $_GET['action'];
     if($action == "logout") {
@@ -128,24 +116,13 @@ if(isset($_GET['action'])) {
     }
 }
 
+require_once __DIR__. '/../common/include/top.php';
 
 $loggedIn = false;
 if(isset($_SESSION['account'])) {
     $balance = Account::getBalance($_SESSION['account']['address']);
     $loggedIn = true;
-    $logout_link = $base_url . "&action=logout";
-} else {
-    $app_name = APP_NAME;
-    $request_code = uniqid();
-    $_SESSION['request_code']=$request_code;
-    $uri = $_SERVER['REQUEST_URI'];
-    if(substr($uri, -1) == "/") $uri = $uri . "?";
-    $redirect_url = urlencode($uri);
-    $login_link = "/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/gateway/auth.php?app=$app_name&request_code=$request_code&redirect=$redirect_url";
 }
-
-
-require_once __DIR__. '/../common/include/top.php';
 
 global $loggedIn;
 ?>
@@ -224,13 +201,11 @@ global $loggedIn;
     <?php if (!$loggedIn) { ?>
         <div class="ms-auto">
             Login to interact with this contract
-            <a href="<?php echo $login_link ?>" class="btn btn-primary btn-sm ms-2">Login</a>
         </div>
     <?php } else { ?>
         <div class="ms-auto d-flex align-items-center gap-2">
             <?php echo explorer_address_link($_SESSION['account']['address']) ?>
             <div><?php echo $balance ?></div>
-            <a href="<?php echo $logout_link ?>" class="btn btn-primary btn-sm ms-2">Logout</a>
         </div>
     <?php } ?>
 </div>
