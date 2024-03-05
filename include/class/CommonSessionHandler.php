@@ -55,6 +55,7 @@ class CommonSessionHandler implements SessionHandlerInterface {
         $handler = new CommonSessionHandler();
         session_set_save_handler($handler, true);
         $sessions_dir = ROOT."/tmp/sessions";
+        @mkdir($sessions_dir);
         session_save_path($sessions_dir);
         if(!empty($session_id)) {
             session_id($session_id);
