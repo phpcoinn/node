@@ -37,8 +37,8 @@ if(isset($_GET['auth_data'])) {
 $logged=false;
 if(isset($_SESSION['account'])) {
     $logged=true;
-    $address=$_SESSION['account']['address'];
-    $balance = Account::getBalance($address);
+    $session_address=$_SESSION['account']['address'];
+    $session_balance = Account::getBalance($_SESSION['account']['address']);
 }
 
 $redirect=$_SERVER['REQUEST_URI'];
@@ -246,11 +246,11 @@ if(substr($redirect, -1)=="/") {
                         </ul>
                         <ul class="navbar-nav d-flex">
                             <?php if($logged) {
-                                $address_trunc = substr($address, 0, 6) . "..." . substr($address, -6);
+                                $address_trunc = substr($session_address, 0, 6) . "..." . substr($session_address, -6);
                                 ?>
                                 <li class="nav-item dropdown" id="account-address">
-                                    <a class="nav-link dropdown-toggle arrow-none" title="<?php echo $address ?>"
-                                       href="/apps/explorer/address.php?address=<?php echo $address ?>" role="button" target="_blank">
+                                    <a class="nav-link dropdown-toggle arrow-none" title="<?php echo $session_address ?>"
+                                       href="/apps/explorer/address.php?address=<?php echo $session_address ?>" role="button" target="_blank">
                                         <i class="fas fa-user me-2"></i>
                                         <span>
                                             <?php echo $address_trunc ?>
@@ -261,7 +261,7 @@ if(substr($redirect, -1)=="/") {
                                     <span class="nav-link">
                                         <i class="fas fa-coins me-2"></i>
                                         <a href="<?php echo "/dapps.php?url=".GATEWAY."/wallet" ?>">
-                                            <?php echo $balance ?>
+                                            <?php echo $session_balance ?>
                                         </a>
                                     </span>
                                 </li>
