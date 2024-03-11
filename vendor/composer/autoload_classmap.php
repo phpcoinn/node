@@ -30,6 +30,7 @@ return array(
     'PeerPost' => $baseDir . '/include/class/PeerPost.php',
     'PeerRequest' => $baseDir . '/include/class/PeerRequest.php',
     'Propagate' => $baseDir . '/include/class/Propagate.php',
+    'SdkUtil' => $baseDir . '/include/class/SdkUtil.php',
     'SmartContract' => $baseDir . '/include/class/SmartContract.php',
     'SmartContractBase' => $baseDir . '/include/class/sc/SmartContractBase.php',
     'SmartContractEngine' => $baseDir . '/include/class/SmartContractEngine.php',
