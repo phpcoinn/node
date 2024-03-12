@@ -170,7 +170,7 @@ class Block
 
 
                 $schash = $this->processSmartContractTxs($this->height);
-                _log("SCHASH: block=".$this->schash." calc=".$schash);
+                _log("SCHASH: block=".$this->schash." calc=".$schash, 5);
                 if ($schash === false) {
                     throw new Exception("Parse block failed ".$this->height." Missing schash");
                 }
