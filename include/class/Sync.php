@@ -38,6 +38,16 @@ class Sync extends Daemon
 			return;
 		}
 
+        $height = Block::getHeight();
+        if($height >= DELETE_CHAIN_HEIGHT) {
+            $diff = $height - DELETE_CHAIN_HEIGHT;
+            if($diff > 0) {
+                _log("Pop $diff blocks at demand");
+                Block::pop($diff);
+                return;
+            }
+        }
+
 		Peer::deleteDeadPeers();
 		Peer::blacklistInactivePeers();
 		Peer::blacklistIncompletePeers();
