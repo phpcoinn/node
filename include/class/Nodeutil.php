@@ -331,7 +331,7 @@ class Nodeutil
 		opcache_reset();
 	}
 
-	static function measure() {
+	static function measure($out=false) {
 		if(isset($GLOBALS['start_time'])) {
 			$GLOBALS['end_time']=microtime(true);
 			$time = $GLOBALS['end_time'] - $GLOBALS['start_time'];
@@ -341,6 +341,9 @@ class Nodeutil
 				foreach($GLOBALS['measure'] as $section => $t) {
 					$diff = $t - $prev_time;
 					_log("Time: url=".$_SERVER['REQUEST_URI']." section=$section time=$t diff=$diff");
+                    if($out) {
+                        echo "section=$section time=$t diff=$diff <br/>";
+                    }
 					$prev_time = $t;
 				}
 			}
