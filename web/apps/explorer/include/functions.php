@@ -23,6 +23,10 @@ function explorer_block_link($block_id, $short= false) {
 	return '<a href="/apps/explorer/block.php?id='.$block_id.'" '.($short?'title="'.$block_id.'" data-bs-toggle="tooltip"':'').'>'.$text.'</a>';
 }
 
+function explorer_height_link($height) {
+    return '<a href="/apps/explorer/block.php?height='.$height.'">'.$height.'</a>';
+}
+
 function explorer_tx_link($id, $short=false) {
 	if($short) {
 		$text = substr($id, 0, 12) . "..." .substr($id, -12);

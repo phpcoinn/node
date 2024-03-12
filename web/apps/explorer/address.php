@@ -168,9 +168,9 @@ require_once __DIR__. '/../common/include/top.php';
             <th>Block</th>
             <th>From/To</th>
             <th>Type</th>
-            <th>Value</th>
+            <th class="text-end">Value</th>
 <!--            <th>Message</th>-->
-            <th>Fee</th>
+            <th class="text-end">Fee</th>
         </tr>
     </thead>
     <tbody>
@@ -218,10 +218,12 @@ require_once __DIR__. '/../common/include/top.php';
                         <?php } ?>
                     <?php } ?>
                 </td>
-                <td class="<?php echo $transaction['sign']=='-' ? 'text-danger' : 'text-success' ?>">
+                <td class="<?php echo $transaction['sign']=='-' ? 'text-danger' : 'text-success' ?> text-end">
                     <?php echo $transaction['sign'] .  num($transaction['val']) ?>
                 </td>
-                <td><?php echo !empty(floatval($transaction['fee'])) ? num($transaction['fee']) : '' ?></td>
+                <td class="text-end">
+                    <?php echo !empty(floatval($transaction['fee']) && $transaction['src']==$address) ? "-".num($transaction['fee']) : '' ?>
+                </td>
 <!--                <td style="word-break: break-all">--><?php //echo $transaction['message'] ?><!--</td>-->
             </tr>
     <?php } ?>
