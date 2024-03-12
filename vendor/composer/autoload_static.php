@@ -19,6 +19,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         'Block' => __DIR__ . '/../..' . '/include/class/Block.php',
         'Blockchain' => __DIR__ . '/../..' . '/include/class/Blockchain.php',
         'Cache' => __DIR__ . '/../..' . '/include/class/Cache.php',
+        'CommonSessionHandler' => __DIR__ . '/../..' . '/include/class/CommonSessionHandler.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Config' => __DIR__ . '/../..' . '/include/class/Config.php',
         'Cron' => __DIR__ . '/../..' . '/include/class/Cron.php',

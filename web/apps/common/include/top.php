@@ -1,6 +1,7 @@
 <?php
 
 if(!defined("PAGE")) exit;
+const GATEWAY = "PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3";
 
 $theme = "light";
 if(isset($_COOKIE['theme'])) {
@@ -22,6 +23,29 @@ if(NETWORK == "mainnet") {
     $usdPrice = num($res['usdPrice'], 6);
 }
 
+CommonSessionHandler::setup();
+
+if(isset($_GET['auth_data'])) {
+    $auth_data = json_decode(base64_decode($_GET['auth_data']), true);
+    if($auth_data['request_code']==$_SESSION['request_code']) {
+        $_SESSION['account']=$auth_data['account'];
+    }
+    header("location: " . $auth_data['redirect']);
+    exit;
+}
+
+$logged=false;
+if(isset($_SESSION['account'])) {
+    $logged=true;
+    $session_address=$_SESSION['account']['address'];
+    $session_balance = Account::getBalance($_SESSION['account']['address']);
+}
+
+$redirect=$_SERVER['REQUEST_URI'];
+
+if(substr($redirect, -1)=="/") {
+    $redirect.="?";
+}
 
 ?>
 <!doctype html>
@@ -221,6 +245,36 @@ if(NETWORK == "mainnet") {
                             </li>
                         </ul>
                         <ul class="navbar-nav d-flex">
+                            <?php if($logged) {
+                                $address_trunc = substr($session_address, 0, 6) . "..." . substr($session_address, -6);
+                                ?>
+                                <li class="nav-item dropdown" id="account-address">
+                                    <a class="nav-link dropdown-toggle arrow-none" title="<?php echo $session_address ?>"
+                                       href="/apps/explorer/address.php?address=<?php echo $session_address ?>" role="button" target="_blank">
+                                        <i class="fas fa-user me-2"></i>
+                                        <span>
+                                            <?php echo $address_trunc ?>
+                                        </span>
+                                    </a>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <span class="nav-link">
+                                        <i class="fas fa-coins me-2"></i>
+                                        <a href="<?php echo "/dapps.php?url=".GATEWAY."/wallet" ?>">
+                                            <?php echo $session_balance ?>
+                                        </a>
+                                    </span>
+                                </li>
+                                <li class="nav-item d-flex align-items-center">
+                                    <a href="/dapps.php?url=<?php echo GATEWAY ?>/wallet?action=top_logout&redirect=<?php echo urlencode($_SERVER['REQUEST_URI']) ?>"
+                                       class="btn btn-outline-primary">Logout</a>
+                                </li>
+                            <?php } else { ?>
+                                <li class="nav-item d-flex align-items-center">
+                                    <a href="/dapps.php?url=<?php echo GATEWAY ?>/wallet?redirect=<?php echo urlencode($redirect) ?>"
+                                       class="btn btn-primary">Login</a>
+                                </li>
+                            <?php } ?>
 	                        <?php if($_config['admin']) { ?>
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle arrow-none <?php if (APP_NAME == "Admin") { ?>active<?php } ?>" href="/apps/admin" id="topnav-dashboard" role="button">

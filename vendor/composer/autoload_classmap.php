@@ -12,6 +12,7 @@ return array(
     'Block' => $baseDir . '/include/class/Block.php',
     'Blockchain' => $baseDir . '/include/class/Blockchain.php',
     'Cache' => $baseDir . '/include/class/Cache.php',
+    'CommonSessionHandler' => $baseDir . '/include/class/CommonSessionHandler.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
     'Config' => $baseDir . '/include/class/Config.php',
     'Cron' => $baseDir . '/include/class/Cron.php',

@@ -312,10 +312,7 @@ class Dapps extends Daemon
 		_log("Dapps: Starting session", 5);
 		$tmp_dir = ROOT."/tmp/dapps";
 		@mkdir($tmp_dir);
-		$sessions_dir = $tmp_dir."/sessions";
-		@mkdir($sessions_dir);
-		session_save_path($sessions_dir);
-		session_start();
+        CommonSessionHandler::setup();
 		ob_start();
 		$session_id = session_id();
 		_log("Dapps: Getting session_id=$session_id", 5);
@@ -367,6 +364,8 @@ class Dapps extends Daemon
 			ROOT . "/include/dapps.functions.php",
 			ROOT . "/include/common.functions.php",
 			ROOT . "/include/coinspec.inc.php",
+			ROOT . "/tmp/sessions",
+			ROOT . "/include/class/CommonSessionHandler.php",
 		];
 
 		if(file_exists(ROOT."/chain_id")) {

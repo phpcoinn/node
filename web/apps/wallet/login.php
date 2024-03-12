@@ -19,7 +19,11 @@ if(isset($_GET['action']) && $_GET['action']=="login-link") {
 
     $request_code=uniqid();
 	$_SESSION['request_code']=$request_code;
-    $redirect = urlencode("/dapps.php?url=".MAIN_DAPPS_ID."/wallet".$issuer);
+    if(isset($_GET['redirect'])) {
+        $redirect = $_GET['redirect'];
+    } else {
+        $redirect = urlencode("/dapps.php?url=".MAIN_DAPPS_ID."/wallet".$issuer);
+    }
 
 	header("location: /dapps.php?url=".MAIN_DAPPS_ID."/gateway/auth.php?login-link&public_key=$public_key&signature=$login_key&nonce=$login_code&request_code=$request_code&redirect=$redirect&app=LoginLink");
     exit;

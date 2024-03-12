@@ -7,62 +7,9 @@ if(!defined("ROOT")) {
 
 const DEFAULT_CHAIN_ID = "00";
 
-class CliSessionHandler implements SessionHandlerInterface {
-
-    private $path;
-
-    public function close()
-    {
-        return true;
-    }
-
-    public function destroy($id)
-    {
-        _log("Dapps: destroy session");
-        $sess_file = $this->path."/sess_$id";
-        if(file_exists($sess_file)) $ret=@unlink($sess_file);
-    }
-
-    public function gc($max_lifetime)
-    {
-        $deleted=0;
-        _log("Dapps: call session gc");
-        foreach (glob($this->path."/sess_*") as $filename) {
-            if (filemtime($filename) + $max_lifetime < time()) {
-                $res= @unlink($filename);
-                if($res) {
-                    $deleted++;
-                }
-            }
-        }
-        return $deleted;
-    }
-
-    public function open($path, $name)
-    {
-        $this->path = $path;
-        return(true);
-    }
-
-    public function read($id)
-    {
-        $sess_file = $this->path."/sess_$id";
-        if(file_exists($sess_file)) $out=@file_get_contents($sess_file);
-        return (string) $out;
-    }
-
-    public function write($id, $data)
-    {
-        if(empty($data)) return true;
-        $ret= file_put_contents($this->path."/sess_$id", $data) === false ? false : true;
-        return $ret;
-    }
-}
-
-
-
 require_once ROOT . "/include/coinspec.inc.php";
 require_once ROOT . "/include/common.functions.php";
+require_once ROOT . "/include/class/CommonSessionHandler.php";
 
 /**
  * Function call all common functions for app work: dapps_get, dapps_post, dapps_get_session
@@ -99,28 +46,8 @@ function dapps_post() {
  * @return string id of session
  */
 function dapps_get_session() {
-    $handler = new CliSessionHandler();
-    session_set_save_handler($handler, true);
-
 	$session_id = $_SERVER['SESSION_ID'];
-	$sessions_dir = ROOT."/tmp/dapps/sessions";
-
-    session_save_path($sessions_dir);
-    session_id($session_id);
-    @session_start();
-
-    $gc_time = ROOT . '/tmp/dapps/session_last_gc';
-    $gc_period = 1800;
-
-    if (file_exists($gc_time)) {
-        if (filemtime($gc_time) < time() - $gc_period) {
-            session_gc();
-            touch($gc_time);
-        }
-    } else {
-        touch($gc_time);
-    }
-
+    CommonSessionHandler::setup($session_id);
 	return $session_id;
 }
 
@@ -163,11 +90,7 @@ function dapps_redirect($location = null) {
  * Destroys session
  */
 function dapps_session_destroy() {
-	$session_id = $_SERVER['SESSION_ID'];
-	$sessions_dir = ROOT."/tmp/dapps/sessions";
-	$file = "$sessions_dir/sess_$session_id";
-	$_SESSION=null;
-	unlink($file);
+    @session_destroy();
 }
 
 /**
