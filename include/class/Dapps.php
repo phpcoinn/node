@@ -317,7 +317,7 @@ class Dapps extends Daemon
 		$session_id = session_id();
 		_log("Dapps: Getting session_id=$session_id", 5);
 
-		$query = $url_info['query'];
+		$query = @$url_info['query'];
 		$server_args = "";
 		$_SERVER['PHP_SELF_BASE']=$url_info['path'];
 
@@ -349,7 +349,7 @@ class Dapps extends Daemon
 		$post_data = base64_encode(json_encode($_POST));
 		$session_data = base64_encode(json_encode($_SESSION));
 
-		parse_str($query, $parsed);
+		@parse_str($query, $parsed);
 		foreach ($_GET as $key=>$val) {
 			$parsed[$key]=$val;
 		}
@@ -393,7 +393,7 @@ class Dapps extends Daemon
 		_log("Dapps: Executing dapps file cmd=$cmd", 5);
 
         if(empty($_SESSION)) {
-            session_destroy();
+            @session_destroy();
         } else {
             session_write_close();
         }

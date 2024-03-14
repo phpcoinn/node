@@ -92,7 +92,7 @@ class PeerRequest
 					_logf("blocked-invalid-hostname");
 					api_err("blocked-invalid-hostname");
 				}
-				_log("PRC: ip=$ip hostname=$hostname mn=".$info['masternode']." found_peer=".$peer['hostname'],5);
+                _log("PRC: ip=$ip hostname=$hostname mn=".@$info['masternode']." found_peer=". ($peer ? $peer['hostname'] : ""),5);
 			}
 			_logp("update peer info");
 			Peer::updatePeerInfo($ip, $info);
@@ -792,8 +792,9 @@ class PeerRequest
 		$current = Block::current();
 
 		$diff = $current['height']-$data['height'];
+		$hostname="";
 		if(self::$peer) {
-			$hostname = self::$peer['hostname'];
+			$hostname = @self::$peer['hostname'];
 		}
 		// receive a  new block from a peer
 		_logp("submitBlock: Receive new block from a peer $ip hostname=$hostname : id=".$data['id']." height=".$data['height']." current=".$current['height']. " diff=".$diff, 5);

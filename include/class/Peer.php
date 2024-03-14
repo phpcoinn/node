@@ -383,10 +383,10 @@ class Peer
 		$db->run("UPDATE peers SET ping=".DB::unixTimeStamp().", height=:height, block_id=:block_id, appshash=:appshash, score=:score, version=:version,  
 				miner=:miner, generator=:generator, masternode=:masternode, hostname=:hostname, dapps_id =:dapps_id, dappshash =:dapps_hash
 				WHERE ip=:ip",
-			[":ip" => $ip, ':height'=>$info['height'], ':appshash'=>$info['appshash'],
+			[":ip" => $ip, ':height'=>$info['height'], ':appshash'=>@$info['appshash'],
 				':score'=>$info['score'], ':version' => $info['version'],
-				':miner' => $info['miner'], ':generator' => $info['generator'], ':masternode'=>$info['masternode'],
-				':block_id' => $info['block'], ":hostname"=>$info['hostname'], ":dapps_id"=>$info['dapps_id'], ":dapps_hash"=>$info['dapps_hash']]);
+				':miner' => @$info['miner'], ':generator' => @$info['generator'], ':masternode'=>@$info['masternode'],
+				':block_id' => $info['block'], ":hostname"=>$info['hostname'], ":dapps_id"=>@$info['dapps_id'], ":dapps_hash"=>@$info['dapps_hash']]);
 	}
 
 	static function storeResponseTime($hostname, $connect_time) {

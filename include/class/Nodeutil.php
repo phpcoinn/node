@@ -682,11 +682,11 @@ class Nodeutil
         $address = $data['address'];
         $minerid = $data['minerid'];
         $ip = $_SERVER['REMOTE_ADDR'];
-        $miningStat['totals'][$height]['hashes']+=$hashes;
-        $miningStat['totals'][$height]['intervals']+=$interval;
-        $miningStat['totals'][$height]['miner'][$minerid]=$minerid;
-        $miningStat['totals'][$height]['address'][$address]=$address;
-        $miningStat['totals'][$height]['ip'][$ip]=$ip;
+        @$miningStat['totals'][$height]['hashes']+=$hashes;
+        @$miningStat['totals'][$height]['intervals']+=$interval;
+        @$miningStat['totals'][$height]['miner'][$minerid]=$minerid;
+        @$miningStat['totals'][$height]['address'][$address]=$address;
+        @$miningStat['totals'][$height]['ip'][$ip]=$ip;
         Nodeutil::saveMiningStat($miningStat);
     }
 

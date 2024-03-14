@@ -242,11 +242,11 @@ class Block
     }
 
     static function getFromArray($b) {
-	    $block = new Block($b['generator'], $b['miner'], $b['height'], $b['date'], $b['nonce'], $b['data'], $b['difficulty'],
+	    $block = new Block($b['generator'], $b['miner'], $b['height'], $b['date'], $b['nonce'], @$b['data'], $b['difficulty'],
 		    $b['version'], $b['argon'], null);
 	    $block->signature = $b['signature'];
 	    $block->id = $b['id'];
-	    $block->publicKey = $b['public_key'];
+	    $block->publicKey = @$b['public_key'];
 	    $block->transactions = $b['transactions'];
 	    $block->masternode = $b['masternode'];
 	    $block->mn_signature = $b['mn_signature'];
@@ -526,7 +526,7 @@ class Block
 		        // prepare total balance
 		        $type = $tx->type;
 		        if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE || $type == TX_TYPE_MN_REMOVE  || $type == TX_TYPE_BURN) {
-			        $balance[$tx->src] += $tx->val + $tx->fee;
+			        @$balance[$tx->src] += $tx->val + $tx->fee;
 		        }
 
 	        }
