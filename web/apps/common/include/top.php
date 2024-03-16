@@ -43,10 +43,6 @@ if(isset($_SESSION['account'])) {
 
 $redirect=$_SERVER['REQUEST_URI'];
 
-if(substr($redirect, -1)=="/") {
-    $redirect.="?";
-}
-
 ?>
 <!doctype html>
 <html lang="en">
