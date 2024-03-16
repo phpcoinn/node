@@ -4,18 +4,23 @@ class CommonSessionHandler implements SessionHandlerInterface {
 
     private $path;
 
+    #[\ReturnTypeWillChange]
     public function close()
     {
         return true;
     }
 
+    #[\ReturnTypeWillChange]
     public function destroy($id)
     {
-        _log("Dapps: destroy session");
+//        _log("Dapps: destroy session");
         $sess_file = $this->path."/sess_$id";
-        if(file_exists($sess_file)) $ret=@unlink($sess_file);
+        if (!file_exists($sess_file)) return false;
+        $ret = @unlink($sess_file);
+        return $ret;
     }
 
+    #[\ReturnTypeWillChange]
     public function gc($max_lifetime)
     {
         $deleted=0;
@@ -31,12 +36,14 @@ class CommonSessionHandler implements SessionHandlerInterface {
         return $deleted;
     }
 
+    #[\ReturnTypeWillChange]
     public function open($path, $name)
     {
         $this->path = $path;
         return(true);
     }
 
+    #[\ReturnTypeWillChange]
     public function read($id)
     {
         $sess_file = $this->path."/sess_$id";
@@ -44,6 +51,7 @@ class CommonSessionHandler implements SessionHandlerInterface {
         return (string) $out;
     }
 
+    #[\ReturnTypeWillChange]
     public function write($id, $data)
     {
         if(empty($data)) return true;

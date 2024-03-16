@@ -335,7 +335,7 @@ class Transaction
 	                }
                 }
 
-                $balance[$x['src']] += $x['val'] + $x['fee'];
+                @$balance[$x['src']] += $x['val'] + $x['fee'];
                 if ($db->single("SELECT COUNT(1) FROM transactions WHERE id=:id", [":id" => $x['id']]) > 0) {
 	                $tx_error = "Duplicate transaction";
 	                if(!$with_errors) {

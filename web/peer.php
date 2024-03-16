@@ -35,6 +35,7 @@ $info = "";
 $data = json_decode(trim($_POST['data']), true);
 
 $lock_name = false;
+$lock_filename = false;
 if($q=="submitBlock") {
     $lock_name = "submitBlock-".$data['id'];
 }

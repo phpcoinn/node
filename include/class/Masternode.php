@@ -228,7 +228,8 @@ class Masternode extends Daemon
 		}
 
 		$collateral = Block::getMasternodeCollateral($height);
-		$sql = "select m.id, m.signature, m.public_key, masternode_height.last_win_height, m.collateral
+		$sql = "select m.*, 
+			masternode_height.last_win_height
 			from masternode m
 			left join (
 			    select b.masternode, max(b.height) as last_win_height
