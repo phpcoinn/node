@@ -556,7 +556,7 @@ class Nodeutil
 		$dbVersion = $db->single("SELECT val FROM config WHERE cfg='dbversion'");
 		$hostname = $db->single("SELECT val FROM config WHERE cfg='hostname'");
 		$accounts = $db->single("SELECT COUNT(1) FROM accounts");
-		$tr = $db->single("SELECT COUNT(1) FROM transactions");
+		$tr = Transaction::getCount();
 		$masternodes = $db->single("SELECT COUNT(1) FROM masternode");
 		$mempool = Mempool::getSize();
 		$peers = Peer::getCount();
