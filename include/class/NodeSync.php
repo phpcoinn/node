@@ -746,14 +746,45 @@ class NodeSync
 //						}
 
                         $diff = $sync_height - $current['height'];
-						_log("Can not add new block  sync_height=$sync_height height=".$current['height']." diff=$diff");
-                        Block::pop();
-                        $dir = ROOT."/cli";
-                        $peer = $peersForSync[0];
-                        _log("Trigger deep check with ".$peer['hostname']);
-                        $cmd = "php $dir/deepcheck.php ".$peer['hostname'];
-                        $check_cmd = "php $dir/deepcheck.php";
-                        Nodeutil::runSingleProcess($cmd, $check_cmd);
+						_log("Can not add new block  sync_height=$sync_height height=".$current['height']." diff=$diff err=$err");
+                        if(strpos($err, "Invalid schash")!== false) {
+                            Block::pop();
+                            $smart_contracts = [];
+                            foreach ($block->data as $x) {
+                                $tx = Transaction::getFromArray($x);
+                                $type = $tx->type;
+                                if ($type == TX_TYPE_SC_CREATE) {
+                                    $smart_contracts[$tx->dst][$tx->id]=$tx;
+                                }
+                                if ($type == TX_TYPE_SC_EXEC) {
+                                    $smart_contracts[$tx->dst][$tx->id]=$tx;
+                                }
+                                if ($type == TX_TYPE_SC_SEND) {
+                                    $smart_contracts[$tx->src][$tx->id]=$tx;
+                                }
+                            }
+                            $addresses=array_keys($smart_contracts);
+                            _log("Pop blocks because of schash addresses=".json_encode($addresses));
+                            $params = [];
+                            foreach ($addresses as $index=>$address) {
+                                $name=":p".$index;
+                                $params[$name]=$address;
+                            }
+                            $in_params=implode(",", array_keys($params));
+                            $sql="select max(height) from smart_contract_state s where sc_address in ($in_params)";
+                            $max_height=$db->single($sql, $params);
+                            $delete_blocks = $block->height - $max_height;
+                            _log("DELETE invalid blocks $delete_blocks");
+                            Block::pop($delete_blocks);
+                        } else {
+                            Block::pop();
+                            $dir = ROOT."/cli";
+                            $peer = $peersForSync[0];
+                            _log("Trigger deep check with ".$peer['hostname']);
+                            $cmd = "php $dir/deepcheck.php ".$peer['hostname'];
+                            $check_cmd = "php $dir/deepcheck.php";
+                            Nodeutil::runSingleProcess($cmd, $check_cmd);
+                        }
 						$syncing = false;
 						break;
 					}
