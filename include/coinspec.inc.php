@@ -8,8 +8,8 @@ if($_config['chain_id'] != DEFAULT_CHAIN_ID && file_exists(__DIR__ . "/coinspec.
 const NETWORK = "testnet";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
-const VERSION = "1.3.19";
-const BUILD_VERSION = 427;
+const VERSION = "1.3.20";
+const BUILD_VERSION = 428;
 const MIN_VERSION = "1.3.17";
 const GIT_BRANCH = "test";
 const MIN_MINER_VERSION = "1.3";
@@ -87,7 +87,7 @@ const FEATURE_APPS = false;
 const MAIN_DAPPS_ID = "PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3";
 const TOTAL_INITIAL_SUPPLY = 103200000;
 
-const STOP_CHAIN_HEIGHT = 1100250;
+const STOP_CHAIN_HEIGHT = 1100177;
 const DELETE_CHAIN_HEIGHT = 1100177;
 
 const MN_CREATE_IGNORE_HEIGHT = [];
