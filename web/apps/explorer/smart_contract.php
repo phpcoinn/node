@@ -44,13 +44,14 @@ $smartContract = SmartContract::getById($id);
 $name = $smartContract['name'];
 $description = $smartContract['description'];
 
+require_once __DIR__. '/../common/include/top.php';
+
 $base_url="/apps/explorer/smart_contract.php?id=$id";
 if(isset($_GET['sc_get_property_read'])) {
     $sc_get_property_name = $_GET['sc_get_property_read'];
     $sc_get_property_key = $_GET['sc_property_key'][$sc_get_property_name];
     $sc_get_property_result = SmartContractEngine::get($id, $sc_get_property_name, $sc_get_property_key, $sc_get_property_error);
 } else if (isset($_GET['sc_exec'])) {
-    session_start();
     $public_key = $_SESSION['account']['public_key'];
     $method = $_GET['sc_exec'];
     $amount = $_GET['sc_exec_amount'][$method];
@@ -66,7 +67,6 @@ if(isset($_GET['sc_get_property_read'])) {
     header("location: $approve_link");
     exit;
 } else if (isset($_GET['sc_send'])) {
-    session_start();
     $method = $_GET['sc_send'];
     $public_key = $_SESSION['account']['public_key'];
     $dst_address=$_GET['sc_send_dst'][$method];
@@ -116,7 +116,7 @@ if(isset($_GET['action'])) {
     }
 }
 
-require_once __DIR__. '/../common/include/top.php';
+
 
 $loggedIn = false;
 if(isset($_SESSION['account'])) {

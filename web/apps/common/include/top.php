@@ -2,6 +2,7 @@
 
 if(!defined("PAGE")) exit;
 const GATEWAY = "PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3";
+ob_start();
 
 $theme = "light";
 if(isset($_COOKIE['theme'])) {
