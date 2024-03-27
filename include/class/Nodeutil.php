@@ -894,4 +894,21 @@ class Nodeutil
             }
         }
     }
+
+
+    static function calculateSmartContractsHashV2($height=null) {
+        global $db;
+        if(empty($height)) {
+            $height = PHP_INT_MAX;
+        }
+        $res=$db->run("SELECT * FROM smart_contract_state where height < :height 
+                                order by height desc, sc_address, variable, var_key, var_value
+                                limit 100",
+            [":height"=>$height]);
+        return [
+            'height'=>$height,
+            'count'=>count($res),
+            'hash'=>md5(json_encode($res))
+        ];
+    }
 }

@@ -528,6 +528,13 @@ class Util
         exit;
 	}
 
+	static function scStateHashV2($argv) {
+        $height=intval($argv[2]);
+		$res=Nodeutil::calculateSmartContractsHashV2($height);
+        echo json_encode($res);
+        exit;
+	}
+
 	static function blocksHash($argv) {
 		$height=intval($argv[2]);
 		$res=Nodeutil::calculateBlocksHash($height);
