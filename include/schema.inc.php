@@ -253,6 +253,27 @@ if($dbversion <= 38) {
     });
 }
 
+if($dbversion <= 39) {
+    migrate_with_lock($dbversion, function() {
+        global $db;
+        $s=file_get_contents(ROOT."/scripts/sc_state.json");
+        $data = json_decode($s, true);
+        $sql="delete from smart_contract_state";
+        $db->run($sql);
+
+        foreach ($data as $row) {
+            $sc_address=$row['sc_address'];
+            $variable=$row['variable'];
+            $var_key=$row['var_key'];
+            $var_value=$row['var_value'];
+            $height=$row['height'];
+
+            $sql="replace into smart_contract_state set sc_address = ?, variable =?, var_key=?, var_value=?, height = ?";
+            $db->run($sql, [$sc_address,$variable,$var_key,$var_value,$height], false);
+        }
+    });
+}
+
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
