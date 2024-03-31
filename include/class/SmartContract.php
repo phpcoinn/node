@@ -98,8 +98,8 @@ class SmartContract
 	}
 
 
-	public static function processSmartContractTx(Transaction $transaction,$height, &$error = null) {
-		return try_catch(function () use ($error, $transaction,$height) {
+	public static function processSmartContractTx(Transaction $transaction,$height, &$error = null, &$state_updates=null) {
+		return try_catch(function () use ($error, $transaction,$height, &$state_updates) {
 			$message = $transaction->msg;
 			$type = $transaction->type;
 			$exec_params = json_decode(base64_decode($message), true);
@@ -126,7 +126,7 @@ class SmartContract
             $transactions[$transaction->id]=$transaction;
             ksort($transactions);
 
-            $hash = SmartContractEngine::process($sc_address, $transactions, $height, true, $err);
+            $hash = SmartContractEngine::process($sc_address, $transactions, $height, true, $err, $state_updates);
             if(!$hash) {
                 throw new Exception("Error calling method $method of smart contract: ".$err);
             }
@@ -135,11 +135,11 @@ class SmartContract
 		}, $error);
 	}
 
-    public static function process($smart_contracts, $height, $test, &$error = null) {
-        return try_catch(function () use ($smart_contracts, $height, $test) {
+    public static function process($smart_contracts, $height, $test, &$error = null, &$state_updates=null) {
+        return try_catch(function () use ($smart_contracts, $height, $test, &$state_updates) {
             $schashes = [];
             foreach ($smart_contracts as $sc_address => $txs) {
-                $schash = SmartContractEngine::process($sc_address, $txs, $height, $test, $error);
+                $schash = SmartContractEngine::process($sc_address, $txs, $height, $test, $error, $state_updates);
                 if(!$schash) {
                     throw new Exception("Error processing smart contract $sc_address transactions: $error");
                 }

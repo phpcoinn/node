@@ -65,9 +65,9 @@ class SmartContractBase
             }
         }
 
-        if($key===null) {
+        if(strlen($key)==0) {
             $sql="select s.var_value from smart_contract_state s 
-                   where s.sc_address = :sc_address and s.variable = :variable order by s.height desc limit 1";
+                   where s.sc_address = :sc_address and s.variable = :variable and var_key is null order by s.height desc limit 1";
             $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name]);
         } else {
             $sql="select s.var_value from smart_contract_state s 
@@ -84,7 +84,7 @@ class SmartContractBase
         if(self::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
-            if($key === null) {
+            if(strlen($key)==0) {
                 $state[$name]=$value;
             } else {
                 $state[$name][$key]=$value;
@@ -95,7 +95,7 @@ class SmartContractBase
 
 
         $var_value = $value === null ? null : "$value";
-        if($key === null) {
+        if(strlen($key)==0) {
             $sql="select * from smart_contract_state sc where sc_address=:address
                 and variable = :variable and var_key is null and height = :height";
             $row = $db->row($sql, [":address"=>$address, ":variable"=>$name, ":height"=>$height]);
@@ -142,6 +142,13 @@ class SmartContractBase
             return;
         }
 
+        $sql="select max(height) from blocks";
+
+        $top_height = $db->single($sql);
+        if($height <= $top_height) {
+            return;
+        }
+
         $sql="insert into smart_contracts (address, height, code, signature, name, description)
             values (:address, :height, :code, :signature, :name, :description)";
 
@@ -170,14 +177,14 @@ class SmartContractBase
         if(self::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
-            if($key === null) {
+            if(strlen($key)==0) {
                 return isset($state[$name]);
             } else {
                 return isset($state[$name][$key]);
             }
         }
 
-        if($key===null) {
+        if(strlen($key)==0) {
             $sql="select 1 from smart_contract_state s 
                    where s.sc_address = :sc_address and s.variable = :variable order by s.height desc limit 1";
             $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name]);
@@ -196,8 +203,8 @@ class SmartContractBase
             return @count($state[$name]);
         }
 
-        $sql="select count(distinct s.var_key) from smart_contract_state s 
-               where s.sc_address = :sc_address and s.variable = :variable";
+        $sql = "select count(distinct s.var_key) from smart_contract_state s 
+           where s.sc_address = :sc_address and s.variable = :variable";
         $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name]);
         return $res;
     }
@@ -209,8 +216,8 @@ class SmartContractBase
             return array_keys($state[$name]);
         }
 
-        $sql="select s.var_key from smart_contract_state s 
-               where s.sc_address = :sc_address and s.variable = :variable";
+        $sql="select distinct(s.var_key) from smart_contract_state s 
+               where s.sc_address = :sc_address and s.variable = :variable order by s.var_key";
         $rows=$db->run($sql, [":sc_address" =>$address, ":variable" => $name]);
         $list = [];
         foreach ($rows as $row) {
@@ -227,7 +234,7 @@ class SmartContractBase
         }
 
         $sql="select s.var_key, s.var_value from smart_contract_state s 
-               where s.sc_address = :sc_address and s.variable = :variable";
+               where s.sc_address = :sc_address and s.variable = :variable order by s.var_key";
         $rows=$db->run($sql, [":sc_address" =>$address, ":variable" => $name]);
         $list = [];
         foreach ($rows as $row) {

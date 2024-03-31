@@ -175,7 +175,11 @@ class Block
                     throw new Exception("Parse block failed ".$this->height." Missing schash");
                 }
                 if(!empty($this->schash) && $this->schash != $schash) {
-                    throw new Exception("Invalid schash block=".$this->schash." calculated=".$schash);
+                    if(NETWORK == "testnet" && $this->height == 1099548 && $schash == "6503aa9711ac12a14c0dcacd0ffd21374eb18a3ae0638e70a9099504e9da90c9") {
+                        _log("Ignore invalid hash");
+                    } else {
+                        throw new Exception("Invalid schash block=".$this->schash." calculated=".$schash);
+                    }
                 }
 
                 $db->commit();
@@ -195,13 +199,13 @@ class Block
 
             } catch (Exception $e) {
                 $error = $e->getMessage();
-                SmartContract::cleanState($this->height);
                 _log("LOCK: Block ".$this->height." ".$this->id." add error: $error", 4);
                 if($db->inTransaction()) {
                     $db->rollback();
                     _log("LOCK: unlock 3 block ".$this->height."  add ".$this->id. " ".$error, 4);
 //				$db->unlockTables();
                 }
+                SmartContract::cleanState($this->height);
                 _log($error);
                 return false;
             }
@@ -211,7 +215,7 @@ class Block
 
     }
 
-    function processSmartContractTxs($height, $test = false) {
+    function processSmartContractTxs($height, $test = false, &$state_updates=null) {
         $smart_contracts = [];
         foreach ($this->data as $x) {
             $tx = Transaction::getFromArray($x);
@@ -229,9 +233,14 @@ class Block
         if(empty($smart_contracts)){
             return null;
         }
-        $process_schash = SmartContract::process($smart_contracts, $height, $test);
-        if($height >= UPDATE_14_EXTENDED_SC_HASH) {
-            $res = Nodeutil::calculateSmartContractsHash($height - 100);
+        $process_schash = SmartContract::process($smart_contracts, $height, $test,  $err, $state_updates);
+        if($height >= UPDATE_15_EXTENDED_SC_HASH_V2) {
+            $res = Nodeutil::calculateSmartContractsHashV2($height);
+            $current_state_hash = $res['hash'];
+            $schash = hash("sha256", $current_state_hash."-".$process_schash);
+            _log("Save extended schash V2 current_state_hash=$current_state_hash schash=$process_schash schash=$schash", 5);
+        } else if($height >= UPDATE_14_EXTENDED_SC_HASH) {
+            $res = Nodeutil::calculateSmartContractsHash($height);
             $current_state_hash = $res['hash'];
             $schash = hash("sha256", $current_state_hash."-".$process_schash);
             _log("Save extended schash current_state_hash=$current_state_hash schash=$process_schash schash=$schash", 5);

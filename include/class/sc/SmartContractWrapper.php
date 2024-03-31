@@ -206,7 +206,8 @@ class SmartContractWrapper
         $this->log("SC:".SC_ADDRESS." hash=".$hash);
 		$out = [
 			"response" => $this->response,
-            "hash"=>$hash
+            "hash"=>$hash,
+            "state_updates"=>SmartContractBase::$sc_state_updates
 		];
         if(SmartContractBase::$virtual) {
             $out["debug_logs"]=SmartContractBase::$debug_logs;

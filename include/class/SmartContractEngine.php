@@ -77,8 +77,8 @@ class SmartContractEngine
 	}
 
 
-    static function process($sc_address, $transactions, $height, $test, &$error=null) {
-        return try_catch(function () use ($sc_address, $transactions, $height, $test) {
+    static function process($sc_address, $transactions, $height, $test, &$error=null, &$state_updates=null) {
+        return try_catch(function () use ($sc_address, $transactions, $height, $test, &$state_updates) {
 
             $smartContract = SmartContract::getById($sc_address, self::$virtual);
             $code =  null;
@@ -115,6 +115,7 @@ class SmartContractEngine
 
             $res = self::isolateCmd($cmd);
             $data = self::processOutput($res);
+            $state_updates = $data['state_updates'];
 
             if(self::$virtual) {
                 self::$debug_logs = $data['debug_logs'];
@@ -327,7 +328,7 @@ class SmartContractEngine
 		} else {
 
             if($map) {
-                if($key == null) {
+                if(strlen($key)==0) {
                     $sql="select count(*) as cnt
                         from (select s.variable,
                                      s.var_value,
@@ -388,11 +389,15 @@ class SmartContractEngine
         $errors=$res['errors'];
 		$output_decoded = json_decode($output , true);
 
+        if(!is_array($errors)) {
+            $errors = [$errors];
+        }
+
 		if(!is_array($output_decoded)) {
-			throw new Exception("Smart contract failed: $output errors=".implode(PHP_EOL, $errors));
+			throw new Exception("Smart contract failed: $output errors=".@implode(PHP_EOL, $errors));
 		} else {
 			if($output_decoded['status']=='error') {
-				throw new Exception("Smart contract failed: ".$output_decoded['error']. " errors=".implode(PHP_EOL, $errors) .
+				throw new Exception("Smart contract failed: ".$output_decoded['error']. " errors=".@implode(PHP_EOL, $errors) .
                 " trace=".$output_decoded['trace']);
 			}
 		}

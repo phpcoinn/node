@@ -13,6 +13,7 @@ class SmartContractMap implements ArrayAccess, Countable
         $this->height = $height;
     }
 
+
     public function offsetExists($offset)
     {
         return SmartContractBase::existsStateVar($this->db, SC_ADDRESS, $this->name, $offset);
@@ -20,12 +21,15 @@ class SmartContractMap implements ArrayAccess, Countable
 
     public function offsetGet($offset)
     {
+        if(strlen($offset)==0) {
+            return $this->count();
+        }
         return SmartContractBase::getStateVar($this->db, SC_ADDRESS, $this->name, $offset);
     }
 
     public function offsetSet($offset, $value)
     {
-        if($offset == null) {
+        if(strlen($offset)==0) {
             $offset = $this->count();
         }
         SmartContractBase::setStateVar($this->db, SC_ADDRESS, $this->height, $this->name, $value, $offset);
@@ -33,7 +37,12 @@ class SmartContractMap implements ArrayAccess, Countable
 
     public function offsetUnset($offset)
     {
-        SmartContractBase::setStateVar($this->db, SC_ADDRESS, $this->height, $this->name, null, $offset);
+        if(strlen($offset)==0) {
+            return;
+        }
+        if($this->offsetExists($offset)) {
+            SmartContractBase::setStateVar($this->db, SC_ADDRESS, $this->height, $this->name, null, $offset);
+        }
     }
 
     public function count()
@@ -50,10 +59,16 @@ class SmartContractMap implements ArrayAccess, Countable
     }
 
     public function clear($key=null) {
-        return SmartContractBase::stateClear($this->db, SC_ADDRESS, $this->name,$key);
+        if($this->height >= UPDATE_15_EXTENDED_SC_HASH_V2) {
+            throw new Exception("Call to deleted function");
+        }
+        return SmartContractBase::stateClear($this->db, SC_ADDRESS, $this->name, $key);
     }
 
     public function inc($key) {
+        if(strlen($key)==0) {
+            return;
+        }
         if (isset($this[$key])) {
             $pw = $this[$key];
         } else {
@@ -64,6 +79,9 @@ class SmartContractMap implements ArrayAccess, Countable
     }
 
     public function add($key, $n) {
+        if(strlen($key)==0) {
+            return;
+        }
         if (isset($this[$key])) {
             $pw = $this[$key];
         } else {
