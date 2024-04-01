@@ -264,7 +264,7 @@ class SmartContract
             from (select s.sc_address, s.variable, ifnull(s.var_key, 'null') as var_key, max(s.height) as height
                   from smart_contract_state s
                   where s.sc_address = :address
-                  group by s.variable, s.var_key) as last_vars
+                  group by s.variable, s.var_key, s.sc_address) as last_vars
                      join smart_contract_state ss on (ss.sc_address = last_vars.sc_address and ss.variable = last_vars.variable
                 and ifnull(ss.var_key, 'null') = last_vars.var_key and ss.height = last_vars.height);
             ";
