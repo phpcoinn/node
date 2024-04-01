@@ -1169,4 +1169,15 @@ class Api
         $res=Nodeutil::calculateSmartContractsHashV2($height);
         api_echo($res);
     }
+
+    static function getScState($data) {
+        global $db;
+        $from_height = @$data['from_height'];
+        $to_height = @$data['to_height'];
+        if(empty($from_height)) $from_height = 0;
+        if(empty($to_height)) $to_height = PHP_INT_MAX;
+        $sql="select * from smart_contract_state s where s.height >= ? and s.height <= ? order by s.height";
+        $rows = $db->run($sql, [$from_height, $to_height], false);
+        api_echo($rows);
+    }
 }
