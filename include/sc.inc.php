@@ -10,7 +10,7 @@ const CHAIN_PREFIX = "38";
 const TX_TYPE_SC_CREATE = 5;
 const TX_TYPE_SC_EXEC = 6;
 const TX_TYPE_SC_SEND = 7;
-const UPDATE_15_EXTENDED_SC_HASH_V2=PHP_INT_MAX;
+const UPDATE_15_EXTENDED_SC_HASH_V2=1117000;
 
 if(!function_exists('_log')) {
     function _log($log)
