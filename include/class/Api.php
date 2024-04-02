@@ -1159,12 +1159,7 @@ class Api
         api_echo($out);
     }
 
-    static function getScStateHash() {
-        $res=Nodeutil::calculateSmartContractsHash();
-        api_echo($res);
-    }
-
-    static function getScStateHashV2($data) {
+    static function getScStateHash($data) {
         $height = @$data['height'];
         $res=Nodeutil::calculateSmartContractsHashV2($height);
         api_echo($res);
