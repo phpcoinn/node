@@ -918,9 +918,13 @@ class Nodeutil
 
     static function calculateSmartContractsHashV2($height=null) {
         global $db;
+	$last_height = Block::getHeight();
         if(empty($height)) {
-            $height = Block::getHeight();
+            $height = $last_height;
         }
+	if($height > $last_height) {
+		$height=$last_height;
+	}
         $res=$db->run("SELECT * FROM smart_contract_state where height < :height 
                                 order by height desc, sc_address, variable, var_key, var_value
                                 limit 100",
