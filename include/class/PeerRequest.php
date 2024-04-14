@@ -897,4 +897,9 @@ class PeerRequest
 		api_echo(["status"=>"started","hostname"=>$hostname]);
 	}
 
+    static function checkMyPeer() {
+        $peer = Peer::getByIp(self::$ip);
+        api_echo($peer);
+    }
+
 }
