@@ -514,7 +514,9 @@ class Api
 	 * @apiSuccess {string} data.lastBlockTime Date of last block
 	 */
 	static function nodeInfo($data) {
-		api_echo(Nodeutil::getNodeInfo());
+        $basic = isset($data['basic']);
+        $nocache = isset($data['nocache']);
+		api_echo(Nodeutil::getNodeInfo($basic,$nocache));
 	}
 
 	/**

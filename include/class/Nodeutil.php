@@ -571,38 +571,78 @@ class Nodeutil
 		return $logData;
 	}
 
-	static function getNodeInfo() {
+	static function getNodeInfo($basic=false,$nocache=false) {
 		global $db, $_config;
-		$dbVersion = $db->single("SELECT val FROM config WHERE cfg='dbversion'");
 		$hostname = $db->single("SELECT val FROM config WHERE cfg='hostname'");
-		$accounts = $db->single("SELECT COUNT(1) FROM accounts");
-		$tr = Transaction::getCount();
-		$masternodes = $db->single("SELECT COUNT(1) FROM masternode");
-		$mempool = Mempool::getSize();
-		$peers = Peer::getCount();
 		$current = Block::current();
 		$generator = isset($_config['generator_public_key']) && $_config['generator'] ? Account::getAddress($_config['generator_public_key']) : null;
 		$miner = isset($_config['miner_public_key']) && $_config['miner'] ? Account::getAddress($_config['miner_public_key']) : null;
 		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'] ? Account::getAddress($_config['masternode_public_key']) : null;
 
+        if($basic) {
+            return [
+                'hostname'     => $hostname,
+                'version'      => VERSION,
+                'build_version'     => BUILD_VERSION,
+                'network'      => NETWORK,
+                'chain_id'     => CHAIN_ID,
+                'height'       => $current['height'],
+                'block'        => $current['id'],
+                'time'         => time(),
+                'generator'    => $generator,
+                'miner'        => $miner,
+                'masternode'   => $masternode,
+                'lastBlockTime'=>$current['date']
+            ];
+        }
+
+        function getNodeInfoData() {
+            global $db;
+            $dbVersion = $db->single("SELECT val FROM config WHERE cfg='dbversion'");
+            $accounts = $db->single("SELECT COUNT(1) FROM accounts");
+            $tr = Transaction::getCount();
+            $masternodes = $db->single("SELECT COUNT(1) FROM masternode");
 		$avgBlockTime10 = Blockchain::getAvgBlockTime(10);
 		$avgBlockTime100 = Blockchain::getAvgBlockTime(100);
 
 		$hashRate10 = round(Blockchain::getHashRate(10),2);
 		$hashRate100 = round(Blockchain::getHashRate(100),2);
 		$circulation = Account::getCirculation();
+            $peers = Peer::getCount();
+            $data['dbVersion']=$dbVersion;
+            $data['accounts']=$accounts;
+            $data['tr']=$tr;
+            $data['masternodes']=$masternodes;
+            $data['avgBlockTime10']=$avgBlockTime10;
+            $data['avgBlockTime100']=$avgBlockTime100;
+            $data['hashRate10']=$hashRate10;
+            $data['hashRate100']=$hashRate100;
+            $data['circulation']=$circulation;
+            $data['peers']=$peers;
+            return $data;
+        }
+
+        if($nocache) {
+            $cachedData = getNodeInfoData();
+        } else {
+            $cachedData = Cache::getTempCache('nodeInfo', 600, function() {
+                return getNodeInfoData();
+            });
+        }
+
+		$mempool = Mempool::getSize();
 
 		return [
 			'hostname'     => $hostname,
 			'version'      => VERSION,
 			'network'      => NETWORK,
 			'chain_id'     => CHAIN_ID,
-			'dbversion'    => $dbVersion,
-			'accounts'     => $accounts,
-			'transactions' => $tr,
+			'dbversion'    => $cachedData['dbVersion'],
+			'accounts'     => $cachedData['accounts'],
+			'transactions' => $cachedData['tr'],
 			'mempool'      => $mempool,
-			'masternodes'  => $masternodes,
-			'peers'        => $peers,
+			'masternodes'  => $cachedData['masternodes'],
+			'peers'        => $cachedData['peers'],
 			'height'       => $current['height'],
 			'block'        => $current['id'],
 			'time'         => time(),
@@ -610,11 +650,11 @@ class Nodeutil
 			'miner'        => $miner,
 			'masternode'   => $masternode,
 			'totalSupply'  => Blockchain::getTotalSupply(),
-			'currentSupply'  => $circulation,
-			'avgBlockTime10'  => $avgBlockTime10,
-			'avgBlockTime100'  => $avgBlockTime100,
-			'hashRate10'=>$hashRate10,
-			'hashRate100'=>$hashRate100,
+			'currentSupply'  => $cachedData['circulation'],
+			'avgBlockTime10'  => $cachedData['avgBlockTime10'],
+			'avgBlockTime100'  =>  $cachedData['avgBlockTime100'],
+			'hashRate10'=>$cachedData['hashRate10'],
+			'hashRate100'=>$cachedData['hashRate100'],
 			'lastBlockTime'=>$current['date']
 		];
 	}
