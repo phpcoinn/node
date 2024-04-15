@@ -1948,4 +1948,42 @@ class Util
         _log("Sync sc state finished");
         $db->commit();
     }
+
+    static function checkPeerStatus() {
+        $peers = Peer::getAll();
+        $forker = new Forker();
+        define("FORKED_PROCESS", getmypid());
+        $status=[];
+        $peerInfo = Peer::getInfo();
+        foreach ($peers as $peer) {
+            $forker->fork(function ($peer) use ($peerInfo) {
+                $url = $peer['hostname'] . "/peer.php?q=checkMyPeer";
+                $res = peer_post($url,[], 5, $err, $peerInfo);
+                return ["peer"=>$peer, "res"=>$res, "error"=>$err];
+            }, $peer);
+        }
+        $forker->on(function ($res) use (&$status){
+            $peer=$res['peer'];
+            if($peer) {
+                if($peer['blacklisted']>time()) {
+                    @$status['blacklisted']++;
+                    @$status['blacklist_reasons'][$peer['blacklist_reason']]++;
+                } else {
+                    if($peer['ping']>time() - Peer::PEER_PING_MAX_MINUTES * 60) {
+                        @$status['live']++;
+                    } else {
+                        @$status['active']++;
+                    }
+                }
+            } else {
+                @$status['failed']++;
+            }
+        });
+        $forker->exec();
+        _log("peer status total=".count($peers)." failed=" . $status['failed'] . " blacklisted=".$status['blacklisted']
+            ." live=".$status['live']. " active=".$status['active']);
+        if(isset($status['blacklist_reasons'])) {
+            _log("blacklist reasons: ".json_encode($status['blacklist_reasons']));
+        }
+    }
 }
