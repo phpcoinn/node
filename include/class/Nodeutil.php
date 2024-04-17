@@ -395,10 +395,30 @@ class Nodeutil
 	static function runSingleProcess($cmd, $check_cmd = null) {
 		_log("runSingleProcess $cmd", 5);
 		if(empty($check_cmd)) $check_cmd = $cmd;
-		$res = shell_exec("ps uax | grep '$check_cmd' | grep -v grep");
-		if(!$res) {
+		$res=self::psAux($check_cmd, 1);
+		if($res===null) {
 			$exec_cmd = "$cmd > /dev/null 2>&1  &";
 			system($exec_cmd);
+		}
+	}
+
+	static function psAux($cmd, $timeout=null){
+	  	$t1=microtime(true);
+	  
+	  	$full_cmd="ps uax | grep '$cmd' | grep -v grep";
+	  	if(!empty($timeout)){
+	    		$full_cmd="timeout $timeout $full_cmd";
+	  	}
+	  	$res = exec($full_cmd, $out, $result_code);
+		$t2=microtime(true);
+		$elapsed=number_format($t2-$t1,3);
+		_log("psaux: full_cmd=$full_cmd time=$elapsed res=$res out=".json_encode($out)." result_code=$result_code",5);
+		if($result_code==0) {
+		  	return $out;
+		} else if ($result_code==1){
+		  	return null;
+		} else {
+		  	return false;
 		}
 	}
 
