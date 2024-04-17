@@ -761,6 +761,12 @@ class Util
 		if(!file_exists($file)) {
 			die("Can not found file: $file".PHP_EOL);
 		}
+		$namedAgs = process_cmdline_args($argv);
+		if(isset($namedAg['compress']])) {
+			echo "Converting tables to compressed...".PHP_EOL;
+			$sed_cmd="sed -i 's/ROW_FORMAT=DYNAMIC/ROW_FORMAT=COMPRESSED/g' $file";
+			shell_exec($sed_cmd);
+		}
 		echo "Importing database...".PHP_EOL;
 		global $db;
 		$db_name = $db->single('select database()');
