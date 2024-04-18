@@ -407,18 +407,18 @@ class Nodeutil
 	  
 	  	$full_cmd="ps uax | grep '$cmd' | grep -v grep";
 	  	if(!empty($timeout)){
-	    		$full_cmd="timeout $timeout $full_cmd";
+              $full_cmd="timeout $timeout $full_cmd";
 	  	}
 	  	$res = exec($full_cmd, $out, $result_code);
 		$t2=microtime(true);
 		$elapsed=number_format($t2-$t1,3);
 		_log("psaux: full_cmd=$full_cmd time=$elapsed res=$res out=".json_encode($out)." result_code=$result_code",5);
 		if($result_code==0) {
-		  	return $out;
+		  	return $out;    //found
 		} else if ($result_code==1){
-		  	return null;
+		  	return null;    //not found
 		} else {
-		  	return false;
+		  	return false;   //error or timeout
 		}
 	}
 

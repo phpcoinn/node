@@ -52,9 +52,8 @@ class Daemon
 		$lock_file = static::getLockFile();
 		if (!file_exists($lock_file)) {
 			_log("Daemon: $name: lock file not exists - check process", 5);
-			$cmd = "ps uax | grep '".ROOT."/cli/$name.php' | grep -v grep";
-			$res = shell_exec($cmd);
-			if(empty($res)) {
+            $res = Nodeutil::psAux(ROOT."/cli/$name.php", 1);
+			if($res===null) {
 				_log("Daemon: $name: process not exists - start it");
 				$dir = ROOT . "/cli";
 				$cmd = "php $dir/$name.php > /dev/null 2>&1  &";
@@ -325,14 +324,16 @@ class Daemon
 					self::unlock();
 					exit;
 				} else if ($cmd == "kill") {
-					$cmd = "ps uax | grep ".ROOT."/cli/$name.php | grep -v grep";
-					$res = shell_exec($cmd);
-					$arr = preg_split("/\s+/", $res);
-					$pid = $arr[1];
-					if ($pid != getmypid()) {
-						$scmd = "kill $pid";
-						shell_exec($scmd);
-					}
+                    $res = Nodeutil::psAux(ROOT."/cli/$name.php", 1);
+                    if(!empty($res)) {
+                        $res = $res[0];
+                        $arr = preg_split("/\s+/", $res);
+                        $pid = $arr[1];
+                        if ($pid != getmypid()) {
+                            $scmd = "kill $pid";
+                            shell_exec($scmd);
+                        }
+                    }
 					exit;
 				} else if ($cmd == "enable") {
 					static::enable();

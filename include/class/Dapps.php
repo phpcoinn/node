@@ -29,9 +29,9 @@ class Dapps extends Daemon
 	}
 
 	static function buildDappsArchive($dapps_id) {
-		$res = shell_exec("ps uax | grep 'tar -czf tmp/dapps.tar.gz dapps/$dapps_id' | grep -v grep");
+        $res=Nodeutil::psAux("tar -czf tmp/dapps.tar.gz dapps/$dapps_id", 1);
 		_log("Dapps: check buildDappsArchive res=$res", 5);
-		if($res) {
+		if($res !== null) {
 			_log("Dapps: buildDappsArchive running", 5);
 			return false;
 		} else {
