@@ -40,7 +40,7 @@ class Task
         if (static::isEnabled()) {
             static::runTask();
         } else {
-            _log("Task:$name not enabled");
+            _log("Task:$name not enabled",2);
         }
     }
 
