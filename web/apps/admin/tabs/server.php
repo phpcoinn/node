@@ -103,7 +103,7 @@ $serverData=Nodeutil::getServerData();
 //ini_set('display_errors', true);
 $tasks = Task::availableTasks();
 
-$res=Nodeutil::psAux("php ".ROOT, 1, "ps -e -o user,pid,ppid,pcpu,pmem,lstart,cmd");
+$res=Nodeutil::psAux("php ".ROOT ."/", 1, "ps -e -o user,pid,ppid,pcpu,pmem,lstart,cmd");
 
 ?>
 
