@@ -6,53 +6,30 @@ if (!defined("ADMIN_TAB")) {
 
 global $action, $db;
 
-if($action == "daemon_unlock") {
-	$daemon = $_GET['daemon'];
-	$cmd = "php ".ROOT."/cli/$daemon.php --daemon stop &";
-	$res = shell_exec($cmd);
-	header("location: ".APP_URL."/?view=server");
-	exit;
-}
-if($action == "daemon_restart") {
-	$daemon = $_GET['daemon'];
-	$cmd = "php ".ROOT."/cli/$daemon.php --daemon kill &";
-	_log("ADMIN SERVER action=$action cmd=$cmd");
-	$res = shell_exec($cmd);
+if($action == "task_enable") {
+	$task = $_GET['task'];
+    $task::enable();
 	header("location: ".APP_URL."/?view=server");
 	exit;
 }
 
-if($action == "daemon_enable") {
-	$daemon = $_GET['daemon'];
-	$cmd = "php ".ROOT."/cli/$daemon.php --daemon enable &";
-	_log("Daemon: call cmd $cmd");
-	$res = shell_exec($cmd);
+if($action == "task_disable") {
+    $task = $_GET['task'];
+    $task::disable();
 	header("location: ".APP_URL."/?view=server");
 	exit;
 }
 
-if($action == "daemon_disable") {
-	$daemon = $_GET['daemon'];
-	$cmd = "php ".ROOT."/cli/$daemon.php --daemon disable &";
-	$res = shell_exec($cmd);
-	header("location: ".APP_URL."/?view=server");
-	exit;
-}
-
-if($action == "daemon_stop") {
-	$daemon = $_GET['daemon'];
-	$cmd = "php ".ROOT."/cli/$daemon.php --daemon stop &";
+if($action == "task_stop") {
+    $task = $_GET['task'];
+    $name = $task::$name;
+	$cmd = "php ".ROOT."/cli/$name.php --stop";
 	$res = shell_exec($cmd);
 	header("location: ".APP_URL."/?view=server");
 	exit;
 }
 
 $serverData=Nodeutil::getServerData();
-$minerStatFile = NodeMiner::getStatFile();
-if(file_exists($minerStatFile)) {
-    $minerStat = file_get_contents($minerStatFile);
-    $minerStat = json_decode($minerStat, true);
-}
 
 
 
@@ -122,248 +99,140 @@ if(file_exists($minerStatFile)) {
 <hr/>
 
 <?php
-//TODO: replace @1.0.6.85
-if(method_exists(Daemon::class, "availableDaemons")) {
-	$daemons = Daemon::availableDaemons();
-} else {
-    $daemons = ["dapps", "miner", "sync","masternode"];
-}
+//error_reporting(E_ALL);
+//ini_set('display_errors', true);
+$tasks = Task::availableTasks();
+
+$res=Nodeutil::psAux("php ".ROOT, 1, "ps -e -o user,pid,ppid,pcpu,pmem,lstart,cmd");
+
 ?>
 
+<div class="h4">Processes</div>
+
+<table class="table table-striped table-sm">
+    <thead>
+        <tr>
+            <th>USER</th>
+            <th>PID</th>
+            <th>PPID</th>
+            <th>CPU</th>
+            <th>MEM</th>
+            <th>START</th>
+            <th>COMMAND</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach($res as $line) {
+            $line = trim($line);
+            $arr = preg_split("/\s+/", $line);
+            ?>
+            <tr>
+                <?php for ($i=0; $i<5; $i++) { ?>
+                    <td><?php echo $arr[$i] ?></td>
+                <?php } ?>
+                <td><?php echo implode(" ", array_slice($arr, 5, 5)) ?></td>
+                <td><?php echo implode(" ", array_slice($arr, 10, count($arr)-10)) ?></td>
+            </tr>
+        <?php } ?>
+    </tbody>
+</table>
+
+<div class="h4">Tasks</div>
+
 <div class="row">
-	<?php foreach($daemons as $daemon) {
-		$status = daemon_get_status($daemon);
-		$running = $status['running'];
-		$locked = $status['locked'];
-		$enabled = $status['enabled'];
-		$error = $status['error'];
-		?>
-		<div class="col-md-6 col-lg-4">
-			<div class="card">
-				<div class="card-header flex-row d-flex justify-content-between flex-wrap align-content-center">
-					<h4 class="card-title"><?php echo $status['name'] ?></h4>
-					<div>
-						<?php if ($enabled) { ?>
-							<span class="badge bg-success">Enabled</span>
-						<?php } else { ?>
-							<span class="badge bg-danger">Disabled</span>
-						<?php } ?>
-						<?php if ($running) { ?>
-							<span class="badge bg-success">Running</span>
-						<?php } else { ?>
-							<span class="badge bg-danger">Stopped</span>
-						<?php } ?>
-						<?php if ($locked) { ?>
-							<span class="badge bg-success">Locked</span>
-						<?php } else { ?>
-							<span class="badge bg-danger">No lock</span>
-						<?php } ?>
-						<a href="#" class="ml-2" role="button" data-bs-toggle="collapse" data-bs-target="#details_<?php echo $daemon ?>">
-							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
-								<path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
-							</svg>
-						</a>
-						<?php if ($error) { ?>
-							<span class="text-warning" title="<?php echo $error ?>">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-exclamation-triangle-fill" viewBox="0 0 16 16">
-                                            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
-                                        </svg>
-                                    </span>
-						<?php } ?>
-					</div>
-				</div>
-				<div class="card-body p-0 border-bottom collapse" id="details_<?php echo $daemon ?>">
-					<div class="row p-4">
-						<div class="col-sm-12">
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Started:</div>
-								<div><?php echo display_date($status['started']) ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Running:</div>
-								<div><?php if (!empty($status['started'])) echo date("H:i:s", time() - $status['started']) ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>PID:</div>
-								<div><?php echo $status['pid'] ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>CPU:</div>
-								<div><?php echo $status['cpu'] ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Memory:</div>
-								<div><?php echo $status['memory'] ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Owner:</div>
-								<div><?php echo $status['owner'] ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Locked time:</div>
-								<div><?php echo display_date($status['locked_time']) ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Lock file:</div>
-								<div><?php echo $status['lock_file'] ?></div>
-							</div>
-							<div class="flex-row d-flex justify-content-between flex-wrap">
-								<div>Lock owner:</div>
-								<div><?php echo $status['lock_owner'] ?></div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<?php if ($daemon == "miner") { ?>
-					<div class="card-body">
-						<p class="card-text">Address: <?php echo explorer_address_link(Account::getAddress($_config['miner_public_key'])) ?></p>
-						<div class="row">
-							<div class="col-sm-12">
-								<?php if ($minerStat) { ?>
-									<div><strong>Miner stat:</strong></div>
-									<div class="flex-row d-flex justify-content-between flex-wrap">
-										<div>Started:</div>
-										<div><?php echo display_date($minerStat['started']) ?></div>
-									</div>
-									<div class="flex-row d-flex justify-content-between flex-wrap">
-										<div>Hashes:</div>
-										<div><?php echo $minerStat['hashes'] ?></div>
-									</div>
-									<div class="flex-row d-flex justify-content-between flex-wrap">
-										<div>Submits:</div>
-										<div><?php echo $minerStat['submits'] ?></div>
-									</div>
-									<div class="flex-row d-flex justify-content-between flex-wrap">
-										<div>Accepted:</div>
-										<div><?php echo $minerStat['accepted'] ?></div>
-									</div>
-									<div class="flex-row d-flex justify-content-between flex-wrap">
-										<div>Rejected:</div>
-										<div><?php echo $minerStat['rejected'] ?></div>
-									</div>
-									<div class="flex-row d-flex justify-content-between flex-wrap">
-										<div>CPU:</div>
-										<div><?php echo $minerStat['cpu'] ?></div>
-									</div>
-									<div class="flex-row d-flex justify-content-between flex-wrap">
-										<div>Speed:</div>
-										<div><?php echo $minerStat['speed'] ?></div>
-									</div>
-								<?php } ?>
+    <?php foreach($tasks as $task) {
+        $name=$task::$name;
+        $taskStatus = $task::getTaskStatus();
+        ?>
+        <div class="col-md-6 col-lg-4">
+            <div class="card">
+                <div class="card-header flex-row d-flex justify-content-between flex-wrap align-content-center">
+                    <h4 class="card-title"><?php echo $taskStatus['title'] ?></h4>
+                    <div>
+                        <?php if ($taskStatus['enabled']) { ?>
+                            <span class="badge bg-success">Enabled</span>
+                        <?php } else { ?>
+                            <span class="badge bg-danger">Disabled</span>
+                        <?php } ?>
+                        <?php if ($taskStatus['running']) { ?>
+                            <span class="badge bg-success">Running</span>
+                        <?php } else { ?>
+                            <span class="badge bg-secondary">Idle</span>
+                        <?php } ?>
+                        <a href="#" class="ml-2" role="button" data-bs-toggle="collapse" data-bs-target="#details_<?php echo $name ?>">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0 border-bottom collapse" id="details_<?php echo $name ?>">
+                    <div class="row p-4">
+                        <div class="col-sm-12">
+                            <?php if($taskStatus['running']) { ?>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>Started:</div>
+                                    <div><?php echo display_date($taskStatus['process']['started']) ?></div>
+                                </div>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>Running:</div>
+                                    <div><?php if (!empty($taskStatus['process']['started'])) echo date("H:i:s", time() - $taskStatus['process']['started']) ?></div>
+                                </div>
 
-							</div>
-						</div>
-					</div>
-				<?php } ?>
-				<?php if ($daemon == "masternode") { ?>
-					<div class="card-body">
-						<?php if($running) { ?>
-							<p class="card-text">
-							<?php if (Masternode::isLocalMasternode()) {
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>PID:</div>
+                                    <div><?php echo $taskStatus['process']['pid'] ?></div>
+                                </div>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>CPU:</div>
+                                    <div><?php echo $taskStatus['process']['cpu'] ?></div>
+                                </div>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>Memory:</div>
+                                    <div><?php echo $taskStatus['process']['memory'] ?></div>
+                                </div>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>Owner:</div>
+                                    <div><?php echo $taskStatus['process']['owner'] ?></div>
+                                </div>
+                            <?php } else {
+                                $elapsed=date("H:i:s", time() - $taskStatus['last_run_time']);
+                                ?>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>Last run time:</div>
+                                    <div>
+                                        <?php echo display_date($taskStatus['last_run_time']) ?>
+                                    </div>
+                                </div>
+                                <div class="flex-row d-flex justify-content-between flex-wrap">
+                                    <div>Since last run:</div>
+                                    <div>
+                                        <?php echo $elapsed ?>
+                                    </div>
+                                </div>
+                            <?php } ?>
+                        </div>
+                    </div>
+                </div>
+                <?php if (file_exists(__DIR__."/task_admin_$name.php")) require_once __DIR__."/task_admin_$name.php" ?>
+                <div class="card-footer bg-transparent border-top text-muted d-flex justify-content-between">
+                    <div>
+                        <?php if ($task::canDisable()) { ?>
+                            <?php if ($taskStatus['enabled']) { ?>
+                                <a href="/apps/admin/?view=server&task=<?php echo $task ?>&action=task_disable" class="btn btn-sm btn-danger">Disable</a>
+                            <?php } else { ?>
+                                <a href="/apps/admin/?view=server&task=<?php echo $task ?>&action=task_enable" class="btn btn-sm btn-success">Enable</a>
+                            <?php } ?>
+                        <?php } ?>
+                    </div>
+                    <div>
+                        <?php if ($taskStatus['running']) { ?>
+                            <a href="/apps/admin/?view=server&task=<?php echo $task ?>&action=task_stop" class="btn btn-sm btn-warning">Stop</a>
+                        <?php } ?>
+                    </div>
+                </div>
+            </div>
 
-								$mn = Masternode::get($_config['masternode_public_key']);
-								if(!$mn) {
-									$valid = false;
-									$err = "Masternode not found in list";
-								} else {
-									$mn = Masternode::fromDB($mn);
-									$height = Block::getHeight();
-									$valid = $mn->check($height, $err);
-
-									global $db;
-									$sql="select min(b.date) as min_date, max(b.date) as max_date, sum(t.val) as value, t.dst, count(t.id) as cnt,
-                                           (max(t.date) - min(t.date))/60/60/24 as running,
-                                           sum(t.val)  / ((max(t.date) - min(t.date))/60/60/24) as daily
-                                    from blocks b
-                                             join transactions t on b.id = t.block and b.height = t.height and t.type = 0 and t.message = 'masternode'
-                                    where b.masternode = :id";
-									$mnStat = $db->row($sql, [':id'=>$mn->id]);
-								}
-
-								?>
-
-								<?php if (!$valid) { ?>
-									<div class="alert alert-danger">
-										<strong>Masternode is invalid!</strong>
-										<br/>
-										<?php echo $err ?>
-									</div>
-								<?php } ?>
-
-								Address:  <?php echo explorer_address_link(Account::getAddress($_config['masternode_public_key'])) ?>
-
-                                <?php if ($mnStat['dst'] != $mn->id) { ?>
-                                    <br/>
-                                    Reward address: <?php echo explorer_address_link($mnStat['dst']) ?>
-
-                                <?php } ?>
-
-								<?php if ($mnStat) { ?>
-									<br/>
-									Total rewards: <?php echo $mnStat['cnt'] ?><br/>
-									Total value: <?php echo $mnStat['value'] ?><br/>
-									Running days: <?php echo $mnStat['running'] ?><br/>
-									Daily income: <?php echo $mnStat['daily'] ?><br/>
-								<?php } ?>
-
-							<?php } ?>
-							<br/>
-							Started: <?php echo display_date($status['started']) ?>
-							<br/>
-							Running: <?php echo round((time() - $status['started']) / 60) ?> min
-							<br/>
-							</p>
-						<?php } ?>
-					</div>
-				<?php } ?>
-				<?php if ($daemon == "dapps") {
-					$dapps_public_key = $_config['dapps_public_key'];
-					$dapps_id = Account::getAddress($dapps_public_key);
-					$dapps_folder = Dapps::getDappsDir() . "/$dapps_id";
-					$folder_exists = file_exists($dapps_folder);
-					?>
-					<div class="card-body">
-						<div class="flex-row d-flex justify-content-between flex-wrap">
-							<div>Address:</div>
-							<div><?php echo explorer_address_link($dapps_id) ?></div>
-						</div>
-						<div class="flex-row d-flex justify-content-between flex-wrap">
-							<div>Folder:</div>
-							<div class="text-break"><?php echo $dapps_folder ?></div>
-						</div>
-						<div class="flex-row d-flex justify-content-between flex-wrap">
-							<div>Folder exists:</div>
-							<div><?php echo $folder_exists ? "Yes" : "No" ?></div>
-						</div>
-						<div class="flex-row d-flex justify-content-between flex-wrap">
-							<div>Dapps URL:</div>
-							<div>
-								<a href="/dapps/<?php echo $dapps_id ?>">/dapps/<?php echo $dapps_id ?></a>
-							</div>
-						</div>
-					</div>
-				<?php } ?>
-				<div class="card-footer bg-transparent border-top text-muted d-flex justify-content-between">
-					<div>
-						<?php if ($enabled) { ?>
-							<a href="/apps/admin/?view=server&daemon=<?php echo $daemon ?>&action=daemon_disable" class="btn btn-sm btn-danger">Disable</a>
-						<?php } else { ?>
-							<a href="/apps/admin/?view=server&daemon=<?php echo $daemon ?>&action=daemon_enable" class="btn btn-sm btn-success">Enable</a>
-						<?php } ?>
-					</div>
-					<div>
-						<?php if ($enabled) { ?>
-							<a href="/apps/admin/?view=server&daemon=<?php echo $daemon ?>&action=daemon_restart" class="btn btn-sm btn-danger">Kill</a>
-						<?php } ?>
-						<?php if ($locked && !$running) { ?>
-							<a href="/apps/admin/?view=server&daemon=<?php echo $daemon ?>&action=daemon_unlock" class="btn btn-sm btn-danger">Unlock</a>
-						<?php } ?>
-						<?php if ($running) { ?>
-							<a href="/apps/admin/?view=server&daemon=<?php echo $daemon ?>&action=daemon_stop" class="btn btn-sm btn-warning">Stop</a>
-						<?php } ?>
-					</div>
-				</div>
-			</div>
-		</div>
-	<?php } ?>
+        </div>
+    <?php } ?>
 </div>

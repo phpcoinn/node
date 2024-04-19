@@ -32,8 +32,8 @@ order by t.height desc, t.id desc";
 $mempool_txs = $db->run($sql);
 
 
-$sql="select * from transactions t where t.type in (5,6,7)
-and (t.src = '$id' or t.dst='$id')
+$sql="select * from transactions t where
+(t.dst='$id' and t.type in (5,6)) or (t.src = '$id' and t.type = 7)                               
 order by t.height desc, t.id desc";
 $txs = $db->run($sql);
 

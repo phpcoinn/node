@@ -392,27 +392,31 @@ class Nodeutil
 		$GLOBALS['measure'][$name]=microtime(true);
 	}
 
-	static function runSingleProcess($cmd, $check_cmd = null) {
+	static function runSingleProcess($cmd, $check_cmd = null, $user=null) {
 		_log("runSingleProcess $cmd", 5);
 		if(empty($check_cmd)) $check_cmd = $cmd;
 		$res=self::psAux($check_cmd, 1);
 		if($res===null) {
 			$exec_cmd = "$cmd > /dev/null 2>&1  &";
+            if(!empty($user)) {
+                $exec_cmd="sudo -u $user $exec_cmd";
+            }
+            _log("runSingleProcess $exec_cmd",3);
 			system($exec_cmd);
 		}
 	}
 
-	static function psAux($cmd, $timeout=null){
+	static function psAux($cmd, $timeout=null, $psCmd = "ps aux"){
 	  	$t1=microtime(true);
 	  
-	  	$full_cmd="ps uax | grep '$cmd' | grep -v grep";
+	  	$full_cmd="$psCmd | grep '$cmd' | grep -v grep";
 	  	if(!empty($timeout)){
               $full_cmd="timeout $timeout $full_cmd";
 	  	}
 	  	$res = exec($full_cmd, $out, $result_code);
 		$t2=microtime(true);
 		$elapsed=number_format($t2-$t1,3);
-		_log("psaux: full_cmd=$full_cmd time=$elapsed res=$res out=".json_encode($out)." result_code=$result_code",5);
+		_log("psaux: full_cmd=$full_cmd time=$elapsed res=$res out=".json_encode($out)." result_code=$result_code",3);
 		if($result_code==0) {
 		  	return $out;    //found
 		} else if ($result_code==1){
@@ -445,11 +449,11 @@ class Nodeutil
 		$data['system']['version']=shell_exec("lsb_release -a");
 		$data['system']['kernel']=shell_exec("uname -a");
 		$data['serverData']=self::getServerData();
-		$daemons = Daemon::availableDaemons();
-		foreach($daemons as $daemon) {
-			$status = Daemon::getDaemonStatus($daemon);
-			$data['daemons'][$daemon]=$status;
-		}
+        $tasks = Task::availableTasks();
+        foreach ($tasks as $task) {
+            $status = $task::getTaskStatus();
+            $data['tasks'][$task]=$status;
+        }
 		$data['php']['version']=phpversion();
 		$data['php']['extensions']=get_loaded_extensions();
 		$data['db']=self::getDbData();
@@ -991,5 +995,27 @@ class Nodeutil
             'count'=>count($res),
             'hash'=>md5(json_encode($res))
         ];
+    }
+
+    static function runAtInterval($name, $interval, $callable)
+    {
+        $lockFile = ROOT . '/tmp/run-' . $name;
+        $tsFile = ROOT . '/tmp/run-ts-' . $name;
+        $lockHandle = fopen($lockFile, 'w');
+        if (flock($lockHandle, LOCK_EX | LOCK_NB)) {
+            $lastExecution = file_get_contents($tsFile);
+            $currentTime = time();
+            $elapsed = $currentTime - $lastExecution;
+            if ($elapsed >= $interval) {
+                file_put_contents($tsFile, $currentTime);
+                if (is_callable($callable)) {
+                    call_user_func($callable);
+                }
+            } else {
+            }
+            flock($lockHandle, LOCK_UN);
+        } else {
+        }
+        fclose($lockHandle);
     }
 }
