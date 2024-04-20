@@ -58,21 +58,26 @@ class Sync extends Task
             return;
         }
 
-		$res = NodeSync::checkBlocks();
-		if(!$res) {
-			_log("Block database is invalid");
-			Config::setVal("blockchain_invalid", 1);
-			return;
-		}
-		$res = NodeSync::compareCheckPoints();
-		if(!$res) {
-			_log("Blockchain is invalid - checkpoints are not correct");
-			Config::setVal("blockchain_invalid", 1);
-			return;
-		}
-        NodeSync::recheckLastBlocks();
-		Config::setVal("blockchain_invalid", 0);
+        Nodeutil::runAtInterval("checkBlocks", 60*10, function() {
+            $res = NodeSync::checkBlocks();
+            if(!$res) {
+                _log("Block database is invalid");
+                Config::setVal("blockchain_invalid", 1);
+            }
+        });
+        Nodeutil::runAtInterval("compareCheckPoints", 60*60, function() {
+            $res = NodeSync::compareCheckPoints();
+            if(!$res) {
+                _log("Blockchain is invalid - checkpoints are not correct");
+                Config::setVal("blockchain_invalid", 1);
+            }
+        });
+        Nodeutil::runAtInterval("recheckLastBlocks", 60*10, function() {
+            NodeSync::recheckLastBlocks();
+        });
 
+
+//		Config::setVal("blockchain_invalid", 0);
 		Mempool::deleteOldMempool();
 //		NodeSync::checkForkedBlocks();
         NodeSync::verifyLastBlocks(); //switch to run on hour

@@ -366,19 +366,29 @@ class Nodeutil
 	}
 
 	static function measure($out=false) {
-		if(isset($GLOBALS['start_time'])) {
+        global $argv;
+        if(isset($GLOBALS['start_time'])) {
 			$GLOBALS['end_time']=microtime(true);
 			$time = $GLOBALS['end_time'] - $GLOBALS['start_time'];
 			if($time > 1) {
-				_log("Time: url=".$_SERVER['REQUEST_URI']." time=$time HTTP_USER_AGENT=".$_SERVER['HTTP_USER_AGENT']);
+//				_log("Time: url=".$_SERVER['REQUEST_URI']." time=$time HTTP_USER_AGENT=".$_SERVER['HTTP_USER_AGENT']);
 				$prev_time = $GLOBALS['start_time'];
+                $prev_section = null;
 				foreach($GLOBALS['measure'] as $section => $t) {
-					$diff = $t - $prev_time;
-					_log("Time: url=".$_SERVER['REQUEST_URI']." section=$section time=$t diff=$diff");
+					$diff = round($t - $prev_time,3);
+                    if($diff>1) {
+                        if(php_sapi_name() === 'cli') {
+                            $url="CLI:".$argv[0];
+                        } else {
+                            $url="WEB:".$_SERVER['REQUEST_URI'];
+                        }
+					    _log("Time: url=$url diff=$diff section=$prev_section > $section");
+                    }
                     if($out) {
                         echo "section=$section time=$t diff=$diff <br/>";
                     }
 					$prev_time = $t;
+                    $prev_section = $section;
 				}
 			}
 		}
@@ -388,6 +398,7 @@ class Nodeutil
 		if($name == null) {
 			$bt =  debug_backtrace();
 			$name = $bt[0]['file'].":".$bt[0]['line'];
+            $name = str_replace(ROOT, "", $name);
 		}
 		$GLOBALS['measure'][$name]=microtime(true);
 	}
@@ -401,29 +412,26 @@ class Nodeutil
             if(!empty($user)) {
                 $exec_cmd="sudo -u $user $exec_cmd";
             }
-            _log("runSingleProcess $exec_cmd",3);
 			system($exec_cmd);
 		}
 	}
 
-	static function psAux($cmd, $timeout=null, $psCmd = "ps aux"){
+	static function psAux($cmd, $timeout=null, $psCmd = "ps aux", &$result_code=null){
 	  	$t1=microtime(true);
-	  
 	  	$full_cmd="$psCmd | grep '$cmd' | grep -v grep";
 	  	if(!empty($timeout)){
-              $full_cmd="timeout $timeout $full_cmd";
+              $full_cmd="timeout --signal=SIGINT $timeout bash -c \"$full_cmd\"";
 	  	}
 	  	$res = exec($full_cmd, $out, $result_code);
 		$t2=microtime(true);
 		$elapsed=number_format($t2-$t1,3);
-		_log("psaux: full_cmd=$full_cmd time=$elapsed res=$res out=".json_encode($out)." result_code=$result_code",3);
 		if($result_code==0) {
 		  	return $out;    //found
 		} else if ($result_code==1){
 		  	return null;    //not found
 		} else {
-		  	return false;   //error or timeout
-		}
+            return false;   //error or timeout
+        }
 	}
 
 	static function runProcess($cmd) {
@@ -1003,7 +1011,7 @@ class Nodeutil
         $tsFile = ROOT . '/tmp/run-ts-' . $name;
         $lockHandle = fopen($lockFile, 'w');
         if (flock($lockHandle, LOCK_EX | LOCK_NB)) {
-            $lastExecution = file_get_contents($tsFile);
+            $lastExecution = @file_get_contents($tsFile);
             $currentTime = time();
             $elapsed = $currentTime - $lastExecution;
             if ($elapsed >= $interval) {

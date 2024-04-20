@@ -124,6 +124,8 @@ if(isset($_SESSION['account'])) {
     $loggedIn = true;
 }
 
+$scBalance = Account::getBalance($smartContract['address']);
+
 global $loggedIn;
 ?>
 
@@ -150,8 +152,9 @@ global $loggedIn;
                     <?php
                     $p1=strpos($code, "__HALT_COMPILER");
                     $p2=strpos($code, "lt;?php", $p1);
-                    $c=substr($code, $p2+7, 1000);
-                    echo $c . PHP_EOL ?>...
+                    $p3=strrpos($code, "}");
+                    $c=substr($code, $p2+7, $p3-$p2-7+1);
+                    echo $c . PHP_EOL ?>
                 </pre>
                 <a href="<?php echo $base_url ?>&action=download_code" class="btn btn-soft-primary btn-sm">Download code</a>
             </td>
@@ -162,7 +165,7 @@ global $loggedIn;
         </tr>
         <tr>
             <td>Balance</td>
-            <td><?php echo $balance ?></td>
+            <td><?php echo $scBalance ?></td>
         </tr>
         <tr>
             <td>Name</td>

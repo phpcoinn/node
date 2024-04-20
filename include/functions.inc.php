@@ -55,7 +55,7 @@ function _log($data, $verbosity = 0)
     $date = date("[Y-m-d H:i:s]");
     $trace = debug_backtrace();
     $loc = count($trace) - 1;
-    $file = substr($trace[$loc]['file'], strrpos($trace[$loc]['file'], "/") + 1);
+    $file = @substr(@$trace[$loc]['file'], @strrpos(@$trace[$loc]['file'], "/") + 1);
 
     global $log_prefix;
 
@@ -73,7 +73,7 @@ function _log($data, $verbosity = 0)
 		$dev_part .= " $ua";
 	}
 
-    $res = "$date [$verbosity] [$pid] $dev_part $log_prefix ".$file.":".$trace[$loc]['line'];
+    $res = "$date [$verbosity] [$pid] $dev_part $log_prefix ".$file.":".@$trace[$loc]['line'];
 
     if (!empty($trace[$loc]['class'])) {
         $res .= "---".$trace[$loc]['class'];
