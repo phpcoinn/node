@@ -282,7 +282,7 @@ class Masternode extends Task
 
         $sql="select max(height) from (
             select max(height) as height from transactions t where t.type = 2 and t.height <= $height
-            and t.dst = '$id' and t.message='mncreate'
+            and t.dst = '$id' and (t.message='mncreate' or t.message='')
             union
             (select max(height) as height from transactions t where t.type = 2 and t.height <= $height
             and t.message = '$id')) as heights";
