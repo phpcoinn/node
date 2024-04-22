@@ -1023,6 +1023,21 @@ class Nodeutil
             }
             flock($lockHandle, LOCK_UN);
         } else {
+            $tsFileExists = file_exists($tsFile);
+            if(!$tsFileExists) {
+                if(file_exists($lockFile)) {
+                    unlink($lockFile);
+                }
+            } else {
+                $lastExecution = @file_get_contents($tsFile);
+                $currentTime = time();
+                $elapsed = $currentTime - $lastExecution;
+                if($elapsed > 60*60) {
+                    if(file_exists($lockFile)) {
+                        unlink($lockFile);
+                    }
+                }
+            }
         }
         fclose($lockHandle);
     }

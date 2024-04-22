@@ -207,7 +207,7 @@ $res=Nodeutil::psAux("php ".ROOT ."/", 1, "ps -e -o user,pid,ppid,pcpu,pmem,lsta
                                 <div class="flex-row d-flex justify-content-between flex-wrap">
                                     <div>Since last run:</div>
                                     <div>
-                                        <?php echo $elapsed ?>
+                                        <?php echo !empty($taskStatus['last_run_time']) ? $elapsed : '' ?>
                                     </div>
                                 </div>
                             <?php } ?>
