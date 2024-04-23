@@ -177,8 +177,10 @@ class Block
                 if(!empty($this->schash) && $this->schash != $schash) {
                     if(NETWORK == "testnet" && $this->height == 1099548 && $schash == "6503aa9711ac12a14c0dcacd0ffd21374eb18a3ae0638e70a9099504e9da90c9") {
                         _log("Ignore invalid hash");
+                    } else if (NETWORK == "testnet" && in_array($this->height, [1142688,1142695,1142727,1142729,1142799,1142820,
+                            1142827,1142847,1142851,1142853,1142855,1142863,1142865,1142895,1143664])) {
                     } else {
-                        throw new Exception("Invalid schash block=".$this->schash." calculated=".$schash);
+                        throw new Exception("Invalid schash height=".$this->height." block=".$this->schash." calculated=".$schash);
                     }
                 }
 

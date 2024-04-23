@@ -14,11 +14,13 @@ class SmartContractMap implements ArrayAccess, Countable
     }
 
 
+    #[\ReturnTypeWillChange]
     public function offsetExists($offset)
     {
         return SmartContractBase::existsStateVar($this->db, SC_ADDRESS, $this->name, $offset);
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         if(strlen($offset)==0) {
@@ -27,6 +29,7 @@ class SmartContractMap implements ArrayAccess, Countable
         return SmartContractBase::getStateVar($this->db, SC_ADDRESS, $this->name, $offset);
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
         if(strlen($offset)==0) {
@@ -35,6 +38,7 @@ class SmartContractMap implements ArrayAccess, Countable
         SmartContractBase::setStateVar($this->db, SC_ADDRESS, $this->height, $this->name, $value, $offset);
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         if(strlen($offset)==0) {
@@ -45,6 +49,7 @@ class SmartContractMap implements ArrayAccess, Countable
         }
     }
 
+    #[\ReturnTypeWillChange]
     public function count()
     {
         return SmartContractBase::countStateVar($this->db, SC_ADDRESS, $this->name);
