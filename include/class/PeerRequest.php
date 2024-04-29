@@ -39,6 +39,7 @@ class PeerRequest
 			}
 		}
 		$ip = Nodeutil::getRemoteAddr();
+
 		if(version_compare($_POST['version'], MIN_VERSION) < 0) {
 			$peer = Peer::findByIp($ip);
 			if($peer) {

@@ -153,6 +153,12 @@ class Task
             }
             exit;
         }
+        if(self::hasArg("enable")) {
+            static::enable();
+        }
+        if(self::hasArg("disable")) {
+            static::disable();
+        }
     }
 
     static function getArg($a, $def) {

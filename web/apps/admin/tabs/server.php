@@ -42,7 +42,7 @@ $serverData=Nodeutil::getServerData();
 		<dl class="row">
 			<dt class="col-sm-6">CPU Usage:</dt>
 			<dd class="col-sm-6 d-flex align-items-center">
-				<div><?php echo $serverData['stat']['cpuload'] ?> %</div>
+				<div><?php echo round($serverData['stat']['cpuload'],2) ?> %</div>
 				<div class="progress flex-grow-1 mx-2">
 					<div class="progress-bar bg-info" role="progressbar"
 					     style="width: <?php echo $serverData['stat']['cpuload'] ?>%" aria-valuenow="<?php echo $serverData['stat']['cpuload'] ?>" aria-valuemin="0" aria-valuemax="100"></div>
