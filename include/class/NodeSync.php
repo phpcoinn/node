@@ -653,6 +653,16 @@ class NodeSync
 		} else {
 			_log("Need to sync blokchain");
 
+            $peerIndex = 0;
+            $peer = $peersForSync[$peerIndex];
+            $hostname = $peer['hostname'];
+
+            self::peerSync($hostname,1,1);
+
+            Config::setSync(0);
+            _log("Finished sync");
+            return;
+
 				$syncing = true;
 				$limit_cnt = 0;
 				while($syncing) {
@@ -779,6 +789,77 @@ class NodeSync
         Config::setSync(0);
 
 	}
+
+    static function peerSync($hostname, $add_limit=100, $delete_limit=10) {
+        _log("Syncing with peer ".$hostname);
+
+        $syncing = true;
+        $add_cnt = 0;
+        $delete_cnt = 0;
+        while($syncing) {
+            $add_cnt++;
+            if($add_limit>0 && $add_cnt > $add_limit) {
+                _log("Sync limit reached");
+                $syncing = false;
+                break;
+            }
+
+            $current = Block::current();
+            $height = $current['height'] + 1;
+            _log("PeerSync: syncing $height",2);
+
+            $peer_block_data = NodeSync::staticGetPeerBlock($hostname, $height);
+            if ($peer_block_data) {
+                $peer_block = Block::getFromArray($peer_block_data);
+                $res = $peer_block->check($err);
+                if (!$res) {
+                    _log("PeerSync: Peer block check failed: $err");
+                    Block::pop();
+                    $delete_cnt++;
+                    if($delete_limit>0 && $delete_cnt > $delete_limit) {
+                        $syncing = false;
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+                _log("Peer block ok",3);
+                $peer_block->prevBlockId = $current['id'];
+                $res = $peer_block->add($err);
+                if (!$res) {
+                    _log("PeerSync: Peer block add failed: $err");
+                    Block::pop();
+                    $delete_cnt++;
+                    if($delete_limit>0 && $delete_cnt > $delete_limit) {
+                        $syncing = false;
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+                _log("Peer block added",3);
+                $res = $peer_block->verifyBlock($err);
+                _log("PeerSync: verifyBlock res=".json_encode($res),3);
+                if (!$res) {
+                    _log("PeerSync: Error verify block: $err");
+                    Block::pop();
+                    $delete_cnt++;
+                    if($delete_limit>0 && $delete_cnt > $delete_limit) {
+                        $syncing = false;
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+                _log("PeerSync: Block verified",3);
+            } else {
+                _log("PeerSync: NO peer block data");
+                $syncing = false;
+                break;
+            }
+        }
+        Propagate::blockToAll("current");
+    }
 
 	static function compareBlocks($block1, $block2) {
 		if($block1['elapsed'] == $block2['elapsed']) {
