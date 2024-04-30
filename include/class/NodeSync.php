@@ -657,7 +657,7 @@ class NodeSync
             $peer = $peersForSync[$peerIndex];
             $hostname = $peer['hostname'];
 
-            self::peerSync($hostname,1,1);
+            self::peerSync($hostname);
 
             Config::setSync(0);
             _log("Finished sync");
