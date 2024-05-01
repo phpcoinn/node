@@ -171,5 +171,20 @@ class Task
         }
     }
 
+    static function checkLongRunning() {
+        $status = self::getTaskStatus();
+        if(isset($status['process'])) {
+            $started = $status['process']['started'];
+            $elapsed = time() - $started;
+            _log("Check long running ".static::$name. " elapsed=".$elapsed);
+            if($elapsed > 60*10) {
+                $pid=$status['process']['pid'];
+                $scmd = "kill $pid";
+                shell_exec($scmd);
+            }
+        }
+
+    }
+
 
 }

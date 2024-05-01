@@ -59,21 +59,13 @@ class Sync extends Task
         }
 
         Nodeutil::runAtInterval("checkBlocks", 60*10, function() {
-            $res = NodeSync::checkBlocks();
-            if(!$res) {
-                _log("Block database is invalid");
-                Config::setVal("blockchain_invalid", 1);
-            }
+            Nodeutil::runSingleProcess("php " .ROOT."/cli/util.php check-blocks");
         });
         Nodeutil::runAtInterval("compareCheckPoints", 60*60, function() {
-            $res = NodeSync::compareCheckPoints();
-            if(!$res) {
-                _log("Blockchain is invalid - checkpoints are not correct");
-                Config::setVal("blockchain_invalid", 1);
-            }
+            Nodeutil::runSingleProcess("php " .ROOT."/cli/util.php compare-check-points");
         });
         Nodeutil::runAtInterval("recheckLastBlocks", 60*10, function() {
-            NodeSync::recheckLastBlocks();
+            Nodeutil::runSingleProcess("php " .ROOT."/cli/util.php recheck-last-blocks");
         });
 
 

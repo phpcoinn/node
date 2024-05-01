@@ -52,6 +52,9 @@ class Cron extends Task
         if($min % 60 == 0) {
             Nodeutil::checkStuckMempool();
         }
+
+        Sync::checkLongRunning();
+
         _log("CRON: Run at time: " .$time, 2);
     }
 }

@@ -1992,4 +1992,25 @@ class Util
             _log("blacklist reasons: ".json_encode($status['blacklist_reasons']));
         }
     }
+
+    static function checkBlocks()
+    {
+        $res = NodeSync::checkBlocks();
+        if (!$res) {
+            _log("Block database is invalid");
+            Config::setVal("blockchain_invalid", 1);
+        }
+    }
+
+    static function compareCheckPoints() {
+        $res = NodeSync::compareCheckPoints();
+        if(!$res) {
+            _log("Blockchain is invalid - checkpoints are not correct");
+            Config::setVal("blockchain_invalid", 1);
+        }
+    }
+
+    static function recheckLastBlocks() {
+        NodeSync::recheckLastBlocks();
+    }
 }
