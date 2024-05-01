@@ -405,15 +405,11 @@ class Nodeutil
 
 	static function runSingleProcess($cmd, $check_cmd = null, $user=null) {
 		_log("runSingleProcess $cmd", 5);
-		if(empty($check_cmd)) $check_cmd = $cmd;
-		$res=self::psAux($check_cmd, 2);
-		if($res===null) {
-			$exec_cmd = "$cmd > /dev/null 2>&1  &";
-            if(!empty($user)) {
-                $exec_cmd="sudo -u $user $exec_cmd";
-            }
-			system($exec_cmd);
-		}
+        $exec_cmd = "$cmd > /dev/null 2>&1  &";
+        if(!empty($user)) {
+            $exec_cmd="sudo -u $user $exec_cmd";
+        }
+        system($exec_cmd);
 	}
 
 	static function psAux($cmd, $timeout=null, $psCmd = "ps aux", &$result_code=null){

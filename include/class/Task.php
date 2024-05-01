@@ -155,9 +155,11 @@ class Task
         }
         if(self::hasArg("enable")) {
             static::enable();
+	        exit;
         }
         if(self::hasArg("disable")) {
             static::disable();
+	        exit;
         }
     }
 
