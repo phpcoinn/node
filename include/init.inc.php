@@ -58,9 +58,13 @@ if (php_sapi_name() == 'cli') {
 	});
 	$key=md5(json_encode($argv));
 	if(!@mkdir(ROOT."/tmp/cli-$key")){
-        $GLOBALS['locked']=true;
-		exit();
-	}
+        $time = filemtime(ROOT."/tmp/cli-$key");
+        $elapsed = time()-$time;
+        if($elapsed < 60*10) {
+            $GLOBALS['locked']=true;
+        }
+        exit();
+    }
 }
 
 if(false && strlen($_SERVER['HTTP_USER_AGENT'])>0) {
