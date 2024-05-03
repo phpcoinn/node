@@ -1003,38 +1003,23 @@ class Nodeutil
 
     static function runAtInterval($name, $interval, $callable)
     {
-        $lockFile = ROOT . '/tmp/run-' . $name;
-        $tsFile = ROOT . '/tmp/run-ts-' . $name;
-        $lockHandle = fopen($lockFile, 'w');
-        if (flock($lockHandle, LOCK_EX | LOCK_NB)) {
-            $lastExecution = @file_get_contents($tsFile);
-            $currentTime = time();
-            $elapsed = $currentTime - $lastExecution;
-            if ($elapsed >= $interval) {
-                file_put_contents($tsFile, $currentTime);
-                if (is_callable($callable)) {
-                    call_user_func($callable);
-                }
-            } else {
+        global $db;
+        $lockDir = ROOT . '/tmp/run-' . $name;
+        $lastExecution=$db->getConfig("ts-$name");
+        $currentTime = time();
+        $elapsed = $currentTime - $lastExecution;
+        if ($elapsed >= $interval) {
+            if(@mkdir($lockDir)) {
+                if($name=="task-masternode") _log("dev: runAtInterval locked");
+                return;
             }
-            flock($lockHandle, LOCK_UN);
-        } else {
-            $tsFileExists = file_exists($tsFile);
-            if(!$tsFileExists) {
-                if(file_exists($lockFile)) {
-                    unlink($lockFile);
-                }
-            } else {
-                $lastExecution = @file_get_contents($tsFile);
-                $currentTime = time();
-                $elapsed = $currentTime - $lastExecution;
-                if($elapsed > 60*60) {
-                    if(file_exists($lockFile)) {
-                        unlink($lockFile);
-                    }
-                }
+            if($name=="task-masternode") _log("dev: runAtInterval lock");
+            $db->setConfig("ts-$name", $currentTime);
+            if (is_callable($callable)) {
+                call_user_func($callable);
             }
+            @rmdir($lockDir);
         }
-        fclose($lockHandle);
+
     }
 }

@@ -51,13 +51,19 @@ if (php_sapi_name() == 'cli') {
 		if($pid==getmypid()){
             if(!@$GLOBALS['locked']) {
 			    $key=md5(json_encode($argv));
-			    @rmdir(ROOT."/tmp/cli-$key");
+                $script_name=$argv[0];
+                $info = pathinfo($script_name);
+                $filename=$info['filename'];
+			    @rmdir(ROOT."/tmp/cli-$filename-$key");
             }
 		}
 
 	});
 	$key=md5(json_encode($argv));
-	if(!@mkdir(ROOT."/tmp/cli-$key")){
+    $script_name=$argv[0];
+    $info = pathinfo($script_name);
+    $filename=$info['filename'];
+	if(!@mkdir(ROOT."/tmp/cli-$filename-$key")){
         $time = filemtime(ROOT."/tmp/cli-$key");
         $elapsed = time()-$time;
         if($elapsed < 60*10) {

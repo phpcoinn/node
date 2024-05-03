@@ -106,8 +106,9 @@ class Task
             $data['owner'] = $arr[8];
             $status['process']=$data;
         } else {
-            $tsFile = ROOT . '/tmp/run-ts-task-' . $name;
-            $status['last_run_time']=file_get_contents($tsFile);
+            global $db;
+            $last_run_time = $db->getConfig("ts-task-$name");
+            $status['last_run_time']=$last_run_time;
         }
         return $status;
     }
@@ -161,6 +162,11 @@ class Task
             static::disable();
 	        exit;
         }
+        if(self::hasArg("status")) {
+            $status = static::getTaskStatus();
+            api_echo($status);
+            exit;
+        }
     }
 
     static function getArg($a, $def) {
@@ -176,7 +182,7 @@ class Task
         if(isset($status['process'])) {
             $started = $status['process']['started'];
             $elapsed = time() - $started;
-            _log("Check long running ".static::$name. " elapsed=".$elapsed);
+            _log("Check long running ".static::$name. " elapsed=".$elapsed, 3);
             if($elapsed > 60*10) {
                 $pid=$status['process']['pid'];
                 $scmd = "kill $pid";
