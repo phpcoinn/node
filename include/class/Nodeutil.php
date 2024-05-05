@@ -1010,10 +1010,8 @@ class Nodeutil
         $elapsed = $currentTime - $lastExecution;
         if ($elapsed >= $interval) {
             if(@mkdir($lockDir)) {
-                if($name=="task-masternode") _log("dev: runAtInterval locked");
                 return;
             }
-            if($name=="task-masternode") _log("dev: runAtInterval lock");
             $db->setConfig("ts-$name", $currentTime);
             if (is_callable($callable)) {
                 call_user_func($callable);

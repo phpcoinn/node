@@ -247,7 +247,7 @@ class Transaction
 	    $trans->fee = $x['fee'];
 	    $trans->signature = $x['signature'];
 	    $trans->height = $x['height'];
-	    $trans->peer = $x['peer'];
+	    $trans->peer = @$x['peer'];
 	    $trans->data = $x['data'];
 	    return $trans;
     }

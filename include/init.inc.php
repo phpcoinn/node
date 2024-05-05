@@ -44,35 +44,6 @@ require_once $config_file;
 require_once __DIR__.'/db.inc.php';
 global $_config;
 
-$pid=getmypid();
-if (php_sapi_name() == 'cli') {
-	register_shutdown_function(function() use ($pid){
-		global $argv;
-		if($pid==getmypid()){
-            if(!@$GLOBALS['locked']) {
-			    $key=md5(json_encode($argv));
-                $script_name=$argv[0];
-                $info = pathinfo($script_name);
-                $filename=$info['filename'];
-			    @rmdir(ROOT."/tmp/cli-$filename-$key");
-            }
-		}
-
-	});
-	$key=md5(json_encode($argv));
-    $script_name=$argv[0];
-    $info = pathinfo($script_name);
-    $filename=$info['filename'];
-	if(!@mkdir(ROOT."/tmp/cli-$filename-$key")){
-        $time = filemtime(ROOT."/tmp/cli-$key");
-        $elapsed = time()-$time;
-        if($elapsed < 60*10) {
-            $GLOBALS['locked']=true;
-        }
-        exit();
-    }
-}
-
 if(false && strlen($_SERVER['HTTP_USER_AGENT'])>0) {
 	$log_agent_file = ROOT . "/tmp/agent.log";
 	$date = date("[Y-m-d H:i:s]");

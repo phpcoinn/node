@@ -44,6 +44,28 @@ class Task
         }
     }
 
+    static function checkLock() {
+        $name = static::$name;
+        $pid=getmypid();
+        $lock_dir = ROOT."/tmp/cli-$name";
+        register_shutdown_function(function() use ($pid, $lock_dir){
+            if($pid==getmypid()){
+                if(!@$GLOBALS['locked']) {
+                    @rmdir($lock_dir);
+                }
+            }
+
+        });
+        if(!@mkdir($lock_dir)){
+            $time = filemtime($lock_dir);
+            $elapsed = time()-$time;
+            if($elapsed < 60*10) {
+                $GLOBALS['locked']=true;
+            }
+            exit();
+        }
+    }
+
     static function runTask() {
         $name = static::$name;
         $interval = static::$run_interval;
@@ -61,6 +83,7 @@ class Task
     }
 
     static function processTask() {
+        self::checkLock();
         self::processArgs();
         $name = static::$name;
         $userInfo = posix_getpwuid(posix_geteuid());

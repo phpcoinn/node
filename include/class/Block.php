@@ -196,7 +196,7 @@ class Block
 
                 $t2=microtime(true);
                 $diff=round($t2-$t1,2);
-                _log("Inserted new block height={$this->height} id=$hash time=$diff");
+                _log("Inserted new block height={$this->height} date=".date("Y-m-d H:i:s",$this->date)." id=$hash time=$diff");
                 return true;
 
             } catch (Exception $e) {
