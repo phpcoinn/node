@@ -945,6 +945,8 @@ class Util
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
+            Util::cleanTmpFolder();
+
 //			Util::recalculateMasternodes();
 
 //			$cmd="cd ".ROOT." && chown -R www-data:www-data web";
@@ -2012,5 +2014,10 @@ class Util
 
     static function recheckLastBlocks() {
         NodeSync::recheckLastBlocks();
+    }
+
+    static function cleanTmpFolder() {
+        $cmd = "rm -rf ".ROOT."/tmp/*";
+        $res = shell_exec($cmd);
     }
 }
