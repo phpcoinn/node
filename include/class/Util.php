@@ -844,8 +844,8 @@ class Util
 
 	static function update($argv) {
 		global $_config;
-		$branch = trim($argv[2]);
-		$force = trim($argv[3]);
+		$branch = @trim($argv[2]);
+		$force = @trim($argv[3]);
 		if(empty($branch)) {
             $branch = GIT_BRANCH;
 		}
