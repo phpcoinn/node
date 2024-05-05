@@ -1004,7 +1004,7 @@ class Nodeutil
     static function runAtInterval($name, $interval, $callable)
     {
         global $db;
-        $lockDir = ROOT . '/tmp/run-' . $name;
+        $lockDir = ROOT . '/tmp/run-' . $name.".lock";
         $lastExecution=$db->getConfig("ts-$name");
         $currentTime = time();
         $elapsed = $currentTime - $lastExecution;

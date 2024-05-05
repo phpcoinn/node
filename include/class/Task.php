@@ -47,7 +47,7 @@ class Task
     static function checkLock() {
         $name = static::$name;
         $pid=getmypid();
-        $lock_dir = ROOT."/tmp/cli-$name";
+        $lock_dir = ROOT."/tmp/cli-$name.lock";
         register_shutdown_function(function() use ($pid, $lock_dir){
             if($pid==getmypid()){
                 if(!@$GLOBALS['locked']) {
