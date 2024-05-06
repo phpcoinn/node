@@ -1,7 +1,7 @@
 <?php
 global $_config, $db;
 // when db schema modifications are done, this function is run.
-$dbversion = intval($_config['dbversion']);
+$dbversion = intval(@$_config['dbversion']);
 
 
 function migrate_with_lock(&$dbversion, $callback) {
@@ -219,47 +219,14 @@ if (empty($dbversion)) {
 
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync_last', '0');");
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync', '0');");
-	$dbversion = 35;
-}
-
-if($dbversion <= 36) {
-    $lock_dir = ROOT . "/tmp/db-migrate-37";
-    if (mkdir($lock_dir, 0700)) {
-        _log("Start migrate 36");
-        _log("mempool add schash");
-        $db->run("alter table mempool add schash varchar(128) null");
-        _log("transactions add schash");
-        $db->run("alter table transactions add schash varchar(128) null");
-        $db->run("alter table smart_contracts add name varchar(255) null;");
-        $db->run("alter table smart_contracts add description varchar(1000) null;");
-        @rmdir($lock_dir);
-        $dbversion = 37;
-        _log("Finish migrate 37");
-    }
-}
-
-if($dbversion <= 37) {
-    migrate_with_lock($dbversion, function() {
-        global $db;
-        $db->run("alter table blocks add schash varchar(128) null");
-    });
-}
-
-if($dbversion <= 38) {
-    migrate_with_lock($dbversion, function() {
-        global $db;
-        $db->run("alter table transactions drop column schash;");
-        $db->run("alter table mempool drop column schash;");
-    });
-}
-
-if($dbversion <= 39) {
-
+	$dbversion = 40;
 }
 
 // update the db version to the latest one
 if ($dbversion != $_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
 }
-$db->commit();
+if($db->inTransaction()) {
+    $db->commit();
+}
 
