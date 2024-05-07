@@ -118,6 +118,7 @@ class NodeMiner extends Task {
 
 			$t1 = microtime(true);
 			while (!$blockFound) {
+                pcntl_signal_dispatch();
 				$this->attempt++;
                 if($this->sleep_time == INF) {
                     $this->running = false;

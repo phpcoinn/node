@@ -48,22 +48,26 @@ class Task
         $name = static::$name;
         $pid=getmypid();
         $lock_dir = ROOT."/tmp/cli-$name.lock";
-        register_shutdown_function(function() use ($pid, $lock_dir){
+        if(!@mkdir($lock_dir)){
+            exit();
+        }
+
+        function signalHandler($signal) {
+            switch($signal) {
+                case SIGTERM:
+                case SIGINT:
+                    exit;
+            }
+        }
+        pcntl_signal(SIGTERM, 'signalHandler', false);
+        pcntl_signal(SIGINT, 'signalHandler', false);
+
+        register_shutdown_function(function() use ($pid, $lock_dir,$name){
             if($pid==getmypid()){
-                if(!@$GLOBALS['locked']) {
-                    @rmdir($lock_dir);
-                }
+                @rmdir($lock_dir);
             }
 
         });
-        if(!@mkdir($lock_dir)){
-            $time = filemtime($lock_dir);
-            $elapsed = time()-$time;
-            if($elapsed < 60*10) {
-                $GLOBALS['locked']=true;
-            }
-            exit();
-        }
     }
 
     static function runTask() {
@@ -83,9 +87,9 @@ class Task
     }
 
     static function processTask() {
+        $name = static::$name;
         self::checkLock();
         self::processArgs();
-        $name = static::$name;
         $userInfo = posix_getpwuid(posix_geteuid());
         $user=$userInfo['name'];
         if($user!=="www-data") {
