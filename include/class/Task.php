@@ -215,6 +215,12 @@ class Task
                 $scmd = "kill $pid";
                 shell_exec($scmd);
             }
+        } else {
+            $lock_dir = ROOT . "/tmp/cli-".static::$name.".lock";
+            if(file_exists($lock_dir)) {
+                _log("Lock ".static::$name. " exists without process", 3);
+                @rmdir($lock_dir);
+            }
         }
 
     }
