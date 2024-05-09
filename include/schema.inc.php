@@ -1,7 +1,7 @@
 <?php
 global $_config, $db;
 // when db schema modifications are done, this function is run.
-$dbversion = intval($_config['dbversion']);
+$dbversion = intval(@$_config['dbversion']);
 
 
 function migrate_with_lock(&$dbversion, $callback) {
@@ -220,8 +220,10 @@ if (empty($dbversion)) {
 }
 
 // update the db version to the latest one
-if ($dbversion != $_config['dbversion']) {
+if ($dbversion != @$_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
 }
-$db->commit();
+if($db->inTransaction()) {
+	$db->commit();
+}
 
