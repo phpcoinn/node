@@ -223,7 +223,7 @@ if (empty($dbversion)) {
 }
 
 // update the db version to the latest one
-if ($dbversion != $_config['dbversion']) {
+if ($dbversion != @$_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
 }
 if($db->inTransaction()) {
