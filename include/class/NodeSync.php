@@ -828,6 +828,15 @@ class NodeSync
                 $res = $peer_block->add($err);
                 if (!$res) {
                     _log("PeerSync: Peer block add failed: $err");
+
+                    if(strpos($err, "Invalid schash")!== false) {
+                        _log("PeerSync: invalid hash - run sync state");
+                        $cmd = "php " . ROOT . "cli/util.php sync-sc-state $hostname";
+                        Nodeutil::runSingleProcess($cmd);
+                        $syncing = false;
+                        break;
+                    }
+
                     Block::pop();
                     $delete_cnt++;
                     if($delete_limit>0 && $delete_cnt > $delete_limit) {

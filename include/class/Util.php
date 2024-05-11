@@ -1927,34 +1927,39 @@ class Util
             api_err("Missing node");
         }
         _log("Sync sc state with peer $node");
-        global $db;
 
-        $db->beginTransaction();
+        synchronized("sync-sc-state", function() use ($node) {
+            global $db;
 
-        $sql="delete from smart_contract_state";
-        $db->run($sql);
-        $url=$node."/api.php?q=getScState";
-        $res = url_get($url);
-        $res = json_decode($res, true);
-        if($res!==false) {
-            $top_height = Block::getHeight();
-            $data=$res['data'];
-            foreach ($data as $row) {
-                $sc_address=$row['sc_address'];
-                $variable=$row['variable'];
-                $var_key=$row['var_key'];
-                $var_value=$row['var_value'];
-                $height=$row['height'];
-                if($height > $top_height) {
-                    break;
+            $db->beginTransaction();
+
+            $sql="delete from smart_contract_state";
+            $db->run($sql);
+            $url=$node."/api.php?q=getScState";
+            $res = url_get($url);
+            $res = json_decode($res, true);
+            if($res!==false) {
+                $top_height = Block::getHeight();
+                $data=$res['data'];
+                foreach ($data as $row) {
+                    $sc_address=$row['sc_address'];
+                    $variable=$row['variable'];
+                    $var_key=$row['var_key'];
+                    $var_value=$row['var_value'];
+                    $height=$row['height'];
+                    if($height > $top_height) {
+                        break;
+                    }
+                    _log("Syncing sc state at height $height");
+                    $sql="replace into smart_contract_state set sc_address = ?, variable =?, var_key=?, var_value=?, height = ?";
+                    $db->run($sql, [$sc_address,$variable,$var_key,$var_value,$height], false);
                 }
-                _log("Syncing sc state at height $height");
-                $sql="replace into smart_contract_state set sc_address = ?, variable =?, var_key=?, var_value=?, height = ?";
-                $db->run($sql, [$sc_address,$variable,$var_key,$var_value,$height], false);
             }
-        }
-        _log("Sync sc state finished");
-        $db->commit();
+            _log("Sync sc state finished");
+            $db->commit();
+        });
+
+
     }
 
     static function checkPeerStatus() {
