@@ -100,9 +100,9 @@ class Sync extends Task
 		Minepool::deleteOldEntries();
 		Cache::clearOldFiles();
 
-//        $cmd='find '.ROOT.'/tmp -name "*.lock" -mmin +1 -exec rm -rf {} +';
-//        _log("Remove lock files cmd=$cmd", 3);
-//        shell_exec($cmd);
+        $cmd='find '.ROOT.'/tmp -name "*.lock" ! -name "cli-*.lock" -mmin +1 -exec rm -rf {} +';
+        _log("Remove lock files cmd=$cmd", 3);
+        shell_exec($cmd);
 
 		_log("Finishing sync",3);
 		$t2 = microtime(true);
