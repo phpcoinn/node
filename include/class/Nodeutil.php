@@ -620,7 +620,8 @@ class Nodeutil
                 'generator'    => $generator,
                 'miner'        => $miner,
                 'masternode'   => $masternode,
-                'lastBlockTime'=>$current['date']
+                'lastBlockTime'=>$current['date'],
+                'php_version' => PHP_VERSION
             ];
         }
 
@@ -683,7 +684,8 @@ class Nodeutil
 			'avgBlockTime100'  =>  $cachedData['avgBlockTime100'],
 			'hashRate10'=>$cachedData['hashRate10'],
 			'hashRate100'=>$cachedData['hashRate100'],
-			'lastBlockTime'=>$current['date']
+			'lastBlockTime'=>$current['date'],
+            'php_version' => PHP_VERSION
 		];
 	}
 
