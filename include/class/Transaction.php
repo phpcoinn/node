@@ -504,7 +504,9 @@ class Transaction
 		$data['total']['start']=$row['max_date'];
 		$data['total']['elapsed']=$row['max_date'] - $row['min_date'];
 		$data['total']['days']=$data['total']['elapsed'] / 86400;
-		$data['total']['daily']=$row['total'] / $data['total']['days'];
+        if($data['total']['days']!=0) {
+		    $data['total']['daily']=$row['total'] / $data['total']['days'];
+        }
 		$data['total']['weekly']=$data['total']['daily'] * 7;
 		$data['total']['monthly']=$data['total']['daily'] * 30;
 		$data['total']['yearly']=$data['total']['monthly'] * 12;
@@ -524,7 +526,9 @@ class Transaction
         $data['total']['start']=$row['max_date'];
         $data['total']['elapsed']=$row['max_date'] - $row['min_date'];
         $data['total']['days']=$data['total']['elapsed'] / 86400;
-        $data['total']['daily']=$row['total'] / $data['total']['days'];
+        if($data['total']['days'] > 0) {
+            $data['total']['daily']=$row['total'] / $data['total']['days'];
+        }
         $data['total']['weekly']=$data['total']['daily'] * 7;
         $data['total']['monthly']=$data['total']['daily'] * 30;
         $data['total']['yearly']=$data['total']['monthly'] * 12;
