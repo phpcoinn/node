@@ -98,7 +98,7 @@ echo "==========================================================================
 apt update
 apt install curl wget git sed net-tools unzip -y
 echo "install php with nginx server"
-apt install nginx php-fpm php-mysql php-gmp php-bcmath php-curl -y
+apt install nginx php-fpm php-mysql php-gmp php-bcmath php-curl php-mbstring -y
 apt install mariadb-server -y
 service mariadb start
 
@@ -258,13 +258,15 @@ innodb_log_buffer_size=${innodb_log_buffer_size}M
 innodb_log_file_size=${innodb_log_file_size}M
 innodb_write_io_threads=16
 innodb_flush_log_at_trx_commit=0
-max_allowed_packet=512M
+max_allowed_packet=256M
 innodb-doublewrite=0
 skip_log_bin
 innodb_io_capacity=700
 innodb_io_capacity_max=1500
+net_write_timeout=300
+interactive_timeout=300
 EOF
-
+  service nginx stop
   service mariadb restart
   sleep 5
 fi
@@ -280,7 +282,7 @@ rm $BLOCKCHAIN_SNAPSHOT.sql
 rm $BLOCKCHAIN_SNAPSHOT.sql.zip
 rm -rf $NODE_DIR/tmp/*
 
-
+service nginx start
 
 echo "==================================================================================================="
 echo "PHPCoin: Install finished"
