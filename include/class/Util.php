@@ -754,6 +754,12 @@ class Util
 		if(!file_exists($file)) {
 			die("Can not found file: $file".PHP_EOL);
 		}
+		$namedAgs = process_cmdline_args($argv);
+		if(isset($namedAgs['compress'])) {
+			echo "Converting tables to compressed...".PHP_EOL;
+			$sed_cmd="sed -i 's/ROW_FORMAT=DYNAMIC/ROW_FORMAT=COMPRESSED/g' $file";
+			shell_exec($sed_cmd);
+		}
 		echo "Importing database...".PHP_EOL;
 		global $db;
 		$db_name = $db->single('select database()');
@@ -831,8 +837,8 @@ class Util
 
 	static function update($argv) {
 		global $_config;
-		$branch = trim($argv[2]);
-		$force = trim($argv[3]);
+		$branch = @trim($argv[2]);
+		$force = @trim($argv[3]);
 		if(empty($branch)) {
             $branch = GIT_BRANCH;
 		}
@@ -841,9 +847,9 @@ class Util
 		$maxPeerBuildNumber = Peer::getMaxBuildNumber();
 
         $check_url = "https://phpcoin.net/version.php?branch={branch}";
-		$check_url=str_replace("{branch}",$branch,$check_url);
+        $check_url=str_replace("{branch}",$branch,$check_url);
         $cmd= "curl -m 30 -H 'Cache-Control: no-cache, no-store' -s $check_url";
-		$res = shell_exec($cmd);
+        $res = shell_exec($cmd);
         $version = intval($res);
         _log("AUTO_UPDATE: check url $check_url version=$version",4);
 

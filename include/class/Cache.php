@@ -71,6 +71,37 @@ class Cache
 		shell_exec($cmd);
 	}
 
+    static function syncStore($key,$ttl,$fn) {
+        $cache_file = self::getCacheFile($key);
+        return synchronized("cache-$key", function() use ($cache_file,$ttl,$fn) {
+            $expireTime = time() + $ttl;
+            if(is_callable($fn)) {
+                $data=call_user_func($fn);
+            }
+            $cacheData = json_encode(['expire' => $expireTime, 'data' => $data]);
+            file_put_contents($cache_file, $cacheData, LOCK_EX);
+            return $data;
+        });
+    }
+
+    static function getTempCache($key,$ttl,$fn) {
+        $cache_file = self::getCacheFile($key);
+        if (file_exists($cache_file)) {
+            $cacheData = json_decode(file_get_contents($cache_file), true);
+            if ($cacheData) {
+                if($cacheData['expire'] >= time()) {
+                    return $cacheData['data'];
+                }
+                self::syncStore($key, $ttl, $fn);
+                return $cacheData['data'];
+            } else {
+                return self::syncStore($key, $ttl, $fn);
+            }
+        } else {
+            return self::syncStore($key, $ttl, $fn);
+        }
+    }
+
 }
 
 Cache::init();

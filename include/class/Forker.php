@@ -55,6 +55,32 @@ class Forker {
         }
     }
 
+    function execNoWait() {
+        if($this->parent) {
+            $this->parent[0]->call($this, ...$this->parent[1]);
+        }
+        if(count($this->childs)==0) {
+            return;
+        }
+        foreach ($this->childs as $i=>$child) {
+            $pid = pcntl_fork();
+            if ($pid == -1) {
+                return;
+            } else if (!$pid) {
+                if (posix_setsid() == -1) {
+                    exit();
+                }
+                register_shutdown_function(function(){
+                    posix_kill(getmypid(), SIGKILL);
+                });
+                ob_start();
+                $child[0]->call($this, ...$child[1]);
+                ob_end_clean();
+                exit;
+            }
+        }
+    }
+
     function send($data) {
         if($this->listener) {
             $this->listener->call($this, json_decode($data, true));

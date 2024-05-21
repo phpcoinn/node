@@ -19,6 +19,7 @@ if (php_sapi_name() !== 'cli') {
 // UTC timezone by default
 date_default_timezone_set("UTC");
 require_once dirname(__DIR__).'/vendor/autoload.php';
+define("ROOT", dirname(__DIR__));
 
  error_reporting(E_ALL & ~E_NOTICE);
 //error_reporting(0);
@@ -35,7 +36,9 @@ if (php_sapi_name() !== 'cli' && substr_count($_SERVER['PHP_SELF'], "/") > 1
     die("This application should only be run in the main directory /");
 }
 
-define("ROOT", dirname(__DIR__));
+if(PHP_VERSION_ID < 80000 && false) {
+    die("Invalid php version! Please upgrade your node");
+}
 
 $config_file = ROOT.'/config/config.inc.php';
 

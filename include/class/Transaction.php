@@ -247,7 +247,7 @@ class Transaction
 	    $trans->fee = $x['fee'];
 	    $trans->signature = $x['signature'];
 	    $trans->height = $x['height'];
-	    $trans->peer = $x['peer'];
+	    $trans->peer = @$x['peer'];
 	    $trans->data = $x['data'];
 	    return $trans;
     }
@@ -1237,7 +1237,7 @@ class Transaction
             $res = Mempool::checkMempoolBalance($this, $error);
             if(!$res) {
                 throw new Exception("Error processing new transaction in mempool: $error");
-		    }
+            }
 
 			if($this->type == TX_TYPE_REWARD) {
 				throw new Exception("Not allowed type in mempool");

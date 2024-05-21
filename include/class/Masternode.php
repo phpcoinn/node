@@ -280,11 +280,15 @@ class Masternode extends Daemon
 
 	static function getMasternodeHeight($id, $height) {
 		global $db;
-		$sql="select max(t.height)
-			from transactions t
-			where ((t.dst = :id and t.message='mncreate') or t.message = :id2) and t.type = :create
-			and t.height <= :height";
-		return $db->single($sql, [":height"=>$height, ":id"=>$id, ":id2"=>$id,  ":create"=> TX_TYPE_MN_CREATE]);
+
+        $sql="select max(height) from (
+            select max(height) as height from transactions t where t.type = 2 and t.height <= $height
+            and t.dst = '$id' and (t.message='mncreate' or t.message='')
+            union
+            (select max(height) as height from transactions t where t.type = 2 and t.height <= $height
+            and t.message = '$id')) as heights";
+        $res = $db->single($sql);
+        return $res;
 
 	}
 
