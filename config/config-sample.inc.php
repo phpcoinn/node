@@ -74,6 +74,9 @@ $_config['offline']=false;
 // set ip restriction on miner
 $_config['minepool']=false;
 
+// set outgoing proxy for peer requests
+$_config['proxy']=null;
+
 /*
 |--------------------------------------------------------------------------
 | Mempool Configuration
