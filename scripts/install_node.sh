@@ -90,6 +90,7 @@ export NODE_DIR=/var/www/phpcoin-$NETWORK
 
 if [ "$DOCKER" = true ]; then
   NODE_DIR=/var/www/phpcoin
+  DB_NAME=phpcoin
 fi
 
 echo "PHPCoin: update system"
@@ -97,7 +98,7 @@ echo "==========================================================================
 apt update
 apt install curl wget git sed net-tools unzip -y
 echo "install php with nginx server"
-apt install nginx php-fpm php-mysql php-gmp php-bcmath php-curl -y
+apt install nginx php-fpm php-mysql php-gmp php-bcmath php-curl php-mbstring -y
 apt install mariadb-server -y
 service mariadb start
 
@@ -114,11 +115,27 @@ echo "Best server: $best_server_result"
 
 echo "PHPCoin: download node"
 echo "==================================================================================================="
+
+
+if [ "$DOCKER" = true ]; then
+  if [ -d "$NODE_DIR/config" ]; then
+    cd $NODE_DIR
+    git init
+    git remote add origin ${git_urls[$best_server_result]}
+    git fetch origin
+    git add .
+    if [ "$NETWORK" = "mainnet" ]; then
+      git pull origin main
+    else
+      git pull origin test
+    fi
+    git restore --staged .
+  fi
+fi
+
+if [ ! -d "$NODE_DIR" ]; then
 mkdir $NODE_DIR
 cd $NODE_DIR
-git config --global --add safe.directory $NODE_DIR
-
-
 if [ "$NETWORK" = "mainnet" ]
 then
   git clone ${git_urls[$best_server_result]} .
@@ -126,6 +143,11 @@ elif [ "$NETWORK" = "testnet" ]
 then
   git clone ${git_urls[$best_server_result]} --branch test .
 fi
+fi
+
+
+git config --global --add safe.directory $NODE_DIR
+
 
 export IP=$(curl -s http://whatismyip.akamai.com/)
 
@@ -137,7 +159,6 @@ then
   PORT="80"
   HOSTNAME="http://$IP"
   if [ "$DOCKER" = true ]; then
-    #PORT="$EXT_PORT"
     HOSTNAME="http://$IP:$EXT_PORT"
   fi
   BLOCKCHAIN_SNAPSHOT="blockchain"
@@ -237,13 +258,15 @@ innodb_log_buffer_size=${innodb_log_buffer_size}M
 innodb_log_file_size=${innodb_log_file_size}M
 innodb_write_io_threads=16
 innodb_flush_log_at_trx_commit=0
-max_allowed_packet=512M
+max_allowed_packet=256M
 innodb-doublewrite=0
 skip_log_bin
 innodb_io_capacity=700
 innodb_io_capacity_max=1500
+net_write_timeout=300
+interactive_timeout=300
 EOF
-
+  service nginx stop
   service mariadb restart
   sleep 5
 fi
@@ -259,7 +282,7 @@ rm $BLOCKCHAIN_SNAPSHOT.sql
 rm $BLOCKCHAIN_SNAPSHOT.sql.zip
 rm -rf $NODE_DIR/tmp/*
 
-
+service nginx start
 
 echo "==================================================================================================="
 echo "PHPCoin: Install finished"

@@ -255,6 +255,12 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null, &
     if(isset($_config['interface'])) {
         curl_setopt($ch, CURLOPT_INTERFACE, $_config['interface']);
     }
+
+    if(isset($_config['proxy'])) {
+        curl_setopt($ch, CURLOPT_PROXY, $_config['proxy']);
+        curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, false);
+    }
+
 	$result = curl_exec($ch);
 
 	$curl_error = curl_errno($ch);
