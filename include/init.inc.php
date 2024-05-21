@@ -37,6 +37,9 @@ if (php_sapi_name() !== 'cli' && substr_count($_SERVER['PHP_SELF'], "/") > 1
     die("This application should only be run in the main directory /");
 }
 
+if(PHP_VERSION_ID < 80000 && false) {
+    die("Invalid php version! Please upgrade your node");
+}
 
 $config_file = ROOT.'/config/config.inc.php';
 
