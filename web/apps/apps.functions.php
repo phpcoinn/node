@@ -16,6 +16,9 @@ function calcAppsHash() {
 	return $appsHash;
 }
 
+/**
+ * @deprecated
+ */
 function buildAppsArchive() {
 	$res = shell_exec("ps uax | grep 'tar -czf tmp/apps.tar.gz web/apps' | grep -v grep");
 	_log("Repo: check buildAppsArchive res=$res", 5);

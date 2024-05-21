@@ -332,19 +332,29 @@ class Nodeutil
 	}
 
 	static function measure($out=false) {
-		if(isset($GLOBALS['start_time'])) {
+        global $argv;
+        if(isset($GLOBALS['start_time'])) {
 			$GLOBALS['end_time']=microtime(true);
 			$time = $GLOBALS['end_time'] - $GLOBALS['start_time'];
 			if($time > 1) {
-				_log("Time: url=".$_SERVER['REQUEST_URI']." time=$time HTTP_USER_AGENT=".$_SERVER['HTTP_USER_AGENT']);
+//				_log("Time: url=".$_SERVER['REQUEST_URI']." time=$time HTTP_USER_AGENT=".$_SERVER['HTTP_USER_AGENT']);
 				$prev_time = $GLOBALS['start_time'];
+                $prev_section = null;
 				foreach($GLOBALS['measure'] as $section => $t) {
-					$diff = $t - $prev_time;
-					_log("Time: url=".$_SERVER['REQUEST_URI']." section=$section time=$t diff=$diff");
+					$diff = round($t - $prev_time,3);
+                    if($diff>1) {
+                        if(php_sapi_name() === 'cli') {
+                            $url="CLI:".$argv[0];
+                        } else {
+                            $url="WEB:".$_SERVER['REQUEST_URI'];
+                        }
+					    _log("Time: url=$url diff=$diff section=$prev_section > $section");
+                    }
                     if($out) {
                         echo "section=$section time=$t diff=$diff <br/>";
                     }
 					$prev_time = $t;
+                    $prev_section = $section;
 				}
 			}
 		}
@@ -354,18 +364,38 @@ class Nodeutil
 		if($name == null) {
 			$bt =  debug_backtrace();
 			$name = $bt[0]['file'].":".$bt[0]['line'];
+            $name = str_replace(ROOT, "", $name);
 		}
 		$GLOBALS['measure'][$name]=microtime(true);
 	}
 
-	static function runSingleProcess($cmd, $check_cmd = null) {
-		_log("runSingleProcess $cmd", 5);
-		if(empty($check_cmd)) $check_cmd = $cmd;
-		$res = shell_exec("ps uax | grep '$check_cmd' | grep -v grep");
-		if(!$res) {
-			$exec_cmd = "$cmd > /dev/null 2>&1  &";
-			system($exec_cmd);
-		}
+	static function runSingleProcess($cmd, $check_cmd = null)
+    {
+        _log("runSingleProcess $cmd", 5);
+        if (empty($check_cmd)) $check_cmd = $cmd;
+        $res = shell_exec("ps uax | grep '$check_cmd' | grep -v grep");
+        if (!$res) {
+            $exec_cmd = "$cmd > /dev/null 2>&1  &";
+            system($exec_cmd);
+        }
+    }
+
+	static function psAux($cmd, $timeout=null, $psCmd = "ps aux", &$result_code=null){
+	  	$t1=microtime(true);
+	  	$full_cmd="$psCmd | grep '$cmd' | grep -v grep";
+	  	if(!empty($timeout)){
+              $full_cmd="timeout --signal=SIGINT $timeout bash -c \"$full_cmd\"";
+	  	}
+	  	$res = exec($full_cmd, $out, $result_code);
+		$t2=microtime(true);
+		$elapsed=number_format($t2-$t1,3);
+		if($result_code==0) {
+		  	return $out;    //found
+		} else if ($result_code==1){
+		  	return null;    //not found
+		} else {
+            return false;   //error or timeout
+        }
 	}
 
 	static function runProcess($cmd) {
@@ -537,38 +567,79 @@ class Nodeutil
 		return $logData;
 	}
 
-	static function getNodeInfo() {
+	static function getNodeInfo($basic=false,$nocache=false) {
 		global $db, $_config;
-		$dbVersion = $db->single("SELECT val FROM config WHERE cfg='dbversion'");
 		$hostname = $db->single("SELECT val FROM config WHERE cfg='hostname'");
-		$accounts = $db->single("SELECT COUNT(1) FROM accounts");
-		$tr = $db->single("SELECT COUNT(1) FROM transactions");
-		$masternodes = $db->single("SELECT COUNT(1) FROM masternode");
-		$mempool = Mempool::getSize();
-		$peers = Peer::getCount();
 		$current = Block::current();
 		$generator = isset($_config['generator_public_key']) && $_config['generator'] ? Account::getAddress($_config['generator_public_key']) : null;
 		$miner = isset($_config['miner_public_key']) && $_config['miner'] ? Account::getAddress($_config['miner_public_key']) : null;
 		$masternode = isset($_config['masternode_public_key']) && $_config['masternode'] ? Account::getAddress($_config['masternode_public_key']) : null;
 
-		$avgBlockTime10 = Blockchain::getAvgBlockTime(10);
-		$avgBlockTime100 = Blockchain::getAvgBlockTime(100);
+        if($basic) {
+            return [
+                'hostname'     => $hostname,
+                'version'      => VERSION,
+                'build_version'     => BUILD_VERSION,
+                'network'      => NETWORK,
+                'chain_id'     => CHAIN_ID,
+                'height'       => $current['height'],
+                'block'        => $current['id'],
+                'time'         => time(),
+                'generator'    => $generator,
+                'miner'        => $miner,
+                'masternode'   => $masternode,
+                'lastBlockTime'=>$current['date'],
+                'php_version' => PHP_VERSION
+            ];
+        }
 
-		$hashRate10 = round(Blockchain::getHashRate(10),2);
-		$hashRate100 = round(Blockchain::getHashRate(100),2);
-		$circulation = Account::getCirculation();
+        function getNodeInfoData() {
+            global $db;
+            $dbVersion = $db->single("SELECT val FROM config WHERE cfg='dbversion'");
+            $accounts = $db->single("SELECT COUNT(1) FROM accounts");
+            $tr = Transaction::getCount();
+            $masternodes = $db->single("SELECT COUNT(1) FROM masternode");
+            $avgBlockTime10 = Blockchain::getAvgBlockTime(10);
+            $avgBlockTime100 = Blockchain::getAvgBlockTime(100);
+
+            $hashRate10 = round(Blockchain::getHashRate(10),2);
+            $hashRate100 = round(Blockchain::getHashRate(100),2);
+            $circulation = Account::getCirculation();
+            $peers = Peer::getCount();
+            $data['dbVersion']=$dbVersion;
+            $data['accounts']=$accounts;
+            $data['tr']=$tr;
+            $data['masternodes']=$masternodes;
+            $data['avgBlockTime10']=$avgBlockTime10;
+            $data['avgBlockTime100']=$avgBlockTime100;
+            $data['hashRate10']=$hashRate10;
+            $data['hashRate100']=$hashRate100;
+            $data['circulation']=$circulation;
+            $data['peers']=$peers;
+            return $data;
+        }
+
+        if($nocache) {
+            $cachedData = getNodeInfoData();
+        } else {
+            $cachedData = Cache::getTempCache('nodeInfo', 600, function() {
+                return getNodeInfoData();
+            });
+        }
+
+		$mempool = Mempool::getSize();
 
 		return [
 			'hostname'     => $hostname,
 			'version'      => VERSION,
 			'network'      => NETWORK,
 			'chain_id'     => CHAIN_ID,
-			'dbversion'    => $dbVersion,
-			'accounts'     => $accounts,
-			'transactions' => $tr,
+			'dbversion'    => $cachedData['dbVersion'],
+			'accounts'     => $cachedData['accounts'],
+			'transactions' => $cachedData['tr'],
 			'mempool'      => $mempool,
-			'masternodes'  => $masternodes,
-			'peers'        => $peers,
+			'masternodes'  => $cachedData['masternodes'],
+			'peers'        => $cachedData['peers'],
 			'height'       => $current['height'],
 			'block'        => $current['id'],
 			'time'         => time(),
@@ -576,12 +647,13 @@ class Nodeutil
 			'miner'        => $miner,
 			'masternode'   => $masternode,
 			'totalSupply'  => Blockchain::getTotalSupply(),
-			'currentSupply'  => $circulation,
-			'avgBlockTime10'  => $avgBlockTime10,
-			'avgBlockTime100'  => $avgBlockTime100,
-			'hashRate10'=>$hashRate10,
-			'hashRate100'=>$hashRate100,
-			'lastBlockTime'=>$current['date']
+			'currentSupply'  => $cachedData['circulation'],
+			'avgBlockTime10'  => $cachedData['avgBlockTime10'],
+			'avgBlockTime100'  =>  $cachedData['avgBlockTime100'],
+			'hashRate10'=>$cachedData['hashRate10'],
+			'hashRate100'=>$cachedData['hashRate100'],
+			'lastBlockTime'=>$current['date'],
+            'php_version' => PHP_VERSION
 		];
 	}
 

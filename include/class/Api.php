@@ -514,7 +514,9 @@ class Api
 	 * @apiSuccess {string} data.lastBlockTime Date of last block
 	 */
 	static function nodeInfo($data) {
-		api_echo(Nodeutil::getNodeInfo());
+        $basic = isset($data['basic']);
+        $nocache = isset($data['nocache']);
+		api_echo(Nodeutil::getNodeInfo($basic,$nocache));
 	}
 
 	/**
@@ -731,7 +733,7 @@ class Api
      * @apiGroup API
      * @apiDescription Sends a transaction via JSON.
      *
-     * @apiParam {string} tx Created transaction data (bse64 encoded JSON)
+     * @apiParam {string} tx Created transaction data (base64 encoded JSON)
      *
      * @apiSuccess {string} data  Transaction id
      */

@@ -39,6 +39,7 @@ class PeerRequest
 			}
 		}
 		$ip = Nodeutil::getRemoteAddr();
+
 		if(version_compare($_POST['version'], MIN_VERSION) < 0) {
 			$peer = Peer::findByIp($ip);
 			if($peer) {
@@ -889,5 +890,10 @@ class PeerRequest
 		Nodeutil::runSingleProcess($cmd, $check_cmd);
 		api_echo(["status"=>"started","hostname"=>$hostname]);
 	}
+
+    static function checkMyPeer() {
+        $peer = Peer::getByIp(self::$ip);
+        api_echo($peer);
+    }
 
 }
