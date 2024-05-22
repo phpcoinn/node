@@ -34,6 +34,7 @@ if (empty($dbversion)) {
 		miner varchar(128) null,
 		masternode varchar(128) null,
         mn_signature varchar(255) null,
+        schash varchar(128) null,
 		constraint height
 			unique (height)
 	)");
@@ -196,7 +197,9 @@ if (empty($dbversion)) {
 	address varchar(128) not null,
 	height int not null,
 	code text not null,
-	signature varchar(255) not null
+	signature varchar(255) not null,
+	name varchar(255) null,
+	description varchar(1000) null
 	)");
 
     $db->run("create unique index smart_contracts_address_uindex
@@ -218,6 +221,16 @@ if (empty($dbversion)) {
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync', '0');");
 	$dbversion = 35;
 }
+
+if($dbversion <= 36) {
+    migrate_with_lock($dbversion, function() {
+        global $db;
+        $db->run("alter table blocks add schash varchar(128) null");
+        $db->run("alter table smart_contracts add name varchar(255) null;");
+        $db->run("alter table smart_contracts add description varchar(1000) null;");
+    });
+}
+
 
 // update the db version to the latest one
 if ($dbversion != @$_config['dbversion']) {
