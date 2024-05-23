@@ -37,7 +37,6 @@ return array(
     'SmartContractMap' => $baseDir . '/include/class/sc/SmartContractMap.php',
     'SmartContractWrapper' => $baseDir . '/include/class/sc/SmartContractWrapper.php',
     'Sync' => $baseDir . '/include/class/Sync.php',
-    'Task' => $baseDir . '/include/class/Task.php',
     'Transaction' => $baseDir . '/include/class/Transaction.php',
     'Util' => $baseDir . '/include/class/Util.php',
     'Wallet' => $baseDir . '/include/class/Wallet.php',
