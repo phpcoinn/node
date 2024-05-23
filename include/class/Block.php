@@ -23,6 +23,8 @@ class Block
 	public $masternode;
 	public $mn_signature;
 
+    public $schash;
+
 	/**
 	 * @param $generator
 	 * @param $miner
@@ -148,6 +150,7 @@ class Block
                     ":argon"        => $this->argon,
                     ":version"        => $this->version,
                     ":transactions" => $total,
+                    ":schash" => $this->schash,
                 ];
                 $res = Block::insert($bind);
                 if ($res != 1) {
@@ -165,6 +168,22 @@ class Block
                     throw new Exception("Parse block failed ".$this->height." : $perr");
                 }
 
+                if(FEATURE_SMART_CONTRACTS) {
+                    $schash = $this->processSmartContractTxs($this->height);
+                    _log("SCHASH: block=" . $this->schash . " calc=" . $schash, 5);
+                    if ($schash === false) {
+                        throw new Exception("Parse block failed " . $this->height . " Missing schash");
+                    }
+                    if (!empty($this->schash) && $this->schash != $schash) {
+                        if (NETWORK == "testnet" && $this->height == 1099548 && $schash == "6503aa9711ac12a14c0dcacd0ffd21374eb18a3ae0638e70a9099504e9da90c9") {
+                            _log("Ignore invalid hash");
+                        } else if (NETWORK == "testnet" && in_array($this->height, [1142688, 1142695, 1142727, 1142729, 1142799, 1142820,
+                                1142827, 1142847, 1142851, 1142853, 1142855, 1142863, 1142865, 1142895, 1143664])) {
+                        } else {
+                            throw new Exception("Invalid schash height=" . $this->height . " block=" . $this->schash . " calculated=" . $schash);
+                        }
+                    }
+                }
 
                 $db->commit();
                 _log("LOCK: unlock 2 block add ".$this->height." ".$this->id. " - ok", 4);
@@ -189,6 +208,9 @@ class Block
                     _log("LOCK: unlock 3 block ".$this->height."  add ".$this->id. " ".$error, 4);
 //				$db->unlockTables();
                 }
+                if(FEATURE_SMART_CONTRACTS) {
+                    SmartContract::cleanState($this->height);
+                }
                 _log($error);
                 return false;
             }
@@ -196,6 +218,41 @@ class Block
         });
 
 
+    }
+
+    function processSmartContractTxs($height, $test = false, &$state_updates=null) {
+        $smart_contracts = [];
+        foreach ($this->data as $x) {
+            $tx = Transaction::getFromArray($x);
+            $type = $tx->type;
+            if ($type == TX_TYPE_SC_CREATE) {
+                $smart_contracts[$tx->dst][$tx->id]=$tx;
+            }
+            if ($type == TX_TYPE_SC_EXEC) {
+                $smart_contracts[$tx->dst][$tx->id]=$tx;
+            }
+            if ($type == TX_TYPE_SC_SEND) {
+                $smart_contracts[$tx->src][$tx->id]=$tx;
+            }
+        }
+        if(empty($smart_contracts)){
+            return null;
+        }
+        $process_schash = SmartContract::process($smart_contracts, $height, $test,  $err, $state_updates);
+        if($height >= UPDATE_15_EXTENDED_SC_HASH_V2) {
+            $res = Nodeutil::calculateSmartContractsHashV2($height);
+            $current_state_hash = $res['hash'];
+            $schash = hash("sha256", $current_state_hash."-".$process_schash);
+            _log("Save extended schash V2 current_state_hash=$current_state_hash schash=$process_schash schash=$schash", 5);
+        } else if($height >= UPDATE_14_EXTENDED_SC_HASH) {
+            $res = Nodeutil::calculateSmartContractsHash($height);
+            $current_state_hash = $res['hash'];
+            $schash = hash("sha256", $current_state_hash."-".$process_schash);
+            _log("Save extended schash current_state_hash=$current_state_hash schash=$process_schash schash=$schash", 5);
+        } else {
+            $schash = $process_schash;
+        }
+        return $schash;
     }
 
     static function getFromArray($b) {
@@ -207,6 +264,7 @@ class Block
 	    $block->transactions = $b['transactions'];
 	    $block->masternode = $b['masternode'];
 	    $block->mn_signature = $b['mn_signature'];
+	    $block->schash = $b['schash'];
 	    return $block;
     }
 
@@ -467,11 +525,6 @@ class Block
 	        $balance = [];
 	        $mns = [];
 
-			$res = SmartContract::cleanState($this->height, $err);
-			if(!$res) {
-				throw new Exception("Error clear smart contract state: $err");
-			}
-
 	        foreach ($this->data as $x) {
 		        //validate the transaction
 		        $tx = Transaction::getFromArray($x);
@@ -625,6 +678,13 @@ class Block
                     $res = Masternode::reverseBlock($block, $merr);
                     if(!$res) {
                         throw new Exception("Reverse masternode winner failed. Error: $merr");
+                    }
+
+                    if(FEATURE_SMART_CONTRACTS) {
+                        $res = SmartContract::cleanState($block['height'], $cerr);
+                        if (!$res) {
+                            throw new Exception("Clear smart contract state failed. Error: $cerr");
+                        }
                     }
 
                     $res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $block['id']]);
@@ -807,6 +867,9 @@ class Block
 			$parts[]=$this->masternode;
 			$parts[]=$this->mn_signature;
 		}
+        if($this->height >= SC_START_HEIGHT && !empty($this->schash)) {
+            $parts[]=$this->schash;
+        }
 		$info = implode("-", $parts);
 		_log("getSignatureBase=$info",5);
 		return $info;
@@ -879,8 +942,8 @@ class Block
     	global $db;
 	    $res = $db->run(
 		    "INSERT into blocks 
-				(id, generator, miner, height, `date`, nonce, signature, difficulty, argon, transactions, version, masternode, mn_signature)	
-				values (:id, :generator, :miner, :height, :date, :nonce, :signature, :difficulty, :argon, :transactions, :version, :masternode, :mn_signature)",
+				(id, generator, miner, height, `date`, nonce, signature, difficulty, argon, transactions, version, masternode, mn_signature, schash)	
+				values (:id, :generator, :miner, :height, :date, :nonce, :signature, :difficulty, :argon, :transactions, :version, :masternode, :mn_signature, :schash)",
 		    $bind
 	    );
 	    return $res;

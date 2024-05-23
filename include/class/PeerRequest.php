@@ -270,6 +270,15 @@ class PeerRequest
 			api_err($error);
 		}
 
+        if(FEATURE_SMART_CONTRACTS) {
+            if ($tx->type == TX_TYPE_SC_EXEC || $tx->type == TX_TYPE_SC_SEND) {
+                $schash = SmartContract::processSmartContractTx($tx, Block::getHeight() + 1, $error);
+                if ($schash === false) {
+                    throw new Exception("Error processing smart contract transaction: Invalid transaction schash: " . $error);
+                }
+            }
+        }
+
 		// add to mempool
 		$tx->add_mempool(self::$ip);
 

@@ -4,6 +4,11 @@ define("PAGE", true);
 define("APP_NAME", "Explorer");
 require_once ROOT. '/web/apps/explorer/include/functions.php';
 
+if(!FEATURE_SMART_CONTRACTS) {
+    header("location: /apps/explorer");
+    exit;
+}
+
 $smartContracts = SmartContract::getAll();
 
 require_once __DIR__. '/../common/include/top.php';
@@ -21,6 +26,7 @@ require_once __DIR__. '/../common/include/top.php';
                 <th>Address</th>
                 <th>Height</th>
                 <th>Signature</th>
+                <th>Name</th>
             </tr>
         </thead>
         <tbody>
@@ -33,6 +39,7 @@ require_once __DIR__. '/../common/include/top.php';
                     </td>
                     <td><?php echo $smartContract['height'] ?></td>
                     <td style="word-break: break-all"><?php echo $smartContract['signature'] ?></td>
+                    <td><?php echo $smartContract['name'] ?></td>
                 </tr>
             <?php } ?>
         </tbody>

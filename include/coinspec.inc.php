@@ -56,6 +56,7 @@ const FEE_START_HEIGHT = PHP_INT_MAX;
 const FEE_DIVIDER = 100;
 
 # Smart contracts
+const FEATURE_SMART_CONTRACTS = false;
 const TX_SC_CREATE_FEE = 100;
 const TX_SC_EXEC_FEE = 0.01;
 const SC_START_HEIGHT = PHP_INT_MAX;

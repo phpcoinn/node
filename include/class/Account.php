@@ -179,6 +179,14 @@ class Account
 		        } elseif ($x['type'] == TX_TYPE_BURN) {
 			        $sign="-";
 			        $trans['type_label'] = "burn";
+                } elseif ($x['type'] == TX_TYPE_SC_CREATE || $x['type'] == TX_TYPE_SC_EXEC) {
+                    if ($x['dst'] == $id) {
+                        $sign="+";
+                        $trans['type_label'] = "credit";
+                    } else {
+                        $sign = "-";
+                        $trans['type_label'] = "debit";
+                    }
 		        } else {
 			        $trans['type_label'] = "other";
 		        }
