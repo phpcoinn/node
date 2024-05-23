@@ -140,6 +140,7 @@ class Account
 			        "date" => $x['date'],
 			        "public_key" => $x['public_key'],
 			        "src" => Account::getAddress($x['public_key']),
+			        "data" => $x['data']
 		        ];
 		        $trans['confirmations'] = $current['height'] - $x['height'];
 
