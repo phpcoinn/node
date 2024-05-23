@@ -521,6 +521,13 @@ class Util
 		echo "Hash:\t\t".$res['hash']."\n\n";
 	}
 
+	static function scStateHash($argv) {
+        $height=intval($argv[2]);
+		$res=Nodeutil::calculateSmartContractsHashV2($height);
+        echo json_encode($res);
+        exit;
+	}
+
 	static function blocksHash($argv) {
 		$height=intval($argv[2]);
 		$res=Nodeutil::calculateBlocksHash($height);
@@ -1287,15 +1294,15 @@ class Util
 		}
 		$code = file_get_contents($phar_file);
 		$code = base64_encode($code);
-		$res = SmartContractEngine::verifyCode($code, $error);
-		if(!$res) {
+        $interface = SmartContractEngine::verifyCode($code, $error);
+		if(!$interface) {
 			echo "Smart Contract can not be verified: $error".PHP_EOL;
 			exit;
 		}
 		echo "Created compiled smart contract file".PHP_EOL;
 	}
 
-	static function smartContractCall($argv)
+	static function smartContractView($argv)
 	{
 		$sc_address = $argv[2];
 		if(empty($sc_address)) {
@@ -1307,8 +1314,12 @@ class Util
 			echo "Smart contract view not specified".PHP_EOL;
 			exit;
 		}
-		$params = array_slice($argv, 4);
-		$res = SmartContractEngine::call($sc_address, $method, $params, $error);
+        $namedAgs = process_cmdline_args($argv);
+        $params=$namedAgs['params'];
+        if(!empty($params)) {
+            $params=SmartContractEngine::parseCmdLineArgs($params);
+        }
+		$res = SmartContractEngine::view($sc_address, $method, $params, $error);
 		if($res === false) {
 			echo "Error calling Smart Contract view: $error".PHP_EOL;
 		}
@@ -1326,8 +1337,9 @@ class Util
 			echo "Smart contract property not specified".PHP_EOL;
 			exit;
 		}
-		$key = $argv[4];
-		$res = SmartContractEngine::SCGet($sc_address, $property, $key, $error);
+        $namedAgs = process_cmdline_args($argv);
+        $key=$namedAgs['key'];
+		$res = SmartContractEngine::get($sc_address, $property, $key, $error);
 		if($res === false) {
 			echo "Error getting Smart Contract property: $error".PHP_EOL;
 		}
@@ -1905,5 +1917,110 @@ class Util
 
     static function initPeers() {
         Nodeutil::initPeers();
+    }
+
+    static function syncScState($argv) {
+        $node = $argv[2];
+        if(empty($node)) {
+            api_err("Missing node");
+        }
+        _log("Sync sc state with peer $node");
+
+        synchronized("sync-sc-state", function() use ($node) {
+            global $db;
+
+            $db->beginTransaction();
+
+            $sql="delete from smart_contract_state";
+            $db->run($sql);
+            $url=$node."/api.php?q=getScState";
+            $res = url_get($url);
+            $res = json_decode($res, true);
+            if($res!==false) {
+                $top_height = Block::getHeight();
+                $data=$res['data'];
+                foreach ($data as $row) {
+                    $sc_address=$row['sc_address'];
+                    $variable=$row['variable'];
+                    $var_key=$row['var_key'];
+                    $var_value=$row['var_value'];
+                    $height=$row['height'];
+                    if($height > $top_height) {
+                        break;
+                    }
+                    _log("Syncing sc state at height $height");
+                    $sql="replace into smart_contract_state set sc_address = ?, variable =?, var_key=?, var_value=?, height = ?";
+                    $db->run($sql, [$sc_address,$variable,$var_key,$var_value,$height], false);
+                }
+            }
+            _log("Sync sc state finished");
+            $db->commit();
+        });
+
+
+    }
+
+    static function checkPeerStatus() {
+        $peers = Peer::getAll();
+        $forker = new Forker();
+        define("FORKED_PROCESS", getmypid());
+        $status=[];
+        $peerInfo = Peer::getInfo();
+        foreach ($peers as $peer) {
+            $forker->fork(function ($peer) use ($peerInfo) {
+                $url = $peer['hostname'] . "/peer.php?q=checkMyPeer";
+                $res = peer_post($url,[], 5, $err, $peerInfo);
+                return ["peer"=>$peer, "res"=>$res, "error"=>$err];
+            }, $peer);
+        }
+        $forker->on(function ($res) use (&$status){
+            $peer=$res['peer'];
+            if($peer) {
+                if($peer['blacklisted']>time()) {
+                    @$status['blacklisted']++;
+                    @$status['blacklist_reasons'][$peer['blacklist_reason']]++;
+                } else {
+                    if($peer['ping']>time() - Peer::PEER_PING_MAX_MINUTES * 60) {
+                        @$status['live']++;
+                    } else {
+                        @$status['active']++;
+                    }
+                }
+            } else {
+                @$status['failed']++;
+            }
+        });
+        $forker->exec();
+        _log("peer status total=".count($peers)." failed=" . $status['failed'] . " blacklisted=".$status['blacklisted']
+            ." live=".$status['live']. " active=".$status['active']);
+        if(isset($status['blacklist_reasons'])) {
+            _log("blacklist reasons: ".json_encode($status['blacklist_reasons']));
+        }
+    }
+
+    static function checkBlocks()
+    {
+        $res = NodeSync::checkBlocks();
+        if (!$res) {
+            _log("Block database is invalid");
+            Config::setVal("blockchain_invalid", 1);
+        }
+    }
+
+    static function compareCheckPoints() {
+        $res = NodeSync::compareCheckPoints();
+        if(!$res) {
+            _log("Blockchain is invalid - checkpoints are not correct");
+            Config::setVal("blockchain_invalid", 1);
+        }
+    }
+
+    static function recheckLastBlocks() {
+        NodeSync::recheckLastBlocks();
+    }
+
+    static function cleanTmpFolder() {
+        $cmd = "rm -rf ".ROOT."/tmp/*";
+        $res = shell_exec($cmd);
     }
 }

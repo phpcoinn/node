@@ -662,16 +662,21 @@ class Api
 		$key = $data['key'];
 		if(empty($sc_address)) api_err("Smart contract address not specified");
 		if(empty($property)) api_err("Smart contract property not specified");
-		$res = SmartContractEngine::SCGet($sc_address, $property, $key, $error);
-		if(!$res) {
+		$res = SmartContractEngine::get($sc_address, $property, $key, $error);
+		if($res === false) {
 			api_err("Error getting Smart contract property: $error");
 		}
 		api_echo($res);
 	}
 
 	static function getSmartContractInterface($data) {
-		$sc_address = $data['address'];
-		$interface = SmartContractEngine::getInterface($sc_address);
+		$sc_address = @$data['address'];
+		$code = @$data['code'];
+        if(!empty($sc_address)) {
+		    $interface = SmartContractEngine::getInterface($sc_address);
+        } else if (!empty($code)) {
+            $interface = SmartContractEngine::verifyCode($code, $error, $sc_address);
+        }
 		api_echo($interface);
 	}
 
@@ -682,7 +687,7 @@ class Api
 		if(isset($data['params'])) {
 			$params = json_decode(base64_decode($data['params']));
 		}
-		$res = SmartContractEngine::call($sc_address, $method, $params, $err);
+		$res = SmartContractEngine::view($sc_address, $method, $params, $err);
 		api_echo($res);
 	}
 
@@ -1049,5 +1054,127 @@ class Api
             "type"=>TX_TYPE_MN_CREATE,
         ];
         api_echo($transaction);
+    }
+
+    static function getDeployedSmartContracts($data) {
+        $address = $data['address'];
+        $smartContracts = SmartContract::getDeployedSmartContracts($address);
+        api_echo($smartContracts);
+    }
+
+    static function generateSmartContractDeployTx($data) {
+        $public_key = @$data['public_key'];
+        $sc_address = @$data['sc_address'];
+        $amount = @$data['amount'];
+        $sc_signature = @$data['sc_signature'];
+        $code=@$data['code'];
+        $params=@$data['params'];
+        $name=@$data['name'];
+        $description=@$data['description'];
+        if(empty($public_key)) {
+            api_err("Missing public_key");
+        }
+        if(empty($sc_address)) {
+            api_err("Missing sc_address");
+        }
+        if(empty($amount)) {
+            $amount = 0;
+        }
+        if(empty($sc_signature)) {
+            api_err("Missing sc_signature");
+        }
+        if(empty($code)) {
+            api_err("Missing code");
+        }
+        if(empty($params)) {
+            $params=[];
+        }
+        $interface = SmartContractEngine::verifyCode($code, $error, $sc_address);
+        if(!$interface) {
+            api_err("Error verifying contract code: $error");
+        }
+
+        $tx=Transaction::generateSmartContractDeployTx($code, $sc_signature, $public_key, $sc_address, $amount, $params, $name, $description);
+
+        $out = [
+            "signature_base"=>$tx->getSignatureBase(),
+            "tx"=>$tx->toArray()
+        ];
+        api_echo($out);
+    }
+
+    static function generateSmartContractExecTx($data) {
+        $public_key = @$data['public_key'];
+        $sc_address = @$data['sc_address'];
+        $amount = @$data['amount'];
+        $method = @$data['method'];
+        $params = @$data['params'];
+        if(empty($public_key)) {
+            api_err("Missing public_key");
+        }
+        if(empty($sc_address)) {
+            api_err("Missing sc_address");
+        }
+        if(empty($amount)) {
+            $amount = 0;
+        }
+        if(empty($method)) {
+            api_err("Missing method");
+        }
+        if(empty($params)) {
+            $params=[];
+        }
+        $tx=Transaction::generateSmartContractExecTx($public_key, $sc_address, $method, $amount, $params);
+        $out = [
+            "signature_base"=>$tx->getSignatureBase(),
+            "tx"=>$tx->toArray()
+        ];
+        api_echo($out);
+    }
+
+    static function generateSmartContractSendTx($data) {
+        $public_key = @$data['public_key'];
+        $address = @$data['address'];
+        $amount = @$data['amount'];
+        $method = @$data['method'];
+        $params = @$data['params'];
+        if(empty($public_key)) {
+            api_err("Missing public_key");
+        }
+        if(empty($address)) {
+            api_err("Missing address");
+        }
+        if(empty($amount)) {
+            $amount = 0;
+        }
+        if(empty($method)) {
+            api_err("Missing method");
+        }
+        if(empty($params)) {
+            $params=[];
+        }
+        $tx=Transaction::generateSmartContractSendTx($public_key, $address, $method, $amount, $params);
+        $out = [
+            "signature_base"=>$tx->getSignatureBase(),
+            "tx"=>$tx->toArray()
+        ];
+        api_echo($out);
+    }
+
+    static function getScStateHash($data) {
+        $height = @$data['height'];
+        $res=Nodeutil::calculateSmartContractsHashV2($height);
+        api_echo($res);
+    }
+
+    static function getScState($data) {
+        global $db;
+        $from_height = @$data['from_height'];
+        $to_height = @$data['to_height'];
+        if(empty($from_height)) $from_height = 0;
+        if(empty($to_height)) $to_height = PHP_INT_MAX;
+        $sql="select * from smart_contract_state s where s.height >= ? and s.height <= ? order by s.height";
+        $rows = $db->run($sql, [$from_height, $to_height], false);
+        api_echo($rows);
     }
 }

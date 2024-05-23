@@ -161,13 +161,13 @@ class Wallet
 				$this->sign(@$this->arg2);
 				break;
 			case "smart-contract-create":
-				$this->createSmartContract(@$this->arg2, @$this->arg3, @$this->arg4, array_slice($this->argv, 5));
+				$this->createSmartContract(@$this->arg2, @$this->arg3);
 				break;
 			case "smart-contract-exec":
-				$this->execSmartContract(@$this->arg2, @$this->arg3, @$this->arg4, array_slice($this->argv, 5));
+				$this->execSmartContract(@$this->arg2, @$this->arg3);
 				break;
 			case "smart-contract-send":
-				$this->sendSmartContract(@$this->arg2, @$this->arg3, @$this->arg4, array_slice($this->argv, 5));
+				$this->sendSmartContract(@$this->arg2, @$this->arg3);
 				break;
 			default:
 				echo !$this->create ? "Invalid command\n" : "";
@@ -465,7 +465,7 @@ class Wallet
 		echo $res . PHP_EOL;
 	}
 
-	function createSmartContract($sc_address, $file, $amount, $params = null) {
+	function createSmartContract($sc_address, $file) {
 		if(empty($sc_address)) {
 			echo "Smart contract address not specified".PHP_EOL;
 			exit;
@@ -485,9 +485,17 @@ class Wallet
 			exit;
 		}
 
+        $amount = @$this->namedAgs['amount'];
+        $name = @$this->namedAgs['name'];
+        $description = @$this->namedAgs['description'];
+        $params = @$this->namedAgs['params'];
+
+        if(!empty($params)) {
+            $params=SmartContractEngine::parseCmdLineArgs($params);
+        }
+
 		if(strlen($amount)==0) {
-			echo "Smart contract amount must be specified".PHP_EOL;
-			exit;
+            $amount = 0;
 		}
 
 		$contents = file_get_contents($file);
@@ -496,10 +504,22 @@ class Wallet
 			exit;
 		}
 
-		$data = ["code"=>base64_encode($contents)];
-		if(!empty($params)) {
-			$data['params']=$params;
-		}
+        $code = base64_encode($contents);
+        $res = $this->wallet_peer_post("/api.php?q=getSmartContractInterface", ["code"=>$code]);
+        $this->checkApiResponse($res);
+        $interface = $res['data'];
+        if(!$interface) {
+            die("Error getting contract interface");
+        }
+
+		$data = [
+            "code"=>$code,
+            "amount"=>num($amount),
+            "params"=>$params,
+            "interface"=>$interface,
+            "name"=>$name,
+            "description"=>$description,
+        ];
 
 		$text = base64_encode(json_encode($data));
 		$sc_signature = ec_sign($text, $this->private_key);
@@ -511,7 +531,9 @@ class Wallet
 		$tx->data = $text;
 		$signature = $tx->sign($this->private_key);
 
-		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
+        $debug="&XDEBUG_SESSION_START=PHPSTORM";
+        $debug="";
+		$res = $this->wallet_peer_post("/api.php?q=send" . $debug,
 			array("dst" => $sc_address, "val" => $amount, "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_SC_CREATE,
 				"message" => $msg, "date" => $date, "fee" => $tx->fee, "data" => $tx->data));
@@ -519,7 +541,7 @@ class Wallet
 		echo "Transaction created: ".$res['data'].PHP_EOL;
 	}
 
-	function execSmartContract($dst_address, $amount, $method, $params = null) {
+	function execSmartContract($dst_address, $method) {
 		if(empty($dst_address)) {
 			echo "Destination address not specified".PHP_EOL;
 			exit;
@@ -532,10 +554,16 @@ class Wallet
 			echo "Smart contract method not specified".PHP_EOL;
 			exit;
 		}
-		if(strlen($amount)==0) {
-			echo "Smart contract amount not specified".PHP_EOL;
-			exit;
-		}
+
+        $amount = @$this->namedAgs['amount'];
+        $params = @$this->namedAgs['params'];
+
+        if(strlen($amount)==0) {
+            $amount = 0;
+        }
+        if(!empty($params)) {
+            $params=SmartContractEngine::parseCmdLineArgs($params);
+        }
 		$date=time();
 		$msg = base64_encode(json_encode([
 			"method"=>$method,
@@ -545,7 +573,9 @@ class Wallet
 		$tx->fee = TX_SC_EXEC_FEE;
 		$signature = $tx->sign($this->private_key);
 
-		$res = $this->wallet_peer_post("/api.php?q=send&" . XDEBUG,
+        $debug="&XDEBUG_SESSION_START=PHPSTORM";
+        $debug="";
+		$res = $this->wallet_peer_post("/api.php?q=send" . $debug,
 			array("dst" => $dst_address, "val" => $amount, "signature" => $signature,
 				"public_key" => $this->public_key, "type" => TX_TYPE_SC_EXEC,
 				"message" => $msg, "date" => $date, "fee" => $tx->fee));
@@ -555,23 +585,27 @@ class Wallet
 	}
 
 
-	function sendSmartContract($dst_address, $amount, $method, $params = null) {
+	function sendSmartContract($dst_address, $method) {
 		if(empty($dst_address)) {
 			echo "Destination address not specified".PHP_EOL;
-			exit;
-		}
-		if(!Account::valid($dst_address)) {
-			echo "Smart contract Address not valid".PHP_EOL;
 			exit;
 		}
 		if(empty($method)) {
 			echo "Smart contract method not specified".PHP_EOL;
 			exit;
 		}
-		if(strlen($amount)==0) {
-			echo "Smart contract amount not specified".PHP_EOL;
+		if(!Account::valid($dst_address)) {
+			echo "Smart contract Address not valid".PHP_EOL;
 			exit;
 		}
+        $amount = @$this->namedAgs['amount'];
+        $params = @$this->namedAgs['params'];
+        if(strlen($amount)==0) {
+            $amount = 0;
+        }
+        if(!empty($params)) {
+            $params=SmartContractEngine::parseCmdLineArgs($params);
+        }
 		$date=time();
 		$msg = base64_encode(json_encode([
 			"method"=>$method,
@@ -609,9 +643,9 @@ login-link                                                          generate log
 masternode-create <address> <reward_address>                        create masternode with address
 masternode-remove <payoutaddress>  <address>                        remove masternode with address
 sign <message>                                                      sign message with wallet private key
-smart-contract-create <address> <file> <amount> <method> <params>	create smart contract
-smart-contract-exec <address> <amount> <method> <params> 			execute smart contract method
-smart-contract-send <address> <amount> <method> <params> 			transfer coins from smart contract
+smart-contract-create <address> <file>	                            create smart contract
+smart-contract-exec <address> <method>                  			execute smart contract method
+smart-contract-send <address> <method>                      		transfer coins from smart contract
 
 ");
 	}

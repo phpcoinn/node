@@ -1457,4 +1457,45 @@ class Transaction
 			}
 		}
 	}
+
+    static function generateSmartContractDeployTx($code, $sc_signature, $public_key, $sc_address, $amount=0, $params=[], $name=null, $description=null) {
+
+        $interface = SmartContractEngine::verifyCode($code, $error, $sc_address);
+        $deploy_data=[
+            "code"=>$code,
+            "amount"=>num($amount),
+            "params"=>$params,
+            "interface"=>$interface,
+            "name"=>$name,
+            "description"=>$description
+        ];
+        $date = time();
+        $text = base64_encode(json_encode($deploy_data));
+        $tx = new Transaction($public_key, $sc_address, $amount, TX_TYPE_SC_CREATE, $date, $sc_signature);
+        $tx->fee = TX_SC_CREATE_FEE;
+        $tx->data = $text;
+        return $tx;
+    }
+
+    static function generateSmartContractExecTx($public_key, $sc_address, $method, $amount=0, $params =[]) {
+        $date=time();
+        $msg = base64_encode(json_encode([
+            "method"=>$method,
+            "params"=>$params
+        ]));
+        $tx = new Transaction($public_key, $sc_address, $amount, TX_TYPE_SC_EXEC, $date, $msg);
+        $tx->fee = TX_SC_EXEC_FEE;
+        return $tx;
+    }
+
+    static function generateSmartContractSendTx($sc_public_key, $dst_address, $method, $amount=0, $params =[]) {
+        $date=time();
+        $msg = base64_encode(json_encode([
+            "method"=>$method,
+            "params"=>$params
+        ]));
+        $tx = new Transaction($sc_public_key, $dst_address, $amount, TX_TYPE_SC_SEND, $date, $msg);
+        $tx->fee = TX_SC_EXEC_FEE;
+        return $tx;
+    }
 }
