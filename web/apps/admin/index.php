@@ -10,8 +10,8 @@ if(!$_config['admin']) {
 }
 
 const APP_URL = "/apps/admin";
-session_start();
-ob_start();
+
+require_once __DIR__. '/../common/include/top.php';
 
 if(isset($_POST['action'])) {
     $action = $_POST['action'];
@@ -292,10 +292,6 @@ $minepool_enabled = Minepool::enabled();
 
 $pubKeyLogin = isset($_config['admin_public_key']) && strlen($_config['admin_public_key']) > 0;
 $nonce = uniqid();
-?>
-
-<?php
-require_once __DIR__. '/../common/include/top.php';
 ?>
 
 <?php if ($login) { ?>

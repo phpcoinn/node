@@ -24,8 +24,8 @@ class NodeSync
 		$max_removed = 0;
 		while ($syncing) {
 			$loop_cnt++;
-			if ($loop_cnt > 1000) {
-				_log("Exit after added 1000 blocks", 4);
+			if ($loop_cnt > 100) {
+				_log("Exit after added 100 blocks", 4);
 				break;
 			}
 
@@ -353,7 +353,7 @@ class NodeSync
 	}
 
 	static function verifyLastBlocks($minutes=30, $num=60) {
-        Daemon::runAtInterval("verifyLastBlocks", 30, function() use ($num) {
+        Nodeutil::runAtInterval("verifyLastBlocks", 60*$minutes, function() use ($num) {
             $current = Block::current();
             if ($num > 0) {
                 _log("verifyLastBlocks: Rechecking blocks",3);
@@ -653,6 +653,16 @@ class NodeSync
 		} else {
 			_log("Need to sync blokchain");
 
+            $peerIndex = 0;
+            $peer = $peersForSync[$peerIndex];
+            $hostname = $peer['hostname'];
+
+            self::peerSync($hostname);
+
+            Config::setSync(0);
+            _log("Finished sync");
+            return;
+
 				$syncing = true;
 				$limit_cnt = 0;
 				while($syncing) {
@@ -672,7 +682,6 @@ class NodeSync
 					_log("Syncing current_height= ".$current['height']." sync_height=$sync_height current_id=".$current['id']." block_id=$sync_block_id",3);
 					$limit_peers = 10;
 					$peers_cnt = 0;
-					$added = false;
 					$peer_blocks = [];
 //					_log("hostnames".print_r($hostnames,1));
 					foreach($peersForSync as $peer) {
@@ -686,7 +695,7 @@ class NodeSync
 						$peer_block = self::staticGetPeerBlock($hostname, $current['height']);
 //				        _log("get peer block $hostname res=".json_encode($peer_block));
 						if(!$peer_block) {
-                            Peer::blacklist($peer['id'], "Unresponsive", 1);
+//                            Peer::blacklist($peer['id'], "Unresponsive", 1);
 							_log("Not get block for peer - check other peer");
 							continue;
 						}
@@ -700,7 +709,8 @@ class NodeSync
 						$next_block = self::staticGetPeerBlock($hostname, $current['height']+1);
 						if(!$next_block) {
 							_log("Not get next block for peer - check other peer");
-							continue;
+                            $syncing = false;
+                            break;
 						}
 						$block = Block::getFromArray($next_block);
 						if (!$block->check()) {
@@ -718,45 +728,55 @@ class NodeSync
 						$res=$block->verifyBlock($err);
 						if(!$res) {
 							_log("Error verify block: $err");
+                            $diff = $sync_height - $current['height'];
+                            _log("Can not add new block  sync_height=$sync_height height=".$current['height']." diff=$diff err=$err");
+                            if(strpos($err, "Invalid schash")!== false) {
+                                Block::pop();
+                                $smart_contracts = [];
+                                foreach ($block->data as $x) {
+                                    $tx = Transaction::getFromArray($x);
+                                    $type = $tx->type;
+                                    if ($type == TX_TYPE_SC_CREATE) {
+                                        $smart_contracts[$tx->dst][$tx->id]=$tx;
+                                    }
+                                    if ($type == TX_TYPE_SC_EXEC) {
+                                        $smart_contracts[$tx->dst][$tx->id]=$tx;
+                                    }
+                                    if ($type == TX_TYPE_SC_SEND) {
+                                        $smart_contracts[$tx->src][$tx->id]=$tx;
+                                    }
+                                }
+                                $addresses=array_keys($smart_contracts);
+                                _log("Pop blocks because of schash addresses=".json_encode($addresses));
+                                $params = [];
+                                foreach ($addresses as $index=>$address) {
+                                    $name=":p".$index;
+                                    $params[$name]=$address;
+                                }
+                                $in_params=implode(",", array_keys($params));
+                                $sql="select max(height) from smart_contract_state s where sc_address in ($in_params)";
+                                $max_height=$db->single($sql, $params);
+                                $delete_blocks = $block->height - $max_height;
+                                _log("DELETE invalid blocks $delete_blocks");
+                                Block::pop($delete_blocks);
+                            } else {
+                                Block::pop();
+                                $dir = ROOT."/cli";
+                                $peer = $peersForSync[0];
+                                _log("Trigger deep check with ".$peer['hostname']);
+                                $cmd = "php $dir/deepcheck.php ".$peer['hostname'];
+                                $check_cmd = "php $dir/deepcheck.php";
+                                Nodeutil::runSingleProcess($cmd, $check_cmd);
+                            }
 							$syncing = false;
 							break;
 						}
 						_log("Block verified", 4);
-						$added = true;
 						break;
 					}
 
 					_log("Finish check peers", 4);
 
-					if(!$added) {
-
-//						_log("peer_blocks:".print_r($peer_blocks, 1));
-//						if(count($peer_blocks)>1) {
-//							uasort($peer_blocks, function ($b1, $b2) {
-//								return NodeSync::compareBlocks($b2, $b1);
-//							});
-//						}
-//						$winner = array_shift($peer_blocks);
-//						$current = Block::export("", Block::getHeight());
-//						_log("Compare blocks:  winner: elapsed=".$winner['elapsed']. " id=".$winner['id']);
-//						_log("Compare blocks: current: elapsed=".$current['elapsed']. " id=".$current['id']);
-//						if(NodeSync::compareBlocks($winner, $current)) {
-//							_log("Our block is invalid");
-//							Block::pop();
-//						}
-
-                        $diff = $sync_height - $current['height'];
-						_log("Can not add new block  sync_height=$sync_height height=".$current['height']." diff=$diff");
-                        Block::pop();
-                        $dir = ROOT."/cli";
-                        $peer = $peersForSync[0];
-                        _log("Trigger deep check with ".$peer['hostname']);
-                        $cmd = "php $dir/deepcheck.php ".$peer['hostname'];
-                        $check_cmd = "php $dir/deepcheck.php";
-                        Nodeutil::runSingleProcess($cmd, $check_cmd);
-						$syncing = false;
-						break;
-					}
 
 				}
 
@@ -769,6 +789,86 @@ class NodeSync
         Config::setSync(0);
 
 	}
+
+    static function peerSync($hostname, $add_limit=100, $delete_limit=10) {
+        _log("Syncing with peer ".$hostname);
+
+        $syncing = true;
+        $add_cnt = 0;
+        $delete_cnt = 0;
+        while($syncing) {
+            $add_cnt++;
+            if($add_limit>0 && $add_cnt > $add_limit) {
+                _log("Sync limit reached");
+                $syncing = false;
+                break;
+            }
+
+            $current = Block::current();
+            $height = $current['height'] + 1;
+            _log("PeerSync: syncing $height",2);
+
+            $peer_block_data = NodeSync::staticGetPeerBlock($hostname, $height);
+            if ($peer_block_data) {
+                $peer_block = Block::getFromArray($peer_block_data);
+                $res = $peer_block->check($err);
+                if (!$res) {
+                    _log("PeerSync: Peer block check failed: $err");
+                    Block::pop();
+                    $delete_cnt++;
+                    if($delete_limit>0 && $delete_cnt > $delete_limit) {
+                        $syncing = false;
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+                _log("Peer block ok",3);
+                $peer_block->prevBlockId = $current['id'];
+                $res = $peer_block->add($err);
+                if (!$res) {
+                    _log("PeerSync: Peer block add failed: $err");
+
+                    if(FEATURE_SMART_CONTRACTS && strpos($err, "Invalid schash")!== false) {
+                        _log("PeerSync: invalid hash - run sync state");
+                        $cmd = "php " . ROOT . "/cli/util.php sync-sc-state $hostname";
+                        Nodeutil::runSingleProcess($cmd);
+                        $syncing = false;
+                        break;
+                    }
+
+                    Block::pop();
+                    $delete_cnt++;
+                    if($delete_limit>0 && $delete_cnt > $delete_limit) {
+                        $syncing = false;
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+                _log("Peer block added",3);
+                $res = $peer_block->verifyBlock($err);
+                _log("PeerSync: verifyBlock res=".json_encode($res),3);
+                if (!$res) {
+                    _log("PeerSync: Error verify block: $err");
+                    Block::pop();
+                    $delete_cnt++;
+                    if($delete_limit>0 && $delete_cnt > $delete_limit) {
+                        $syncing = false;
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+                _log("PeerSync: Block verified",3);
+            } else {
+                _log("PeerSync: NO peer block data");
+                $syncing = false;
+                break;
+            }
+        }
+        Propagate::blockToAll("current");
+    }
 
 	static function compareBlocks($block1, $block2) {
 		if($block1['elapsed'] == $block2['elapsed']) {

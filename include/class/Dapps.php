@@ -1,13 +1,11 @@
 <?php
 
-class Dapps extends Daemon
+class Dapps extends Task
 {
 
-	// Daemon config
 	static $name = "dapps";
 	static $title = "Dapps";
 
-	static $max_run_time = (DEVELOPMENT ? 10 : 60) * 60;
 	static $run_interval = 30;
 
 	static function isLocal($dapps_id) {

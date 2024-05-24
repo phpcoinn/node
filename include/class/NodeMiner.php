@@ -1,12 +1,11 @@
 <?php
 
-class NodeMiner extends Daemon {
+class NodeMiner extends Task {
 
 	static $name = "miner";
 	static $title = "Miner";
 
-	static $max_run_time = 60 * 60;
-	static $run_interval = 5;
+	static $run_interval = 60;
 
 	public $public_key;
 	public $private_key;
@@ -68,6 +67,7 @@ class NodeMiner extends Daemon {
 
 	function start($mine_blocks = null, $sleep = 3) {
 
+        set_time_limit(60*60);
 		$this->loadMiningStats();
         $start_time = time();
         $prev_hashes = $this->miningStat['hashes'];
@@ -76,7 +76,6 @@ class NodeMiner extends Daemon {
 
 		while($this->running) {
 			$this->cnt++;
-//			_log("Mining cnt: ".$this->cnt);
 
 			$_config = Nodeutil::getConfig();
 
@@ -119,6 +118,7 @@ class NodeMiner extends Daemon {
 
 			$t1 = microtime(true);
 			while (!$blockFound) {
+                pcntl_signal_dispatch();
 				$this->attempt++;
                 if($this->sleep_time == INF) {
                     $this->running = false;
@@ -128,11 +128,6 @@ class NodeMiner extends Daemon {
 				$this->saveMiningStats();
 
                 usleep($this->sleep_time * 1000);
-				$this->checkRunning();
-				if(!$this->running) {
-					_log("Stop miner because missing lock file");
-					break;
-				}
 				$now = time();
 				$elapsed = $now - $block_date;
 				$new_block_date = $block_date + $elapsed;
@@ -293,10 +288,6 @@ class NodeMiner extends Daemon {
 			$minerStatFile = self::getStatFile();
 			file_put_contents($minerStatFile, json_encode($this->miningStat));
 		}
-	}
-
-	function checkRunning() {
-		$this->running = file_exists(static::getLockFile());
 	}
 
 	static function getStatFile() {

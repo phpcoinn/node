@@ -403,16 +403,14 @@ class Nodeutil
 		$GLOBALS['measure'][$name]=microtime(true);
 	}
 
-	static function runSingleProcess($cmd, $check_cmd = null)
-    {
-        _log("runSingleProcess $cmd", 5);
-        if (empty($check_cmd)) $check_cmd = $cmd;
-        $res = shell_exec("ps uax | grep '$check_cmd' | grep -v grep");
-        if (!$res) {
-            $exec_cmd = "$cmd > /dev/null 2>&1  &";
-            system($exec_cmd);
+	static function runSingleProcess($cmd, $check_cmd = null, $user=null) {
+		_log("runSingleProcess $cmd", 5);
+        $exec_cmd = "$cmd > /dev/null 2>&1  &";
+        if(!empty($user)) {
+            $exec_cmd="sudo -u $user $exec_cmd";
         }
-    }
+        system($exec_cmd);
+	}
 
 	static function psAux($cmd, $timeout=null, $psCmd = "ps aux", &$result_code=null){
 	  	$t1=microtime(true);
@@ -455,11 +453,11 @@ class Nodeutil
 		$data['system']['version']=shell_exec("lsb_release -a");
 		$data['system']['kernel']=shell_exec("uname -a");
 		$data['serverData']=self::getServerData();
-		$daemons = Daemon::availableDaemons();
-		foreach($daemons as $daemon) {
-			$status = Daemon::getDaemonStatus($daemon);
-			$data['daemons'][$daemon]=$status;
-		}
+        $tasks = Task::availableTasks();
+        foreach ($tasks as $task) {
+            $status = $task::getTaskStatus();
+            $data['tasks'][$task]=$status;
+        }
 		$data['php']['version']=phpversion();
 		$data['php']['extensions']=get_loaded_extensions();
 		$data['db']=self::getDbData();

@@ -144,6 +144,4 @@ if($chain_id!= CHAIN_ID) {
 }
 
 
-if(!defined("SKIP_DAEMONS")) {
-    require_once __DIR__ . "/daemons.inc.php";
-}
+require_once __DIR__ ."/tasks.inc.php";

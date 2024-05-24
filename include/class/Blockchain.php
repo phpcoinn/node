@@ -183,6 +183,8 @@ class Blockchain
         if($height >= UPDATE_12_STAKING_DYNAMIC_THRESHOLD) {
             $collateral = Block::getMasternodeCollateral($height);
             return 2 * $collateral;
+        } else if(NETWORK == "testnet" && $height >= UPDATE_11_STAKING_MATURITY_REDUCE) {
+            return 10000;
         } else {
             return 100;
         }

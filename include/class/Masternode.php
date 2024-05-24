@@ -1,12 +1,11 @@
 <?php
 
-class Masternode extends Daemon
+class Masternode extends Task
 {
 
 	static $name = "masternode";
 	static $title = "Masternode";
 
-	static $max_run_time = 60 * 60;
 	static $run_interval = 30;
 
 	public $id;
@@ -1251,15 +1250,6 @@ class Masternode extends Daemon
 		global $db;
 		_log("MN: reset verified", 5);
 		$db->run("update masternode set verified = 0");
-	}
-
-	static function emptyList() {
-		Daemon::runAtInterval("empty-mn-list", 60, function() {
-			_log("MNC: emptyList", 5);
-			global $db;
-			$sql = "truncate table masternode";
-			$db->run($sql);
-		});
 	}
 
 	static function deleteInvalid($ip, $public_key) {
