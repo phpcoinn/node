@@ -268,7 +268,7 @@ require_once __DIR__. '/../common/include/top.php';
     </tr>
     <tr>
         <td>Average reward</td>
-        <td><?php echo num($txStat['total'] / $txStat['tx_cnt']) ?></td>
+        <td><?php echo $txStat['tx_cnt']==0 ? 0 : num($txStat['total'] / $txStat['tx_cnt']) ?></td>
     </tr>
 </table>
 

@@ -168,19 +168,20 @@ class Block
                     throw new Exception("Parse block failed ".$this->height." : $perr");
                 }
 
-
-                $schash = $this->processSmartContractTxs($this->height);
-                _log("SCHASH: block=".$this->schash." calc=".$schash, 5);
-                if ($schash === false) {
-                    throw new Exception("Parse block failed ".$this->height." Missing schash");
-                }
-                if(!empty($this->schash) && $this->schash != $schash) {
-                    if(NETWORK == "testnet" && $this->height == 1099548 && $schash == "6503aa9711ac12a14c0dcacd0ffd21374eb18a3ae0638e70a9099504e9da90c9") {
-                        _log("Ignore invalid hash");
-                    } else if (NETWORK == "testnet" && in_array($this->height, [1142688,1142695,1142727,1142729,1142799,1142820,
-                            1142827,1142847,1142851,1142853,1142855,1142863,1142865,1142895,1143664])) {
-                    } else {
-                        throw new Exception("Invalid schash height=".$this->height." block=".$this->schash." calculated=".$schash);
+                if(FEATURE_SMART_CONTRACTS) {
+                    $schash = $this->processSmartContractTxs($this->height);
+                    _log("SCHASH: block=" . $this->schash . " calc=" . $schash, 5);
+                    if ($schash === false) {
+                        throw new Exception("Parse block failed " . $this->height . " Missing schash");
+                    }
+                    if (!empty($this->schash) && $this->schash != $schash) {
+                        if (NETWORK == "testnet" && $this->height == 1099548 && $schash == "6503aa9711ac12a14c0dcacd0ffd21374eb18a3ae0638e70a9099504e9da90c9") {
+                            _log("Ignore invalid hash");
+                        } else if (NETWORK == "testnet" && in_array($this->height, [1142688, 1142695, 1142727, 1142729, 1142799, 1142820,
+                                1142827, 1142847, 1142851, 1142853, 1142855, 1142863, 1142865, 1142895, 1143664])) {
+                        } else {
+                            throw new Exception("Invalid schash height=" . $this->height . " block=" . $this->schash . " calculated=" . $schash);
+                        }
                     }
                 }
 
@@ -207,7 +208,9 @@ class Block
                     _log("LOCK: unlock 3 block ".$this->height."  add ".$this->id. " ".$error, 4);
 //				$db->unlockTables();
                 }
-                SmartContract::cleanState($this->height);
+                if(FEATURE_SMART_CONTRACTS) {
+                    SmartContract::cleanState($this->height);
+                }
                 _log($error);
                 return false;
             }
@@ -677,9 +680,11 @@ class Block
                         throw new Exception("Reverse masternode winner failed. Error: $merr");
                     }
 
-                    $res = SmartContract::cleanState($block['height'], $cerr);
-                    if(!$res) {
-                        throw new Exception("Clear smart contract state failed. Error: $cerr");
+                    if(FEATURE_SMART_CONTRACTS) {
+                        $res = SmartContract::cleanState($block['height'], $cerr);
+                        if (!$res) {
+                            throw new Exception("Clear smart contract state failed. Error: $cerr");
+                        }
                     }
 
                     $res = $db->run("DELETE FROM blocks WHERE id=:id", [":id" => $block['id']]);

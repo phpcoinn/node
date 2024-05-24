@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 
-ARG NETWORK=main
+ARG NETWORK=mainnet
 ENV NETWORK=$NETWORK
 
 ENV DEBIAN_FRONTEND=noninteractive

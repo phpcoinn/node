@@ -221,11 +221,13 @@ class NodeMiner extends Task {
 			$bl->data = $data;
 			$bl->prevBlockId = $prev_block['id'];
 
-            $schash = $bl->processSmartContractTxs($bl->height, true);
-            if ($schash === false) {
-                throw new Exception("Parse block failed ".$bl->height." Missing schash");
+            if(FEATURE_SMART_CONTRACTS) {
+                $schash = $bl->processSmartContractTxs($bl->height, true);
+                if ($schash === false) {
+                    throw new Exception("Parse block failed " . $bl->height . " Missing schash");
+                }
+                $bl->schash = $schash;
             }
-            $bl->schash = $schash;
 
 			$bl->sign($this->private_key);
 			$bl->transactions = count($bl->data);

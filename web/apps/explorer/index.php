@@ -29,7 +29,9 @@ $mempoolCount = Mempool::getSize();
 $addressAccount = Account::getCount();
 $circulation = Account::getCirculation();
 $peersCount = Peer::getCount();
-$scCount=SmartContract::getCount();
+if(FEATURE_SMART_CONTRACTS) {
+    $scCount=SmartContract::getCount();
+}
 
 $hashRate10 = round(Blockchain::getHashRate(10),2);
 $hashRate100 = round(Blockchain::getHashRate(100),2);

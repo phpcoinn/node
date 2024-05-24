@@ -167,7 +167,6 @@ class Transaction
 
 					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee),$src_height);
-					//$tx->add_mempool();
 
 					$res = $res && SmartContract::reverse($tx, $err);
 					if(!$res) {
@@ -178,7 +177,6 @@ class Transaction
 				if ($type == TX_TYPE_SC_EXEC) {
 					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee),$src_height);
-					//$tx->add_mempool();
 
 					$height = $tx->height;
 					$res = $res && SmartContract::reverseState($tx, $height, $err);
@@ -190,7 +188,6 @@ class Transaction
 				if ($type == TX_TYPE_SC_SEND) {
 					$res = Account::addBalance($tx->dst, floatval($tx->val)*(-1), $dst_height);
 					$res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee), $src_height);
-					//$tx->add_mempool();
 
 					$height = $tx->height;
 					$res = $res && SmartContract::reverseState($tx, $height, $err);
@@ -526,7 +523,9 @@ class Transaction
         $data['total']['start']=$row['max_date'];
         $data['total']['elapsed']=$row['max_date'] - $row['min_date'];
         $data['total']['days']=$data['total']['elapsed'] / 86400;
-        $data['total']['daily']=$row['total'] / $data['total']['days'];
+        if($data['total']['days'] > 0) {
+            $data['total']['daily']=$row['total'] / $data['total']['days'];
+        }
         $data['total']['weekly']=$data['total']['daily'] * 7;
         $data['total']['monthly']=$data['total']['daily'] * 30;
         $data['total']['yearly']=$data['total']['monthly'] * 12;
@@ -795,7 +794,7 @@ class Transaction
 		            throw new Exception("{$this->id} - Invalid destination address");
 	            }
 	            $src = Account::getAddress($this->publicKey);
-	            if($src==$this->dst) {
+	            if(NETWORK == "testnet" && $src==$this->dst) {
                     if($this->id != "9RyNs6AUnByz4iuWfVAz6mTMCGiPUuqZ6c6nxQZzYEXh") {
 		                throw new Exception("{$this->id} - Invalid source address");
                     }

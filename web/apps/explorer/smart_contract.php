@@ -4,6 +4,11 @@ define("PAGE", true);
 define("APP_NAME", "Explorer");
 require_once ROOT. '/web/apps/explorer/include/functions.php';
 
+if(!FEATURE_SMART_CONTRACTS) {
+    header("location: /apps/explorer");
+    exit;
+}
+
 if(!isset($_GET['id'])) {
     header("location: /apps/explorer");
     exit;

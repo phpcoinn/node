@@ -4,6 +4,11 @@ define("PAGE", true);
 define("APP_NAME", "Explorer");
 require_once ROOT. '/web/apps/explorer/include/functions.php';
 
+if(!FEATURE_SMART_CONTRACTS) {
+    header("location: /apps/explorer");
+    exit;
+}
+
 $smartContracts = SmartContract::getAll();
 
 require_once __DIR__. '/../common/include/top.php';

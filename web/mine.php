@@ -342,11 +342,13 @@ if ($q == "info") {
 	ksort($data);
 
 	$block->data = $data;
-    $schash = $block->processSmartContractTxs($block->height,true);
-    if ($schash === false) {
-        throw new Exception("Parse block failed ".$block->height." Missing schash");
+    if(FEATURE_SMART_CONTRACTS) {
+        $schash = $block->processSmartContractTxs($block->height,true);
+        if ($schash === false) {
+            throw new Exception("Parse block failed ".$block->height." Missing schash");
+        }
+        $block->schash = $schash;
     }
-    $block->schash = $schash;
 
 	$signature = $block->sign($_config['generator_private_key']);
 	$result = $block->mine($err);
