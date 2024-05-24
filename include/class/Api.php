@@ -978,7 +978,7 @@ class Api
             if(count($addressInfo['masternodes'])==0) {
                 api_err("No masternodes on address");
             }
-            
+
             if(count($addressInfo['masternodes'])==1) {
                 $masternode = $addressInfo['masternodes'][0];
                 $message=$masternode['masternode'];

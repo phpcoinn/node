@@ -631,12 +631,12 @@ class Nodeutil
             $accounts = $db->single("SELECT COUNT(1) FROM accounts");
             $tr = Transaction::getCount();
             $masternodes = $db->single("SELECT COUNT(1) FROM masternode");
-		$avgBlockTime10 = Blockchain::getAvgBlockTime(10);
-		$avgBlockTime100 = Blockchain::getAvgBlockTime(100);
+            $avgBlockTime10 = Blockchain::getAvgBlockTime(10);
+            $avgBlockTime100 = Blockchain::getAvgBlockTime(100);
 
-		$hashRate10 = round(Blockchain::getHashRate(10),2);
-		$hashRate100 = round(Blockchain::getHashRate(100),2);
-		$circulation = Account::getCirculation();
+            $hashRate10 = round(Blockchain::getHashRate(10),2);
+            $hashRate100 = round(Blockchain::getHashRate(100),2);
+            $circulation = Account::getCirculation();
             $peers = Peer::getCount();
             $data['dbVersion']=$dbVersion;
             $data['accounts']=$accounts;

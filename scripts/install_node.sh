@@ -134,8 +134,8 @@ if [ "$DOCKER" = true ]; then
 fi
 
 if [ ! -d "$NODE_DIR" ]; then
-mkdir $NODE_DIR
-cd $NODE_DIR
+  mkdir $NODE_DIR
+  cd $NODE_DIR
   if [ "$NETWORK" = "mainnet" ]
   then
     git clone ${git_urls[$best_server_result]} .
