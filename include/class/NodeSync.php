@@ -829,7 +829,7 @@ class NodeSync
                 if (!$res) {
                     _log("PeerSync: Peer block add failed: $err");
 
-                    if(strpos($err, "Invalid schash")!== false) {
+                    if(FEATURE_SMART_CONTRACTS && strpos($err, "Invalid schash")!== false) {
                         _log("PeerSync: invalid hash - run sync state");
                         $cmd = "php " . ROOT . "/cli/util.php sync-sc-state $hostname";
                         Nodeutil::runSingleProcess($cmd);
