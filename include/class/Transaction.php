@@ -794,9 +794,15 @@ class Transaction
 		            throw new Exception("{$this->id} - Invalid destination address");
 	            }
 	            $src = Account::getAddress($this->publicKey);
-	            if(NETWORK == "testnet" && $src==$this->dst) {
-                    if($this->id != "9RyNs6AUnByz4iuWfVAz6mTMCGiPUuqZ6c6nxQZzYEXh") {
-		                throw new Exception("{$this->id} - Invalid source address");
+	            if($src==$this->dst) {
+                    if(NETWORK == "testnet") {
+                        if($this->id != "9RyNs6AUnByz4iuWfVAz6mTMCGiPUuqZ6c6nxQZzYEXh") {
+                            throw new Exception("{$this->id} - Invalid source address");
+                        }
+                    } else {
+                        if($this->id != "ARs1JrdEYCzMykWFjNH68vCtkKp6XQNibcHEuFNJXYv3") {
+                            throw new Exception("{$this->id} - Invalid source address");
+                        }
                     }
 	            }
 	        }
