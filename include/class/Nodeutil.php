@@ -407,7 +407,7 @@ class Nodeutil
 		_log("runSingleProcess $cmd", 5);
         $exec_cmd = "$cmd > /dev/null 2>&1  &";
         if(!empty($user)) {
-            $exec_cmd="sudo -u $user $exec_cmd";
+            $exec_cmd="sudo -u $user ".escapeshellcmd($exec_cmd);
         }
         system($exec_cmd);
 	}
