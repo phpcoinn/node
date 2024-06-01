@@ -79,7 +79,7 @@ class Task
             _log("Task: run $name task",3);
             $userInfo = posix_getpwuid(posix_geteuid());
             $user=null;
-            if($userInfo['name']!="www-data") {
+            if($userInfo['name']!="www-data" && $userInfo['name']=="root") {
                 $user="www-data";
             }
             Nodeutil::runSingleProcess($cmd, null, $user);
