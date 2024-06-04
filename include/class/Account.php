@@ -296,12 +296,21 @@ class Account
 					$sorting.= ' ' . $dm['order'];
 				}
 			}
+
+            //print_r($dm);
+            $where = "";
+            if(!empty($dm['search'])) {
+                $search = $dm['search'];
+                $search = str_replace("*", "%", $search);
+                $where = " and a.id like '$search'";
+            }
+
 			$height = Block::getHeight();
 			$maturity = Blockchain::getStakingMaturity($height);
 			$min_balance = Blockchain::getStakingMinBalance($height);
 			$sql="select *, ($height - a.height) as maturity,
        			case when $height - a.height >= $maturity and a.balance >= $min_balance then ($height - a.height)*a.balance else 0 end as weight
-				from accounts a $sorting limit $start, $limit";
+				from accounts a where 1 $where $sorting limit $start, $limit";
 			return $db->run($sql);
 		}
 	}
