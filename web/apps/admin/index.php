@@ -69,24 +69,11 @@ if(isset($_POST['action'])) {
 	    header("location: ".APP_URL."/?view=peers");
 	    exit;
     }
-    if($action == "check_blocks") {
-	    $peer = $_POST['peer'];
-	    $invalid_block = Nodeutil::checkBlocksWithPeer($peer);
-	    $checkBlocksResponse = true;
-    }
-    if($action == 'clear_blocks') {
-	    $height = $_POST['height'];
-        Nodeutil::deleteFromHeight($height);
-    }
     if($action == 'set_hostname') {
         $db->setConfig('hostname', $_POST['hostname']);
 	    header("location: ".APP_URL."/?view=config");
 	    exit;
     }
-	if($action == "blocks-hash") {
-		$height = $_POST['height'];
-		$blocksHash = Nodeutil::calculateBlocksHash($height);
-	}
 }
 
 if(isset($_GET['action'])) {
@@ -94,17 +81,6 @@ if(isset($_GET['action'])) {
     if($action == "logout") {
 	    $_SESSION['login']=false;
 	    header("location: ".APP_URL);
-	    exit;
-    }
-    if($action == "clean") {
-        Nodeutil::clean();
-	    header("location: ".APP_URL."/?view=utils");
-	    exit;
-    }
-    if($action=="sync") {
-	    $dir = ROOT."/cli";
-	    system("php $dir/sync.php --force  > /dev/null 2>&1  &");
-	    header("location: ".APP_URL."/?view=utils");
 	    exit;
     }
     if($action=="logging") {
@@ -211,9 +187,6 @@ if(isset($_GET['action'])) {
 	    Peer::deleteAll();
 		header("location: ".APP_URL."/?view=peers");
 		exit;
-    }
-	if($action == "accounts-hash") {
-        $accountsHash = Nodeutil::calculateAccountsHash();
     }
 	if($action == "mn_lock_clear") {
 		@rmdir(ROOT.'/tmp/mn-lock');
@@ -605,106 +578,6 @@ $nonce = uniqid();
             </div>
 
 		<?php } ?>
-	    <?php if($view == "utils") { ?>
-
-            <div class="flex-row d-flex flex-wrap align-items-center mb-2">
-                <a class="btn btn-danger me-2" href="<?php echo APP_URL ?>/?view=utils&action=clean" onclick="if(!confirm('Clean?')) return false">Clean</a>
-                <div class="text-danger">Deletes all block and transactions in database</div>
-            </div>
-            <div class="flex-row d-flex flex-wrap align-items-center mb-2">
-                <a class="btn btn-info me-2" href="<?php echo APP_URL ?>/?view=utils&action=sync" onclick="if(!confirm('Run sync?')) return false">Run sync</a>
-                <div>Synchronize blocks from peers</div>
-            </div>
-
-            <div class="mt-4">
-                <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i> Check blocks</h3>
-
-                <form class="row gx-3 gy-2 align-items-center" method="post" action="">
-
-                    <input type="hidden" name="action" value="check_blocks"/>
-                    <div class="col-sm-2">
-                        <input type="text" class="form-control" id="peer" name="peer" placeholder="Peer" required="required">
-                    </div>
-                    <div class="col-sm-2">
-                        <button type="submit" class="btn btn-primary">Check</button>
-                    </div>
-                    <div class="col-auto">
-	                <?php if($checkBlocksResponse) { ?>
-		                <?php if(empty($invalid_block)) { ?>
-                            <div class="alert alert-success mb-0">
-                                No invalid block
-                            </div>
-		                <?php } else { ?>
-                            <div class="alert alert-danger mb-0">
-                                Invalid block detected at height <?php echo $invalid_block ?>
-                            </div>
-		                <?php } ?>
-	                <?php } ?>
-                    </div>
-                </form>
-            </div>
-
-            <hr/>
-
-            <div class="mt-4">
-                <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i> Clear blocks</h3>
-
-                <form class="row gx-3 gy-2 align-items-center" method="post" action="">
-                    <input type="hidden" name="action" value="clear_blocks"/>
-                    <div class="col-sm-2">
-                        <input type="text" class="form-control" id="height" name="height" placeholder="From height" required="required">
-                    </div>
-                    <div class="col-sm-2">
-                        <button type="submit" class="btn btn-danger">Clear</button>
-                    </div>
-                </form>
-            </div>
-
-            <hr/>
-
-            <div class="mt-4">
-                <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i>Accounts hash</h3>
-                <div class="row">
-                    <div class="col-sm-2">
-                        <a href="<?php echo APP_URL ?>/?view=utils&action=accounts-hash" class="btn btn-info">Calculate</a>
-                    </div>
-                    <div class="col-auto">
-                        <?php if($accountsHash) { ?>
-                            <div class="alert alert-success mb-0">
-                                height: <?php echo $accountsHash['height'] ?><br/>
-                                hash: <?php echo $accountsHash['hash'] ?>
-                            </div>
-                        <?php } ?>
-                    </div>
-                </div>
-            </div>
-
-            <hr/>
-
-            <div class="mt-4">
-                <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i>Blocks hash</h3>
-                <form class="row gx-3 gy-2 align-items-center" method="post" action="">
-                    <input type="hidden" name="action" value="blocks-hash"/>
-                    <div class="col-sm-2">
-                        <input type="text" class="form-control" id="height" name="height" placeholder="Height">
-                    </div>
-                    <div class="col-sm-2">
-                        <button type="submit" class="btn btn-info">Calculate</button>
-                    </div>
-                    <div class="col-auto">
-                        <?php if($blocksHash) { ?>
-                            <div class="alert alert-success mb-0">
-                                height: <?php echo $blocksHash['height'] ?><br/>
-                                hash: <?php echo $blocksHash['hash'] ?>
-                            </div>
-                        <?php } ?>
-                    </div>
-                </form>
-            </div>
-
-            <div class="mb-5"></div>
-
-        <?php } ?>
 
 	    <?php if($view == "peers") {
 
@@ -1001,6 +874,9 @@ $nonce = uniqid();
 	    }
 		if($view == "server") {
 			require_once __DIR__ ."/tabs/server.php";
+		}
+		if($view == "utils") {
+			require_once __DIR__ ."/tabs/utils.php";
 		}
 
         ?>

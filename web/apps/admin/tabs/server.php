@@ -35,6 +35,7 @@ $serverData=Nodeutil::getServerData();
 
 ?>
 <div class="h4">Hostname: <?php echo $serverData['hostname'] ?></div>
+<div class="h5">Root folder: <?php echo ROOT ?></div>
 <hr/>
 
 <div class="row">
