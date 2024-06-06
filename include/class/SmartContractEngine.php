@@ -80,6 +80,10 @@ class SmartContractEngine
     static function process($sc_address, $transactions, $height, $test, &$error=null, &$state_updates=null) {
         return try_catch(function () use ($sc_address, $transactions, $height, $test, &$state_updates) {
 
+            if(in_array($sc_address, BLACKLISTED_SMART_CONTRACTS)) {
+                throw new Exception("Calling smart contract $sc_address is blocked");
+            }
+
             $smartContract = SmartContract::getById($sc_address, self::$virtual);
             $code =  null;
             if(!$smartContract) {
