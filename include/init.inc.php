@@ -145,4 +145,4 @@ if($chain_id!= CHAIN_ID) {
 }
 
 
-//require_once __DIR__ ."/tasks.inc.php";
+require_once __DIR__ ."/tasks.inc.php";
