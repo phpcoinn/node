@@ -2025,4 +2025,33 @@ class Util
         $cmd = "rm -rf ".ROOT."/tmp/*";
         $res = shell_exec($cmd);
     }
+
+    static function checkCron(){
+        $userInfo = posix_getpwuid(posix_geteuid());
+        $user=$userInfo['name'];
+        if($user != "www-data") {
+            return;
+        }
+        _log("check cron user=".$user);
+        $cmd="crontab -l 2>&1";
+        $res=shell_exec($cmd);
+        $cron='* * * * * /usr/bin/php '.ROOT.'/cli/cron.php run';
+        $add = false;
+        if(trim($res)=="no crontab for www-data") {
+            _log("no crontab for www-data");
+            $add = true;
+        } else {
+            _log("crontab exists res=$res");
+            if(trim($res)!=$cron) {
+                $add = true;
+            }
+        }
+        if($add) {
+            $cmd='echo "'.$cron.'" | crontab -';
+            $res=shell_exec($cmd);
+            _log("add res = ".json_encode($res));
+        } else {
+            _log("crontab already added");
+        }
+    }
 }
