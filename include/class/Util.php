@@ -2035,7 +2035,7 @@ class Util
         _log("check cron user=".$user);
         $cmd="crontab -l 2>&1";
         $res=shell_exec($cmd);
-        $cron='* * * * * /usr/bin/php '.ROOT.'/cli/cron.php run';
+        $cron='* * * * * /usr/bin/php '.ROOT.'/cli/cron.php';
         $add = false;
         if(trim($res)=="no crontab for www-data") {
             _log("no crontab for www-data");
