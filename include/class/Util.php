@@ -2026,102 +2026,32 @@ class Util
         $res = shell_exec($cmd);
     }
 
-    static function heartbeat() {
-        $res = Nodeutil::psAux(ROOT . "/cli/util.php heartbeat");
-        _log("HB: call heartbeat res=".json_encode($res));
-        if($res === false) {
-            _log("HB: some error");
-        } else {
-            _log("HB: get response");
-            $start = false;
-            if($res === null) {
-                _log("HB: res is null");
-                $start = true;
-            } else {
-                if(count($res)==1) {
-                    _log("HB: res is not null res=$res");
-                    $arr = preg_split("/\s+/", $res[0]);
-                    _log("HB: split res arr=".json_encode($arr));
-                    $pid = $arr[1];
-                    if($pid == getmypid()) {
-                        $start = true;
-                    }
-                }
-            }
-            _log("HB: start=$start");
-            if($start) {
-                $cmd = "(sleep 10 && php ".ROOT."/cli/util.php heartbeat)";
-                _log("HB: start heartbeat");
-                Nodeutil::runSingleProcess($cmd);
-            } else {
-                _log("HB: heartbeat running");
-            }
-        }
-    }
-
     static function checkCron(){
-
         $res = Nodeutil::psAux(ROOT . "/cli/cron.php");
-        _log("check cron res=".json_encode($res));
+        _log("check cron res=".json_encode($res), 3);
         if($res === false) {
-            _log("ps uax error");
+            _log("ps uax error",2);
         } else {
-            _log("ps uax no error");
             $start = false;
             if($res === null) {
-                _log("ps uax not found");
+                _log("ps uax not found",3);
                 $start = true;
             } else {
-                _log("ps uax found");
                 if(count($res)==1) {
-                    _log("exactly one result");
                     $arr = preg_split("/\s+/", $res[0]);
                     $pid = $arr[1];
                     $mypid=getmypid();
                     _log("pid=$pid mypid=$mypid");
-                    if($pid == getmypid()) {
+                    if($pid == $mypid) {
                         $start = true;
                     }
-                } else {
-                    _log("zero or more result");
                 }
             }
             if($start) {
-                _log("start cron");
+                _log("start cron", 2);
                 $cmd = "(sleep 60 && php ".ROOT."/cli/cron.php)";
-                _log("start command $cmd");
                 Nodeutil::runSingleProcess($cmd);
-            } else {
-                _log("not start cron");
             }
-        }
-
-        return;
-        $userInfo = posix_getpwuid(posix_geteuid());
-        $user=$userInfo['name'];
-        if($user != "www-data") {
-            return;
-        }
-        _log("check cron user=".$user);
-        $cmd="crontab -l 2>&1";
-        $res=shell_exec($cmd);
-        $cron='* * * * * /usr/bin/php '.ROOT.'/cli/cron.php';
-        $add = false;
-        if(trim($res)=="no crontab for www-data") {
-            _log("no crontab for www-data");
-            $add = true;
-        } else {
-            _log("crontab exists res=$res");
-            if(trim($res)!=$cron) {
-                $add = true;
-            }
-        }
-        if($add) {
-            $cmd='echo "'.$cron.'" | crontab -';
-            $res=shell_exec($cmd);
-            _log("add res = ".json_encode($res));
-        } else {
-            _log("crontab already added");
         }
     }
 }
