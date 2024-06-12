@@ -5,6 +5,10 @@
 //NodeMiner::checkAndRun();
 //Cron::runTask();
 
-Nodeutil::runAtInterval("task-cron-new", 60, function () {
-    Util::checkCron();
-});
+_log("tasks cron=".defined("CRON"));
+if(!defined("CRON")) {
+    Nodeutil::runAtInterval("check-cron", 60, function () {
+        _log("check-cron " . $_SERVER['SCRIPT_NAME']);
+        Util::checkCron();
+    });
+}
