@@ -5,7 +5,7 @@ require_once dirname(__DIR__).'/include/init.inc.php';
 $time = date("H:i");
 $hour = intval(date("H"));
 $min = intval(date("i"));
-_log("Cron: process $time ".json_encode($argv));
+_log("Cron: process $time");
 
 Util::checkCron();
 Sync::checkAndRun();
