@@ -2041,7 +2041,7 @@ class Util
                     $arr = preg_split("/\s+/", $res[0]);
                     $pid = $arr[1];
                     $mypid=getmypid();
-                    _log("pid=$pid mypid=$mypid");
+                    _log("pid=$pid mypid=$mypid", 2);
                     if($pid == $mypid) {
                         $start = true;
                     }

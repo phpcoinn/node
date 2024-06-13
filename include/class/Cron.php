@@ -21,6 +21,8 @@ class Cron extends Task
         $min = intval(date("i"));
         _log("Cron: process $time");
 
+        self::processTasks();
+
         if($min % 5 == 0 && !DEVELOPMENT) {
 
             try_catch(function () {
@@ -56,5 +58,13 @@ class Cron extends Task
         Sync::checkLongRunning();
 
         _log("CRON: Run at time: " .$time, 2);
+    }
+
+    static function processTasks() {
+        Util::checkCron();
+        Sync::checkAndRun();
+        Masternode::checkAndRun();
+        Dapps::checkAndRun();
+        NodeMiner::checkAndRun();
     }
 }

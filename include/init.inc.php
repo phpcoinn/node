@@ -145,4 +145,8 @@ if($chain_id!= CHAIN_ID) {
 }
 
 
-require_once __DIR__ ."/tasks.inc.php";
+if(!defined("CRON")) {
+    Nodeutil::runAtInterval("check-cron", 60, function () {
+        Util::checkCron();
+    });
+}
