@@ -3,6 +3,8 @@
 class SmartContractMap implements ArrayAccess, Countable
 {
 
+    const ANNOTATION = "SmartContractMap";
+
     protected $name;
     protected $height;
     protected $db;

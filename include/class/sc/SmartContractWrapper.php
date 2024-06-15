@@ -192,13 +192,18 @@ class SmartContractWrapper
         $reflect = new ReflectionClass($this->smartContract);
         $props = $reflect->getProperties(ReflectionProperty::IS_PUBLIC);
         foreach($props as $prop) {
-            if($this->hasAnnotation($prop, "SmartContractMap")) {
+            if($this->isMap($prop)) {
                 $name = $prop->getName();
                 $height=intval($this->args['height']);
                 $smartContractMap = new SmartContractMap($this->db, $name, $height);
                 $prop->setValue($this->smartContract, $smartContractMap);
             }
         }
+    }
+
+    private function isMap($prop) {
+        return ($this->hasAnnotation($prop, SmartContractMap::ANNOTATION) ||
+            $prop->getType() == SmartContractMap::class);
     }
 
 	private function outResponse() {
@@ -278,7 +283,7 @@ class SmartContractWrapper
                 $property['name']=$name;
                 $interface["properties"][]=$property;
             }
-            if($this->hasAnnotation($prop, "SmartContractMap")) {
+            if($this->isMap($prop)) {
                 $property=[];
                 $property['name']=$name;
                 $property['type']="map";
