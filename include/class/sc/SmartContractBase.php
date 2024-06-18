@@ -200,7 +200,7 @@ class SmartContractBase
         if(self::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
-            return @count($state[$name]);
+            return @count($state[$name] ?? []);
         }
 
         $sql = "select count(distinct s.var_key) from smart_contract_state s 

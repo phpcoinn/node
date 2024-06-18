@@ -409,7 +409,7 @@ class SmartContractEngine
     public static function cleanVirtualState($sc_address) {
         if(self::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$sc_address.'.state.json';
-            unlink($state_file);
+            @unlink($state_file);
         }
     }
 

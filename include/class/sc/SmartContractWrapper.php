@@ -59,7 +59,7 @@ class SmartContractWrapper
         foreach($props as $prop) {
             if($this->hasAnnotation($prop, "SmartContractVar")) {
                 $name = $prop->getName();
-                $prop->setValue($this->smartContract, $this->state[$name]);
+                $prop->setValue($this->smartContract, @$this->state[$name]);
             }
         }
     }
@@ -254,7 +254,7 @@ class SmartContractWrapper
 		$interface = [];
 		$reflect = new ReflectionClass($this->smartContract);
 
-		$version = "1.0.0";
+		$version = "2.0.0";
 
 		$annotations = $this->getAnnotations($reflect);
 		if(!empty($annotations) && is_array($annotations)) {
@@ -300,11 +300,7 @@ class SmartContractWrapper
                 $ref_params = $method->getParameters();
                 $params = [];
                 foreach($ref_params as $ref_param) {
-                    $params[]=[
-                        "name"=>$ref_param->getName(),
-                        "value"=> $ref_param->isDefaultValueAvailable() ? $ref_param->getDefaultValue() : null,
-                        "required"=> !$ref_param->isDefaultValueAvailable()
-                    ];
+                    $params[]=$this->getParamDef($ref_param);
                 }
                 $interface["deploy"]=[
                     "name"=>$name,
@@ -318,7 +314,7 @@ class SmartContractWrapper
 				$ref_params = $method->getParameters();
 				$params = [];
 				foreach($ref_params as $ref_param) {
-					$params[]=$ref_param->getName();
+                    $params[]=$this->getParamDef($ref_param);
 				}
 				$interface["methods"][]=[
 					"name"=>$name,
@@ -329,7 +325,7 @@ class SmartContractWrapper
 				$ref_params = $method->getParameters();
 				$params = [];
 				foreach($ref_params as $ref_param) {
-					$params[]=$ref_param->getName();
+					$params[]=$this->getParamDef($ref_param);
 				}
 				$interface["views"][]=[
 					"name"=>$name,
@@ -340,6 +336,16 @@ class SmartContractWrapper
 
         return $interface;
 	}
+
+    private function getParamDef ($ref_param) {
+        $param=[
+            "name"=>$ref_param->getName(),
+            "type"=>$ref_param->getType() == null ? null : $ref_param->getType()->__toString(),
+            "value"=> $ref_param->isDefaultValueAvailable() ? $ref_param->getDefaultValue() : null,
+            "required"=> !$ref_param->isDefaultValueAvailable()
+        ];
+        return $param;
+    }
 
 	private function getAnnotations($obj) {
 		$doc = $obj->getDocComment();
