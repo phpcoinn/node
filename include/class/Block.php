@@ -238,7 +238,7 @@ class Block
         }
         $process_schash = SmartContract::process($smart_contracts, $height, $test,  $err, $state_updates);
         if($height >= UPDATE_15_EXTENDED_SC_HASH_V2) {
-            $res = Nodeutil::calculateSmartContractsHashV2($height+1);
+            $res = Nodeutil::calculateSmartContractsHashV2($height);
             $current_state_hash = $res['hash'];
             $schash = hash("sha256", $current_state_hash."-".$process_schash);
             _log("Save extended schash V2 current_state_hash=$current_state_hash schash=$process_schash schash=$schash", 5);
