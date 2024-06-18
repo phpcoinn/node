@@ -552,6 +552,13 @@ class Masternode extends Task
 			_log("Masternode: Not found local masternode in list", 3);
 			return;
 		}
+
+        $nodeScore = $_config['node_score'];
+        if($nodeScore < MIN_NODE_SCORE && !DEVELOPMENT) {
+            _log("Masternode: invalid node score", 5);
+            return;
+        }
+
 		$masternode = Masternode::fromDB($masternode);
 
 		$win_height = Masternode::getLastWinHeight($masternode->id, $height);
