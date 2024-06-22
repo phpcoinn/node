@@ -790,7 +790,7 @@ class NodeSync
 
 	}
 
-    static function peerSync($hostname, $add_limit=100, $delete_limit=10) {
+    static function peerSync($hostname, $add_limit=100, $delete_limit=10,&$ret=null) {
         _log("Syncing with peer ".$hostname);
 
         $syncing = true;
@@ -864,6 +864,7 @@ class NodeSync
             } else {
                 _log("PeerSync: NO peer block data");
                 $syncing = false;
+		$ret="no_peer_data";
                 break;
             }
         }
