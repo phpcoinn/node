@@ -653,11 +653,16 @@ class NodeSync
 		} else {
 			_log("Need to sync blokchain");
 
-            $peerIndex = 0;
-            $peer = $peersForSync[$peerIndex];
-            $hostname = $peer['hostname'];
-
-            self::peerSync($hostname);
+		for($i=0;$i<count($peersForSync);$i++){
+			$peer = $peersForSync[$i];
+			$hostname = $peer['hostname'];
+			self::peerSync($hostname,100,10,$ret);
+			if($ret=="no_peer_data"){
+				_log("Select next peer",3);
+				continue;                                                 
+            		}
+			break;
+        	}
 
             Config::setSync(0);
             _log("Finished sync");
