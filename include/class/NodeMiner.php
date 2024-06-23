@@ -126,7 +126,7 @@ class NodeMiner extends Task {
                 }
 
                 $lock_dir = ROOT."/tmp/cli-miner.lock";
-                if(!file_exists($lock_dir)) {
+                if(!file_exists($lock_dir) && !DEVELOPMENT) {
                     $this->running = false;
                     break;
                 }
