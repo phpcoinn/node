@@ -833,10 +833,14 @@ class NodeSync
                 $res = $peer_block->add($err, true);
                 if (!$res) {
                     _log("PeerSync: Peer block add failed: $err");
-			if($err=="Block already added"){
-				$syncing = false;
-				break;
-			}
+                    if($err=="Block already added"){
+                        $syncing = false;
+                        break;
+                    }
+                    if($err=="block-add-locked"){
+                        $syncing = false;
+                        break;
+                    }
 
                     if(FEATURE_SMART_CONTRACTS && $err!=null && strpos($err, "Invalid schash")!== false) {
                         _log("PeerSync: invalid hash - run sync state");

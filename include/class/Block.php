@@ -68,7 +68,7 @@ class Block
 
 	public function add(&$error = null, $syncing=false)
     {
-        return synchronized("block-lock", function () use (&$error, $syncing) {
+        $res = synchronized("block-lock", function () use (&$error, $syncing) {
 
             try {
 
@@ -214,6 +214,11 @@ class Block
             }
 
         });
+
+        if(!$res) {
+            $error="block-add-locked";
+        }
+        return $res;
 
 
     }
