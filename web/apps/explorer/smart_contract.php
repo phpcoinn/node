@@ -48,6 +48,7 @@ $interface = SmartContractEngine::getInterface($id);
 $smartContract = SmartContract::getById($id);
 $name = $smartContract['name'];
 $description = $smartContract['description'];
+$metadata = json_decode($smartContract['metadata'],true);
 
 require_once __DIR__. '/../common/include/top.php';
 
@@ -179,6 +180,19 @@ global $loggedIn;
         <tr>
             <td>Description</td>
             <td><?php echo $description ?></td>
+        </tr>
+        <tr>
+            <td>Metadata</td>
+            <td>
+                <table class="table table-sm table-striped">
+                    <?php foreach($metadata as $key=>$value) { ?>
+                        <tr>
+                            <td><?php echo $key ?></td>
+                            <td><?php echo $value ?></td>
+                        </tr>
+                    <?php } ?>
+                </table>
+            </td>
         </tr>
     </table>
 </div>

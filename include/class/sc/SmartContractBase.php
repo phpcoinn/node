@@ -149,13 +149,14 @@ class SmartContractBase
             return;
         }
 
-        $sql="insert into smart_contracts (address, height, code, signature, name, description)
-            values (:address, :height, :code, :signature, :name, :description)";
+        $sql="insert into smart_contracts (address, height, code, signature, name, description, metadata)
+            values (:address, :height, :code, :signature, :name, :description, :metadata)";
 
         $data=$transaction['data'];
         $data = json_decode(base64_decode($data), true);
-        $name = $data['name'];
-        $description = $data['description'];
+        $metadata = $data['metadata'];
+        $name = $metadata['name'];
+        $description = $metadata['description'];
 
         $bind = [
             ":address" => $transaction['dst'],
@@ -164,6 +165,7 @@ class SmartContractBase
             ":signature" => $transaction['msg'],
             ":name"=>$name,
             ":description"=>$description,
+            ":metadata"=>json_encode($metadata),
         ];
 
         $res = $db->run($sql, $bind);

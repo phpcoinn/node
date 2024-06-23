@@ -199,7 +199,8 @@ if (empty($dbversion)) {
 	code text not null,
 	signature varchar(255) not null,
 	name varchar(255) null,
-	description varchar(1000) null
+	description varchar(1000) null,
+	metadata json null
 	)");
 
     $db->run("create unique index smart_contracts_address_uindex
@@ -220,6 +221,13 @@ if (empty($dbversion)) {
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync_last', '0');");
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync', '0');");
 	$dbversion = 40;
+}
+
+if($dbversion <= 40) {
+    migrate_with_lock($dbversion, function() {
+        global $db;
+        $db->run("alter table smart_contracts add metadata json null");
+    });
 }
 
 // update the db version to the latest one
