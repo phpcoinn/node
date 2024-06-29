@@ -80,10 +80,6 @@ class SmartContractEngine
     static function process($sc_address, $transactions, $height, $test, &$error=null, &$state_updates=null) {
         return try_catch(function () use ($sc_address, $transactions, $height, $test, &$state_updates) {
 
-            if(in_array($sc_address, BLACKLISTED_SMART_CONTRACTS)) {
-                throw new Exception("Calling smart contract $sc_address is blocked");
-            }
-
             $smartContract = SmartContract::getById($sc_address, self::$virtual);
             $code =  null;
             if(!$smartContract) {
@@ -140,10 +136,13 @@ class SmartContractEngine
 				$params = [$params];
 			}
 
+            $height = Block::getHeight();
+
 			$cmd_args = [
 				'type'=>'view',
 				'method' => $method,
 				'params' => $params,
+                'height'=>$height,
                 "virtual"=>self::$virtual
 			];
 
@@ -308,7 +307,7 @@ class SmartContractEngine
 		} else {
 
             if($map) {
-                if(strlen($key)==0) {
+                if($key === null || strlen($key)==0) {
                     $sql="select count(*) as cnt
                         from (select s.variable,
                                      s.var_value,

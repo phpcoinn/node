@@ -102,13 +102,15 @@ class SmartContract
 		return try_catch(function () use ($error, $transaction,$height, &$state_updates) {
 			$message = $transaction->msg;
 			$type = $transaction->type;
-			$exec_params = json_decode(base64_decode($message), true);
-			$method = $exec_params['method'];
 
             if($type == TX_TYPE_SC_EXEC || $type == TX_TYPE_SC_CREATE) {
                 $sc_address = $transaction->dst;
             } else {
                 $sc_address = $transaction->src;
+            }
+
+            if(in_array($sc_address, BLACKLISTED_SMART_CONTRACTS)) {
+                throw new Exception("Calling smart contract $sc_address is blocked");
             }
 
             $mempool_txs = Transaction::mempool(Block::max_transactions(), false);
@@ -128,6 +130,8 @@ class SmartContract
 
             $hash = SmartContractEngine::process($sc_address, $transactions, $height, true, $err, $state_updates);
             if(!$hash) {
+                $exec_params = json_decode(base64_decode($message), true);
+                $method = @$exec_params['method'];
                 throw new Exception("Error calling method $method of smart contract: ".$err);
             }
             return $hash;

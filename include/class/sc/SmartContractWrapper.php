@@ -75,15 +75,16 @@ class SmartContractWrapper
             }
         } else {
             $state = [];
+            $height=intval($this->args['height']);
             $sql="select * from (
                 select s.variable, s.var_value,
                        row_number() over (partition by s.sc_address, s.variable order by s.height desc) as rn
                 from smart_contract_state s
-                where s.sc_address = :address
+                where s.sc_address = :address and s.height <= :height
                   and s.var_key is null ) as ranked
                 where ranked.rn = 1
             ";
-            $rows = $this->db->run($sql, [":address"=> SC_ADDRESS]);
+            $rows = $this->db->run($sql, [":address"=> SC_ADDRESS, ":height"=>$height]);
             foreach ($rows as $row) {
                 $state[$row['variable']]=$row['var_value'];
             }

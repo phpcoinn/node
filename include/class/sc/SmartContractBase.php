@@ -48,7 +48,7 @@ class SmartContractBase
 		@file_put_contents($log_file, $s, FILE_APPEND);
 	}
 
-    static function getStateVar($db, $address, $name, $key=null) {
+    static function getStateVar($db, $address, $height, $name, $key=null) {
 
         if(self::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
@@ -65,14 +65,14 @@ class SmartContractBase
             }
         }
 
-        if(strlen($key)==0) {
+        if($key ===  null || strlen($key)==0) {
             $sql="select s.var_value from smart_contract_state s 
-                   where s.sc_address = :sc_address and s.variable = :variable and var_key is null order by s.height desc limit 1";
-            $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name]);
+                   where s.sc_address = :sc_address and s.variable = :variable and s.height <= :height and s.var_key is null order by s.height desc limit 1";
+            $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name, ":height"=>$height]);
         } else {
             $sql="select s.var_value from smart_contract_state s 
-                   where s.sc_address = :sc_address and s.variable = :variable and s.var_key =:var_key order by s.height desc limit 1";
-            $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name, ":var_key"=>$key]);
+                   where s.sc_address = :sc_address and s.variable = :variable and s.var_key =:var_key and s.height <= :height order by s.height desc limit 1";
+            $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name, ":var_key"=>$key, ":height"=>$height]);
         }
         return $res;
     }
@@ -175,7 +175,7 @@ class SmartContractBase
         }
     }
 
-    static function existsStateVar($db, $address, $name, $key=null) {
+    static function existsStateVar($db, $address, $height, $name, $key=null) {
         if(self::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
@@ -188,30 +188,32 @@ class SmartContractBase
 
         if(strlen($key)==0) {
             $sql="select 1 from smart_contract_state s 
-                   where s.sc_address = :sc_address and s.variable = :variable order by s.height desc limit 1";
-            $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name]);
+                   where s.sc_address = :sc_address and s.variable = :variable and s.height <=:height order by s.height desc limit 1";
+            $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name, ":height"=>$height]);
         } else {
             $sql="select 1 from smart_contract_state s 
-                   where s.sc_address = :sc_address and s.variable = :variable and s.var_key =:var_key order by s.height desc limit 1";
-            $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name, ":var_key"=>$key]);
+                   where s.sc_address = :sc_address and s.variable = :variable and s.var_key =:var_key and s.height <=:height order by s.height desc limit 1";
+            $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name, ":var_key"=>$key, ":height"=>$height]);
         }
         return $res == 1;
     }
 
-    static function countStateVar($db, $address, $name) {
+    static function countStateVar($db, $address, $height, $name) {
         if(self::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
             return @count($state[$name] ?? []);
         }
 
+
         $sql = "select count(distinct s.var_key) from smart_contract_state s 
-           where s.sc_address = :sc_address and s.variable = :variable";
-        $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name]);
+           where s.sc_address = :sc_address and s.variable = :variable and s.height <= :height";
+        $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name, ":height"=>$height]);
+        _log("countStateVar res=$res sql=$sql address=$address name=$name height=$height");
         return $res;
     }
 
-    static function stateVarKeys($db, $address, $name) {
+    static function stateVarKeys($db, $address, $height, $name) {
         if(self::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
@@ -219,8 +221,8 @@ class SmartContractBase
         }
 
         $sql="select distinct(s.var_key) from smart_contract_state s 
-               where s.sc_address = :sc_address and s.variable = :variable order by s.var_key";
-        $rows=$db->run($sql, [":sc_address" =>$address, ":variable" => $name]);
+               where s.sc_address = :sc_address and s.variable = :variable and s.height<=:height order by s.var_key";
+        $rows=$db->run($sql, [":sc_address" =>$address, ":variable" => $name, ":height"=>$height]);
         $list = [];
         foreach ($rows as $row) {
             $list[]=$row['var_key'];
@@ -228,7 +230,7 @@ class SmartContractBase
         return $list;
     }
 
-    static function stateAll($db, $address, $name) {
+    static function stateAll($db, $address, $height, $name) {
         if(self::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
@@ -236,8 +238,8 @@ class SmartContractBase
         }
 
         $sql="select s.var_key, s.var_value from smart_contract_state s 
-               where s.sc_address = :sc_address and s.variable = :variable order by s.var_key";
-        $rows=$db->run($sql, [":sc_address" =>$address, ":variable" => $name]);
+               where s.sc_address = :sc_address and s.variable = :variable and s.height <= :height order by s.var_key";
+        $rows=$db->run($sql, [":sc_address" =>$address, ":variable" => $name, ":height"=>$height]);
         $list = [];
         foreach ($rows as $row) {
             $key = $row['var_key'];

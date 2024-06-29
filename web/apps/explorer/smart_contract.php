@@ -60,7 +60,7 @@ if(isset($_GET['sc_get_property_read'])) {
 } else if (isset($_GET['sc_exec'])) {
     $public_key = $_SESSION['account']['public_key'];
     $method = $_GET['sc_exec'];
-    $amount = $_GET['sc_exec_amount'][$method];
+    $amount = $_GET['sc_exec_amount'][$method] || 0;
     $params=[];
     foreach ($_GET['sc_exec_params'][$method] as $name => $val) {
         $params[]=$val;
@@ -259,7 +259,7 @@ global $loggedIn;
                             <td class="text-end nowrap">
                                 <?php if($property['type']=="map") { ?>
                                     <input class="form-control w-auto d-inline form-control-sm" type="text"
-                                           name="sc_property_key[<?php echo $property['name'] ?>]" value="<?php echo $sc_get_property_key ?>" placeholder="Key">
+                                           name="sc_property_key[<?php echo $property['name'] ?>]" value="<?php echo $_GET['sc_property_key'][$property['name']] ?>" placeholder="Key">
                                 <?php } ?>
                                 <button type="submit" name="sc_get_property_read" value="<?php echo $property['name'] ?>" class="btn btn-sm btn-soft-primary">Read</button>
                             </td>

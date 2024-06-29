@@ -152,15 +152,10 @@ class Nodeutil
 		];
 	}
 
-    static function calculateSmartContractsHash1($height=null, $blocks = 100) {
+    static function calculateSmartContractsHash1($height) {
         global $db;
-        if(empty($height)) {
-            $start_height = 0;
-            $end_height = PHP_INT_MAX;
-        } else {
-            $start_height = $height - $blocks;
-            $end_height  = $height;
-        }
+        $start_height = $height - 100;
+        $end_height  = $height;
         $res=$db->run("SELECT * FROM smart_contract_state where height >= :start_height and height < :end_height 
                                    order by height, sc_address, variable, var_key, var_value",
             [":start_height"=>$start_height, ":end_height"=>$end_height]);

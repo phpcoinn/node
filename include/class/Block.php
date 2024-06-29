@@ -215,11 +215,7 @@ class Block
 
         });
 
-        if(!$res) {
-            $error="block-add-locked";
-        }
         return $res;
-
 
     }
 
@@ -248,7 +244,7 @@ class Block
             $schash = hash("sha256", $current_state_hash."-".$process_schash);
             _log("Save extended schash V2 current_state_hash=$current_state_hash schash=$process_schash schash=$schash", 5);
         } else if($height >= UPDATE_14_EXTENDED_SC_HASH) {
-            $res = Nodeutil::calculateSmartContractsHash($height);
+            $res = Nodeutil::calculateSmartContractsHash($height - 100);
             $current_state_hash = $res['hash'];
             $schash = hash("sha256", $current_state_hash."-".$process_schash);
             _log("Save extended schash current_state_hash=$current_state_hash schash=$process_schash schash=$schash", 5);

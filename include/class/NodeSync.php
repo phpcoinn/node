@@ -507,7 +507,7 @@ class NodeSync
 					}
 				}
 			}
-			return $peerBlocks[$host][$height];
+			return @$peerBlocks[$host][$height];
 		}
 	}
 
