@@ -1069,8 +1069,7 @@ class Api
         $sc_signature = @$data['sc_signature'];
         $code=@$data['code'];
         $params=@$data['params'];
-        $name=@$data['name'];
-        $description=@$data['description'];
+        $metadata=@$data['metadata'];
         if(empty($public_key)) {
             api_err("Missing public_key");
         }
