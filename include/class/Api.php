@@ -1094,7 +1094,7 @@ class Api
             api_err("Error verifying contract code: $error");
         }
 
-        $tx=Transaction::generateSmartContractDeployTx($code, $sc_signature, $public_key, $sc_address, $amount, $params, $name, $description);
+        $tx=Transaction::generateSmartContractDeployTx($code, $sc_signature, $public_key, $sc_address, $amount, $params, $metadata);
 
         $out = [
             "signature_base"=>$tx->getSignatureBase(),
