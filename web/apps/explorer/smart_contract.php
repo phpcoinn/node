@@ -296,7 +296,14 @@ global $loggedIn;
                                 echo "(";
                                 if(!empty($method['params'])) {
                                     foreach ($method['params'] as $ix => $param) {
-                                        echo '$'.$param;
+                                        if(version_compare($interface['version'], "2.0.0.")) {
+                                            echo '$'.$param['name'];
+                                            if(!empty($param['value'])) {
+                                                echo "=".$param['value'];
+                                            }
+                                        } else {
+                                            echo '$'.$param;
+                                        }
                                         if($ix < count($method['params'])-1) echo ", ";
                                     }
                                 }
@@ -341,7 +348,14 @@ global $loggedIn;
                                 echo "(";
                                 if(!empty($view['params'])) {
                                     foreach ($view['params'] as $ix => $param) {
-                                        echo '$'.$param;
+                                        if(version_compare($interface['version'], "2.0.0.")) {
+                                            echo '$'.$param['name'];
+                                            if(!empty($param['value'])) {
+                                                echo "=".$param['value'];
+                                            }
+                                        } else {
+                                            echo '$'.$param;
+                                        }
                                         if($ix < count($view['params'])-1) echo ", ";
                                     }
                                 }
