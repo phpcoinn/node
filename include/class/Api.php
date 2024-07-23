@@ -15,7 +15,9 @@ class Api
 
 	static function getData() {
 		if (!empty($_POST['data'])) {
-			$data = json_decode($_POST['data'], true);
+            $data = json_decode($_POST['data'], true);
+        } else if (file_get_contents("php://input")) {
+            $data = json_decode(file_get_contents("php://input"), true);
 		} else {
 			$data = $_GET;
 		}
@@ -755,6 +757,17 @@ class Api
 		api_echo($hash);
 	}
 
+    static function sendTransactionJson($data) {
+        $transaction = Transaction::getFromArray($data);
+
+        $hash = $transaction->addToMemPool($error);
+
+        if($hash === false) {
+            api_err($error);
+        }
+        api_echo($hash);
+    }
+
 	static function nodeDevInfo($data) {
 		$signature = $data['signature'];
 		if(empty($signature)) {
@@ -1074,7 +1087,7 @@ class Api
             api_err("Missing public_key");
         }
         if(empty($sc_address)) {
-            api_err("Missing sc_address");
+            api_err("Missing Smart contract address");
         }
         if(empty($amount)) {
             $amount = 0;
