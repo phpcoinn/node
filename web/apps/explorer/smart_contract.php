@@ -188,7 +188,13 @@ global $loggedIn;
                     <?php foreach($metadata as $key=>$value) { ?>
                         <tr>
                             <td><?php echo $key ?></td>
-                            <td><?php echo $value ?></td>
+                            <td>
+                                <?php if ($key == "image") { ?>
+                                    <img src="<?php echo $value ?>"/>
+                                <?php } else { ?>
+                                    <?php echo $value ?>
+                                <?php } ?>
+                            </td>
                         </tr>
                     <?php } ?>
                 </table>
@@ -210,7 +216,21 @@ global $loggedIn;
             <?php foreach ($state as $name => $val) { ?>
                 <tr>
                     <td><?php echo $name ?></td>
-                    <td><?php echo is_array($val) ? print_r($val, 1) : $val ?></td>
+                    <td>
+                        <?php if(is_array($val)) { ?>
+                            <table class="table table-sm table-striped mb-0">
+                                <?php foreach($val as $key=>$value) { ?>
+                                    <tr>
+                                        <td><?php echo $key ?></td>
+                                        <td><?php echo $value ?></td>
+                                    </tr>
+                                <?php } ?>
+                            </table>
+                        <?php } else { ?>
+                            <?php echo $val ?>
+                        <?php } ?>
+
+                    </td>
                 </tr>
             <?php } ?>
         </tbody>
@@ -318,9 +338,15 @@ global $loggedIn;
 
                             <td class="text-end">
                                 <?php if($loggedIn) { ?>
-                                    <?php foreach ($method['params'] as $ix => $param) { ?>
+                                    <?php foreach ($method['params'] as $ix => $param) {
+                                        if(is_array($param)) {
+                                            $name = $param['name'];
+                                        } else {
+                                            $name = $param;
+                                        }
+                                        ?>
                                         <input type="text" class="form-control form-control-sm d-inline w-auto"
-                                               name="sc_exec_params[<?php echo $method['name'] ?>][<?php echo $param ?>]" value="" placeholder="<?php echo $param ?>">
+                                               name="sc_exec_params[<?php echo $method['name'] ?>][<?php echo $name ?>]" value="" placeholder="<?php echo $name ?>">
                                     <?php } ?>
                                     <button type="submit" class="btn btn-sm btn-soft-primary" name="sc_exec" value="<?php echo $method['name'] ?>">Execute</button>
                                 <?php } ?>
@@ -363,9 +389,15 @@ global $loggedIn;
                                 ?>
                             </td>
                             <td class="text-end">
-                                <?php foreach ($view['params'] as $ix => $param) { ?>
+                                <?php foreach ($view['params'] as $ix => $param) {
+                                    if(is_array($param)) {
+                                        $name=$param['name'];
+                                    } else {
+                                        $name = $param;
+                                    }
+                                    ?>
                                     <input type="text" class="form-control form-control-sm d-inline w-auto"
-                                           name="sc_view_params[<?php echo $view['name'] ?>][<?php echo $param ?>]" value="" placeholder="<?php echo $param ?>">
+                                           name="sc_view_params[<?php echo $view['name'] ?>][<?php echo $name ?>]" value="" placeholder="<?php echo $name ?>">
                                 <?php } ?>
                                 <button type="submit" class="btn btn-sm btn-soft-primary" name="sc_view" value="<?php echo $view['name'] ?>">Call</button>
                             </td>
