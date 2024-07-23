@@ -196,7 +196,7 @@ if (empty($dbversion)) {
 	(
 	address varchar(128) not null,
 	height int not null,
-	code text not null,
+	code mediumtext not null,
 	signature varchar(255) not null,
 	name varchar(255) null,
 	description varchar(1000) null,
