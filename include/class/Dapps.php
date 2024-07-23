@@ -477,6 +477,11 @@ class Dapps extends Task
 			echo $data;
 			exit;
 		}
+        if($actionObj['type']=="dapps_sql") {
+            $query = $actionObj['query'];
+            $params = $actionObj['params'];
+            global $db;
+        }
 	}
 
 	static function getDappsDir() {
