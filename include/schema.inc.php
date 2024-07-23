@@ -230,6 +230,13 @@ if($dbversion <= 40) {
     });
 }
 
+if($dbversion <= 41) {
+    migrate_with_lock($dbversion, function() {
+        global $db;
+        $db->run("alter table smart_contracts modify code MEDIUMTEXT not null");
+    });
+}
+
 // update the db version to the latest one
 if ($dbversion != @$_config['dbversion']) {
     $db->run("UPDATE config SET val=:val WHERE cfg='dbversion'", [":val" => $dbversion]);
