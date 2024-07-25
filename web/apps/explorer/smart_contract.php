@@ -191,6 +191,8 @@ global $loggedIn;
                             <td>
                                 <?php if ($key == "image") { ?>
                                     <img src="<?php echo $value ?>"/>
+                                <?php } else if ($key == "name" && $metadata['class'] == "ERC-20") { ?>
+                                    <a href="/apps/explorer/tokens/token.php?id=<?php echo $smartContract['address'] ?>"><?php echo $metadata['name'] ?></a>
                                 <?php } else { ?>
                                     <?php echo $value ?>
                                 <?php } ?>

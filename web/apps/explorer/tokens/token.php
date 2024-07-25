@@ -10,6 +10,7 @@ if(!FEATURE_SMART_CONTRACTS) {
 }
 
 require_once __DIR__. '/../../common/include/top.php';
+require_once __DIR__. '/inc.php';
 
 $id=$_GET['id'];
 
@@ -20,7 +21,7 @@ if(empty($id)) {
 
 $loggedIn = false;
 if(isset($_SESSION['account'])) {
-    $balance = Account::getBalance($_SESSION['account']['address']);
+    $accountBalance = Account::getBalance($_SESSION['account']['address']);
     $loggedIn = true;
     $address = $_SESSION['account']['address'];
 }
@@ -96,35 +97,131 @@ $myMempoolTransfers  = array_filter($mempoolTransfers, function($transfer) use (
     return $transfer['src'] == $address || $transfer['dst'] == $address;
 });
 
+$token = SmartContract::getById($id);
+$metadata = json_decode($token['metadata'], true);
+
+$sql="select * from transactions t where t.type = :type and t.dst = :dst limit 1";
+$createTx = $db->row($sql,[":type"=>TX_TYPE_SC_CREATE,":dst"=>$id]);
+
+$color = stringToHex($token['address']);
+$indexes=[5,10,15,20,25,30];
+$c= "";
+foreach ($indexes as $index) {
+    $c.=$color[$index];
+}
+
 ?>
 
 
 <ol class="breadcrumb m-0 ps-0 h4">
     <li class="breadcrumb-item"><a href="/apps/explorer">Explorer</a></li>
     <li class="breadcrumb-item"><a href="/apps/explorer/tokens/list.php">Tokens</a></li>
-    <li class="breadcrumb-item"><?php echo $id ?></li>
+    <li class="breadcrumb-item"><?php echo $token['name'] ?> (<?php echo $metadata['symbol'] ?>)</li>
 </ol>
 
-<div class="d-flex align-items-center">
-    <h3>Token <?php echo $id ?></h3>
-    <?php if (!$loggedIn) { ?>
-        <div class="ms-auto">
-            Login to access token
+<div class="card">
+    <div class="card-body d-flex p-2 flex-wrap">
+        <div class="me-2 align-items-center d-flex">
+            <?php if (!empty($metadata['image'])) { ?>
+                <img src="<?php echo $metadata['image'] ?>" style="width:64px; height: 64px;"/>
+            <?php } else {?>
+                <div class="token-image-placeholder" style="background-color: #<?php echo $c ?>; color: <?php echo getContrastingTextColor("#$c") ?>">
+                    <?php echo $metadata['symbol'] ?>
+                </div>
+            <?php } ?>
         </div>
-    <?php } else { ?>
-        <div class="ms-auto d-flex align-items-center gap-2">
-            <?php echo explorer_address_link($_SESSION['account']['address']) ?>
-            <div><?php echo $balance ?></div>
+        <div>
+            <h4><?php echo $metadata['name'] ?></h4>
+            <h5><?php echo $metadata['symbol'] ?></h5>
+            <div><?php echo $metadata['description'] ?></div>
         </div>
-    <?php } ?>
+        <div class="ms-0 ms-sm-5 d-flex flex-column">
+            <div>
+                <span class="text-muted">Decimals:</span>
+            </div>
+            <div>
+                <span class="text-muted">Total supply: </span>
+            </div>
+            <div>
+                <span class="text-muted">Created: </span>
+            </div>
+            <div>
+                <span class="text-muted">Creator: </span>
+            </div>
+        </div>
+        <div class="ms-0 ms-sm-5 d-flex flex-column">
+            <div>
+                <?php echo $metadata['decimals'] ?>
+            </div>
+            <div>
+                <?php echo num($metadata['initialSupply'], $metadata['decimals']) ?>
+            </div>
+            <div>
+                <?php echo $createTx['height'] ?> (<?php echo display_date($createTx['date']) ?>)
+            </div>
+            <div>
+                <?php echo $createTx['src'] ?>
+            </div>
+        </div>
+        <?php if($loggedIn) { ?>
+            <div class="ms-0 ms-sm-5 d-flex flex align-items-center">
+                <div>
+                    <h5>Your balance</h5>
+                    <h5><?php echo explorer_address_link($_SESSION['account']['address']) ?></h5>
+                    <h4><?php echo $balance ?></h4>
+                </div>
+                <div class="ms-2">
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#send-token">Send</button>
+                </div>
+            </div>
+        <?php } else { ?>
+            <div class="ms-0 ms-sm-5 d-flex flex align-items-center flex-grow-1">
+                <div class="alert alert-info w-100 mb-0 d-flex align-items-center">
+                    Login to access your founds
+                    <a class="btn btn-info ms-auto" href="/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/wallet?redirect=<?php echo urlencode($_SERVER['REQUEST_URI']) ?>">Login</a>
+                </div>
+            </div>
+        <?php } ?>
+    </div>
 </div>
 
-<?php if ($loggedIn) { ?>
-    Token balance <?php echo $balance ?>
-<?php } ?>
+<div class="modal fade" id="send-token" ref="sendTokenModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel"
+     style="display: none;" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="staticBackdropLabel">Send token</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="token-address" class="form-label">Receiver address:</label>
+                    <input class="form-control" type="text" v-model="address" id="token-address"/>
+                </div>
+                <div class="mb-3">
+                    <label for="amount" class="form-label">Amount:</label>
+                    <input class="form-control" type="text" v-model="amount" id="amount"/>
+                </div>
+                <div class="mb-3">
+                    <label for="fee" class="form-label">Fee:</label>
+                    <?php if($accountBalance < TX_SC_EXEC_FEE) { ?>
+                        <div class="text-danger"><?php echo TX_SC_EXEC_FEE ?> PHPCoin</div>
+                        <div class="text-danger">You do not have enough coins to execute this transfer</div>
+                    <?php } else { ?>
+                        <div><?php echo TX_SC_EXEC_FEE ?> PHPCoin</div>
+                    <?php } ?>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" @click="sendToken">Send</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="row">
-    <div class="col-6">
+    <div class="col">
         <h4>Token transfers</h4>
 
         <?php if(count($mempoolTransfers)>0) { ?>
@@ -194,11 +291,38 @@ $myMempoolTransfers  = array_filter($mempoolTransfers, function($transfer) use (
 
 
     </div>
-    <div class="col-6">
-        <h4>My transfers</h4>
+    <?php if($loggedIn) { ?>
+        <div class="col">
+            <h4>Your transfers</h4>
 
-        <?php if(count($myMempoolTransfers)>0) { ?>
-            <h5>Mempool</h5>
+            <?php if(count($myMempoolTransfers)>0) { ?>
+                <h5>Mempool</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped dataTable">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Height</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Amount</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($myMempoolTransfers as $transfer) {
+                            ?>
+                            <tr>
+                                <td><?php echo $transfer['transaction']['height'] ?></td>
+                                <td><?php echo $transfer['src'] ?></td>
+                                <td><?php echo $transfer['dst'] ?></td>
+                                <td><?php echo num($transfer['amount'],$decimals) ?></td>
+                            </tr>
+                        <?php } ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php } ?>
+
+            <h5>Completed</h5>
             <div class="table-responsive">
                 <table class="table table-sm table-striped dataTable">
                     <thead class="table-light">
@@ -210,7 +334,7 @@ $myMempoolTransfers  = array_filter($mempoolTransfers, function($transfer) use (
                     </tr>
                     </thead>
                     <tbody>
-                    <?php foreach ($myMempoolTransfers as $transfer) {
+                    <?php foreach ($myTransfers as $transfer) {
                         ?>
                         <tr>
                             <td><?php echo $transfer['transaction']['height'] ?></td>
@@ -222,53 +346,12 @@ $myMempoolTransfers  = array_filter($mempoolTransfers, function($transfer) use (
                     </tbody>
                 </table>
             </div>
-        <?php } ?>
-
-        <h5>Completed</h5>
-        <div class="table-responsive">
-            <table class="table table-sm table-striped dataTable">
-                <thead class="table-light">
-                <tr>
-                    <th>Height</th>
-                    <th>From</th>
-                    <th>To</th>
-                    <th>Amount</th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($myTransfers as $transfer) {
-                    ?>
-                    <tr>
-                        <td><?php echo $transfer['transaction']['height'] ?></td>
-                        <td><?php echo $transfer['src'] ?></td>
-                        <td><?php echo $transfer['dst'] ?></td>
-                        <td><?php echo num($transfer['amount'],$decimals) ?></td>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
         </div>
-    </div>
+    <?php } ?>
 </div>
 
 <hr/>
 <?php if ($loggedIn) { ?>
-    <div id="app">
-        <h3>Send token</h3>
-
-
-
-        Amount:
-        <input type="text" v-model="amount"/>
-        Address:
-        <input type="text" v-model="address"/>
-        <button @click="sendToken">Send</button>
-
-        <hr/>
-        <h4>Create token</h4>
-
-
-    </div>
 
     <script src="/apps/common/js/phpcoin-crypto.js" type="text/javascript"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -285,18 +368,23 @@ $myMempoolTransfers  = array_filter($mempoolTransfers, function($transfer) use (
 
             data() {
                 return {
-                    amount: 1,
-                    address: 'Pt91kDK44KsAVrE4CuQ1r8fnkD4Q6nhTda',
+                    amount: null,
+                    address: null,
                 };
             },
             methods: {
                 sendToken() {
-                    confirmMsg("Confirm sending token","Are you sure to want to execute this transfer?",()=>{
-                        this.execSendToken();
-                    })
-                },
-                execSendToken() {
-                    if(!this.amount || this.amount < 0 || isNaN(this.amount)) {
+                    if(!this.address || !verifyAddress(this.address)) {
+                        Swal.fire(
+                            {
+                                title: 'Invalid address',
+                                text: 'Enter valid receiver address',
+                                icon: 'error'
+                            }
+                        )
+                        return;
+                    }
+                    if(!this.amount || this.amount <= 0 || isNaN(this.amount)) {
                         Swal.fire(
                             {
                                 title: 'Invalid amount',
@@ -304,16 +392,13 @@ $myMempoolTransfers  = array_filter($mempoolTransfers, function($transfer) use (
                                 icon: 'error'
                             }
                         )
+                        return;
                     }
-                    if(!this.address || !verifyAddress(this.address)) {
-                        Swal.fire(
-                            {
-                                title: 'Invalid address',
-                                text: 'Enter valid address',
-                                icon: 'error'
-                            }
-                        )
-                    }
+                    confirmMsg("Confirm sending token","Are you sure to want to execute this transfer?",()=>{
+                        this.execSendToken();
+                    })
+                },
+                execSendToken() {
                     let data = {
                         public_key: publicKey,
                         sc_address: scAddress,
@@ -329,7 +414,10 @@ $myMempoolTransfers  = array_filter($mempoolTransfers, function($transfer) use (
 
                             enterPrivateKey(privateKey=>{
                                 sendTransaction(tx, signature_base, privateKey);
+                                bootstrap.Modal.getInstance(document.getElementById('send-token')).hide();
                             })
+
+
                         } else {
                             Swal.fire(
                                 {
@@ -353,12 +441,26 @@ $myMempoolTransfers  = array_filter($mempoolTransfers, function($transfer) use (
 
             }
 
-        }).mount("#app");
+        }).mount("#send-token");
     </script>
 
 
 <?php } ?>
 
+
+<style>
+    .token-image-placeholder {
+        width: 64px;
+        height: 64px;
+        border-radius: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        letter-spacing: -1px;
+        font-size: x-large;
+    }
+</style>
 
 <?php
 require_once __DIR__ . '/../../common/include/bottom.php';
