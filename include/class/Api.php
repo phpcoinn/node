@@ -1069,13 +1069,12 @@ class Api
         $sc_signature = @$data['sc_signature'];
         $code=@$data['code'];
         $params=@$data['params'];
-        $name=@$data['name'];
-        $description=@$data['description'];
+        $metadata=@$data['metadata'];
         if(empty($public_key)) {
             api_err("Missing public_key");
         }
         if(empty($sc_address)) {
-            api_err("Missing sc_address");
+            api_err("Missing Smart contract address");
         }
         if(empty($amount)) {
             $amount = 0;
@@ -1094,7 +1093,7 @@ class Api
             api_err("Error verifying contract code: $error");
         }
 
-        $tx=Transaction::generateSmartContractDeployTx($code, $sc_signature, $public_key, $sc_address, $amount, $params, $name, $description);
+        $tx=Transaction::generateSmartContractDeployTx($code, $sc_signature, $public_key, $sc_address, $amount, $params, $metadata);
 
         $out = [
             "signature_base"=>$tx->getSignatureBase(),

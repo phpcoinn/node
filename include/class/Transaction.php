@@ -1428,7 +1428,7 @@ class Transaction
 		}
 	}
 
-    static function generateSmartContractDeployTx($code, $sc_signature, $public_key, $sc_address, $amount=0, $params=[], $name=null, $description=null) {
+    static function generateSmartContractDeployTx($code, $sc_signature, $public_key, $sc_address, $amount=0, $params=[], $metadata=null) {
 
         $interface = SmartContractEngine::verifyCode($code, $error, $sc_address);
         $deploy_data=[
@@ -1436,8 +1436,7 @@ class Transaction
             "amount"=>num($amount),
             "params"=>$params,
             "interface"=>$interface,
-            "name"=>$name,
-            "description"=>$description
+            "metadata"=>$metadata
         ];
         $date = time();
         $text = base64_encode(json_encode($deploy_data));

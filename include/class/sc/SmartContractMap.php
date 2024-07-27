@@ -3,6 +3,8 @@
 class SmartContractMap implements ArrayAccess, Countable
 {
 
+    const ANNOTATION = "SmartContractMap";
+
     protected $name;
     protected $height;
     protected $db;
@@ -17,16 +19,16 @@ class SmartContractMap implements ArrayAccess, Countable
     #[\ReturnTypeWillChange]
     public function offsetExists($offset)
     {
-        return SmartContractBase::existsStateVar($this->db, SC_ADDRESS, $this->name, $offset);
+        return SmartContractBase::existsStateVar($this->db, SC_ADDRESS, $this->height, $this->name, $offset);
     }
 
     #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
-        if(strlen($offset)==0) {
+        if($offset ===  null || strlen($offset)==0) {
             return $this->count();
         }
-        return SmartContractBase::getStateVar($this->db, SC_ADDRESS, $this->name, $offset);
+        return SmartContractBase::getStateVar($this->db, SC_ADDRESS, $this->height, $this->name, $offset);
     }
 
     #[\ReturnTypeWillChange]
@@ -52,15 +54,15 @@ class SmartContractMap implements ArrayAccess, Countable
     #[\ReturnTypeWillChange]
     public function count()
     {
-        return SmartContractBase::countStateVar($this->db, SC_ADDRESS, $this->name);
+        return SmartContractBase::countStateVar($this->db, SC_ADDRESS, $this->height, $this->name);
     }
 
     public function keys() {
-        return SmartContractBase::stateVarKeys($this->db, SC_ADDRESS, $this->name);
+        return SmartContractBase::stateVarKeys($this->db, SC_ADDRESS, $this->height, $this->name);
     }
 
     public function all() {
-        return SmartContractBase::stateAll($this->db, SC_ADDRESS, $this->name);
+        return SmartContractBase::stateAll($this->db, SC_ADDRESS, $this->height, $this->name);
     }
 
     public function clear($key=null) {

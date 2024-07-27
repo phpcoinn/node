@@ -48,6 +48,7 @@ $interface = SmartContractEngine::getInterface($id);
 $smartContract = SmartContract::getById($id);
 $name = $smartContract['name'];
 $description = $smartContract['description'];
+$metadata = json_decode($smartContract['metadata'],true);
 
 require_once __DIR__. '/../common/include/top.php';
 
@@ -59,7 +60,7 @@ if(isset($_GET['sc_get_property_read'])) {
 } else if (isset($_GET['sc_exec'])) {
     $public_key = $_SESSION['account']['public_key'];
     $method = $_GET['sc_exec'];
-    $amount = $_GET['sc_exec_amount'][$method];
+    $amount = $_GET['sc_exec_amount'][$method] || 0;
     $params=[];
     foreach ($_GET['sc_exec_params'][$method] as $name => $val) {
         $params[]=$val;
@@ -180,6 +181,27 @@ global $loggedIn;
             <td>Description</td>
             <td><?php echo $description ?></td>
         </tr>
+        <tr>
+            <td>Metadata</td>
+            <td>
+                <table class="table table-sm table-striped">
+                    <?php foreach($metadata as $key=>$value) { ?>
+                        <tr>
+                            <td><?php echo $key ?></td>
+                            <td>
+                                <?php if ($key == "image") { ?>
+                                    <img src="<?php echo $value ?>"/>
+                                <?php } else if ($key == "name" && $metadata['class'] == "ERC-20") { ?>
+                                    <a href="/apps/explorer/tokens/token.php?id=<?php echo $smartContract['address'] ?>"><?php echo $metadata['name'] ?></a>
+                                <?php } else { ?>
+                                    <?php echo $value ?>
+                                <?php } ?>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                </table>
+            </td>
+        </tr>
     </table>
 </div>
 
@@ -196,7 +218,21 @@ global $loggedIn;
             <?php foreach ($state as $name => $val) { ?>
                 <tr>
                     <td><?php echo $name ?></td>
-                    <td><?php echo is_array($val) ? print_r($val, 1) : $val ?></td>
+                    <td>
+                        <?php if(is_array($val)) { ?>
+                            <table class="table table-sm table-striped mb-0">
+                                <?php foreach($val as $key=>$value) { ?>
+                                    <tr>
+                                        <td><?php echo $key ?></td>
+                                        <td><?php echo $value ?></td>
+                                    </tr>
+                                <?php } ?>
+                            </table>
+                        <?php } else { ?>
+                            <?php echo $val ?>
+                        <?php } ?>
+
+                    </td>
                 </tr>
             <?php } ?>
         </tbody>
@@ -245,7 +281,7 @@ global $loggedIn;
                             <td class="text-end nowrap">
                                 <?php if($property['type']=="map") { ?>
                                     <input class="form-control w-auto d-inline form-control-sm" type="text"
-                                           name="sc_property_key[<?php echo $property['name'] ?>]" value="<?php echo $sc_get_property_key ?>" placeholder="Key">
+                                           name="sc_property_key[<?php echo $property['name'] ?>]" value="<?php echo $_GET['sc_property_key'][$property['name']] ?>" placeholder="Key">
                                 <?php } ?>
                                 <button type="submit" name="sc_get_property_read" value="<?php echo $property['name'] ?>" class="btn btn-sm btn-soft-primary">Read</button>
                             </td>
@@ -282,7 +318,14 @@ global $loggedIn;
                                 echo "(";
                                 if(!empty($method['params'])) {
                                     foreach ($method['params'] as $ix => $param) {
+                                        if(version_compare($interface['version'], "2.0.0.")) {
+                                            echo '$'.$param['name'];
+                                            if(!empty($param['value'])) {
+                                                echo "=".$param['value'];
+                                            }
+                                        } else {
                                         echo '$'.$param;
+                                        }
                                         if($ix < count($method['params'])-1) echo ", ";
                                     }
                                 }
@@ -297,9 +340,15 @@ global $loggedIn;
 
                             <td class="text-end">
                                 <?php if($loggedIn) { ?>
-                                    <?php foreach ($method['params'] as $ix => $param) { ?>
+                                    <?php foreach ($method['params'] as $ix => $param) {
+                                        if(is_array($param)) {
+                                            $name = $param['name'];
+                                        } else {
+                                            $name = $param;
+                                        }
+                                        ?>
                                         <input type="text" class="form-control form-control-sm d-inline w-auto"
-                                               name="sc_exec_params[<?php echo $method['name'] ?>][<?php echo $param ?>]" value="" placeholder="<?php echo $param ?>">
+                                               name="sc_exec_params[<?php echo $method['name'] ?>][<?php echo $name ?>]" value="" placeholder="<?php echo $name ?>">
                                     <?php } ?>
                                     <button type="submit" class="btn btn-sm btn-soft-primary" name="sc_exec" value="<?php echo $method['name'] ?>">Execute</button>
                                 <?php } ?>
@@ -327,7 +376,14 @@ global $loggedIn;
                                 echo "(";
                                 if(!empty($view['params'])) {
                                     foreach ($view['params'] as $ix => $param) {
-                                        echo '$'.$param;
+                                        if(version_compare($interface['version'], "2.0.0.")) {
+                                            echo '$'.$param['name'];
+                                            if(!empty($param['value'])) {
+                                                echo "=".$param['value'];
+                                            }
+                                        } else {
+                                            echo '$'.$param;
+                                        }
                                         if($ix < count($view['params'])-1) echo ", ";
                                     }
                                 }
@@ -335,9 +391,15 @@ global $loggedIn;
                                 ?>
                             </td>
                             <td class="text-end">
-                                <?php foreach ($view['params'] as $ix => $param) { ?>
+                                <?php foreach ($view['params'] as $ix => $param) {
+                                    if(is_array($param)) {
+                                        $name=$param['name'];
+                                    } else {
+                                        $name = $param;
+                                    }
+                                    ?>
                                     <input type="text" class="form-control form-control-sm d-inline w-auto"
-                                           name="sc_view_params[<?php echo $view['name'] ?>][<?php echo $param ?>]" value="" placeholder="<?php echo $param ?>">
+                                           name="sc_view_params[<?php echo $view['name'] ?>][<?php echo $name ?>]" value="" placeholder="<?php echo $name ?>">
                                 <?php } ?>
                                 <button type="submit" class="btn btn-sm btn-soft-primary" name="sc_view" value="<?php echo $view['name'] ?>">Call</button>
                             </td>

@@ -1,7 +1,7 @@
 <?php
 if(php_sapi_name() !== 'cli') exit;
-define("DEFAULT_CHAIN_ID", file_get_contents(dirname(__DIR__)."/chain_id"));
-define("ROOT", dirname(__DIR__));
+@define("DEFAULT_CHAIN_ID", file_get_contents(dirname(__DIR__)."/chain_id"));
+@define("ROOT", dirname(__DIR__));
 require_once dirname(__DIR__).'/vendor/autoload.php';
 
 class SCUtil {
@@ -14,7 +14,7 @@ class SCUtil {
         }
     }
 
-    static function generateDeployTx($phar_file, $private_key, $sc_address, $amount=0, $params=[], $name=null, $description=null) {
+    static function generateDeployTx($phar_file, $private_key, $sc_address, $amount=0, $params=[], $name=null, $description=null, $metadata=null) {
 
 
         $phar_code = file_get_contents($phar_file);
@@ -22,19 +22,28 @@ class SCUtil {
 
         $interface = SmartContractEngine::verifyCode($code, $error, $sc_address);
 
+        if(empty($metadata)) {
+            $metadata = [];
+            if(!empty($name)) {
+                $metadata['name']=$name;
+            }
+            if(!empty($description)) {
+                $metadata['description']=$description;
+            }
+        }
+
         $deploy_data=[
             "code"=>$code,
             "amount"=>num($amount),
             "params"=>$params,
             "interface"=>$interface,
-            "name"=>$name,
-            "description"=>$description
+            "metadata"=>$metadata,
         ];
         $text = base64_encode(json_encode($deploy_data));
         $sc_signature = ec_sign($text, $private_key);
         $public_key = priv2pub($private_key);
 
-        $tx =  Transaction::generateSmartContractDeployTx($code, $sc_signature, $public_key, $sc_address, $amount, $params, $name, $description);
+        $tx =  Transaction::generateSmartContractDeployTx($code, $sc_signature, $public_key, $sc_address, $amount, $params, $metadata);
         return $tx;
     }
 

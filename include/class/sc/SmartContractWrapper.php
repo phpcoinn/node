@@ -59,7 +59,7 @@ class SmartContractWrapper
         foreach($props as $prop) {
             if($this->hasAnnotation($prop, "SmartContractVar")) {
                 $name = $prop->getName();
-                $prop->setValue($this->smartContract, $this->state[$name]);
+                $prop->setValue($this->smartContract, @$this->state[$name]);
             }
         }
     }
@@ -75,15 +75,16 @@ class SmartContractWrapper
             }
         } else {
             $state = [];
+            $height=intval($this->args['height']);
             $sql="select * from (
                 select s.variable, s.var_value,
                        row_number() over (partition by s.sc_address, s.variable order by s.height desc) as rn
                 from smart_contract_state s
-                where s.sc_address = :address
+                where s.sc_address = :address and s.height <= :height
                   and s.var_key is null ) as ranked
                 where ranked.rn = 1
             ";
-            $rows = $this->db->run($sql, [":address"=> SC_ADDRESS]);
+            $rows = $this->db->run($sql, [":address"=> SC_ADDRESS, ":height"=>$height]);
             foreach ($rows as $row) {
                 $state[$row['variable']]=$row['var_value'];
             }
@@ -192,13 +193,18 @@ class SmartContractWrapper
         $reflect = new ReflectionClass($this->smartContract);
         $props = $reflect->getProperties(ReflectionProperty::IS_PUBLIC);
         foreach($props as $prop) {
-            if($this->hasAnnotation($prop, "SmartContractMap")) {
+            if($this->isMap($prop)) {
                 $name = $prop->getName();
                 $height=intval($this->args['height']);
                 $smartContractMap = new SmartContractMap($this->db, $name, $height);
                 $prop->setValue($this->smartContract, $smartContractMap);
             }
         }
+    }
+
+    private function isMap($prop) {
+        return ($this->hasAnnotation($prop, SmartContractMap::ANNOTATION) ||
+            $prop->getType() == SmartContractMap::class);
     }
 
 	private function outResponse() {
@@ -249,7 +255,7 @@ class SmartContractWrapper
 		$interface = [];
 		$reflect = new ReflectionClass($this->smartContract);
 
-		$version = "1.0.0";
+		$version = "2.0.0";
 
 		$annotations = $this->getAnnotations($reflect);
 		if(!empty($annotations) && is_array($annotations)) {
@@ -278,7 +284,7 @@ class SmartContractWrapper
                 $property['name']=$name;
                 $interface["properties"][]=$property;
             }
-            if($this->hasAnnotation($prop, "SmartContractMap")) {
+            if($this->isMap($prop)) {
                 $property=[];
                 $property['name']=$name;
                 $property['type']="map";
@@ -295,11 +301,7 @@ class SmartContractWrapper
                 $ref_params = $method->getParameters();
                 $params = [];
                 foreach($ref_params as $ref_param) {
-                    $params[]=[
-                        "name"=>$ref_param->getName(),
-                        "value"=> $ref_param->isDefaultValueAvailable() ? $ref_param->getDefaultValue() : null,
-                        "required"=> !$ref_param->isDefaultValueAvailable()
-                    ];
+                    $params[]=$this->getParamDef($ref_param);
                 }
                 $interface["deploy"]=[
                     "name"=>$name,
@@ -313,7 +315,7 @@ class SmartContractWrapper
 				$ref_params = $method->getParameters();
 				$params = [];
 				foreach($ref_params as $ref_param) {
-					$params[]=$ref_param->getName();
+                    $params[]=$this->getParamDef($ref_param);
 				}
 				$interface["methods"][]=[
 					"name"=>$name,
@@ -324,7 +326,7 @@ class SmartContractWrapper
 				$ref_params = $method->getParameters();
 				$params = [];
 				foreach($ref_params as $ref_param) {
-					$params[]=$ref_param->getName();
+					$params[]=$this->getParamDef($ref_param);
 				}
 				$interface["views"][]=[
 					"name"=>$name,
@@ -335,6 +337,16 @@ class SmartContractWrapper
 
         return $interface;
 	}
+
+    private function getParamDef ($ref_param) {
+        $param=[
+            "name"=>$ref_param->getName(),
+            "type"=>$ref_param->getType() == null ? null : $ref_param->getType()->__toString(),
+            "value"=> $ref_param->isDefaultValueAvailable() ? $ref_param->getDefaultValue() : null,
+            "required"=> !$ref_param->isDefaultValueAvailable()
+        ];
+        return $param;
+    }
 
 	private function getAnnotations($obj) {
 		$doc = $obj->getDocComment();

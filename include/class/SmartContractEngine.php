@@ -71,7 +71,7 @@ class SmartContractEngine
                 throw new Exception("Property $property not found on smart contract");
             }
 
-			$val = SmartContractEngine::loadVarState($sc_address, $property, $key, $found['type']=="map");
+			$val = SmartContractEngine::loadVarState($sc_address, $property, $key, isset($found['type']) && $found['type']=="map");
             return $val;
 		}, $error);
 	}
@@ -136,10 +136,13 @@ class SmartContractEngine
 				$params = [$params];
 			}
 
+            $height = Block::getHeight();
+
 			$cmd_args = [
 				'type'=>'view',
 				'method' => $method,
 				'params' => $params,
+                'height'=>$height,
                 "virtual"=>self::$virtual
 			];
 
@@ -156,9 +159,7 @@ class SmartContractEngine
 	}
 
 	static function isolateCmd($cmd) {
-        $debug="-dxdebug.start_with_request=1";
-        $debug="";
-
+        $debug=false;
 
         $allowed_files = [
             ROOT . "/chain_id",
@@ -187,7 +188,15 @@ class SmartContractEngine
 
         $disable_functions=get_sc_disable_functions();
 
-		$exec_cmd = "CONFIG=$config php $debug -d disable_functions=$disable_functions ";
+        $debug_str="";
+        $env="";
+        if($debug) {
+            $debug_str="-dxdebug.start_with_request=1";
+            $disable_functions = str_replace("getenv,", '', $disable_functions);
+            $env="PHP_IDE_CONFIG=serverName=local";
+        }
+
+		$exec_cmd = "CONFIG=$config $env php $debug_str -d disable_functions=$disable_functions ";
 		$exec_cmd.= " -d memory_limit=".SC_MEMORY_LIMIT." -d max_execution_time=".SC_MAX_EXEC_TIME." -d error_reporting=$error_reporting";
 		$exec_cmd.= " -d open_basedir=".self::getRunFolder().":".$allowed_files_list;
 		$exec_cmd.= " -f $cmd ";
@@ -207,37 +216,6 @@ class SmartContractEngine
             "errors"=>$stderr
         ];
         return $res;
-
-//		$exec_cmd.= " 2>&1";
-//		$output = shell_exec ($exec_cmd);
-//		$lines2 = [];
-//		$lines = explode(PHP_EOL, $output);
-//        $errors=[];
-//		foreach($lines as $line) {
-//			if(strpos($line, 'PHP Startup:')===0) {
-//                $errors[]=trim($line);
-//				continue;
-//			}
-//			if(strpos($line, 'PHP Warning:')===0) {
-//                $errors[]=trim($line);
-//				continue;
-//			}
-//			if(strpos($line, 'PHP Deprecated:')===0) {
-//                $errors[]=trim($line);
-//				continue;
-//			}
-//			if(strpos($line, 'PHP Fatal error:')===0) {
-//                $errors[]=trim($line);
-//				continue;
-//			}
-//			$lines2[]=$line;
-//		}
-//		$output = implode(PHP_EOL, $lines2);
-//		$output = trim($output);
-//		return [
-//            "output"=>$output,
-//            "errors"=>$errors
-//        ];
 	}
 
 	static function buildRunCode($sc_address, $code = null, $test=false) {
@@ -328,7 +306,7 @@ class SmartContractEngine
 		} else {
 
             if($map) {
-                if(strlen($key)==0) {
+                if($key === null || strlen($key)==0) {
                     $sql="select count(*) as cnt
                         from (select s.variable,
                                      s.var_value,
@@ -429,7 +407,7 @@ class SmartContractEngine
     public static function cleanVirtualState($sc_address) {
         if(self::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$sc_address.'.state.json';
-            unlink($state_file);
+            @unlink($state_file);
         }
     }
 
@@ -437,9 +415,9 @@ class SmartContractEngine
         $args = trim($args);
         $arr=str_getcsv($args, " ");
 
-        $arr = array_map('trim', $arr);
-        $arr = array_map('stripslashes', $arr);
-        $arr = array_filter($arr, function($item) {
+        $arr = @array_map('trim', $arr);
+        $arr = @array_map('stripslashes', $arr);
+        $arr = @array_filter($arr, function($item) {
             return strlen(trim($item))>0;
         });
         return $arr;

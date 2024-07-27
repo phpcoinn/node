@@ -522,7 +522,7 @@ class Util
 	}
 
 	static function scStateHash($argv) {
-        $height=intval($argv[2]);
+        $height=intval(@$argv[2]);
 		$res=Nodeutil::calculateSmartContractsHashV2($height);
         echo json_encode($res);
         exit;

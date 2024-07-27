@@ -489,9 +489,29 @@ class Wallet
         $name = @$this->namedAgs['name'];
         $description = @$this->namedAgs['description'];
         $params = @$this->namedAgs['params'];
+        $metadata=@$this->namedAgs['metadata'];
 
         if(!empty($params)) {
             $params=SmartContractEngine::parseCmdLineArgs($params);
+        }
+
+        if(!empty($metadata)) {
+            json_decode($metadata);
+            if(json_last_error() != JSON_ERROR_NONE) {
+                echo "Invalid metadata json".PHP_EOL;
+                exit;
+            }
+            $metadata = json_decode($metadata, true);
+        } else {
+            $metadata = [];
+        }
+
+        if(!empty($name)) {
+            $metadata['name']=$name;
+        }
+
+        if(!empty($description)) {
+            $metadata['description']=$description;
         }
 
 		if(strlen($amount)==0) {
@@ -517,8 +537,7 @@ class Wallet
             "amount"=>num($amount),
             "params"=>$params,
             "interface"=>$interface,
-            "name"=>$name,
-            "description"=>$description,
+            "metadata"=>$metadata
         ];
 
 		$text = base64_encode(json_encode($data));

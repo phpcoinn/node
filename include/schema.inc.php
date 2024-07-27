@@ -196,10 +196,11 @@ if (empty($dbversion)) {
 	(
 	address varchar(128) not null,
 	height int not null,
-	code text not null,
+	code mediumtext not null,
 	signature varchar(255) not null,
 	name varchar(255) null,
-	description varchar(1000) null
+	description varchar(1000) null,
+	metadata json null
 	)");
 
     $db->run("create unique index smart_contracts_address_uindex
@@ -231,6 +232,13 @@ if($dbversion <= 36) {
     });
 }
 
+if($dbversion <= 37) {
+    migrate_with_lock($dbversion, function() {
+        global $db;
+        $db->run("alter table smart_contracts add metadata json null");
+        $db->run("alter table smart_contracts modify code MEDIUMTEXT not null");
+    });
+}
 
 // update the db version to the latest one
 if ($dbversion != @$_config['dbversion']) {

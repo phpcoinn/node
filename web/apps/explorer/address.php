@@ -78,6 +78,11 @@ require_once __DIR__. '/../common/include/top.php';
                     <span class="badge rounded-pill bg-pink font-size-12">Stake</span>
                 </a>
 	        <?php } ?>
+	        <?php if($addressTypes['is_smart_contract']) { ?>
+                <a href="/apps/explorer/smart_contract.php?id=<?php echo $address ?>">
+                    <span class="badge rounded-pill bg-danger font-size-12">Smart Contract</span>
+                </a>
+	        <?php } ?>
         </td>
     </tr>
     <?php if( NETWORK == "mainnet" && !empty($label)) { ?>

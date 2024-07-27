@@ -102,13 +102,15 @@ class SmartContract
 		return try_catch(function () use ($error, $transaction,$height, &$state_updates) {
 			$message = $transaction->msg;
 			$type = $transaction->type;
-			$exec_params = json_decode(base64_decode($message), true);
-			$method = $exec_params['method'];
 
             if($type == TX_TYPE_SC_EXEC || $type == TX_TYPE_SC_CREATE) {
                 $sc_address = $transaction->dst;
             } else {
                 $sc_address = $transaction->src;
+            }
+
+            if(in_array($sc_address, BLACKLISTED_SMART_CONTRACTS)) {
+                throw new Exception("Calling smart contract $sc_address is blocked");
             }
 
             $mempool_txs = Transaction::mempool(Block::max_transactions(), false);
@@ -124,10 +126,13 @@ class SmartContract
                 }
             }
             $transactions[$transaction->id]=$transaction;
-            ksort($transactions);
+
+            self::sortScTransactions($transactions, $height);
 
             $hash = SmartContractEngine::process($sc_address, $transactions, $height, true, $err, $state_updates);
             if(!$hash) {
+                $exec_params = json_decode(base64_decode($message), true);
+                $method = @$exec_params['method'];
                 throw new Exception("Error calling method $method of smart contract: ".$err);
             }
             return $hash;
@@ -135,10 +140,26 @@ class SmartContract
 		}, $error);
 	}
 
+    static function sortScTransactions(&$transactions, $height) {
+        if($height < UPDATE_16_SC_TXS_SORT) {
+            ksort($transactions);
+        } else {
+            usort($transactions, function($a, $b) {
+                $date1=$a->date;
+                $date2=$b->date;
+                if($date1 == $date2) {
+                    return strcmp($a->id, $b->id);
+                }
+                return $date1 - $date2;
+            });
+        }
+    }
+
     public static function process($smart_contracts, $height, $test, &$error = null, &$state_updates=null) {
         return try_catch(function () use ($smart_contracts, $height, $test, &$state_updates) {
             $schashes = [];
             foreach ($smart_contracts as $sc_address => $txs) {
+                self::sortScTransactions($txs, $height);
                 $schash = SmartContractEngine::process($sc_address, $txs, $height, $test, $error, $state_updates);
                 if(!$schash) {
                     throw new Exception("Error processing smart contract $sc_address transactions: $error");

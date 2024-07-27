@@ -63,6 +63,8 @@ class Block
 		$data['is_miner']=$db->single($sql, [":miner"=>$address]) == 1;
         $sql="select 1 from transactions t where t.dst = :address and t.type = 0 and t.message = 'stake' limit 1";
         $data['is_stake']=$db->single($sql, [":address"=>$address]) == 1;
+        $sql="select 1 from smart_contracts s where s.address = :address";
+        $data['is_smart_contract']=$db->single($sql, [":address"=>$address]) == 1;
 		return $data;
 	}
 
@@ -175,10 +177,8 @@ class Block
                         throw new Exception("Parse block failed " . $this->height . " Missing schash");
                     }
                     if (!empty($this->schash) && $this->schash != $schash) {
-                        if (NETWORK == "testnet" && $this->height == 1099548 && $schash == "6503aa9711ac12a14c0dcacd0ffd21374eb18a3ae0638e70a9099504e9da90c9") {
+                        if (in_array($this->height, IGNORE_SC_HASH_HEIGHT)) {
                             _log("Ignore invalid hash");
-                        } else if (NETWORK == "testnet" && in_array($this->height, [1142688, 1142695, 1142727, 1142729, 1142799, 1142820,
-                                1142827, 1142847, 1142851, 1142853, 1142855, 1142863, 1142865, 1142895, 1143664])) {
                         } else {
                             throw new Exception("Invalid schash height=" . $this->height . " block=" . $this->schash . " calculated=" . $schash);
                         }
@@ -245,7 +245,7 @@ class Block
             $schash = hash("sha256", $current_state_hash."-".$process_schash);
             _log("Save extended schash V2 current_state_hash=$current_state_hash schash=$process_schash schash=$schash", 5);
         } else if($height >= UPDATE_14_EXTENDED_SC_HASH) {
-            $res = Nodeutil::calculateSmartContractsHash($height);
+            $res = Nodeutil::calculateSmartContractsHash($height - 100);
             $current_state_hash = $res['hash'];
             $schash = hash("sha256", $current_state_hash."-".$process_schash);
             _log("Save extended schash current_state_hash=$current_state_hash schash=$process_schash schash=$schash", 5);
