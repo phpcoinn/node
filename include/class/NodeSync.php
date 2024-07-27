@@ -507,7 +507,7 @@ class NodeSync
 					}
 				}
 			}
-			return $peerBlocks[$host][$height];
+			return @$peerBlocks[$host][$height];
 		}
 	}
 
@@ -653,15 +653,20 @@ class NodeSync
 		} else {
 			_log("Need to sync blokchain");
 
-            $peerIndex = 0;
-            $peer = $peersForSync[$peerIndex];
+		for($i=0;$i<count($peersForSync);$i++){
+			$peer = $peersForSync[$i];
             $hostname = $peer['hostname'];
+			self::peerSync($hostname,100,10,$ret);
+			if($ret=="no_peer_data"){
+				_log("Select next peer",3);
+				continue;
+            }
+			break;
+        }
 
-            self::peerSync($hostname);
-
-            Config::setSync(0);
-            _log("Finished sync");
-            return;
+        Config::setSync(0);
+        _log("Finished sync");
+        return;
 
 				$syncing = true;
 				$limit_cnt = 0;
@@ -790,7 +795,7 @@ class NodeSync
 
 	}
 
-    static function peerSync($hostname, $add_limit=100, $delete_limit=10) {
+    static function peerSync($hostname, $add_limit=100, $delete_limit=10,&$ret=null) {
         _log("Syncing with peer ".$hostname);
 
         $syncing = true;
@@ -825,11 +830,19 @@ class NodeSync
                 }
                 _log("Peer block ok",3);
                 $peer_block->prevBlockId = $current['id'];
-                $res = $peer_block->add($err);
+                $res = $peer_block->add($err, true);
                 if (!$res) {
                     _log("PeerSync: Peer block add failed: $err");
+                    if($err=="Block already added"){
+                        $syncing = false;
+                        break;
+                    }
+                    if($err=="block-add-locked"){
+                        $syncing = false;
+                        break;
+                    }
 
-                    if(FEATURE_SMART_CONTRACTS && strpos($err, "Invalid schash")!== false) {
+                    if(FEATURE_SMART_CONTRACTS && $err!=null && strpos($err, "Invalid schash")!== false) {
                         _log("PeerSync: invalid hash - run sync state");
                         $cmd = "php " . ROOT . "/cli/util.php sync-sc-state $hostname";
                         Nodeutil::runSingleProcess($cmd);
@@ -864,6 +877,7 @@ class NodeSync
             } else {
                 _log("PeerSync: NO peer block data");
                 $syncing = false;
+		        $ret="no_peer_data";
                 break;
             }
         }
