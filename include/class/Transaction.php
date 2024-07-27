@@ -1334,6 +1334,7 @@ class Transaction
 		$res = $db->row("select sum(t.val) as total_received, count(t.id) as count_received from transactions t where t.dst = :address", [":address"=>$address]);
 		$data['total_received']=$res['total_received'];
 		$data['count_received']=$res['count_received'];
+        $data['count']=$data['count_sent']+$data['count_received'];
 		return $data;
 	}
 

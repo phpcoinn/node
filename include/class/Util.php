@@ -28,7 +28,7 @@ class Util
 	 * php util.php pop 1
 	 */
 	static function pop($argv) {
-		$no = intval($argv[2]);
+		$no = intval(@$argv[2]);
 		if(empty($no)) {
 			$no = 1;
 		}

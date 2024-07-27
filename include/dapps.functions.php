@@ -322,3 +322,14 @@ function dapps_api_post($api=null, $node=null, $data=null, &$error = null) {
     }
 
 }
+
+
+function dapps_sql($query, $params) {
+    $action = [
+        "type"=>"dapps_sql",
+        "query"=>$query,
+        "params"=>$params,
+    ];
+    echo "action:" . json_encode($action);
+    exit;
+}
