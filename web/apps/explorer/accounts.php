@@ -17,6 +17,13 @@ require_once __DIR__. '/../common/include/top.php';
     <li class="breadcrumb-item active">Accounts</li>
 </ol>
 
+<form class="app-search d-block pt-0" method="get" action="">
+    <div class="position-relative">
+        <input type="text" class="form-control" placeholder="Search: Address" name="search" value="<?php echo $_GET['search'] ?>">
+        <button class="btn btn-primary" type="submit"><i class="bx bx-search-alt align-middle"></i></button>
+    </div>
+</form>
+
 <div class="table-responsive">
     <table class="table table-sm table-striped dataTable">
         <thead class="table-light">
