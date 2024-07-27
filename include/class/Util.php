@@ -2025,4 +2025,33 @@ class Util
         $cmd = "rm -rf ".ROOT."/tmp/*";
         $res = shell_exec($cmd);
     }
+
+    static function checkCron(){
+        $res = Nodeutil::psAux(ROOT . "/cli/cron.php");
+        _log("check cron res=".json_encode($res), 3);
+        if($res === false) {
+            _log("ps uax error",2);
+        } else {
+            $start = false;
+            if($res === null) {
+                _log("ps uax not found",3);
+                $start = true;
+            } else {
+                if(count($res)==1) {
+                    $arr = preg_split("/\s+/", $res[0]);
+                    $pid = $arr[1];
+                    $mypid=getmypid();
+                    _log("pid=$pid mypid=$mypid", 2);
+                    if($pid == $mypid) {
+                        $start = true;
+                    }
+                }
+            }
+            if($start) {
+                _log("start cron", 2);
+                $cmd = "(sleep 60 && php ".ROOT."/cli/cron.php)";
+                Nodeutil::runSingleProcess($cmd);
+            }
+        }
+    }
 }

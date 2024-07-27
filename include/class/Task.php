@@ -49,6 +49,7 @@ class Task
         $pid=getmypid();
         $lock_dir = ROOT."/tmp/cli-$name.lock";
         if(!@mkdir($lock_dir)){
+            _log("task $name locked", 2);
             exit();
         }
 
@@ -72,18 +73,15 @@ class Task
 
     static function runTask() {
         $name = static::$name;
-        $interval = static::$run_interval;
-        Nodeutil::runAtInterval("task-$name", $interval, function () use ($name) {
             $dir = ROOT . "/cli";
             $cmd = "php $dir/$name.php";
             _log("Task: run $name task",3);
             $userInfo = posix_getpwuid(posix_geteuid());
             $user=null;
-            if($userInfo['name']!="www-data") {
+        if($userInfo['name']!="www-data" && $userInfo['name']=="root") {
                 $user="www-data";
             }
             Nodeutil::runSingleProcess($cmd, null, $user);
-        });
     }
 
     static function processTask() {
@@ -92,10 +90,6 @@ class Task
         self::processArgs();
         $userInfo = posix_getpwuid(posix_geteuid());
         $user=$userInfo['name'];
-        if($user!=="www-data") {
-            _log("Error: Only www-data user can run tasks");
-            exit;
-        }
         try {
             $t1=microtime(true);
             static::process();

@@ -125,6 +125,12 @@ class NodeMiner extends Task {
                     break;
                 }
 
+                $lock_dir = ROOT."/tmp/cli-miner.lock";
+                if(!file_exists($lock_dir) && !DEVELOPMENT) {
+                    $this->running = false;
+                    break;
+                }
+
 				$this->saveMiningStats();
 
                 usleep($this->sleep_time * 1000);
