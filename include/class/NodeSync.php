@@ -553,6 +553,11 @@ class NodeSync
 		$current_height = $current['height'];
 
         $sync_height = min($longest_height, $best_height);
+        $elapsed = time() - $current['date'];
+        if($elapsed > 60*60) {
+            _log("elapsed more than hour - get max height");
+            $sync_height = max($longest_height, $best_height);
+        }
         if($sync_height == $longest_height) {
             $sync_block_id = $longest_block_id;
         } else {
