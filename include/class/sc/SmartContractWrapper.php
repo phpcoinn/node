@@ -8,16 +8,18 @@ class SmartContractWrapper
 	private $smartContract;
     private $db;
     private $state;
+    private $address;
 
 	public $internal = false;
 
-	public function __construct($name = null)
+	public function __construct($name)
 	{
-		$this->smartContract = $this->getSmartContract($name);
+        $this->smartContract = $this->getSmartContract($name);
 		if(!$this->smartContract) {
 			throw new Exception("Smart contract class not found");
 		}
-		$this->parseArgs();
+        $this->address = $name;
+        $this->parseArgs();
 	}
 
 	private function parseArgs() {
@@ -52,6 +54,27 @@ class SmartContractWrapper
 		}
 	}
 
+    public function execExt($caller, $methodName, $params) {
+        try {
+            $this->db=SmartContractContext::$db;
+            $this->log("DB in tx ".$this->db->inTransaction());
+            $this->log(" execExt method=$methodName params=".json_encode($params). " caller=" . json_encode($caller));
+            $this->log("address=".$caller->address);
+            $args = $caller->getExtFields();
+            $args['address']=$this->address;
+            $this->log("args=".json_encode($args));
+            $this->smartContract->setFields($args);
+            $this->loadState();
+            $reflect = new ReflectionClass($this->smartContract);
+            $method = $reflect->getMethod($methodName);
+            $this->invoke($method, $params);
+            $this->saveState();
+            return $this->response;
+        } catch (Throwable $e) {
+            $this->error($e, $methodName);
+        }
+    }
+
     private function loadState() {
         $reflect = new ReflectionClass($this->smartContract);
         $props = $reflect->getProperties(ReflectionProperty::IS_PUBLIC);
@@ -68,7 +91,7 @@ class SmartContractWrapper
         $virtual=$this->args['virtual'];
         if($virtual) {
             $state = [];
-            $state_file = ROOT . '/tmp/sc/'.SC_ADDRESS.'.state.json';
+            $state_file = ROOT . '/tmp/sc/'.$this->address.'.state.json';
             if(file_exists($state_file)) {
                 $state = file_get_contents($state_file);
                 $state = json_decode($state, true);
@@ -84,7 +107,7 @@ class SmartContractWrapper
                   and s.var_key is null ) as ranked
                 where ranked.rn = 1
             ";
-            $rows = $this->db->run($sql, [":address"=> SC_ADDRESS, ":height"=>$height]);
+            $rows = $this->db->run($sql, [":address"=> $this->address, ":height"=>$height]);
             foreach ($rows as $row) {
                 $state[$row['variable']]=$row['var_value'];
             }
@@ -103,7 +126,7 @@ class SmartContractWrapper
                 $name = $prop->getName();
                 $value = $prop->getValue($this->smartContract);
                 if((string)$this->state[$name]!==(string)$value) {
-                    SmartContractBase::setStateVar($this->db, SC_ADDRESS, $height, $name, $value, null);
+                    SmartContractBase::setStateVar($this->address, $height, $name, $value, null);
                 }
             }
         }
@@ -114,6 +137,7 @@ class SmartContractWrapper
         $CONFIG=$_SERVER['CONFIG'];
         $CONFIG=json_decode(base64_decode($CONFIG),true);
         $this->db = new DB($CONFIG['db_connect'], $CONFIG['db_user'], $CONFIG['db_pass'], false);
+        SmartContractContext::$db=$this->db;
     }
 
 	public function view_method() {
@@ -155,6 +179,7 @@ class SmartContractWrapper
             $this->loadState();
             $args['transaction']=$transaction;
             $args['height']=$height;
+            $args['address']=$this->address;
             $this->smartContract->setFields($args);
             $msg = $transaction['msg'];
             $type = $transaction['type'];
@@ -189,14 +214,14 @@ class SmartContractWrapper
 
     private function initSmartContractVars() {
         $virtual=$this->args['virtual'];
-        SmartContractBase::$virtual = $virtual;
+        SmartContractContext::$virtual = $virtual;
         $reflect = new ReflectionClass($this->smartContract);
         $props = $reflect->getProperties(ReflectionProperty::IS_PUBLIC);
         foreach($props as $prop) {
             if($this->isMap($prop)) {
                 $name = $prop->getName();
                 $height=intval($this->args['height']);
-                $smartContractMap = new SmartContractMap($this->db, $name, $height);
+                $smartContractMap = new SmartContractMap($this->address, $name, $height);
                 $prop->setValue($this->smartContract, $smartContractMap);
             }
         }
@@ -208,15 +233,15 @@ class SmartContractWrapper
     }
 
 	private function outResponse() {
-        $hash = hash("sha256", json_encode(SmartContractBase::$sc_state_updates));
-        $this->log("SC:".SC_ADDRESS." hash=".$hash);
+        $hash = hash("sha256", json_encode(SmartContractContext::$sc_state_updates));
+        $this->log("SC:".$this->address." hash=".$hash);
 		$out = [
 			"response" => $this->response,
             "hash"=>$hash,
-            "state_updates"=>SmartContractBase::$sc_state_updates
+            "state_updates"=>SmartContractContext::$sc_state_updates
 		];
-        if(SmartContractBase::$virtual) {
-            $out["debug_logs"]=SmartContractBase::$debug_logs;
+        if(SmartContractContext::$virtual) {
+            $out["debug_logs"]=SmartContractContext::$debug_logs;
         }
 		$this->out($out);
 	}
@@ -378,7 +403,7 @@ class SmartContractWrapper
     private function cleanState($height) {
 
         $sql="delete from smart_contract_state where height >= :height and sc_address = :sc_address";
-        $res = $this->db->run($sql, [":height"=>$height, ":sc_address"=>SC_ADDRESS]);
+        $res = $this->db->run($sql, [":height"=>$height, ":sc_address"=>$this->address]);
         return $res;
     }
 
@@ -395,18 +420,24 @@ class SmartContractWrapper
         SmartContractBase::insertSmartContract($this->db, $transaction, $height);
     }
 
-	private function getSmartContract($className = null) {
-		if(empty($className)) {
-			if(defined("SC_CLASS_NAME")) {
-				$className = SC_CLASS_NAME;
-			} else if (class_exists('SmartContract')) {
-				$className = 'SmartContract';
-			}
-		}
-		if(!empty($className)) {
-			$class = new $className();
-			return $class;
-		}
+	private function getSmartContract($name) {
+
+        if(class_exists($name)) {
+            $class = new $name();
+            return $class;
+        }
+
+        if(defined("SC_CLASS_NAME")) {
+            $className = SC_CLASS_NAME;
+        } else if (class_exists('SmartContract')) {
+            $className = 'SmartContract';
+        }
+
+        if(!empty($className)) {
+            $class = new $className();
+            return $class;
+        }
+
 	}
 
 	public function out($data) {
@@ -432,4 +463,11 @@ class SmartContractWrapper
 	}
 
 
+}
+
+class SmartContractContext {
+    public static $sc_state_updates = [];
+    public static $db;
+    public static $debug_logs = [];
+    public static $virtual;
 }

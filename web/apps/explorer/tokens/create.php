@@ -12,6 +12,7 @@ if(!FEATURE_SMART_CONTRACTS) {
 if(isset($_GET['action'])) {
     $action = $_GET['action'];
     $data = json_decode(file_get_contents("php://input"), true);
+    $address = $data['address'];
     if($action == "compileTokenSmartContract") {
         $compile_dir = ROOT."/tmp/compile";
         @mkdir($compile_dir);
@@ -21,7 +22,7 @@ if(isset($_GET['action'])) {
         $token_file = $compile_dir."/token_$compile_id.php";
         copy($template_file, $token_file);
         $phar_file = $compile_dir . "/token_$compile_id.phar";
-        $res = SmartContract::compile($token_file, $phar_file, $err);
+        $res = SmartContract::compile($address, $token_file, $phar_file, $err);
         if($res && file_exists($phar_file)) {
             api_echo($compile_id);
         } else {
@@ -276,7 +277,7 @@ if(isset($_SESSION['account'])) {
                 })
             },
             execCreateToken() {
-                axios.post('/apps/explorer/tokens/create.php?action=compileTokenSmartContract', {}).then(res=>{
+                axios.post('/apps/explorer/tokens/create.php?action=compileTokenSmartContract', {address:this.newToken.address}).then(res=>{
                     if(res.data.status !== 'ok') {
                         Swal.fire(
                             {

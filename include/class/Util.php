@@ -1279,17 +1279,22 @@ class Util
 	}
 
 	static function smartContractCompile($argv) {
-		$file = $argv[2];
+        $address = $argv[2];
+		if(empty($file)) {
+			echo "Smart contract address not specified".PHP_EOL;
+			exit;
+		}
+		$file = $argv[3];
 		if(empty($file)) {
 			echo "Smart contract file or folder not specified".PHP_EOL;
 			exit;
 		}
-		$phar_file = $argv[3];
+		$phar_file = $argv[4];
 		if(empty($phar_file)) {
 			echo "Output phar file not specified".PHP_EOL;
 			exit;
 		}
-		$res = SmartContract::compile($file, $phar_file, $error);
+		$res = SmartContract::compile($address, $file, $phar_file, $error);
 		if(!$res) {
 			echo "Smart Contract can not be compiled to file: $error".PHP_EOL;
 			exit;
