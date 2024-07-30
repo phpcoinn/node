@@ -6,9 +6,9 @@ require_once dirname(__DIR__).'/vendor/autoload.php';
 
 class SCUtil {
 
-    static function compileContract($source_file, $compiled_file)
+    static function compileContract($address, $source_file, $compiled_file)
     {
-        $res = SmartContract::compile($source_file, $compiled_file, $error);
+        $res = SmartContract::compile($address, $source_file, $compiled_file, $error);
         if(!$res) {
             throw new Exception($error);
         }

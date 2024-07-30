@@ -261,14 +261,13 @@ class SmartContractEngine
         if(function_exists('xdebug_disable')) {
             xdebug_disable();
         }
-		define(\"SC_ADDRESS\", \"$sc_address\");
 		
 		require_once dirname(dirname(__DIR__)) . '/include/sc.inc.php';
 		require_once \"phar://$phar_file\";
 		
 		ob_start();
 
-		\$smartContractWrapper = new SmartContractWrapper();
+		\$smartContractWrapper = new SmartContractWrapper(\"$sc_address\");
 		\$smartContractWrapper->run();
 		
 		";
