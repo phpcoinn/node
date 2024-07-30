@@ -53,6 +53,9 @@ class Cron extends Task
         }
         if($min % 60 == 0) {
             Nodeutil::checkStuckMempool();
+            global $_config;
+            $hostname = $_config['initial_peer_list'][0];
+            Nodeutil::runSingleProcess("php ".ROOT."/cli/peersync.php $hostname");
         }
 
         Sync::checkLongRunning();

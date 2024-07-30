@@ -177,7 +177,7 @@ class Block
                         throw new Exception("Parse block failed " . $this->height . " Missing schash");
                     }
                     if (!empty($this->schash) && $this->schash != $schash) {
-                        if (NETWORK == "testnet" && in_array($this->height, IGNORE_SC_HASH_HEIGHT)) {
+                        if (in_array($this->height, IGNORE_SC_HASH_HEIGHT)) {
                             _log("Ignore invalid hash");
                         } else {
                             throw new Exception("Invalid schash height=" . $this->height . " block=" . $this->schash . " calculated=" . $schash);

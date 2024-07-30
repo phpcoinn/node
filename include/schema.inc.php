@@ -18,6 +18,9 @@ $db->beginTransaction();
 $was_empty = false;
 if (empty($dbversion)) {
 	$was_empty = true;
+    $dbversion=40;
+    migrate_with_lock($dbversion, function(){
+        global $db;
 	$db->run("create table blocks
 	(
 		id varchar(128) not null
@@ -220,7 +223,7 @@ if (empty($dbversion)) {
 
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync_last', '0');");
 	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync', '0');");
-	$dbversion = 40;
+    });
 }
 
 if($dbversion <= 40) {
