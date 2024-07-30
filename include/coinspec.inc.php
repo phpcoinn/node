@@ -15,7 +15,7 @@ const MIN_VERSION = "1.3.0";
 const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
-const GIT_BRANCH = "main-update";
+const GIT_BRANCH = "main";
 const MIN_MINER_VERSION = "1.3";
 
 const COIN = "phpcoin";
