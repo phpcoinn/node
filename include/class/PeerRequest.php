@@ -904,5 +904,51 @@ class PeerRequest
         $peer = Peer::getByIp(self::$ip);
         api_echo($peer);
     }
+    
+    static function getDbBlocks() {
+        global $db;
+        $data = self::$data;
+        $height = $data['height'];
+        $limit = $data['limit'];
+        $max_height = $height + $limit;
+        $maxheight = Block::getHeight();
+
+        $sql="select * from blocks b where b.height > ? and b.height <= ? order by b.height";
+        $blocks = $db->run($sql,[$height,$max_height], false);
+
+        $sql="select * from transactions t where t.height > ? and t.height <= ? order by t.height";
+        $txs = $db->run($sql,[$height,$max_height], false);
+
+
+        $sql="select * from smart_contracts where height > ? and height <= ? order by height";
+        $smart_contracts = $db->run($sql,[$height,$max_height], false);
+
+        $sql="select * from smart_contract_state where height > ? and height <= ? order by height";
+        $smart_contract_state = $db->run($sql,[$height,$max_height], false);
+
+        $accounts = [];
+        $masternodes = [];
+        if($max_height >= Block::getHeight()) {
+            $sql = "select * from accounts order by id";
+            $accounts = $db->run($sql, [], false);
+
+            $sql = "select * from masternode";
+            $masternodes = $db->run($sql, [], false);
+        }
+
+        $block = Block::get($height);
+
+        $res=[
+            "block"=>$block,
+            "maxheight"=>$maxheight,
+            "blocks"=>$blocks,
+            "transactions"=>$txs,
+            "accounts"=>$accounts,
+            "masternodes"=>$masternodes,
+            "smart_contracts"=>$smart_contracts,
+            "smart_contract_state"=>$smart_contract_state,
+        ];
+        api_echo($res);
+    }
 
 }
