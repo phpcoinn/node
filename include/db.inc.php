@@ -91,10 +91,10 @@ class DB extends PDO
         return $bind;
     }
 
-    public function single($sql, $bind = "")
+    public function single($sql, $bind = "", $param=true)
     {
         $this->sql = trim($sql);
-        $this->bind = $this->cleanup($bind, $sql);
+        $this->bind = $param ?  $this->cleanup($bind, $sql) : $bind;
         $this->error = "";
         if(function_exists('microtime')) {
             $time1 = @microtime(true);
@@ -140,6 +140,18 @@ class DB extends PDO
             $this->debug();
             return false;
         }
+    }
+
+    public function select($sql, $params)
+    {
+        if (preg_match("/^(".implode("|", ["select"]).") /i", $sql)) {
+            $pdostmt = $this->prepare($sql);
+            if ($pdostmt->execute($params) !== false) {
+                $res = $pdostmt->fetchAll(PDO::FETCH_ASSOC);
+                return $res;
+            }
+        }
+        return false;
     }
 
 	private function logSql($sql, $start) {
