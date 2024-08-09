@@ -481,6 +481,9 @@ class Dapps extends Task
             $query = $actionObj['query'];
             $params = $actionObj['params'];
             global $db;
+            $rows = $db->select($query, $params);
+            echo json_encode($rows);
+            exit;
         }
 	}
 

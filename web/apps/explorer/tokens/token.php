@@ -39,12 +39,9 @@ if($loggedIn) {
     where states.rn =1";
 
     $token = $db->row($sql,[$id, $address], false);
-
-    $sql="select scs.var_value as decimals from smart_contracts sc
-         join smart_contract_state scs on (sc.height = scs.height)
-            where json_extract(sc.metadata, '$.class') = 'ERC-20' and sc.address = ?
-              and scs.variable = 'decimals'";
-    $decimals = $db->single($sql,[$id, $address], false);
+    $metadata = $token['metadata'];
+    $metadata = json_decode($metadata, true);
+    $decimals = $metadata['decimals'];
     $balance = bcdiv($token['balance'], bcpow(10, $decimals), $decimals);
 }
 

@@ -1189,4 +1189,18 @@ class Api
         $rows = $db->run($sql, [$from_height, $to_height], false);
         api_echo($rows);
     }
+
+    static function getTokenBalance($data) {
+        global $db;
+        $token=$data['token'];
+        $address=$data['address'];
+        $sql="select FORMAT(ss.var_value / POW(10, json_extract(sc.metadata, '$.decimals')), json_extract(sc.metadata, '$.decimals')) as balance
+            from smart_contract_state ss
+                     left join smart_contracts sc on (sc.address = ss.sc_address)
+                     where ss.sc_address = ?
+            and ss.variable = 'balances' and ss.var_key = ?
+            order by ss.height desc limit 1";
+        $balance=$db->single($sql, [$token,$address], false);
+        api_echo($balance);
+    }
 }
