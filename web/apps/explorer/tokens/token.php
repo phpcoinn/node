@@ -107,6 +107,20 @@ foreach ($indexes as $index) {
     $c.=$color[$index];
 }
 
+$sql="select balances.var_key as address,
+       FORMAT(balances.var_value / POW(10, balances.decimals), balances.decimals) as balance
+from (
+select ss.var_key, ss.var_value, ss.height,
+       row_number() over (partition by ss.var_key order by ss.height desc) as rn,
+       json_extract(sc.metadata, '$.decimals') as decimals
+from smart_contract_state ss
+join smart_contracts sc on (sc.address = ss.sc_address)
+where ss.sc_address = ?
+and ss.variable = 'balances') as balances where balances.rn = 1
+order by balance desc limit 10";
+
+$topHolders = $db->run($sql,[$id], false);
+
 ?>
 
 
@@ -287,6 +301,28 @@ foreach ($indexes as $index) {
         </nav>
 
 
+    </div>
+    <div class="col">
+        <h4>Top 10 holders</h4>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped dataTable">
+                <thead class="table-light">
+                <tr>
+                    <th>Address</th>
+                    <th>Amount</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($topHolders as $holder) {
+                    ?>
+                    <tr>
+                        <td><?php echo $holder['address'] ?></td>
+                        <td><?php echo $holder['balance'] ?></td>
+                    </tr>
+                <?php } ?>
+                </tbody>
+            </table>
+        </div>
     </div>
     <?php if($loggedIn) { ?>
         <div class="col">
