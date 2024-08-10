@@ -16,17 +16,18 @@ function migrate_with_lock(&$dbversion, $callback) {
 function create_views() {
     global $db;
     $db->run("create or replace view tokens as
-        select sc.address, sc.metadata, json_extract(sc.metadata, '$.name') as name
-                , json_extract(sc.metadata, '$.description') as description
-                , json_extract(sc.metadata, '$.symbol') as symbol
+        select sc.address, sc.metadata, json_unquote(json_extract(sc.metadata, '$.name')) as name
+                , json_unquote(json_extract(sc.metadata, '$.description')) as description
+                , json_unquote(json_extract(sc.metadata, '$.symbol')) as symbol
                 , json_extract(sc.metadata, '$.initialSupply') as initialSupply
                 , json_extract(sc.metadata, '$.decimals') as decimals,
-                sc.height
+                  sc.height
             from smart_contracts sc
-        where json_extract(sc.metadata, '$.class') = 'ERC-20'");
+        where json_extract(sc.metadata, '$.class') = 'ERC-20';");
 
     $db->run("create or replace view token_txs as
         select txs.id,
+               txs.height,
                txs.block,
                txs.date,
                txs.dst as token,
@@ -43,6 +44,24 @@ function create_views() {
                 and exists (select 1 from tokens tt where tt.address = t.dst)) as txs
         where txs.method in ('transfer', 'transferFrom');");
 
+    $db->run("create or replace view token_mempool_txs as
+        select txs.id,
+               txs.height,
+               txs.date,
+               txs.dst as token,
+               case when txs.method = 'transfer' then txs.src else p1 end as src,
+               case when txs.method = 'transfer' then p1 else p2 end      as dst,
+               case when txs.method = 'transfer' then p2 else p3 end      as amount
+        from (select t.*,
+                     json_unquote(json_extract(from_base64(t.message), '$.method'))    as method,
+                     json_unquote(json_extract(from_base64(t.message), '$.params[0]')) as p1,
+                     json_unquote(json_extract(from_base64(t.message), '$.params[1]')) as p2,
+                     json_unquote(json_extract(from_base64(t.message), '$.params[2]')) as p3
+              from mempool t
+              where t.type = 6
+                and exists (select 1 from tokens tt where tt.address = t.dst)) as txs
+        where txs.method in ('transfer', 'transferFrom');");
+
     $db->run("create or replace view token_balances as
         select b.token, b.address,
                FORMAT(b.var_value / POW(10, b.decimals), b.decimals) as balance
@@ -53,8 +72,7 @@ function create_views() {
             from smart_contract_state ss
             join tokens tt on (ss.sc_address = tt.address)
         where ss.variable = 'balances') as b
-        where b.rn =1;
-        ");
+        where b.rn =1;");
 
 }
 
