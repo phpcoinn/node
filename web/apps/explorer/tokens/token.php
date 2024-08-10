@@ -29,72 +29,32 @@ if(isset($_SESSION['account'])) {
 global $db;
 
 if($loggedIn) {
-    $sql="select * from (
-    select sc.address, sc.metadata, scs.var_value as balance,
-           row_number() over (partition by scs.var_key order by scs.height desc) as rn
-    from smart_contracts sc
-    join smart_contract_state scs on (scs.sc_address = sc.address)
-    where json_extract(sc.metadata, '$.class') = 'ERC-20' and sc.address = ?
-    and scs.variable = 'balances' and scs.var_key = ?) as states
-    where states.rn =1";
-
-    $token = $db->row($sql,[$id, $address], false);
-    $metadata = $token['metadata'];
-    $metadata = json_decode($metadata, true);
-    $decimals = $metadata['decimals'];
-    $balance = bcdiv($token['balance'], bcpow(10, $decimals), $decimals);
+    $sql="select * from token_balances where token = ? and address = ?";
+    $row = $db->row($sql,[$id, $address], false);
+    $balance = $row['balance'];
 }
 
 $transfers_start = $_GET['transfers_start'] ?? 0;
 $rpp = 10;
-$sql="select * from transactions t where t.type = 6 and t.dst = ? order by t.height desc limit $transfers_start, $rpp";
-$transactions = $db->run($sql,[$id], false);
 
-function get_token_transfers($transactions) {
-    $list = [];
-    foreach ($transactions as $transaction) {
-        $message = $transaction['message'];
-        $data = base64_decode($message);
-        $data = json_decode($data, true);
-        $method = $data['method'];
-        if ($method != "transferFrom" && $method != "transfer") {
-            continue;
-        }
-        $params = $data['params'];
-        if ($method == "transfer") {
-            $src = $transaction['src'];
-            $dst = $params[0];
-            $amount = $params[1];
-        } else if ($method == "transferFrom") {
-            $src = $params[0];
-            $dst = $params[1];
-            $amount = $params[2];
-        }
-        $list[]=[
-            "transaction" => $transaction,
-            "src"=>$src,
-            "dst"=>$dst,
-            "amount"=>$amount,
-        ];
-    }
-    return $list;
+$sql="select * from token_txs tt where tt.token = ? order by tt.height desc limit $transfers_start, $rpp";
+$transfers = $db->run($sql,[$id], false);
+
+$sql="select * from token_mempool_txs mt where mt.token = ? order by mt.height desc";
+$mempoolTransfers = $db->run($sql,[$id], false);
+
+if($loggedIn) {
+
+    $sql="select * from token_txs tt where tt.token = ? and (tt.src = ? or tt.dst = ?) order by tt.height desc";
+    $myTransfers = $db->run($sql,[$id, $address, $address], false);
+
+    $sql="select * from token_mempool_txs tt where tt.token = ? and (tt.src = ? or tt.dst = ?) order by tt.height desc";
+    $myMempoolTransfers = $db->run($sql,[$id, $address, $address], false);
 }
 
-$transfers = get_token_transfers($transactions);
+$sql="select * from tokens t where t.address = ?";
+$token = $db->row($sql,[$id], false);
 
-$sql="select * from mempool m where m.type = 6 and m.dst = ? order by m.height desc";
-$mempoolTxs = $db->run($sql,[$id], false);
-$mempoolTransfers = get_token_transfers($mempoolTxs);
-
-$myTransfers  = array_filter($transfers, function($transfer) use ($address) {
-    return $transfer['src'] == $address || $transfer['dst'] == $address;
-});
-
-$myMempoolTransfers  = array_filter($mempoolTransfers, function($transfer) use ($address) {
-    return $transfer['src'] == $address || $transfer['dst'] == $address;
-});
-
-$token = SmartContract::getById($id);
 $metadata = json_decode($token['metadata'], true);
 
 $sql="select * from transactions t where t.type = :type and t.dst = :dst limit 1";
@@ -107,18 +67,7 @@ foreach ($indexes as $index) {
     $c.=$color[$index];
 }
 
-$sql="select balances.var_key as address,
-       FORMAT(balances.var_value / POW(10, balances.decimals), balances.decimals) as balance
-from (
-select ss.var_key, ss.var_value, ss.height,
-       row_number() over (partition by ss.var_key order by ss.height desc) as rn,
-       json_extract(sc.metadata, '$.decimals') as decimals
-from smart_contract_state ss
-join smart_contracts sc on (sc.address = ss.sc_address)
-where ss.sc_address = ?
-and ss.variable = 'balances') as balances where balances.rn = 1
-order by balance desc limit 10";
-
+$sql="select * from token_balances tb where tb.token = ? order by tb.balance desc limit 10";
 $topHolders = $db->run($sql,[$id], false);
 
 ?>
@@ -242,6 +191,7 @@ $topHolders = $db->run($sql,[$id], false);
                     <thead class="table-light">
                     <tr>
                         <th>Height</th>
+                        <th>Date</th>
                         <th>From</th>
                         <th>To</th>
                         <th>Amount</th>
@@ -251,10 +201,11 @@ $topHolders = $db->run($sql,[$id], false);
                     <?php foreach ($mempoolTransfers as $transfer) {
                         ?>
                         <tr>
-                            <td><?php echo $transfer['transaction']['height'] ?></td>
+                            <td><?php echo $transfer['height'] ?></td>
+                            <td><?php echo display_date($transfer['date']) ?></td>
                             <td><?php echo $transfer['src'] ?></td>
                             <td><?php echo $transfer['dst'] ?></td>
-                            <td><?php echo num($transfer['amount'],$decimals) ?></td>
+                            <td><?php echo $transfer['amount'] ?></td>
                         </tr>
                     <?php } ?>
                     </tbody>
@@ -268,6 +219,7 @@ $topHolders = $db->run($sql,[$id], false);
                 <thead class="table-light">
                     <tr>
                         <th>Height</th>
+                        <th>Date</th>
                         <th>From</th>
                         <th>To</th>
                         <th>Amount</th>
@@ -277,10 +229,11 @@ $topHolders = $db->run($sql,[$id], false);
                     <?php foreach ($transfers as $transfer) {
                         ?>
                         <tr>
-                            <td><?php echo $transfer['transaction']['height'] ?></td>
+                            <td><?php echo $transfer['height'] ?></td>
+                            <td><?php echo display_date($transfer['date']) ?></td>
                             <td><?php echo $transfer['src'] ?></td>
                             <td><?php echo $transfer['dst'] ?></td>
-                            <td><?php echo num($transfer['amount'],$decimals) ?></td>
+                            <td><?php echo $transfer['amount'] ?></td>
                         </tr>
                     <?php } ?>
                 </tbody>
@@ -335,6 +288,7 @@ $topHolders = $db->run($sql,[$id], false);
                         <thead class="table-light">
                         <tr>
                             <th>Height</th>
+                            <th>Date</th>
                             <th>From</th>
                             <th>To</th>
                             <th>Amount</th>
@@ -344,10 +298,11 @@ $topHolders = $db->run($sql,[$id], false);
                         <?php foreach ($myMempoolTransfers as $transfer) {
                             ?>
                             <tr>
-                                <td><?php echo $transfer['transaction']['height'] ?></td>
+                                <td><?php echo $transfer['height'] ?></td>
+                                <td><?php echo display_date($transfer['date']) ?></td>
                                 <td><?php echo $transfer['src'] ?></td>
                                 <td><?php echo $transfer['dst'] ?></td>
-                                <td><?php echo num($transfer['amount'],$decimals) ?></td>
+                                <td><?php echo $transfer['amount'] ?></td>
                             </tr>
                         <?php } ?>
                         </tbody>
@@ -361,6 +316,7 @@ $topHolders = $db->run($sql,[$id], false);
                     <thead class="table-light">
                     <tr>
                         <th>Height</th>
+                        <th>Date</th>
                         <th>From</th>
                         <th>To</th>
                         <th>Amount</th>
@@ -370,10 +326,11 @@ $topHolders = $db->run($sql,[$id], false);
                     <?php foreach ($myTransfers as $transfer) {
                         ?>
                         <tr>
-                            <td><?php echo $transfer['transaction']['height'] ?></td>
+                            <td><?php echo $transfer['height'] ?></td>
+                            <td><?php echo display_date($transfer['date']) ?></td>
                             <td><?php echo $transfer['src'] ?></td>
                             <td><?php echo $transfer['dst'] ?></td>
-                            <td><?php echo num($transfer['amount'],$decimals) ?></td>
+                            <td><?php echo $transfer['amount'] ?></td>
                         </tr>
                     <?php } ?>
                     </tbody>
@@ -472,7 +429,7 @@ $topHolders = $db->run($sql,[$id], false);
                     });
                 },
 
-            }
+                        }
 
         }).mount("#send-token");
     </script>

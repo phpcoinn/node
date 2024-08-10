@@ -21,37 +21,18 @@ if(isset($_SESSION['account'])) {
 
 global $db;
 
-$sql="select sc.address, sc.metadata
-from smart_contracts sc
-where json_extract(sc.metadata, '$.class') = 'ERC-20'
-order by sc.height desc";
-$allTokens = $db->query($sql);
+$allTokens = $db->query("select * from tokens order by height desc");
 
 
 if($loggedIn) {
-    $sql="select * from (
-    select sc.address, sc.metadata, scs.var_value as balance,
-           row_number() over (partition by sc.address, scs.var_key order by scs.height desc) as rn
-    from smart_contracts sc
-    join smart_contract_state scs on (scs.sc_address = sc.address)
-    where json_extract(sc.metadata, '$.class') = 'ERC-20'
-    and scs.variable = 'balances' and scs.var_key = ?) as states
-    where states.rn =1";
+
+    $sql="select * from token_balances where address = ?";
 
     $tokenBalances = [];
     $list = $db->run($sql,[$address], false);
     foreach($list as $token) {
-        $tokenBalances[$token['address']] = $token['balance'];
+        $tokenBalances[$token['token']] = $token['balance'];
     }
-}
-
-$sql="select sc.address, scs.var_value as decimals from smart_contracts sc
-         join smart_contract_state scs on (sc.height = scs.height)
-where json_extract(sc.metadata, '$.class') = 'ERC-20' and scs.variable = 'decimals'";
-$rowsDecimals = $db->run($sql);
-$scDecimals = [];
-foreach($rowsDecimals as $row) {
-    $scDecimals[$row['address']] = $row['decimals'];
 }
 
 ?>
@@ -88,10 +69,9 @@ foreach($rowsDecimals as $row) {
         <tbody>
         <?php foreach ($allTokens as $token) {
             $metadata = json_decode($token['metadata'], true);
-            $decimals = $scDecimals[$token['address']];
+            $decimals = $token['decimals'];
             if($loggedIn && isset($tokenBalances[$token['address']])) {
-                $balance = $tokenBalances[$token['address']];
-                $balance = bcdiv($balance, bcpow(10, $decimals), $decimals);
+                $balance = @$tokenBalances[$token['address']];
             }
             $image = $metadata['image'];
             $name = $metadata['name'];
@@ -130,7 +110,7 @@ foreach($rowsDecimals as $row) {
                 </td>
                 <?php if($loggedIn) { ?>
                     <td>
-                        <?php echo num($balance,$decimals) ?>
+                        <?php echo num(floatval($balance),$decimals) ?>
                     </td>
                 <?php } ?>
             </tr>
