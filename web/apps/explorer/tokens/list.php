@@ -81,7 +81,7 @@ foreach($rowsDecimals as $row) {
             <th>Address</th>
             <th>Initial supply</th>
             <?php if($loggedIn) { ?>
-                <th>Balance</th>
+                <th>Your balance</th>
             <?php } ?>
         </tr>
         </thead>
@@ -152,6 +152,7 @@ foreach($rowsDecimals as $row) {
     }
 </style>
 <a href="/apps/explorer/tokens/create.php" class="btn btn-success">Create token</a>
+<a href="/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/token_faucet" class="btn btn-info">Tokens faucet</a>
 
 <?php
 require_once __DIR__ . '/../../common/include/bottom.php';
