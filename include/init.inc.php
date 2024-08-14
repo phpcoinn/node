@@ -147,6 +147,11 @@ if($chain_id!= CHAIN_ID) {
 
 if(!defined("CRON")) {
     Nodeutil::runAtInterval("check-cron", 60, function () {
+        $userInfo = posix_getpwuid(posix_geteuid());
+        if($userInfo['name']!="www-data") {
+            _log("Not web user", 2);
+            return;
+        }
         Util::checkCron();
     });
 }

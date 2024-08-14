@@ -1234,6 +1234,19 @@ class Util
 		$db->setConfig($config_name, $config_value);
 	}
 
+    static function configSet($argv) {
+        $config_name = $argv[2];
+        $config_value = $argv[3];
+        global $db;
+        $db->setConfig($config_name, $config_value);
+    }
+
+    static function configGet($argv) {
+        $config_name = $argv[2];
+        global $db;
+        echo $db->getConfig($config_name) . "\n";
+    }
+
 	static function propagate($argv) {
 		global $_config, $db;
 		$message = trim($argv[2]);

@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 EXPOSE 80
 
-RUN apt update && apt install lsb-release -y \
+RUN apt update && apt install sudo lsb-release -y \
 && apt install net-tools iputils-ping bc -y \
 && apt install wget nano -y
 

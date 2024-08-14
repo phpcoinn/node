@@ -13,12 +13,77 @@ function migrate_with_lock(&$dbversion, $callback) {
     }
 }
 
+function create_views() {
+    global $db;
+    $db->run("create or replace view tokens as
+        select sc.address, sc.metadata, json_unquote(json_extract(sc.metadata, '$.name')) as name
+                , json_unquote(json_extract(sc.metadata, '$.description')) as description
+                , json_unquote(json_extract(sc.metadata, '$.symbol')) as symbol
+                , json_extract(sc.metadata, '$.initialSupply') as initialSupply
+                , json_extract(sc.metadata, '$.decimals') as decimals,
+                  sc.height
+            from smart_contracts sc
+        where json_extract(sc.metadata, '$.class') = 'ERC-20';");
+
+    $db->run("create or replace view token_txs as
+        select txs.id,
+               txs.height,
+               txs.block,
+               txs.date,
+               txs.dst as token,
+               case when txs.method = 'transfer' then txs.src else p1 end as src,
+               case when txs.method = 'transfer' then p1 else p2 end      as dst,
+               case when txs.method = 'transfer' then p2 else p3 end      as amount
+        from (select t.*,
+                     json_unquote(json_extract(from_base64(t.message), '$.method'))    as method,
+                     json_unquote(json_extract(from_base64(t.message), '$.params[0]')) as p1,
+                     json_unquote(json_extract(from_base64(t.message), '$.params[1]')) as p2,
+                     json_unquote(json_extract(from_base64(t.message), '$.params[2]')) as p3
+              from transactions t
+              where t.type = 6
+                and exists (select 1 from tokens tt where tt.address = t.dst)) as txs
+        where txs.method in ('transfer', 'transferFrom');");
+
+    $db->run("create or replace view token_mempool_txs as
+        select txs.id,
+               txs.height,
+               txs.date,
+               txs.dst as token,
+               case when txs.method = 'transfer' then txs.src else p1 end as src,
+               case when txs.method = 'transfer' then p1 else p2 end      as dst,
+               case when txs.method = 'transfer' then p2 else p3 end      as amount
+        from (select t.*,
+                     json_unquote(json_extract(from_base64(t.message), '$.method'))    as method,
+                     json_unquote(json_extract(from_base64(t.message), '$.params[0]')) as p1,
+                     json_unquote(json_extract(from_base64(t.message), '$.params[1]')) as p2,
+                     json_unquote(json_extract(from_base64(t.message), '$.params[2]')) as p3
+              from mempool t
+              where t.type = 6
+                and exists (select 1 from tokens tt where tt.address = t.dst)) as txs
+        where txs.method in ('transfer', 'transferFrom');");
+
+    $db->run("create or replace view token_balances as
+        select b.token, b.address,
+               FORMAT(b.var_value / POW(10, b.decimals), b.decimals) as balance
+        from (
+        select ss.sc_address as token, ss.var_key as address, ss.var_value,
+               row_number() over (partition by ss.sc_address, ss.var_key order by ss.height desc) as rn,
+               tt.decimals
+            from smart_contract_state ss
+            join tokens tt on (ss.sc_address = tt.address)
+        where ss.variable = 'balances') as b
+        where b.rn =1;");
+
+}
 
 $db->beginTransaction();
 $was_empty = false;
 if (empty($dbversion)) {
 	$was_empty = true;
-	$db->run("create table blocks
+    $dbversion=40;
+    migrate_with_lock($dbversion, function() {
+        global $db;
+        $db->run("create table blocks
 	(
 		id varchar(128) not null
 			primary key,
@@ -39,10 +104,10 @@ if (empty($dbversion)) {
 			unique (height)
 	)");
 
-    $db->run("create index blocks_masternode_height_index on blocks (masternode, height);");
-    $db->run("create index blocks_masternode_index on blocks (masternode)");
+        $db->run("create index blocks_masternode_height_index on blocks (masternode, height);");
+        $db->run("create index blocks_masternode_index on blocks (masternode)");
 
-	$db->run("create table accounts
+        $db->run("create table accounts
 	(
 		id varchar(128) not null
 			primary key,
@@ -56,16 +121,16 @@ if (empty($dbversion)) {
 				on delete cascade
 	)");
 
-    $db->run("create index alias on accounts (alias);");
+        $db->run("create index alias on accounts (alias);");
 
-	$db->run("create table config
+        $db->run("create table config
 	(
 		cfg varchar(30) not null
 			primary key,
 		val varchar(200) not null
 	)");
 
-	$db->run("create table masternode
+        $db->run("create table masternode
 	(
 		public_key varchar(255) not null
 			primary key,
@@ -78,12 +143,12 @@ if (empty($dbversion)) {
 		signature varchar(255) null
 	)");
 
-    $db->run("create index height on masternode (height);");
-    $db->run("create index win_height on masternode (win_height);");
-    $db->run("create unique index masternode_ip_uindex on masternode (ip)");
-    $db->run("create index mix on masternode(height, signature, id, public_key);");
+        $db->run("create index height on masternode (height);");
+        $db->run("create index win_height on masternode (win_height);");
+        $db->run("create unique index masternode_ip_uindex on masternode (ip)");
+        $db->run("create index mix on masternode(height, signature, id, public_key);");
 
-	$db->run("create table mempool
+        $db->run("create table mempool
 	(
 		id varchar(128) not null
 			primary key,
@@ -101,14 +166,14 @@ if (empty($dbversion)) {
 		data text null
 	)");
 
-    $db->run("create index height on mempool (height);");
-    $db->run("create index peer on mempool (peer);");
-    $db->run("create index src on mempool (src);");
-    $db->run("create index val on mempool (val);");
+        $db->run("create index height on mempool (height);");
+        $db->run("create index peer on mempool (peer);");
+        $db->run("create index src on mempool (src);");
+        $db->run("create index val on mempool (val);");
 
-	$db->run("create table peers
+        $db->run("create table peers
 	(
-		id ".DB::autoInc().",
+		id " . DB::autoInc() . ",
 		hostname varchar(128) not null,
 		blacklisted int default 0 not null,
 		ping int not null,
@@ -135,12 +200,12 @@ if (empty($dbversion)) {
 			unique (ip)
 	)");
 
-    $db->run("create index blacklisted on peers (blacklisted);");
-    $db->run("create index ping on peers (ping);");
-    $db->run("create index reserve on peers (reserve);");
-    $db->run("create index stuckfail on peers (stuckfail);");
+        $db->run("create index blacklisted on peers (blacklisted);");
+        $db->run("create index ping on peers (ping);");
+        $db->run("create index reserve on peers (reserve);");
+        $db->run("create index stuckfail on peers (stuckfail);");
 
-	$db->run("create table transactions
+        $db->run("create table transactions
 	(
 		id varchar(128) not null
 			primary key,
@@ -161,15 +226,15 @@ if (empty($dbversion)) {
 				on delete cascade
 	)");
 
-    $db->run("create index dst on transactions (dst);");
-    $db->run("create index transactions_src_index on transactions (src)");
-    $db->run("create index height on transactions (height);");
-    $db->run("create index message on transactions (message);");
-    $db->run("create index public_key on transactions (public_key);");
-    $db->run("create index transactions_src_dst_val_fee_index on transactions (src, dst, val, fee);");
-    $db->run("create index transactions_type_index on transactions (type);");
+        $db->run("create index dst on transactions (dst);");
+        $db->run("create index transactions_src_index on transactions (src)");
+        $db->run("create index height on transactions (height);");
+        $db->run("create index message on transactions (message);");
+        $db->run("create index public_key on transactions (public_key);");
+        $db->run("create index transactions_src_dst_val_fee_index on transactions (src, dst, val, fee);");
+        $db->run("create index transactions_type_index on transactions (type);");
 
-    $db->run('create table minepool 
+        $db->run('create table minepool 
 	(
 		miner varchar(255) null,
 		address varchar(128) not null,
@@ -177,10 +242,10 @@ if (empty($dbversion)) {
 		iphash varchar(128) not null
 	);');
 
-    $db->run("create index val on minepool (iphash);");
-    $db->run("create unique index minepool_iphash_uindex on minepool (iphash);");
+        $db->run("create index val on minepool (iphash);");
+        $db->run("create unique index minepool_iphash_uindex on minepool (iphash);");
 
-    $db->run("create table smart_contract_state
+        $db->run("create table smart_contract_state
 	(
 	sc_address varchar(128) not null,
 	variable varchar(100) not null,
@@ -189,10 +254,10 @@ if (empty($dbversion)) {
 	height int not null
 	)");
 
-    $db->run("create unique index smart_contract_state_sc_address_variable_var_key_height_uindex 
+        $db->run("create unique index smart_contract_state_sc_address_variable_var_key_height_uindex 
     on smart_contract_state (sc_address, variable, var_key, height);");
 
-    $db->run("create table smart_contracts
+        $db->run("create table smart_contracts
 	(
 	address varchar(128) not null,
 	height int not null,
@@ -203,24 +268,27 @@ if (empty($dbversion)) {
 	metadata json null
 	)");
 
-    $db->run("create unique index smart_contracts_address_uindex
+        $db->run("create unique index smart_contracts_address_uindex
 	on smart_contracts (address)");
 
-    $db->run("alter table smart_contract_state
+        $db->run("alter table smart_contract_state
     add constraint smart_contract_state_smart_contracts_address_fk
     foreign key (sc_address) references smart_contracts (address)
     on update cascade on delete cascade");
 
-    $db->run("alter table smart_contracts
+        $db->run("alter table smart_contracts
     add constraint smart_contracts_pk
         primary key (address)");
 
-	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('hostname', '');");
-	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('dbversion', '1');");
+        $db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('hostname', '');");
+        $db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('dbversion', '1');");
 
-	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync_last', '0');");
-	$db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync', '0');");
-	$dbversion = 40;
+        $db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync_last', '0');");
+        $db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync', '0');");
+
+        create_views();
+
+    });
 }
 
 if($dbversion <= 40) {
@@ -234,6 +302,12 @@ if($dbversion <= 41) {
     migrate_with_lock($dbversion, function() {
         global $db;
         $db->run("alter table smart_contracts modify code MEDIUMTEXT not null");
+    });
+}
+
+if($dbversion <= 42) {
+    migrate_with_lock($dbversion, function() {
+        create_views();
     });
 }
 
