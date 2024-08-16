@@ -1293,7 +1293,7 @@ class Util
 
 	static function smartContractCompile($argv) {
         $address = $argv[2];
-		if(empty($file)) {
+		if(empty($address)) {
 			echo "Smart contract address not specified".PHP_EOL;
 			exit;
 		}
@@ -1314,7 +1314,7 @@ class Util
 		}
 		$code = file_get_contents($phar_file);
 		$code = base64_encode($code);
-        $interface = SmartContractEngine::verifyCode($code, $error);
+        $interface = SmartContractEngine::verifyCode($code, $error, $address);
 		if(!$interface) {
 			echo "Smart Contract can not be verified: $error".PHP_EOL;
 			exit;
