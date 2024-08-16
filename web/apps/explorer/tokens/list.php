@@ -58,7 +58,6 @@ if($loggedIn) {
             <th>Image</th>
             <th>Name</th>
             <th>Symbol</th>
-            <th>Description</th>
             <th>Address</th>
             <th>Initial supply</th>
             <?php if($loggedIn) { ?>
@@ -71,7 +70,9 @@ if($loggedIn) {
             $metadata = json_decode($token['metadata'], true);
             $decimals = $token['decimals'];
             if($loggedIn && isset($tokenBalances[$token['address']])) {
-                $balance = @$tokenBalances[$token['address']];
+                $tokenBalance = @$tokenBalances[$token['address']];
+            } else {
+                $tokenBalance = 0;
             }
             $image = $metadata['image'];
             $name = $metadata['name'];
@@ -89,18 +90,20 @@ if($loggedIn) {
                         <img src="<?php echo $image ?>" style="width:32px; height: 32px"/>
                     <?php } else { ?>
                         <div class="token-image-placeholder" style="background-color: #<?php echo $c ?>; color: <?php echo getContrastingTextColor("#$c") ?>">
-                            <?php echo $symbol ?>
+                            <?php echo substr($symbol,0,3) ?>
                         </div>
                     <?php } ?>
                 </td>
                 <td>
-                    <a href="/apps/explorer/tokens/token.php?id=<?php echo $token['address'] ?>"><?php echo $metadata['name'] ?></a>
+                    <a href="/apps/explorer/tokens/token.php?id=<?php echo $token['address'] ?>">
+                        <?php echo $metadata['name'] ?>
+                    </a>
+                    <?php if(strlen($metadata['description']) > 0) { ?>
+                        <spna class="fa fa-info-circle" title="<?php echo $metadata['description'] ?>" data-bs-toggle="tooltip"></spna>
+                    <?php } ?>
                 </td>
                 <td>
                     <a href="/apps/explorer/tokens/token.php?id=<?php echo $token['address'] ?>"><?php echo $symbol ?></a>
-                </td>
-                <td>
-                    <?php echo $metadata['description'] ?>
                 </td>
                 <td>
                     <?php echo explorer_address_link($token['address']) ?>
@@ -110,7 +113,7 @@ if($loggedIn) {
                 </td>
                 <?php if($loggedIn) { ?>
                     <td>
-                        <?php echo num(floatval($balance),$decimals) ?>
+                        <?php echo num(floatval($tokenBalance),$decimals) ?>
                     </td>
                 <?php } ?>
             </tr>
