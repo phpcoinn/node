@@ -24,7 +24,6 @@ try {
 	}
 	$phar = new Phar($phar_file);
 	$phar->startBuffering();
-	$defaultStub = $phar->createDefaultStub();
 	if(is_dir($file)) {
 		$defaultStub = $phar->createDefaultStub();
 		$phar->buildFromDirectory($file);

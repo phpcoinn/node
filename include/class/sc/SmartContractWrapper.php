@@ -64,7 +64,7 @@ class SmartContractWrapper
             $args['address']=$this->address;
             $this->log("args=".json_encode($args));
             $this->smartContract->setFields($args);
-            $this->loadState();
+            $this->loadState(true);
             $reflect = new ReflectionClass($this->smartContract);
             $method = $reflect->getMethod($methodName);
             $this->invoke($method, $params);
@@ -75,10 +75,10 @@ class SmartContractWrapper
         }
     }
 
-    private function loadState() {
+    private function loadState($ext=false) {
         $reflect = new ReflectionClass($this->smartContract);
         $props = $reflect->getProperties(ReflectionProperty::IS_PUBLIC);
-        $this->state = $this->readVarsState();
+        $this->state = $this->readVarsState($ext);
         foreach($props as $prop) {
             if($this->hasAnnotation($prop, "SmartContractVar")) {
                 $name = $prop->getName();
@@ -87,7 +87,7 @@ class SmartContractWrapper
         }
     }
 
-    private function readVarsState() {
+    private function readVarsState($ext=false) {
         $virtual=$this->args['virtual'];
         if($virtual) {
             $state = [];
@@ -107,7 +107,7 @@ class SmartContractWrapper
                   and s.var_key is null ) as ranked
                 where ranked.rn = 1
             ";
-            $rows = $this->db->run($sql, [":address"=> $this->address, ":height"=>$height]);
+            $rows = $this->db->run($sql, [":address"=> $this->address, ":height"=>$ext ? $height-1 : $height]);
             foreach ($rows as $row) {
                 $state[$row['variable']]=$row['var_value'];
             }
