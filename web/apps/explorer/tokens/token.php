@@ -81,67 +81,59 @@ $topHolders = $db->run($sql,[$id], false);
 
 <div class="card">
     <div class="card-body d-flex p-2 flex-wrap">
-        <div class="me-2 align-items-center d-flex">
-            <?php if (!empty($metadata['image'])) { ?>
-                <img src="<?php echo $metadata['image'] ?>" style="width:64px; height: 64px;"/>
-            <?php } else {?>
-                <div class="token-image-placeholder" style="background-color: #<?php echo $c ?>; color: <?php echo getContrastingTextColor("#$c") ?>">
-                    <?php echo $metadata['symbol'] ?>
+
+        <div class="row">
+            <div class="col d-flex align-items-center">
+                <div class="me-2 align-items-center d-flex">
+                    <?php if (!empty($metadata['image'])) { ?>
+                        <img src="<?php echo $metadata['image'] ?>" style="width:64px; height: 64px;"/>
+                    <?php } else {?>
+                        <div class="token-image-placeholder" style="background-color: #<?php echo $c ?>; color: <?php echo getContrastingTextColor("#$c") ?>">
+                            <?php echo substr($metadata['symbol'],0,3) ?>
+                        </div>
+                    <?php } ?>
                 </div>
-            <?php } ?>
-        </div>
-        <div>
-            <h4><?php echo $metadata['name'] ?></h4>
-            <h5><?php echo $metadata['symbol'] ?></h5>
-            <div><?php echo $metadata['description'] ?></div>
-        </div>
-        <div class="ms-0 ms-sm-5 d-flex flex-column">
-            <div>
-                <span class="text-muted">Decimals:</span>
-            </div>
-            <div>
-                <span class="text-muted">Total supply: </span>
-            </div>
-            <div>
-                <span class="text-muted">Created: </span>
-            </div>
-            <div>
-                <span class="text-muted">Creator: </span>
-            </div>
-        </div>
-        <div class="ms-0 ms-sm-5 d-flex flex-column">
-            <div>
-                <?php echo $metadata['decimals'] ?>
-            </div>
-            <div>
-                <?php echo num($metadata['initialSupply'], $metadata['decimals']) ?>
-            </div>
-            <div>
-                <?php echo $createTx['height'] ?> (<?php echo display_date($createTx['date']) ?>)
-            </div>
-            <div>
-                <?php echo $createTx['src'] ?>
-            </div>
-        </div>
-        <?php if($loggedIn) { ?>
-            <div class="ms-0 ms-sm-5 d-flex flex align-items-center">
                 <div>
-                    <h5>Your balance</h5>
-                    <h5><?php echo explorer_address_link($_SESSION['account']['address']) ?></h5>
-                    <h4><?php echo $balance ?></h4>
-                </div>
-                <div class="ms-2">
-                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#send-token">Send</button>
+                    <h4><?php echo $metadata['name'] ?></h4>
+                    <h5><?php echo $metadata['symbol'] ?></h5>
+                    <div><?php echo $metadata['description'] ?></div>
                 </div>
             </div>
-        <?php } else { ?>
-            <div class="ms-0 ms-sm-5 d-flex flex align-items-center flex-grow-1">
-                <div class="alert alert-info w-100 mb-0 d-flex align-items-center">
-                    Login to access your founds
-                    <a class="btn btn-info ms-auto" href="/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/wallet?redirect=<?php echo urlencode($_SERVER['REQUEST_URI']) ?>">Login</a>
-                </div>
+            <div class="col">
+                <dl class="row">
+                    <dt class="col-sm-3">Decimals:</dt>
+                    <dd class="col-sm-9"><?php echo $metadata['decimals'] ?></dd>
+                    <dt class="col-sm-3">Total supply:</dt>
+                    <dd class="col-sm-9"><?php echo num($metadata['initialSupply'], $metadata['decimals']) ?></dd>
+                    <dt class="col-sm-3">Created:</dt>
+                    <dd class="col-sm-9"><?php echo $createTx['height'] ?> (<?php echo display_date($createTx['date']) ?>)</dd>
+                    <dt class="col-sm-3">Creator:</dt>
+                    <dd class="col-sm-9"><?php echo $createTx['src'] ?></dd>
+                </dl>
             </div>
-        <?php } ?>
+            <div class="col">
+                <?php if($loggedIn) { ?>
+                    <div class="ms-0 ms-sm-5 d-flex flex align-items-center flex-wrap">
+                        <div>
+                            <h5>Your balance</h5>
+                            <h5><?php echo explorer_address_link($_SESSION['account']['address']) ?></h5>
+                            <h4><?php echo $balance ?></h4>
+                        </div>
+                        <div class="ms-2">
+                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#send-token">Send</button>
+                        </div>
+                    </div>
+                <?php } else { ?>
+                    <div class="ms-0 ms-sm-5 d-flex flex align-items-center flex-grow-1">
+                        <div class="alert alert-info w-100 mb-0 d-flex align-items-center">
+                            Login to access your founds
+                            <a class="btn btn-info ms-auto" href="/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/wallet?redirect=<?php echo urlencode($_SERVER['REQUEST_URI']) ?>">Login</a>
+                        </div>
+                    </div>
+                <?php } ?>
+            </div>
+        </div>
+
     </div>
 </div>
 
