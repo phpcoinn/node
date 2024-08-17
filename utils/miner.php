@@ -87,13 +87,11 @@ function startMiner($address,$node, $forked) {
 if($threads == 1) {
     startMiner($address,$node, false);
 } else {
+    $forker = new Forker();
     for($i=1; $i<=$threads; $i++) {
-        $pid = pcntl_fork();
-        if ($pid == -1) {
-            die('could not fork');
-        } else if ($pid == 0) {
+        $forker->fork(function() use ($address,$node) {
             startMiner($address,$node, true);
-        }
+        });
     }
-    while (pcntl_waitpid(0, $status) != -1) ;
+    $forker->exec();
 }
