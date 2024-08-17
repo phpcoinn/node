@@ -206,7 +206,7 @@ class Task
             _log("Check long running ".static::$name. " elapsed=".$elapsed, 3);
             if($elapsed > 60*10) {
                 $pid=$status['process']['pid'];
-                $scmd = "kill $pid";
+                $scmd = "kill -9 $pid";
                 shell_exec($scmd);
             }
         } else {
