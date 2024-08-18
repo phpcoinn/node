@@ -233,6 +233,8 @@ if (empty($dbversion)) {
         $db->run("create index public_key on transactions (public_key);");
         $db->run("create index transactions_src_dst_val_fee_index on transactions (src, dst, val, fee);");
         $db->run("create index transactions_type_index on transactions (type);");
+        $db->run("create index idx_src_height on transactions (src, height, val);");
+        $db->run("create index idx_dst_height on transactions (dst, height, val);");
 
         $db->run('create table minepool 
         (
