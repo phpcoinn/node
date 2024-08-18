@@ -251,14 +251,16 @@ class SmartContract
 		}, $error);
 	}
 
-	static function compile($file, $phar_file, &$error = null)
+	static function compile($address, $file, $phar_file, &$error = null)
 	{
-		return try_catch(function () use ($file, $phar_file) {
+		return try_catch(function () use ($file, $phar_file, $address) {
 			if (!file_exists($file)) {
 				throw new Exception("File or folder for deploy $file does not exists");
 			}
 
-			$cmd = "php --define phar.readonly=0 ".ROOT."/utils/sc_compile.php $file $phar_file 2>/dev/null";
+            $debug_str="-dxdebug.start_with_request=1";
+            $debug_str="";
+			$cmd = "php $debug_str --define phar.readonly=0 ".ROOT."/utils/sc_compile.php $address $file $phar_file 2>/dev/null";
 
 			$output = shell_exec($cmd);
 

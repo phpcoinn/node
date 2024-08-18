@@ -3,15 +3,12 @@
 class SmartContractBase
 {
 
-    public static $virtual = false;
-    public static $sc_state_updates = [];
-
 	protected $src;
 
 	protected $value;
 	protected $height;
 
-	protected $address;
+	public $address;
 
 	public function isOwner() {
 		return $this->src == $this->address;
@@ -37,7 +34,7 @@ class SmartContractBase
 		$this->dst = $tx['dst'];
 		$this->value = floatval($tx['val']);
 		$this->height = intval($args['height']);
-		$this->address = SC_ADDRESS;
+		$this->address = $args['address'];
         $this->tx = $tx;
         $this->id = $tx['id'];
 	}
@@ -48,9 +45,9 @@ class SmartContractBase
 		@file_put_contents($log_file, $s, FILE_APPEND);
 	}
 
-    static function getStateVar($db, $address, $height, $name, $key=null) {
-
-        if(self::$virtual) {
+    static function getStateVar($address, $height, $name, $key=null) {
+        $db = SmartContractContext::$db;
+        if(SmartContractContext::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
             $val = $state[$name];
@@ -77,11 +74,12 @@ class SmartContractBase
         return $res;
     }
 
-    static function setStateVar($db, $address, $height, $name, $value, $key=null) {
+    static function setStateVar($address, $height, $name, $value, $key=null) {
+        $db = SmartContractContext::$db;
         if(strlen($value) > 1000) {
             throw new Exception("Storing value for variable $name key $key exceeds 1000 characters");
         }
-        if(self::$virtual) {
+        if(SmartContractContext::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
             if(strlen($key)==0) {
@@ -133,12 +131,12 @@ class SmartContractBase
             "value"=>$value,
             "key"=>$key
         ];
-        self::$sc_state_updates[]=$sc_state_update;
+        SmartContractContext::$sc_state_updates[]=$sc_state_update;
     }
 
     static function insertSmartContract($db, $transaction, $height) {
 
-        if(self::$virtual) {
+        if(SmartContractContext::$virtual) {
             return;
         }
 
@@ -175,8 +173,9 @@ class SmartContractBase
         }
     }
 
-    static function existsStateVar($db, $address, $height, $name, $key=null) {
-        if(self::$virtual) {
+    static function existsStateVar($address, $height, $name, $key=null) {
+        $db = SmartContractContext::$db;
+        if(SmartContractContext::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
             if(strlen($key)==0) {
@@ -198,8 +197,9 @@ class SmartContractBase
         return $res == 1;
     }
 
-    static function countStateVar($db, $address, $height, $name) {
-        if(self::$virtual) {
+    static function countStateVar($address, $height, $name) {
+        $db = SmartContractContext::$db;
+        if(SmartContractContext::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
             return @count($state[$name] ?? []);
@@ -213,8 +213,9 @@ class SmartContractBase
         return $res;
     }
 
-    static function stateVarKeys($db, $address, $height, $name) {
-        if(self::$virtual) {
+    static function stateVarKeys($address, $height, $name) {
+        $db = SmartContractContext::$db;
+        if(SmartContractContext::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
             return array_keys($state[$name]);
@@ -230,8 +231,9 @@ class SmartContractBase
         return $list;
     }
 
-    static function stateAll($db, $address, $height, $name) {
-        if(self::$virtual) {
+    static function stateAll($address, $height, $name) {
+        $db = SmartContractContext::$db;
+        if(SmartContractContext::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
             return $state[$name];
@@ -249,8 +251,9 @@ class SmartContractBase
         return $list;
     }
 
-    static function stateClear($db, $address, $name, $key=null) {
-        if(self::$virtual) {
+    static function stateClear($address, $name, $key=null) {
+        $db = SmartContractContext::$db;
+        if(SmartContractContext::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
             $state = json_decode(file_get_contents($state_file), true);
             if($key == null) {
@@ -276,12 +279,24 @@ class SmartContractBase
         return $res;
     }
 
-    public static $debug_logs = [];
-
     public function debug($log) {
-        if(self::$virtual) {
-            self::$debug_logs[]=$log;
+        if(SmartContractContext::$virtual) {
+            SmartContractContext::$debug_logs[]=$log;
         }
+    }
+
+    public function execSmartContract($contract, $method, $params) {
+//        $this->log("execSmartContract $contract root=".ROOT);
+        require_once "phar://".ROOT."/tmp/sc/$contract.phar";
+        $smartContractWrapper = new SmartContractWrapper($contract);
+        return $smartContractWrapper->execExt($this, $method, $params);
+    }
+
+    public function getExtFields() {
+        $args['transaction']=$this->tx;
+        $args['height']=$this->height;
+        $args['address']=$this->address;
+        return $args;
     }
 
 }

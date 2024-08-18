@@ -2,8 +2,9 @@
 
 define("ROOT", dirname(__DIR__));
 try {
-	$file = $argv[1];
-	$phar_file = $argv[2];
+	$sc_address = $argv[1];
+	$file = $argv[2];
+	$phar_file = $argv[3];
 
 	$sc_dir = ROOT . "/tmp/sc";
 
@@ -15,21 +16,27 @@ try {
 
 	if(empty($phar_file)) {
 		$name = md5($file);
-		$phar_file = $sc_dir . "/$name.phar";
-	}
+		$phar_file = $sc_dir . "/$sc_address.phar";
+    }
 
 	if (file_exists($phar_file)) {
 		unlink($phar_file);
 	}
 	$phar = new Phar($phar_file);
 	$phar->startBuffering();
-	$defaultStub = $phar->createDefaultStub();
 	if(is_dir($file)) {
 		$defaultStub = $phar->createDefaultStub();
 		$phar->buildFromDirectory($file);
+        $index_file = $file . "/index.php";
+        $content = file_get_contents($index_file);
+        $phar->delete("index.php");
+        $content = str_replace("class SmartContract extends", "class $sc_address extends", $content);
+        $phar->addFromString("index.php", $content);
 	} else {
-		$defaultStub = $phar->createDefaultStub(basename($file));
-		$phar->addFile($file, basename($file));
+        $defaultStub = $phar->createDefaultStub();
+        $content = file_get_contents($file);
+        $content = str_replace("class SmartContract extends", "class $sc_address extends", $content);
+        $phar->addFromString("index.php", $content);
 	}
 	$phar->setStub($defaultStub);
 	$phar->stopBuffering();
