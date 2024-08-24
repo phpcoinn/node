@@ -808,7 +808,7 @@ class Masternode extends Task
 			if($mn_count > 0 && $height > UPDATE_5_NO_MASTERNODE) {
 				$collateral = Block::getMasternodeCollateral($height);
 				$cnt = Masternode::getCountByCollateral($collateral);
-				if($cnt > 0) {
+				if($cnt > 0 && !DEVELOPMENT) {
 					return false;
 				} else {
 					$dst = $generator;
