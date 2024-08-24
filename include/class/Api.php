@@ -87,6 +87,16 @@ class Api
 		}
 	}
 
+    /**
+     * @api {get} /api.php?q=getBalances  getBalances
+     * @apiName getBalances
+     * @apiGroup API
+     * @apiDescription Returns the balances of multiple addresses
+     *
+     * @apiParam {string} [addresses] List of addresses (json encoded)
+     *
+     * @apiSuccess {string} data The balances for each address
+     */
     static function getBalances($data) {
         $addresses = $data['addresses'];
         if (empty($addresses)) {
@@ -652,12 +662,34 @@ class Api
 		api_echo(number_format($fee, 5));
 	}
 
+    /**
+     * @api            {get} /api.php?q=getSmartContract  getSmartContract
+     * @apiName        getSmartContract
+     * @apiGroup       SC
+     * @apiDescription Get Smart Contract by its address
+     *
+     * @apiParam {string} address Address of Smart Contract
+     *
+     * @apiSuccess {numeric} Current transaction fee
+     */
 	static function getSmartContract($data) {
 		$sc_address = $data['address'];
 		$smartContract = SmartContract::getById($sc_address);
 		api_echo($smartContract);
 	}
 
+    /**
+     * @api            {get} /api.php?q=getSmartContractProperty  getSmartContractProperty
+     * @apiName        getSmartContractProperty
+     * @apiGroup       SC
+     * @apiDescription Read Smart Contract property
+     *
+     * @apiParam {string} address Address of Smart Contract
+     * @apiParam {string} property Name of the property to read
+     * @apiParam {string} [key] Key of property (if is map)
+     *
+     * @apiSuccess {string} Value of property
+     */
 	static function getSmartContractProperty($data) {
 		$sc_address = $data['address'];
 		$property = $data['property'];
@@ -671,6 +703,17 @@ class Api
 		api_echo($res);
 	}
 
+    /**
+     * @api            {get} /api.php?q=getSmartContractInterface  getSmartContractInterface
+     * @apiName        getSmartContractInterface
+     * @apiGroup       SC
+     * @apiDescription Get Smart Contract Interface definition from deployed contract or from code
+     *
+     * @apiParam {string} address Address of Smart Contract
+     * @apiParam {string} code Compiled code of Smart Contract
+     *
+     * @apiSuccess {json} Interface of Smart Contract
+     */
 	static function getSmartContractInterface($data) {
 		$sc_address = @$data['address'];
 		$code = @$data['code'];
@@ -682,6 +725,18 @@ class Api
 		api_echo($interface);
 	}
 
+    /**
+     * @api            {get} /api.php?q=getSmartContractView  getSmartContractView
+     * @apiName        getSmartContractView
+     * @apiGroup       SC
+     * @apiDescription Executes Smart Contract view method
+     *
+     * @apiParam {string} address Address of Smart Contract
+     * @apiParam {string} method View method name in Smart Contract
+     * @apiParam {string} [params] Parameters for method (json string base64 encoded)
+     *
+     * @apiSuccess {string} Response from execution of method
+     */
 	static function getSmartContractView($data) {
 		$sc_address = $data['address'];
 		$method = $data['method'];
@@ -738,7 +793,7 @@ class Api
      * @api {get} /api.php?q=sendTransaction  sendTransaction
      * @apiName sendTransaction
      * @apiGroup API
-     * @apiDescription Sends a transaction via JSON.
+     * @apiDescription Sends a transaction as JSON via POST.
      *
      * @apiParam {string} tx Created transaction data (base64 encoded JSON)
      *
@@ -757,6 +812,14 @@ class Api
 		api_echo($hash);
 	}
 
+    /**
+     * @api {get} /api.php?q=sendTransactionJson  sendTransactionJson
+     * @apiName sendTransactionJson
+     * @apiGroup API
+     * @apiDescription Sends a transaction via JSON via application/json.
+     *
+     * @apiSuccess {string} data  Transaction id
+     */
     static function sendTransactionJson($data) {
         $transaction = Transaction::getFromArray($data);
 
@@ -964,6 +1027,23 @@ class Api
         api_echo($out);
     }
 
+    /**
+     * @api {get} /api.php?q=generateMasternodeRemoveTx  generateMasternodeRemoveTx
+     * @apiName generateMasternodeRemoveTx
+     * @apiGroup Masternodes
+     * @apiDescription Create data for removing masternode transaction
+     *
+     * @apiParam {string} address Wallet address from which is masternode removed (hot or reward address)
+     * @apiParam {string} payout_address Destination address where locked collateral will be transferred
+     *
+     * @apiSuccess {json} Transaction data
+     * @apiSuccess {numeric} [val] Transaction value
+     * @apiSuccess {numeric} [fee] Transaction fee
+     * @apiSuccess {string} [dst] Transaction destination address
+     * @apiSuccess {string} [src] Transaction source address
+     * @apiSuccess {string} [msg] Transaction message
+     * @apiSuccess {numeric} [type] Transaction type
+     */
     static function generateMasternodeRemoveTx($data) {
         $address=$data['address'];
         if(empty($address)) {
@@ -1030,6 +1110,24 @@ class Api
         api_echo($transaction);
     }
 
+    /**
+     * @api {get} /api.php?q=generateMasternodeCreateTx  generateMasternodeCreateTx
+     * @apiName generateMasternodeCreateTx
+     * @apiGroup Masternodes
+     * @apiDescription Create data for create masternode transaction
+     *
+     * @apiParam {string} address Wallet address from which is masternode created
+     * @apiParam {string} mn_address Address of masternode
+     * @apiParam {string} [reward_address] Address of reward in case of cold masternode
+     *
+     * @apiSuccess {json} Transaction data
+     * @apiSuccess {numeric} [val] Transaction value
+     * @apiSuccess {numeric} [fee] Transaction fee
+     * @apiSuccess {string} [dst] Transaction destination address
+     * @apiSuccess {string} [src] Transaction source address
+     * @apiSuccess {string} [msg] Transaction message
+     * @apiSuccess {numeric} [type] Transaction type
+     */
     static function generateMasternodeCreateTx($data) {
         $address=$data['address'];
         if(empty($address)) {
@@ -1069,12 +1167,39 @@ class Api
         api_echo($transaction);
     }
 
+    /**
+     * @api            {get} /api.php?q=getDeployedSmartContracts  getDeployedSmartContracts
+     * @apiName        getDeployedSmartContracts
+     * @apiGroup       SC
+     * @apiDescription Get deployed smart contract for specified address
+     *
+     * @apiParam {string} address Address to check
+     *
+     * @apiSuccess {json} List of Smart Contracts
+     */
     static function getDeployedSmartContracts($data) {
         $address = $data['address'];
         $smartContracts = SmartContract::getDeployedSmartContracts($address);
         api_echo($smartContracts);
     }
 
+    /**
+     * @api            {post} /api.php?q=generateSmartContractDeployTx  generateSmartContractDeployTx
+     * @apiName        generateSmartContractDeployTx
+     * @apiGroup       SC
+     * @apiDescription Get data for deploy Smart Contract transaction
+     *
+     * @apiBody {string} public_key Public key of source wallet
+     * @apiBody {string} sc_address Address of Smart Contract
+     * @apiBody {numeric} [amount] Deploy amount
+     * @apiBody {string} sc_signature Signature of compiled contract
+     * @apiBody {string} code Compiled Smart Contract code
+     * @apiBody {array} [params] List of deploy parameters
+     * @apiBody {array} [metadata] Additional metadata parameters
+     *
+     * @apiSuccess {string} signature_base Transaction signature base
+     * @apiSuccess {json} tx Transaction data
+     */
     static function generateSmartContractDeployTx($data) {
         $public_key = @$data['public_key'];
         $sc_address = @$data['sc_address'];
@@ -1115,6 +1240,21 @@ class Api
         api_echo($out);
     }
 
+    /**
+     * @api            {post} /api.php?q=generateSmartContractExecTx  generateSmartContractExecTx
+     * @apiName        generateSmartContractExecTx
+     * @apiGroup       SC
+     * @apiDescription Get data for execute Smart Contract transaction
+     *
+     * @apiBody {string} public_key Public key of source wallet
+     * @apiBody {string} sc_address Address of Smart Contract
+     * @apiBody {numeric} [amount] Deploy amount
+     * @apiBody {string} [method] Name of method to call
+     * @apiBody {array} [params] List of deploy parameters
+     *
+     * @apiSuccess {string} signature_base Transaction signature base
+     * @apiSuccess {json} tx Transaction data
+     */
     static function generateSmartContractExecTx($data) {
         $public_key = @$data['public_key'];
         $sc_address = @$data['sc_address'];
@@ -1144,6 +1284,21 @@ class Api
         api_echo($out);
     }
 
+    /**
+     * @api            {post} /api.php?q=generateSmartContractSendTx  generateSmartContractSendTx
+     * @apiName        generateSmartContractSendTx
+     * @apiGroup       SC
+     * @apiDescription Get data for send Smart Contract transaction
+     *
+     * @apiBody {string} public_key Public key of source wallet
+     * @apiBody {string} sc_address Address of Smart Contract
+     * @apiBody {string} method Name of method to call
+     * @apiBody {numeric} [amount] Deploy amount
+     * @apiBody {array} [params] List of deploy parameters
+     *
+     * @apiSuccess {string} signature_base Transaction signature base
+     * @apiSuccess {json} tx Transaction data
+     */
     static function generateSmartContractSendTx($data) {
         $public_key = @$data['public_key'];
         $address = @$data['address'];
@@ -1173,12 +1328,35 @@ class Api
         api_echo($out);
     }
 
+    /**
+     * @api            {get} /api.php?q=getScStateHash  getScStateHash
+     * @apiName        getScStateHash
+     * @apiGroup       SC
+     * @apiDescription Calculates hash of Smart Contract state
+     *
+     * @apiParam {numeric} [height] Height at which is calculated state
+     *
+     * @apiSuccess {numeric} [height] Height at which is calculated state
+     * @apiSuccess {numeric} [count] Number of states
+     * @apiSuccess {numeric} [hash] Calculated hash
+     */
     static function getScStateHash($data) {
         $height = @$data['height'];
         $res=Nodeutil::calculateSmartContractsHashV2($height);
         api_echo($res);
     }
 
+    /**
+     * @api            {get} /api.php?q=getScState  getScState
+     * @apiName        getScState
+     * @apiGroup       SC
+     * @apiDescription Retreives node Smart Contract state between specified heights
+     *
+     * @apiParam {numeric} [from_height=0] Start height
+     * @apiParam {numeric} [to_height=PHP_INT_MAX] End height
+     *
+     * @apiSuccess {array} List of states
+     */
     static function getScState($data) {
         global $db;
         $from_height = @$data['from_height'];
@@ -1190,6 +1368,17 @@ class Api
         api_echo($rows);
     }
 
+    /**
+     * @api            {get} /api.php?q=getTokenBalance  getTokenBalance
+     * @apiName        getTokenBalance
+     * @apiGroup       SC
+     * @apiDescription Retrieves balance of specified token (ERC-20 Smart Contract)
+     *
+     * @apiParam {string} token Address of token
+     * @apiParam {string} address Address to check
+     *
+     * @apiSuccess {numeric} Token balance
+     */
     static function getTokenBalance($data) {
         global $db;
         $token=$data['token'];
