@@ -408,7 +408,9 @@ function try_catch($callback, &$error = null) {
 
 function load_db_config() {
 	global $_config, $db;
+    $db->debugger = 0;
 	$query = $db->run("SELECT cfg, val FROM config");
+    $db->debugger = 1;
 	if(is_array($query)) {
 		foreach ($query as $res) {
 			$_config[$res['cfg']] = trim($res['val']);

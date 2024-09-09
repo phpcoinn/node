@@ -10,7 +10,7 @@ class DB extends PDO
     private $error;
     private $sql;
     private $bind;
-    private $debugger = 0;
+    public $debugger = 0;
     public $working = "yes";
 
     public function __construct($dsn, $user = "", $passwd = "", $debug_level = 0)
@@ -33,7 +33,7 @@ class DB extends PDO
     {
         global $_config;
         if (!$this->debugger) {
-//            return;
+            return;
         }
         $error = ["Error" => $this->error];
         if (!empty($this->bind)) {

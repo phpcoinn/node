@@ -6,7 +6,7 @@ $dbversion = intval(@$_config['dbversion']);
 
 function migrate_with_lock(&$dbversion, $callback) {
     $lock_dir = ROOT . "/tmp/db-migrate-".($dbversion+1);
-    if (mkdir($lock_dir, 0700)) {
+    if (mkdir($lock_dir, 0700, true)) {
         call_user_func($callback);
         @rmdir($lock_dir);
         $dbversion++;
@@ -81,7 +81,8 @@ $was_empty = false;
 if (empty($dbversion)) {
 	$was_empty = true;
     $dbversion=36;
-    migrate_with_lock($dbversion, function(){
+    _log("Initializing database");
+    migrate_with_lock($dbversion, function() {
         global $db;
         $db->run("create table blocks
         (
@@ -289,6 +290,7 @@ if (empty($dbversion)) {
         $db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync', '0');");
 
         create_views();
+        _log("Initialize databaase complete");
 
     });
 }

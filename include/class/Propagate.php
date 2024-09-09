@@ -28,11 +28,7 @@ class Propagate
 	static function masternode() {
 		_log("Propagate: masternode",4);
 		$dir = ROOT."/cli";
-        if(DEVELOPMENT) {
-		    $cmd = "(sleep 3 && php $dir/propagate.php masternode local)";
-        } else {
-            $cmd = "php $dir/propagate.php masternode local";
-        }
+        $cmd = "php $dir/propagate.php masternode local";
 		Nodeutil::runSingleProcess($cmd);
 	}
 

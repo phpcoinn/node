@@ -10,8 +10,8 @@ class Cache
 		self::$path = ROOT . "/tmp/cache";
 		if(!file_exists(self::$path)) {
 			self::$enabled = mkdir(self::$path, 0777);
-			chown(self::$path, "www-data");
-			chgrp(self::$path, "www-data");
+			@chown(self::$path, "www-data");
+			@chgrp(self::$path, "www-data");
 		} else {
 			self::$enabled = true;
 		}
