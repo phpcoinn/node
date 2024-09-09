@@ -38,6 +38,7 @@ if(strlen($time_limit)==0) {
 set_time_limit($time_limit);
 
 require_once dirname(__DIR__).'/include/init.inc.php';
+error_reporting(E_ALL && ~E_WARNING);
 $cmd = @trim(@$argv[1]);
 
 $log = getenv("LOG");
