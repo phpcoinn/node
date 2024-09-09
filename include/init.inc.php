@@ -43,7 +43,10 @@ if(PHP_VERSION_ID < 80000) {
 
 $config_file = ROOT.'/config/config.inc.php';
 
-require_once $config_file;
+require_once ROOT.'/config/config.default.php';
+if(file_exists($config_file)) {
+    require_once $config_file;
+}
 require_once __DIR__.'/db.inc.php';
 global $_config;
 
@@ -127,7 +130,9 @@ if ($hostname != @$_config['hostname'] && @$_SERVER['HTTP_HOST'] != "localhost" 
     $_config['hostname'] = $hostname;
 }
 if (empty($_config['hostname']) || $_config['hostname'] == "http://" || $_config['hostname'] == "https://") {
-    api_err("Invalid hostname");
+    if(php_sapi_name()!="cli") {
+        api_err("Invalid hostname");
+    }
 }
 
 global $checkpoints;
