@@ -97,7 +97,6 @@ class Sync extends Task
 
 
 		Nodeutil::cleanTmpFiles();
-		Minepool::deleteOldEntries();
 		Cache::clearOldFiles();
 
         $cmd='find '.ROOT.'/tmp -name "*.lock" ! -name "cli-*.lock" -mmin +1 -exec rm -rf {} +';

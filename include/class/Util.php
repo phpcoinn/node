@@ -678,10 +678,6 @@ class Util
 		}
 	}
 
-	static function downloadApps() {
-		Nodeutil::downloadApps();
-	}
-
 	static function verifyBlocks($argv) {
 		$range = @$argv[2];
 		if(empty($range)) {
@@ -1629,22 +1625,6 @@ class Util
 			_log("error recalculateMasternodes");
 			$db->rollBack();
 		}
-	}
-
-	static function propagateApps($argv) {
-		require_once ROOT."/web/apps/apps.inc.php";
-		$peer = $argv[2];
-		if(empty($peer)) {
-			echo "Peer not specified".PHP_EOL;
-			exit;
-		}
-		if(!isRepoServer()) {
-			echo "Only repo server can propagate apps".PHP_EOL;
-			exit;
-		}
-		$appsHashFile = Nodeutil::getAppsHashFile();
-		$appsHash = file_get_contents($appsHashFile);
-		Propagate::appsToPeer($peer, $appsHash);
 	}
 
 	static function peerCall($argv) {

@@ -114,61 +114,6 @@ if(isset($_GET['action'])) {
 		header("location: ".APP_URL."/?view=peers");
 		exit;
 	}
-    if($action == "update") {
-        $res = peer_post(APPS_REPO_SERVER."/peer.php?q=getApps");
-        if($res === false) {
-            die("Error updating apps");
-        } else {
-            _log("Updating apps", 3);
-            $hash = $res['hash'];
-            $signature = $res['signature'];
-            $verify = Account::checkSignature($hash, $signature, APPS_REPO_SERVER_PUBLIC_KEY);
-            _log("Chacking repo signature hash=$hash signature=$signature verify=$verify",3);
-            if(!$verify) {
-	            die("Error verifying apps");
-            }
-            $link = APPS_REPO_SERVER."/apps.php";
-            _log("Downloading from link $link",3);
-	        $arrContextOptions=array(
-		        "ssl"=>array(
-			        "verify_peer"=>true,
-			        "verify_peer_name"=>true,
-		        ),
-	        );
-            $res = file_put_contents(ROOT . "/tmp/apps.tar.gz", fopen($link, "r", false, stream_context_create($arrContextOptions)));
-            if($res === false) {
-                die("Error downloading apps");
-            }
-
-	        if(file_exists(Nodeutil::getAppsLockFile())) {
-		        _log("Apps lock file exists - can not update");
-		        return;
-	        }
-
-            Nodeutil::extractAppsArchive();
-	        $calHash = calcAppsHash();
-	        _log("Calculating new hash calHash=$calHash",3);
-	        if($hash != $calHash) {
-	            die("Error extracting apps transfered = $hash - calc = $calHash");
-            }
-	        global $appsHashFile;
-	        unlink($appsHashFile);
-	        header("location: ".APP_URL."/?view=update");
-        }
-    }
-    if($action == "propagate_update") {
-	    _log("build archive",3);
-//	    $cmd="find ".ROOT."/apps -type d -exec chmod 755 {} \;";
-//	    shell_exec($cmd);
-//	    $cmd="find ".ROOT."/apps -type f -exec chmod 644 {} \;";
-//	    shell_exec($cmd);
-	    $appsHashCalc = calcAppsHash();
-	    file_put_contents($appsHashFile, $appsHashCalc);
-	    buildAppsArchive();
-	    _log("Propagating apps",4);
-        Propagate::appsToAll($appsHashCalc);
-	    header("location: ".APP_URL."/?view=update");
-    }
     if($action == "miner_enable") {
 	    $db->setConfig("miner", true);
 	    @unlink(ROOT. "/tmp/miner-lock");
@@ -209,33 +154,6 @@ if($view == "db") {
 if($view == "utils") {
 
 }
-if($view == "update") {
-    global $appsHashFile;
-    $appsHash = file_get_contents($appsHashFile);
-    $updateData['appsHash']['calculated']=calcAppsHash();
-    $updateData['appsHash']['stored']=$appsHash;
-
-    $repoServer = isRepoServer();
-    if($repoServer) {
-        $validHash = $appsHash;
-    } else {
-        $res = peer_post(APPS_REPO_SERVER . "/peer.php?q=getApps");
-        if ($res === false) {
-            $validHash = "No data from repository";
-        } else {
-            $hash = $res['hash'];
-            $signature = $res['signature'];
-            $verify = Account::checkSignature($hash, $signature, APPS_REPO_SERVER_PUBLIC_KEY);
-            if (!$verify) {
-                $validHash = "Invalid repository signature";
-            } else {
-                $validHash = $hash;
-            }
-        }
-    }
-
-    $updateData['appsHash']['valid']=$validHash;
-}
 if($view == "log") {
 	//TODO: replace @1.0.6.85
     if(method_exists(Nodeutil::class, "getLogData")) {
@@ -260,8 +178,6 @@ if($view == "peers") {
 	}
     $peers = Peer::getAll($sorting);
 }
-
-$minepool_enabled = Minepool::enabled();
 
 $pubKeyLogin = isset($_config['admin_public_key']) && strlen($_config['admin_public_key']) > 0;
 $nonce = uniqid();
@@ -491,13 +407,6 @@ $nonce = uniqid();
                 <span>Mempool</span>
             </a>
         </li>
-	    <?php if (Nodeutil::miningEnabled() && $minepool_enabled) { ?>
-            <li class="nav-item">
-                <a class="nav-link <?php if ($view == "minepool") { ?>active<?php } ?>" href="<?php echo APP_URL ?>/?view=minepool" role="tab" aria-selected="false">
-                    <span>Minepool</span>
-                </a>
-            </li>
-        <?php } ?>
         <li class="nav-item">
             <a class="nav-link <?php if ($view == "config") { ?>active<?php } ?>" href="<?php echo APP_URL ?>/?view=config" role="tab" aria-selected="false">
                 <span>Config</span>
@@ -508,13 +417,6 @@ $nonce = uniqid();
                 <span>Log</span>
             </a>
         </li>
-        <?php if (FEATURE_APPS) { ?>
-            <li class="nav-item">
-                <a class="nav-link <?php if ($view == "update") { ?>active<?php } ?>" href="<?php echo APP_URL ?>/?view=update" role="tab" aria-selected="false">
-                    <span>Update</span>
-                </a>
-            </li>
-        <?php } ?>
     </ul>
 
     <?php if(!empty($view)) { ?>
@@ -689,50 +591,12 @@ $nonce = uniqid();
 
 		<?php } ?>
 
-	    <?php if($view == "minepool") {
-
-	        $rows = $db->run("select * from minepool order by height desc");
-
-	        ?>
-
-            <h4>Minepool</h4>
-            <div class="table-responsive">
-                <table class="table table-sm table-striped">
-                    <thead>
-                        <tr>
-                            <th>Address</th>
-                            <th>Height</th>
-                            <th>Miner</th>
-                            <th>IP Hash</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($rows as $row) { ?>
-                            <tr>
-                                <td><?php echo explorer_address_link($row['address']) ?></td>
-                                <td>
-                                    <a href="/apps/explorer/block.php?height=<?php echo $row['height'] ?>"><?php echo $row['height'] ?></a>
-                                </td>
-                                <td><?php echo $row['miner'] ?></td>
-                                <td><?php echo $row['iphash'] ?></td>
-                            </tr>
-                        <?php } ?>
-                    </tbody>
-                </table>
-            </div>
-
-        <?php } ?>
-
-
 	    <?php if($view == "config") {
 
 	        $display_config = $_config;
 			$display_config['db_pass']='****';
 			$display_config['generator_private_key']='****';
 			$display_config['miner_private_key']='****';
-			$display_config['repository_private_key']='****';
-			$display_config['faucet_private_key']='****';
-			$display_config['wallet_private_key']='****';
 
 	        ?>
 
@@ -791,14 +655,6 @@ $nonce = uniqid();
 	    <?php if($view == "update") { ?>
 
             <table class="table table-sm">
-                <tr>
-                    <td>
-                        <label>Apps version:</label>
-                    </td>
-                    <td>
-                        <?php echo APPS_VERSION ?>
-                    </td>
-                </tr>
                 <tr>
                     <td>
                         <label>Apps hash (calculated):</label>

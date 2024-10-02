@@ -25,10 +25,6 @@ $updateAvb = $maxPeerBuildNumber > $currentVersion;
                     <div class="progress progress-lg node-score me-1" title="Node score: <?php echo $nodeScore ?>%" data-bs-toggle="tooltip">
                         <div class="progress-bar bg-<?php echo ($nodeScore < MIN_NODE_SCORE / 2 ? 'danger' : ($nodeScore < MIN_NODE_SCORE ? 'warning' : 'success')) ?>" role="progressbar" style="width: <?php echo $nodeScore ?>%;" aria-valuenow="<?php echo $nodeScore ?>" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
-                    <?php if(FEATURE_APPS) { ?>
-                        <span class="badge bg-secondary pointer apps-version me-1" title="Apps version" data-bs-toggle="tooltip"><?php echo APPS_VERSION ?></span>
-                        <?php echo hashimg($appsHash, "Apps hash: ". $appsHash) ?>
-                    <?php } ?>
                 </div>
             </div>
         </div>

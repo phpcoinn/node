@@ -42,13 +42,6 @@ $avgBlockTime100 = Blockchain::getAvgBlockTime(100);
 $last = Block::getAtHeight($blockCount);
 $elapsed = time() - $last['date'];
 
-$minepool_enabled = Minepool::enabled();
-
-if (Nodeutil::miningEnabled() && $minepool_enabled) {
-	$rows = $db->run("select * from minepool order by height desc");
-	$minepoolCount = count($rows);
-}
-
 $mnEnabled = Masternode::allowedMasternodes($blockCount);
 $masternodesCount = Masternode::getCount();
 $masternodesVerifiedCount = Masternode::getVerifiedCount();
@@ -267,17 +260,6 @@ global $btcPrice, $usdPrice;
                                 <?php echo $mempoolCount ?>
                             </h2>
                         </div>
-                        <?php if (Nodeutil::miningEnabled() && $minepool_enabled) { ?>
-                            <div class="col-6">
-                                <i class="fas fa-running  me-1 h4"></i>
-                                <span class="text-muted mb-3 lh-1 text-truncate h4">
-                                Minepool
-                            </span>
-                                <h2 class="my-2">
-                                    <?php echo $minepoolCount ?>
-                                </h2>
-                            </div>
-                        <?php } ?>
                     </div>
                 </div>
             </div>

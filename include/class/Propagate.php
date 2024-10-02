@@ -55,28 +55,7 @@ class Propagate
 		Nodeutil::runSingleProcess($cmd);
 	}
 
-	static function appsToPeer($hostname, $hash) {
-		if(!Nodeutil::isRepoServer()) {
-			_log("Not repo server");
-			return;
-		}
-		$hostnameb64 = base64_encode($hostname);
-		$dir = ROOT . "/cli";
-		$cmd = "php $dir/propagate.php appspeer $hash $hostnameb64";
-		_log("Propagate: transaction apps to peer $hostname cmd=$cmd", 4);
-		Nodeutil::runSingleProcess($cmd);
-	}
 
-	static function appsToAll($appsHashCalc) {
-		if(!Nodeutil::isRepoServer()) {
-			_log("Not repo server");
-			return;
-		}
-		_log("AppsHash: Propagating apps",3);
-		$dir = ROOT . "/cli";
-		$cmd = "php $dir/propagate.php apps $appsHashCalc";
-		Nodeutil::runSingleProcess($cmd);
-	}
 
 	static function messageToPeer($hostname, $msg) {
 		$peer = base64_encode($hostname);

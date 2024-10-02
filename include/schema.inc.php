@@ -237,17 +237,6 @@ if (empty($dbversion)) {
         $db->run("create index idx_src_height on transactions (src, height, val);");
         $db->run("create index idx_dst_height on transactions (dst, height, val);");
 
-        $db->run('create table minepool 
-        (
-            miner varchar(255) null,
-            address varchar(128) not null,
-            height int not null,
-            iphash varchar(128) not null
-        );');
-
-        $db->run("create index val on minepool (iphash);");
-        $db->run("create unique index minepool_iphash_uindex on minepool (iphash);");
-
         $db->run("create table smart_contract_state
         (
         sc_address varchar(128) not null,
@@ -307,6 +296,11 @@ if($dbversion <= 42) {
     migrate_with_lock($dbversion, function() {
         create_views();
     });
+}
+
+if($dbversion <= 43) {
+    global $db;
+    $db->run("drop database minepool");
 }
 
 // update the db version to the latest one

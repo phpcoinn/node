@@ -93,7 +93,7 @@ require_once __DIR__. '/../common/include/top.php';
         <tr>
             <td>Type</td>
             <td>
-                <?php echo TransactionTypeLabel($tx['type']) ?> (<?php echo $tx['type'] ?>)
+                <?php echo Transaction::typeLabel($tx['type']) ?> (<?php echo $tx['type'] ?>)
                 <?php
                 if($tx['type']==TX_TYPE_SC_CREATE || $tx['type']==TX_TYPE_SC_EXEC) {
                     echo '<a href="/apps/explorer/smart_contract.php?id='.$tx['dst'].'">'.$tx['dst'].'</a>';

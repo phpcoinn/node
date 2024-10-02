@@ -25,7 +25,7 @@ if(!Account::valid($address)) {
 $balance = Account::pendingBalance($address);
 $public_key = Account::publicKey($address);
 
-$dm=get_data_model(AccountgetCountByAddress($address),
+$dm=get_data_model(Account::getCountByAddress($address),
     '/apps/explorer/address.php?address='.$address, "", 100);
 
 $transactions = Account::getTransactions($address, $dm);
@@ -204,7 +204,7 @@ require_once __DIR__. '/../common/include/top.php';
                 <td><a href="/apps/explorer/address.php?address=<?php echo $party ?>">
 			            <?php echo truncate_hash($party) ?></a></td>
                 <td>
-                    <?php echo TransactionTypeLabel($transaction['type']) ?>
+                    <?php echo Transaction::typeLabel($transaction['type']) ?>
                     <?php if($transaction['type'] == TX_TYPE_REWARD) { ?>
                         <?php if($transaction['message']=="generator") { ?>
                             <span class="badge rounded-pill bg-success">Generator</span>

@@ -95,19 +95,6 @@ class Miner {
         $res = url_post($this->node . "/mine.php?q=submitStat&", $postData);
     }
 
-	function checkAddress() {
-		$url = $this->node."/mine.php?q=checkAddress";
-		$postdata = http_build_query([
-			"address"=>$this->address
-		]);
-		$res = url_post($url, $postdata);
-		$data = json_decode($res, true);
-		if ($data['status'] == "ok" && $data['data']==$this->address) {
-			return true;
-		}
-		return false;
-	}
-
     function measureSpeed($t1, $th) {
         $t2 = microtime(true);
         $this->hashing_cnt++;
@@ -168,12 +155,6 @@ class Miner {
 			$ip = $info['data']['ip'];
 			if(!Peer::validateIp($ip)) {
 				_log("Miner does not have valid ip address: $ip");
-				sleep(3);
-				continue;
-			}
-
-			if(!$this->checkAddress() && false) {
-				_log("Miner is not allowed to mine to address from this ip");
 				sleep(3);
 				continue;
 			}
