@@ -64,9 +64,6 @@ require_once __DIR__. '/../common/include/top.php';
                 <th>Ping</th>
                 <th>Height</th>
                 <th>Version</th>
-                <?php if(FEATURE_APPS) { ?>
-                    <th>Apps hash</th>
-                <?php } ?>
                 <?php if($show_all) { ?>
                     <th>Blacklisted</th>
                     <th>Blacklist reason</th>
@@ -109,16 +106,6 @@ require_once __DIR__. '/../common/include/top.php';
                     <td>
                         <span class="<?php if (!empty($color)) { ?>text-<?php echo $color ?><?php } ?>"><?php echo $peer['version'] ?></span>
                     </td>
-	                <?php if(FEATURE_APPS) { ?>
-                        <td class="">
-                            <?php if($peer['appshash']) { ?>
-                                <?php echo truncate_hash($peer['appshash']) ?>
-                                <div class="app-hash">
-                                    <?php echo hashimg($peer['appshash'], "Apps hash: ". $peer['appshash']) ?>
-                                </div>
-                            <?php } ?>
-                        </td>
-	                <?php } ?>
 	                <?php if($show_all) { ?>
                         <td>
                             <?php echo display_date($peer['blacklisted']) ?>

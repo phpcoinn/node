@@ -200,7 +200,7 @@ class Account
         return $transactions;
     }
 
-    static function getCountByAddress($public_key, $id) {
+    static function getCountByAddress($id) {
 		global $db;
 	    $res = $db->single(
 		    "SELECT count(*) as cnt FROM transactions 

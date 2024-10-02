@@ -256,11 +256,11 @@ class Transaction
         } else if (isset($x['msg'])) {
             $msg = $x['msg'];
         }
-		$trans = new Transaction($x['public_key'],$x['dst'],floatval($x['val']),$x['type'],$x['date'],$msg);
-		$trans->id = $x['id'];
+		$trans = new Transaction(@$x['public_key'],$x['dst'],floatval($x['val']),$x['type'],@$x['date'],$msg);
+		$trans->id = @$x['id'];
 		$trans->src = $x['src'];
 		$trans->fee = floatval($x['fee']);
-		$trans->signature = $x['signature'];
+		$trans->signature = @$x['signature'];
 		$trans->data = @$x['data'];
 		$trans->height = @$x['height'];
 		return $trans;

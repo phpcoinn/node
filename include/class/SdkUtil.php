@@ -42,7 +42,7 @@ class SdkUtil
 
     static function createAndSendTx($node, $private_key, $dst, $val, $type, $msg=null, $chain_id = CHAIN_ID)
     {
-        $tx = self::createAndSignTx($node, $private_key, $dst, $val, $type);
+        $tx = self::createAndSignTx($private_key, $dst, $val, $type, $msg, $chain_id);
         $res = self::api_post($node."/api.php?q=sendTransaction" , ["tx"=>base64_encode(json_encode($tx->toArray()))]);
         return $res;
     }
@@ -57,6 +57,30 @@ class SdkUtil
         return $tx;
     }
 
+    static function removeMasternode($node,$address,$private_key,$payout_address,$masternode,$chain_id = CHAIN_ID) {
+        $txData=self::api_get($node, "generateMasternodeRemoveTx&address=".$address.
+            "&payout_address=$payout_address&mn_address=".$masternode);
+        $tx=Transaction::getFromArray($txData);
+        $tx->publicKey = priv2pub($private_key);
+        $base = $tx->getSignatureBase();
+        $tx->signature = ec_sign($base, $private_key,$chain_id);
+        $txArr = $tx->toArray();
+        $res = self::api_post($node."/api.php?q=sendTransaction" , ["tx"=>base64_encode(json_encode($txArr))]);
+        return $res;
+    }
 
+
+    static function createMasternode($node, $address, $private_key, $reward_address, $masternode,$chain_id = CHAIN_ID)
+    {
+        $txData = self::api_get($node, "generateMasternodeCreateTx&address=".$address."&mn_address=".$masternode.
+            (!empty($reward_address) ? "&reward_address=".$reward_address : ""));
+        $tx=Transaction::getFromArray($txData);
+        $tx->publicKey = priv2pub($private_key);
+        $base = $tx->getSignatureBase();
+        $tx->signature = ec_sign($base, $private_key,"00");
+        $txArr = $tx->toArray();
+        $res = self::api_post($node."/api.php?q=sendTransaction" , ["tx"=>base64_encode(json_encode($txArr))]);
+        return $res;
+    }
 
 }

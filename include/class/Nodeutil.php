@@ -216,102 +216,6 @@ class Nodeutil
 		return $ip;
 	}
 
-	static function downloadApps(&$error=null) {
-		global $_config;
-
-		if(!FEATURE_APPS) {
-			_log("Apps feature disabled");
-			return true;
-		}
-
-		$res = peer_post(APPS_REPO_SERVER."/peer.php?q=getApps", [], 30, $err);
-		_log("Contancting repo server response=".json_encode($res),3);
-		if($res === false) {
-			$error = "No response from repo server err=$err";
-			_log($error,2);
-			return false;
-		} else {
-			$hash = $res['hash'];
-			$appsHashCalc = Nodeutil::calcAppsHash();
-			if($appsHashCalc == $hash) {
-				_log("Apps are up to date");
-				return true;
-			}
-			$signature = $res['signature'];
-			$verify = Account::checkSignature($hash, $signature, APPS_REPO_SERVER_PUBLIC_KEY);
-			_log("Verify repo response hash=$hash signature=$signature verify=$verify",3);
-			if(!$verify) {
-				$error = "Not verified signature from repo server";
-				_log($error,2);
-				return false;
-			} else {
-				$link = APPS_REPO_SERVER."/apps.php";
-				_log("Downloading archive file from link $link",3);
-				$arrContextOptions=array(
-					"ssl"=>array(
-						"verify_peer"=>!DEVELOPMENT,
-						"verify_peer_name"=>!DEVELOPMENT,
-					),
-				);
-				$res = file_put_contents(ROOT . "/tmp/apps.tar.gz", fopen($link, "r", false,  stream_context_create($arrContextOptions)));
-				if($res === false) {
-					_log("Error downloading apps from repo server");
-				} else {
-					$size = filesize(ROOT . "/tmp/apps.tar.gz");
-					if(!$size) {
-						_log("Downloaded empty file from repo server");
-					} else {
-						if(file_exists(self::getAppsLockFile())) {
-							$error = "Apps lock file exists - can not update";
-							_log($error);
-							return false;
-						}
-						$lock = fopen(self::getAppsLockFile(), "w");
-						fclose($lock);
-						_log("backup existing apps", 4);
-						$cmd = "cd ".ROOT."/web && rm -rf apps_tmp";
-						shell_exec($cmd);
-						$cmd = "cd ".ROOT."/web && cp -rf apps apps_tmp";
-						shell_exec($cmd);
-						self::extractAppsArchive();
-						_log("Extracted archive",4);
-						$calHash = self::calcAppsHash();
-						_log("Calculated new hash: ".$calHash,4);
-						if($hash != $calHash) {
-							_log("Error extracting apps transfered",4);
-							_log("restore existing apps", 4);
-							$cmd = "cd ".ROOT."/web && rm -rf apps";
-							shell_exec($cmd);
-							$cmd = "cd ".ROOT."/web && mv apps_tmp apps";
-							shell_exec($cmd);
-							$cmd = "cd ".ROOT."/web && chown -R www-data:www-data apps";
-							shell_exec($cmd);
-						} else {
-							$appsHashFile = Nodeutil::getAppsHashFile();
-							file_put_contents($appsHashFile, $calHash);
-							chmod($appsHashFile, 0777);
-							_log("Stored new hash",4);
-							_log("delete backup", 4);
-							$cmd = "cd ".ROOT."/web && rm -rf apps_tmp";
-							shell_exec($cmd);
-						}
-						@unlink(self::getAppsLockFile());
-					}
-				}
-			}
-		}
-
-		return true;
-	}
-
-	static function calcAppsHash() {
-		_log("Executing calcAppsHash", 3);
-		$cmd = "cd ".ROOT."/web && tar -cf - apps --owner=0 --group=0 --sort=name --mode=744 --mtime='2020-01-01 00:00:00 UTC' | sha256sum";
-		$res = shell_exec($cmd);
-		$arr = explode(" ", $res);
-		$appsHash = trim($arr[0]);
-		return $appsHash;
-	}
 
 	static function sync($current, $largest_height, $peers, $most_common) {
 
@@ -682,21 +586,6 @@ class Nodeutil
 			'lastBlockTime'=>$current['date'],
             'php_version' => PHP_VERSION
 		];
-	}
-
-	static function isRepoServer() {
-		global $_config;
-		$repoServer = false;
-		if($_config['repository'] && $_config['repository_private_key']) {
-			$private_key = coin2pem($_config['repository_private_key'], true);
-			$pkey = openssl_pkey_get_private($private_key);
-			$k = openssl_pkey_get_details($pkey);
-			$public_key = pem2coin($k['key']);
-			if ($public_key == APPS_REPO_SERVER_PUBLIC_KEY) {
-				$repoServer = true;
-			}
-		}
-		return $repoServer;
 	}
 
     static function discoverPeers() {

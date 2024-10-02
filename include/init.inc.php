@@ -122,13 +122,6 @@ if (isset($_config['maintenance']) && $_config['maintenance'] == 1) {
     api_err("under-maintenance");
 }
 
-// current hostname
-$hostname = (!empty($_SERVER['HTTPS']) ? 'https' : 'http')."://".san_host(@$_SERVER['HTTP_HOST']);
-// set the hostname to the current one
-if ($hostname != @$_config['hostname'] && @$_SERVER['HTTP_HOST'] != "localhost" && @$_SERVER['HTTP_HOST'] != "127.0.0.1" && @$_SERVER['hostname'] != '::1' && php_sapi_name() !== 'cli' && ($_config['allow_hostname_change'] != false || empty(@$_config['hostname']))) {
-    $db->run("UPDATE config SET val=:hostname WHERE cfg='hostname' LIMIT 1", [":hostname" => $hostname]);
-    $_config['hostname'] = $hostname;
-}
 if (empty($_config['hostname']) || $_config['hostname'] == "http://" || $_config['hostname'] == "https://") {
     if(php_sapi_name()!="cli") {
         api_err("Invalid hostname");

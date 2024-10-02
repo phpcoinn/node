@@ -24,11 +24,17 @@ $_config['initial_peer_list'] = [
 // does not peer with any of the peers. Uses the seed peers and syncs only from those peers. Requires a cronjob on sync.php
 $_config['passive_peering'] = false;
 
+// limit number of peers for propagate
+$_config['peers_limit']=30;
+
+// set custom interface to which server listens
+//$_config['interface']="";
+
+// set custom proxy for outgoing requests
+//$_config['proxy']="";
+
 // set node to offline, do not send or receive peer requests
 $_config['offline']=false;
-
-// set ip restriction on miner
-$_config['minepool']=false;
 
 // set outgoing proxy for peer requests
 $_config['proxy']=null;
@@ -77,6 +83,8 @@ $_config['generator_private_key']="";
  */
 $_config['admin']=false;
 $_config['admin_password']='';
+//login to admin panel with private key
+$_config['admin_public_key']='';
 
 /**
  * Masternode configuration
@@ -93,3 +101,6 @@ $_config['dapps_public_key']="";
 $_config['dapps_private_key']="";
 $_config['dapps_anonymous']=false;
 $_config['dapps_disable_auto_propagate']=true;
+
+// set server to maintenance mode
+//$_config['maintenance']=1;

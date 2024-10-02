@@ -125,7 +125,7 @@ require_once __DIR__. '/../common/include/top.php';
 				<td><?php echo explorer_block_link($tx['block'], true) ?></td>
                 <td><?php echo explorer_address_link($tx['src'], true) ?></td>
 				<td><?php echo explorer_address_link($tx['dst'], true) ?></td>
-				<td><?php echo TransactionTypeLabel($tx['type']) ?></td>
+				<td><?php echo Transaction::typeLabel($tx['type']) ?></td>
 				<td class="text-end"><?php echo $tx['val'] ?></td>
 				<td class="text-end"><?php echo !empty(floatval($tx['fee'])) ? $tx['fee'] : '' ?></td>
 		<?php } ?>

@@ -195,13 +195,6 @@ if ($q == "info") {
 		api_err("no-live-peers");
 	}
 
-//	if (!isset($_POST['iphash'])) {
-//		$iphash = Minepool::calculateIpHash($ip);
-//		_log("Minepool: calculated hash $iphash");
-//	} else {
-//		$iphash = $_POST['iphash'];
-//	}
-
 	$address = san($_POST['address']);
 	$height = san($_POST['height']);
 
@@ -219,19 +212,6 @@ if ($q == "info") {
 	}
 
 	_logp(" minerInfo=$minerInfo ");
-
-	$res = Minepool::checkIp($address, $ip);
-	if (!$res) {
-		_log("IP hash check not pass");
-		$block_height = Block::getHeight();
-		if($block_height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
-			$generator_stat['rejected']++;
-			@$generator_stat['reject-reasons']['iphash-check-failed']++;
-			saveGeneratorStat($generator_stat);
-            _logf("rejected: iphash-check-failed", 0);
-			api_err("iphash-check-failed");
-		}
-	}
 
 	$nonce = san($_POST['nonce']);
 	$version = Block::versionCode($height);
@@ -276,14 +256,6 @@ if ($q == "info") {
 		@$generator_stat['reject-reasons']['rejected - date']++;
 		saveGeneratorStat($generator_stat);
 		api_err("rejected - date");
-	}
-
-	$res = Minepool::insert($address, $height, $minerInfo, $ip);
-	if (!$res) {
-		_logf(" rejected - Can not insert in minepool", 0);
-		$generator_stat['rejected']++;
-		@$generator_stat['reject-reasons']['minepool-error']++;
-		api_err("minepool-error");
 	}
 
 	$data = Transaction::mempool(Block::max_transactions(), false);
@@ -384,19 +356,6 @@ if ($q == "info") {
 		saveGeneratorStat($generator_stat);
 		api_err("rejected - mine");
 	}
-//TODO: remove checkAddress from wallet
-} else if ($q == "checkAddress") {
-    $address = $_POST['address'];
-    if (empty($address)) {
-        api_err("address-not-specified");
-    }
-    _log("Check mine access to ip: $ip address=$address", 4);
-    $res = Minepool::checkIp($address, $ip);
-    if ($res) {
-        api_echo($address);
-    } else {
-        api_err("ipcheck-failed");
-    }
 } else if ($q=="submitStat") {
 
     $res = checkVersion();

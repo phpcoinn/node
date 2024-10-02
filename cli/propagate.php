@@ -277,36 +277,6 @@ if ($type == "transactionpeer") {
 
 }
 
-if($type == "apps") {
-	if(!Nodeutil::isRepoServer()) {
-		_log("Not repo server");
-		exit;
-	}
-	$hash = $argv[2];
-	_log("PropagateApps: Propagating apps change",5);
-	$peers = Peer::getAll();
-	if(count($peers)==0) {
-		_log("PropagateApps: No peers to propagate", 5);
-	} else {
-		foreach ($peers as $peer) {
-			Propagate::appsToPeer($peer['hostname'], $hash);
-		}
-	}
-}
-
-
-if($type == "appspeer") {
-	if(!Nodeutil::isRepoServer()) {
-		_log("Not repo server");
-		exit;
-	}
-	$hash = $argv[2];
-	$hostname = $argv[3];
-	$hostname = base64_decode($hostname);
-	$url = $hostname."/peer.php?q=updateApps";
-	$res = peer_post($url, ["hash"=>$hash]);
-	_log("PropagateApps: propagate to peer $url res=".json_encode($res), 5);
-}
 
 
 if($type == "masternode") {

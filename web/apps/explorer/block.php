@@ -235,7 +235,7 @@ require_once __DIR__. '/../common/include/top.php';
                     <td class="text-end"><?php echo num($tx['val']) ?></td>
                     <td><?php echo num($tx['fee']) ?></td>
                     <td>
-                        <?php echo TransactionTypeLabel($tx['type']) ?>
+                        <?php echo Transaction::typeLabel($tx['type']) ?>
 	                    <?php if($tx['type'] == TX_TYPE_REWARD) { ?>
 		                    <?php if($tx['message']=="generator") { ?>
                                 <span class="badge rounded-pill bg-success">Generator</span>
