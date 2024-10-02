@@ -300,7 +300,7 @@ if($dbversion <= 42) {
 
 if($dbversion <= 43) {
     global $db;
-    $db->run("drop database minepool");
+    $db->run("drop table minepool");
 }
 
 // update the db version to the latest one
