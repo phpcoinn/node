@@ -219,6 +219,12 @@ class NodeMiner extends Task {
 				$data[$stake_reward_tx['id']]=$stake_reward_tx;
 			}
 
+            if(isset($rewardinfo['dev']) && $rewardinfo['dev']>0) {
+                $devReward = num($rewardinfo['dev']);
+                $devRewardTx = Transaction::getDevRewardTx($this->public_key,$this->private_key,$devReward,$new_block_date);
+                $data[$devRewardTx['id']]=$devRewardTx;
+            }
+
 			Transaction::processFee($data, $this->public_key, $this->private_key, $fee_dst, $new_block_date, $height);
 			ksort($data);
 
