@@ -919,6 +919,7 @@ class Transaction
 			$miner = $reward['miner'];
 			$generator = $reward['generator'];
 			$masternode = $reward['masternode'];
+			$dev = @$reward['dev'];
 			if($msg == "nodeminer") {
 				$val_check = num($miner + $generator);
 			} else if ($msg == "miner") {
@@ -930,10 +931,12 @@ class Transaction
 			} else if (substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING) {
 				$val_check = num($miner);
 			} else if ($msg == "stake") {
-				if($height < STAKING_START_HEIGHT) {
-					throw new Exception("Invalid staking transaction before start height " . STAKING_START_HEIGHT);
-				}
-				$val_check = num($reward['staker']);
+                if ($height < STAKING_START_HEIGHT) {
+                    throw new Exception("Invalid staking transaction before start height " . STAKING_START_HEIGHT);
+                }
+                $val_check = num($reward['staker']);
+            } else if ($msg == "dev") {
+                $val_check = num($dev);
 			}
 			if(empty($val_check) && $height>1 && $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 				throw new Exception("Reward transaction no value id=".$this->id, 5);
@@ -973,6 +976,12 @@ class Transaction
 					}
 				}
 			}
+
+            if($msg == "dev") {
+                if($this->dst != DEV_REWARD_ADDRESS) {
+                    throw new Exception("Invalid destination address for dev ".$this->dst);
+                }
+            }
 
 			return true;
 
@@ -1160,6 +1169,13 @@ class Transaction
 		$transaction->hash();
 		return $transaction->toArray();
 	}
+
+    static function getDevRewardTx($public_key,$private_key,$reward,$date) {
+        $transaction = new Transaction($public_key,DEV_REWARD_ADDRESS,$reward,TX_TYPE_REWARD,$date,"dev");
+        $transaction->sign($private_key);
+        $transaction->hash();
+        return $transaction->toArray();
+    }
 
     static function getForBlock($height) {
 		return Transaction::get_transactions($height, "");

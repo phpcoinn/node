@@ -68,7 +68,7 @@ class Blockchain
             $phase = [];
             $phase["name"]=$line[0];
             $phase["blocks"]=$line[3]-$line[2]+1;
-            $phase["reward"]=$line[4]+$line[5]+$line[6]+$line[7];
+            $phase["reward"]=$line[4]+$line[5]+$line[6]+$line[7]+$line[8];
             $phase["segment"]=$line[1];
             $block+=$phase['blocks'];
             $phase['total_blocks']=$block;
@@ -120,7 +120,8 @@ class Blockchain
 				'end_block'=>$phase['end'],
 				'blocks'=>$phase['blocks'],
 				'supply'=>$total_supply,
-				'real_start_time'=>$real_start_time
+				'real_start_time'=>$real_start_time,
+                'dev'=>$reward['dev']
 			];
 		}
 		return $rows;

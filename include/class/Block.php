@@ -360,10 +360,11 @@ class Block
                 $miner = $line [4];
                 $generator = $line [5];
                 $mn_reward = $line [7];
+                $dev_reward = $line[8];
                 $staker = $line [6];
                 $name = $line[0];
                 $segment = $line[1];
-                $total = $generator + $miner + $staker + $mn_reward;
+                $total = $generator + $miner + $staker + $mn_reward + $dev_reward;
                 $out = [
                     'total'=>$total,
                     'miner'=>$miner,
@@ -373,7 +374,8 @@ class Block
                     'key'=>"{$name}-{$segment}",
                     'phase'=>$name,
                     'segment'=>empty($segment) ? null : $segment,
-                    'staker'=>$staker
+                    'staker'=>$staker,
+                    'dev'=>$dev_reward
                 ];
                 return $out;
             }
@@ -1186,11 +1188,11 @@ class Block
             $start = $line[2];
             $end = $line[3];
             if($height >= $start && $height <= $end) {
-                $collateral = $line[8];
+                $collateral = $line[9];
                 if($next) {
                     for($j=$i+1; $j<count(REWARD_SCHEME); $j++) {
                         $line2 = REWARD_SCHEME[$j];
-                        $next_collateral = $line2[8];
+                        $next_collateral = $line2[9];
                         if($next_collateral != $collateral) {
                             $collateral = $next_collateral;
                             break;
@@ -1211,10 +1213,10 @@ class Block
             $start = $line[2];
             $end = $line[3];
             if($height >= $start && $height <= $end) {
-                $collateral = $line[8];
+                $collateral = $line[9];
                 for($j=$i+1; $j<count(REWARD_SCHEME); $j++) {
                     $line2 = REWARD_SCHEME[$j];
-                    $next_collateral = $line2[8];
+                    $next_collateral = $line2[9];
                     if($next_collateral != $collateral) {
                         $collateral = $next_collateral;
                         $next_height = $line2[2];
