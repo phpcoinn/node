@@ -252,6 +252,9 @@ require_once __DIR__. '/../common/include/top.php';
 		                    <?php if($tx['message']=="stake") { ?>
                                 <span class="badge rounded-pill bg-pink">Stake</span>
 		                    <?php } ?>
+		                    <?php if($tx['message']=="dev") { ?>
+                                <span class="badge rounded-pill bg-secondary">Dev</span>
+		                    <?php } ?>
 	                    <?php } ?>
                     </td>
                     <td><?php echo display_date($tx['date']) ?></td>
