@@ -911,7 +911,7 @@ class Transaction
 			if(empty($msg) && $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 				throw new Exception("Reward transaction message missing");
 			}
-			if(!in_array($msg, ["nodeminer", "miner", "generator","masternode","stake"]) &&
+			if(!in_array($msg, ["nodeminer", "miner", "generator","masternode","stake","dev"]) &&
 				!(substr($msg, 0, strlen("pool|")) == "pool|" && $height < UPDATE_4_NO_POOL_MINING)
 				&& $height>1 &&  $height > UPDATE_2_BLOCK_CHECK_IMPROVED) {
 				throw new Exception("Reward transaction invalid message: $msg");
