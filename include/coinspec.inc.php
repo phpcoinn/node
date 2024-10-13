@@ -9,8 +9,8 @@ const NETWORK = "testnet";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
 const VERSION = "1.5.5";
-const BUILD_VERSION = 469;
-const MIN_VERSION = "1.5.3";
+const BUILD_VERSION = 470;
+const MIN_VERSION = "1.5.5";
 const GIT_BRANCH = "test";
 const MIN_MINER_VERSION = "1.3";
 
