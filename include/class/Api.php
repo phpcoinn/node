@@ -1392,4 +1392,55 @@ class Api
         $balance=$db->single($sql, [$token,$address], false);
         api_echo($balance);
     }
+
+    static function findTransactions($data) {
+        $sql="select * from transactions t where 1=1 ";
+        $params = [];
+        if(isset($data['src'])) {
+            $sql.=" and t.src = ?";
+            $params[]=$data['src'];
+        }
+        if(isset($data['dst'])) {
+            $sql.=" and t.dst = ?";
+            $params[]=$data['dst'];
+        }
+        if(isset($data['type'])) {
+            $sql.=" and t.type = ?";
+            $params[]=$data['type'];
+        }
+        if(isset($data['message'])) {
+            $sql.=" and t.message = ?";
+            $params[]=$data['message'];
+        }
+        if(isset($data['id'])) {
+            $sql.=" and t.id = ?";
+            $params[]=$data['id'];
+        }
+        if(isset($data['block'])) {
+            $sql.=" and t.block = ?";
+            $params[]=$data['block'];
+        }
+        if(isset($data['height'])) {
+            $sql.=" and t.height = ?";
+            $params[]=$data['height'];
+        }
+        if(isset($data['limit'])) {
+            $limit=$data['limit'];
+        }
+        if(empty($limit) || $limit > 100) {
+            $limit=100;
+        }
+        $offset = 0;
+        if(isset($data['offset'])) {
+            $offset=$data['offset'];
+        }
+        $params[]=$offset;
+        $params[]=$limit;
+        $sql.=" order by t.height desc limit ?, ?";
+        global $db;
+        $rows = $db->run($sql, $params, false);
+        api_echo($rows);
+    }
+
+
 }
