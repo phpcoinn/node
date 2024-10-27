@@ -1394,7 +1394,8 @@ class Api
     }
 
     static function findTransactions($data) {
-        $sql="select * from transactions t where 1=1 ";
+        $table = (!empty($data['mempool'])) ? "mempool" : "transactions";
+        $sql="select * from $table t where 1=1 ";
         $params = [];
         if(isset($data['src'])) {
             $sql.=" and t.src = ?";
@@ -1423,6 +1424,10 @@ class Api
         if(isset($data['height'])) {
             $sql.=" and t.height = ?";
             $params[]=$data['height'];
+        }
+        if(isset($data['fromHeight'])) {
+            $sql.=" and t.height >= ?";
+            $params[]=$data['fromHeight'];
         }
         if(isset($data['limit'])) {
             $limit=$data['limit'];
