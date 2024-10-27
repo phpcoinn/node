@@ -5,7 +5,7 @@
   "main": "index.js",
   "author": "",
   "devDependencies": {
-    "apidoc": "^0.28.1",
+    "apidoc": "^1.2.0",
     "argon2": "^0.28.5",
     "argon2-browser": "^1.16.0",
     "atob": "^2.1.2",
@@ -23,7 +23,8 @@
   },
   "apidoc": {
     "title": "PHPCoin Node API",
-    "url": ""
+    "url": "",
+    "sampleUrl": "https://node1.phpcoin.net"
   },
   "scripts": {
     "build_doc": "rm -rf ../web/doc && node_modules/.bin/apidoc -o ../web/doc/ -i ../include -f Api.php",
