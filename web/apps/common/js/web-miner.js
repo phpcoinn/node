@@ -8934,45 +8934,46 @@ exports['des-ede'] = {
 }
 
 },{}],57:[function(require,module,exports){
-(function (Buffer){(function (){
-var BN = require('bn.js')
-var randomBytes = require('randombytes')
+'use strict';
 
-function blind (priv) {
-  var r = getr(priv)
-  var blinder = r.toRed(BN.mont(priv.modulus)).redPow(new BN(priv.publicExponent)).fromRed()
-  return { blinder: blinder, unblinder: r.invm(priv.modulus) }
+var BN = require('bn.js');
+var randomBytes = require('randombytes');
+var Buffer = require('safe-buffer').Buffer;
+
+function getr(priv) {
+	var len = priv.modulus.byteLength();
+	var r;
+	do {
+		r = new BN(randomBytes(len));
+	} while (r.cmp(priv.modulus) >= 0 || !r.umod(priv.prime1) || !r.umod(priv.prime2));
+	return r;
 }
 
-function getr (priv) {
-  var len = priv.modulus.byteLength()
-  var r
-  do {
-    r = new BN(randomBytes(len))
-  } while (r.cmp(priv.modulus) >= 0 || !r.umod(priv.prime1) || !r.umod(priv.prime2))
-  return r
+function blind(priv) {
+	var r = getr(priv);
+	var blinder = r.toRed(BN.mont(priv.modulus)).redPow(new BN(priv.publicExponent)).fromRed();
+	return { blinder: blinder, unblinder: r.invm(priv.modulus) };
 }
 
-function crt (msg, priv) {
-  var blinds = blind(priv)
-  var len = priv.modulus.byteLength()
-  var blinded = new BN(msg).mul(blinds.blinder).umod(priv.modulus)
-  var c1 = blinded.toRed(BN.mont(priv.prime1))
-  var c2 = blinded.toRed(BN.mont(priv.prime2))
-  var qinv = priv.coefficient
-  var p = priv.prime1
-  var q = priv.prime2
-  var m1 = c1.redPow(priv.exponent1).fromRed()
-  var m2 = c2.redPow(priv.exponent2).fromRed()
-  var h = m1.isub(m2).imul(qinv).umod(p).imul(q)
-  return m2.iadd(h).imul(blinds.unblinder).umod(priv.modulus).toArrayLike(Buffer, 'be', len)
+function crt(msg, priv) {
+	var blinds = blind(priv);
+	var len = priv.modulus.byteLength();
+	var blinded = new BN(msg).mul(blinds.blinder).umod(priv.modulus);
+	var c1 = blinded.toRed(BN.mont(priv.prime1));
+	var c2 = blinded.toRed(BN.mont(priv.prime2));
+	var qinv = priv.coefficient;
+	var p = priv.prime1;
+	var q = priv.prime2;
+	var m1 = c1.redPow(priv.exponent1).fromRed();
+	var m2 = c2.redPow(priv.exponent2).fromRed();
+	var h = m1.isub(m2).imul(qinv).umod(p).imul(q);
+	return m2.iadd(h).imul(blinds.unblinder).umod(priv.modulus).toArrayLike(Buffer, 'be', len);
 }
-crt.getr = getr
+crt.getr = getr;
 
-module.exports = crt
+module.exports = crt;
 
-}).call(this)}).call(this,require("buffer").Buffer)
-},{"bn.js":34,"buffer":77,"randombytes":193}],58:[function(require,module,exports){
+},{"bn.js":34,"randombytes":193,"safe-buffer":196}],58:[function(require,module,exports){
 'use strict';
 
 module.exports = require('./browser/algorithms.json');
@@ -21315,103 +21316,109 @@ Hmac.prototype._final = function () {
 module.exports = Hmac
 
 },{"cipher-base":95,"inherits":148,"safe-buffer":196}],103:[function(require,module,exports){
-'use strict'
+'use strict';
 
-exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = require('randombytes')
-exports.createHash = exports.Hash = require('create-hash')
-exports.createHmac = exports.Hmac = require('create-hmac')
+// eslint-disable-next-line no-multi-assign
+exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = require('randombytes');
 
-var algos = require('browserify-sign/algos')
-var algoKeys = Object.keys(algos)
-var hashes = ['sha1', 'sha224', 'sha256', 'sha384', 'sha512', 'md5', 'rmd160'].concat(algoKeys)
+// eslint-disable-next-line no-multi-assign
+exports.createHash = exports.Hash = require('create-hash');
+
+// eslint-disable-next-line no-multi-assign
+exports.createHmac = exports.Hmac = require('create-hmac');
+
+var algos = require('browserify-sign/algos');
+var algoKeys = Object.keys(algos);
+var hashes = [
+	'sha1',
+	'sha224',
+	'sha256',
+	'sha384',
+	'sha512',
+	'md5',
+	'rmd160'
+].concat(algoKeys);
+
 exports.getHashes = function () {
-  return hashes
-}
+	return hashes;
+};
 
-var p = require('pbkdf2')
-exports.pbkdf2 = p.pbkdf2
-exports.pbkdf2Sync = p.pbkdf2Sync
+var p = require('pbkdf2');
+exports.pbkdf2 = p.pbkdf2;
+exports.pbkdf2Sync = p.pbkdf2Sync;
 
-var aes = require('browserify-cipher')
+var aes = require('browserify-cipher');
 
-exports.Cipher = aes.Cipher
-exports.createCipher = aes.createCipher
-exports.Cipheriv = aes.Cipheriv
-exports.createCipheriv = aes.createCipheriv
-exports.Decipher = aes.Decipher
-exports.createDecipher = aes.createDecipher
-exports.Decipheriv = aes.Decipheriv
-exports.createDecipheriv = aes.createDecipheriv
-exports.getCiphers = aes.getCiphers
-exports.listCiphers = aes.listCiphers
+exports.Cipher = aes.Cipher;
+exports.createCipher = aes.createCipher;
+exports.Cipheriv = aes.Cipheriv;
+exports.createCipheriv = aes.createCipheriv;
+exports.Decipher = aes.Decipher;
+exports.createDecipher = aes.createDecipher;
+exports.Decipheriv = aes.Decipheriv;
+exports.createDecipheriv = aes.createDecipheriv;
+exports.getCiphers = aes.getCiphers;
+exports.listCiphers = aes.listCiphers;
 
-var dh = require('diffie-hellman')
+var dh = require('diffie-hellman');
 
-exports.DiffieHellmanGroup = dh.DiffieHellmanGroup
-exports.createDiffieHellmanGroup = dh.createDiffieHellmanGroup
-exports.getDiffieHellman = dh.getDiffieHellman
-exports.createDiffieHellman = dh.createDiffieHellman
-exports.DiffieHellman = dh.DiffieHellman
+exports.DiffieHellmanGroup = dh.DiffieHellmanGroup;
+exports.createDiffieHellmanGroup = dh.createDiffieHellmanGroup;
+exports.getDiffieHellman = dh.getDiffieHellman;
+exports.createDiffieHellman = dh.createDiffieHellman;
+exports.DiffieHellman = dh.DiffieHellman;
 
-var sign = require('browserify-sign')
+var sign = require('browserify-sign');
 
-exports.createSign = sign.createSign
-exports.Sign = sign.Sign
-exports.createVerify = sign.createVerify
-exports.Verify = sign.Verify
+exports.createSign = sign.createSign;
+exports.Sign = sign.Sign;
+exports.createVerify = sign.createVerify;
+exports.Verify = sign.Verify;
 
-exports.createECDH = require('create-ecdh')
+exports.createECDH = require('create-ecdh');
 
-var publicEncrypt = require('public-encrypt')
+var publicEncrypt = require('public-encrypt');
 
-exports.publicEncrypt = publicEncrypt.publicEncrypt
-exports.privateEncrypt = publicEncrypt.privateEncrypt
-exports.publicDecrypt = publicEncrypt.publicDecrypt
-exports.privateDecrypt = publicEncrypt.privateDecrypt
+exports.publicEncrypt = publicEncrypt.publicEncrypt;
+exports.privateEncrypt = publicEncrypt.privateEncrypt;
+exports.publicDecrypt = publicEncrypt.publicDecrypt;
+exports.privateDecrypt = publicEncrypt.privateDecrypt;
 
 // the least I can do is make error messages for the rest of the node.js/crypto api.
-// ;[
+// [
 //   'createCredentials'
 // ].forEach(function (name) {
 //   exports[name] = function () {
-//     throw new Error([
-//       'sorry, ' + name + ' is not implemented yet',
-//       'we accept pull requests',
-//       'https://github.com/crypto-browserify/crypto-browserify'
-//     ].join('\n'))
-//   }
-// })
+//     throw new Error('sorry, ' + name + ' is not implemented yet\nwe accept pull requests\nhttps://github.com/browserify/crypto-browserify');
+//   };
+// });
 
-var rf = require('randomfill')
+var rf = require('randomfill');
 
-exports.randomFill = rf.randomFill
-exports.randomFillSync = rf.randomFillSync
+exports.randomFill = rf.randomFill;
+exports.randomFillSync = rf.randomFillSync;
 
 exports.createCredentials = function () {
-  throw new Error([
-    'sorry, createCredentials is not implemented yet',
-    'we accept pull requests',
-    'https://github.com/crypto-browserify/crypto-browserify'
-  ].join('\n'))
-}
+	throw new Error('sorry, createCredentials is not implemented yet\nwe accept pull requests\nhttps://github.com/browserify/crypto-browserify');
+};
 
 exports.constants = {
-  'DH_CHECK_P_NOT_SAFE_PRIME': 2,
-  'DH_CHECK_P_NOT_PRIME': 1,
-  'DH_UNABLE_TO_CHECK_GENERATOR': 4,
-  'DH_NOT_SUITABLE_GENERATOR': 8,
-  'NPN_ENABLED': 1,
-  'ALPN_ENABLED': 1,
-  'RSA_PKCS1_PADDING': 1,
-  'RSA_SSLV23_PADDING': 2,
-  'RSA_NO_PADDING': 3,
-  'RSA_PKCS1_OAEP_PADDING': 4,
-  'RSA_X931_PADDING': 5,
-  'RSA_PKCS1_PSS_PADDING': 6,
-  'POINT_CONVERSION_COMPRESSED': 2,
-  'POINT_CONVERSION_UNCOMPRESSED': 4,
-  'POINT_CONVERSION_HYBRID': 6
-}
+	DH_CHECK_P_NOT_SAFE_PRIME: 2,
+	DH_CHECK_P_NOT_PRIME: 1,
+	DH_UNABLE_TO_CHECK_GENERATOR: 4,
+	DH_NOT_SUITABLE_GENERATOR: 8,
+	NPN_ENABLED: 1,
+	ALPN_ENABLED: 1,
+	RSA_PKCS1_PADDING: 1,
+	RSA_SSLV23_PADDING: 2,
+	RSA_NO_PADDING: 3,
+	RSA_PKCS1_OAEP_PADDING: 4,
+	RSA_X931_PADDING: 5,
+	RSA_PKCS1_PSS_PADDING: 6,
+	POINT_CONVERSION_COMPRESSED: 2,
+	POINT_CONVERSION_UNCOMPRESSED: 4,
+	POINT_CONVERSION_HYBRID: 6
+};
 
 },{"browserify-cipher":54,"browserify-sign":61,"browserify-sign/algos":58,"create-ecdh":97,"create-hash":99,"create-hmac":101,"diffie-hellman":110,"pbkdf2":177,"public-encrypt":186,"randombytes":193,"randomfill":194}],104:[function(require,module,exports){
 'use strict';
@@ -24711,8 +24718,27 @@ EC.prototype.genKeyPair = function genKeyPair(options) {
   }
 };
 
-EC.prototype._truncateToN = function _truncateToN(msg, truncOnly) {
-  var delta = msg.byteLength() * 8 - this.n.bitLength();
+EC.prototype._truncateToN = function _truncateToN(msg, truncOnly, bitLength) {
+  var byteLength;
+  if (BN.isBN(msg) || typeof msg === 'number') {
+    msg = new BN(msg, 16);
+    byteLength = msg.byteLength();
+  } else if (typeof msg === 'object') {
+    // BN assumes an array-like input and asserts length
+    byteLength = msg.length;
+    msg = new BN(msg, 16);
+  } else {
+    // BN converts the value to string
+    var str = msg.toString();
+    // HEX encoding
+    byteLength = (str.length + 1) >>> 1;
+    msg = new BN(str, 16);
+  }
+  // Allow overriding
+  if (typeof bitLength !== 'number') {
+    bitLength = byteLength * 8;
+  }
+  var delta = bitLength - this.n.bitLength();
   if (delta > 0)
     msg = msg.ushrn(delta);
   if (!truncOnly && msg.cmp(this.n) >= 0)
@@ -24730,7 +24756,7 @@ EC.prototype.sign = function sign(msg, key, enc, options) {
     options = {};
 
   key = this.keyFromPrivate(key, enc);
-  msg = this._truncateToN(new BN(msg, 16));
+  msg = this._truncateToN(msg, false, options.msgBitLength);
 
   // Zero-extend key to provide enough entropy
   var bytes = this.n.byteLength();
@@ -24786,8 +24812,11 @@ EC.prototype.sign = function sign(msg, key, enc, options) {
   }
 };
 
-EC.prototype.verify = function verify(msg, signature, key, enc) {
-  msg = this._truncateToN(new BN(msg, 16));
+EC.prototype.verify = function verify(msg, signature, key, enc, options) {
+  if (!options)
+    options = {};
+
+  msg = this._truncateToN(msg, false, options.msgBitLength);
   key = this.keyFromPublic(key, enc);
   signature = new Signature(signature, 'hex');
 
@@ -24989,8 +25018,8 @@ KeyPair.prototype.sign = function sign(msg, enc, options) {
   return this.ec.sign(msg, this, enc, options);
 };
 
-KeyPair.prototype.verify = function verify(msg, signature) {
-  return this.ec.verify(msg, signature, this);
+KeyPair.prototype.verify = function verify(msg, signature, options) {
+  return this.ec.verify(msg, signature, this, undefined, options);
 };
 
 KeyPair.prototype.inspect = function inspect() {
@@ -25036,6 +25065,10 @@ function getLength(buf, p) {
 
   // Indefinite length or overflow
   if (octetLen === 0 || octetLen > 4) {
+    return false;
+  }
+
+  if(buf[p.place] === 0x00) {
     return false;
   }
 
@@ -25087,6 +25120,9 @@ Signature.prototype._importDER = function _importDER(data, enc) {
   if (rlen === false) {
     return false;
   }
+  if ((data[p.place] & 128) !== 0) {
+    return false;
+  }
   var r = data.slice(p.place, rlen + p.place);
   p.place += rlen;
   if (data[p.place++] !== 0x02) {
@@ -25097,6 +25133,9 @@ Signature.prototype._importDER = function _importDER(data, enc) {
     return false;
   }
   if (data.length !== slen + p.place) {
+    return false;
+  }
+  if ((data[p.place] & 128) !== 0) {
     return false;
   }
   var s = data.slice(p.place, slen + p.place);
@@ -25410,6 +25449,7 @@ function Signature(eddsa, sig) {
     sig = parseBytes(sig);
 
   if (Array.isArray(sig)) {
+    assert(sig.length === eddsa.encodingLength * 2, 'Signature has invalid size');
     sig = {
       R: sig.slice(0, eddsa.encodingLength),
       S: sig.slice(eddsa.encodingLength),
@@ -26364,7 +26404,7 @@ arguments[4][98][0].apply(exports,arguments)
 },{"buffer":36,"dup":98}],131:[function(require,module,exports){
 module.exports={
   "name": "elliptic",
-  "version": "6.5.6",
+  "version": "6.6.0",
   "description": "EC cryptography",
   "main": "lib/elliptic.js",
   "files": [
@@ -31600,7 +31640,8 @@ module.exports = {
     },
     sha256(input) {
         return crypto.createHash('sha256').update(input).digest('hex');
-    }
+    },
+    verifyAddress
 }
 
 

@@ -83,4 +83,18 @@ class SdkUtil
         return $res;
     }
 
+    static function waitForTransaction($node, $txId, $numConfirmations) {
+        $res = SdkUtil::api_get($node, "getTransaction&transaction=$txId", $err);
+        $confirmations = $res['confirmations'];
+        if($confirmations > $numConfirmations) {
+            return;
+        }
+        while($confirmations < $numConfirmations) {
+            sleep(5);
+            $res = SdkUtil::api_get($node, "getTransaction&transaction=$txId", $err);
+            $confirmations = $res['confirmations'];
+            echo "Waiting for transaction $txId ... $confirmations / $numConfirmations\n";
+        }
+    }
+
 }
