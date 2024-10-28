@@ -242,15 +242,17 @@ global $btcPrice, $usdPrice;
                                 <span class="text-muted font-size-13">Fee <?php echo number_format($fee,5) ?></span>
                             </div>
                         </div>
-                        <div class="col-6">
-                            <i class="fas fa-file-code  me-1 h4"></i>
-                            <span class="text-muted mb-3 lh-1 text-truncate h4">
-                                <a href="/apps/explorer/smart_contracts.php" style="letter-spacing: -1.5px">Smart Contracts</a>
-                            </span>
-                            <h2 class="my-2">
-                                <?php echo $scCount ?>
-                            </h2>
-                        </div>
+                        <?php if(NETWORK == "testnet") { ?>
+                            <div class="col-6">
+                                <i class="fas fa-file-code  me-1 h4"></i>
+                                <span class="text-muted mb-3 lh-1 text-truncate h4">
+                                    <a href="/apps/explorer/smart_contracts.php" style="letter-spacing: -1.5px">Smart Contracts</a>
+                                </span>
+                                <h2 class="my-2">
+                                    <?php echo $scCount ?>
+                                </h2>
+                            </div>
+                        <?php } ?>
                     </div>
                 </div>
             </div>
