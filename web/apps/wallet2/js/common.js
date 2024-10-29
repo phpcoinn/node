@@ -88,6 +88,7 @@ export class Wallet {
         this.password = localStorage.getItem(LOCAL_STORAGE_PASSWORD);
         this.accounts = [];
         this.currentAddress = localStorage.getItem(LOCAL_STORAGE_CURRENT_ACCOUNT);
+        this.noData = localStorage.getItem(LOCAL_STORAGE_NAME) === null
     }
 
     createWallet(password, savePass) {
@@ -131,7 +132,9 @@ export class Wallet {
             return false;
         }
         this.walletData = walletData;
-        if(!savePass && this.password) {
+        if(savePass) {
+            localStorage.setItem(LOCAL_STORAGE_PASSWORD, password)
+        } else {
             localStorage.removeItem(LOCAL_STORAGE_PASSWORD);
         }
         return true;

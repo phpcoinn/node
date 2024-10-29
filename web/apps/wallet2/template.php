@@ -180,7 +180,10 @@ require_once __DIR__ . '/../common/include/top.php';
             display: none;
         }
         .wallet-page-content {
-            padding-left: 80px;
+            /*padding-left: 80px;*/
+        }
+        .footer {
+            padding: 0
         }
     }
 </style>

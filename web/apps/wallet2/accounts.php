@@ -245,6 +245,9 @@
                                 </a>
                             </div>
                             <textarea class="form-control" v-model="backupAccountsText" rows="10" readonly></textarea>
+                            <div>or save it file:</div>
+                            <button @click="saveToFile" class="btn btn-primary">Save to File</button>
+
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
@@ -476,7 +479,23 @@ $account=[
                     wallet.deleteAccounts();
                     document.location.href='/apps/wallet2/index.php?action=logout'
                 })
-            }
+            },
+            saveToFile() {
+                // Create a blob with the text data
+                const blob = new Blob([this.backupAccountsText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob); // Create a URL for the blob
+
+                // Create a temporary link element
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'phpcoin-accounts.txt'; // Set the file name
+                document.body.appendChild(link);
+                link.click(); // Trigger the download
+                document.body.removeChild(link); // Remove link after download
+
+                // Release the blob URL to free memory
+                URL.revokeObjectURL(url);
+            },
 
         }
 

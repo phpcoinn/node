@@ -28,6 +28,7 @@
 .wallet-page-content {
     padding-top: 55px;
     padding-left: 260px;
+    height: calc(100vh - 60px);
 }
 .sidebar-enable .wallet-page-content{
     padding-left: 80px;
