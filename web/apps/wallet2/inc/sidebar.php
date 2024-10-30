@@ -74,7 +74,7 @@ if($singleAccount) {
         </div>
     </div>
 
-    <div data-simplebar="init" class="h-100 mm-show">
+    <div data-simplebar="init" class="mm-show" style="height: calc(100vh - 185px); overflow: auto">
         <div class="simplebar-wrapper" style="margin: 0px;">
             <div class="simplebar-height-auto-observer-wrapper">
                 <div class="simplebar-height-auto-observer"></div>
@@ -91,6 +91,12 @@ if($singleAccount) {
                                 <ul class="metismenu list-unstyled mm-show" id="side-menu">
                                     <li class="menu-title" data-key="t-menu">Menu</li>
 
+                                    <li class="mm-active">
+                                        <a href="/apps/wallet2/wallet.php" class="active">
+                                            <i class="fas fa-wallet"></i>
+                                            <span data-key="t-dashboard">New Wallet</span>
+                                        </a>
+                                    </li>
                                     <li class="mm-active">
                                         <a href="/apps/wallet2" class="active">
                                             <i class="fas fa-wallet"></i>

@@ -8,10 +8,11 @@
 }
 .vertical-menu {
     top:55px !important;
-    bottom: 60px !important;
+    height: calc(100vh - 115px);
+    /*bottom: 60px !important;*/
 }
 .simplebar-offset {
-    bottom: 60px !important;
+    /*bottom: 60px !important;*/
 }
 .navbar-header {
     max-width: 100%;

@@ -12,6 +12,20 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         '9cd6408de7a4a9c0b99dfb3f989642c0' => __DIR__ . '/../..' . '/include/genesis.inc.php',
     );
 
+    public static $prefixLengthsPsr4 = array (
+        'J' => 
+        array (
+            'Jdenticon\\' => 10,
+        ),
+    );
+
+    public static $prefixDirsPsr4 = array (
+        'Jdenticon\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/jdenticon/jdenticon/src',
+        ),
+    );
+
     public static $classMap = array (
         'Account' => __DIR__ . '/../..' . '/include/class/Account.php',
         'Api' => __DIR__ . '/../..' . '/include/class/Api.php',
@@ -52,6 +66,8 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
+            $loader->prefixLengthsPsr4 = ComposerStaticInit039bf9dca7ac723b723c07ac837a90be::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit039bf9dca7ac723b723c07ac837a90be::$prefixDirsPsr4;
             $loader->classMap = ComposerStaticInit039bf9dca7ac723b723c07ac837a90be::$classMap;
 
         }, null, ClassLoader::class);

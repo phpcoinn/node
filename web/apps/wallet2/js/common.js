@@ -86,7 +86,6 @@ export class Wallet {
 
     constructor() {
         this.password = localStorage.getItem(LOCAL_STORAGE_PASSWORD);
-        this.accounts = [];
         this.currentAddress = localStorage.getItem(LOCAL_STORAGE_CURRENT_ACCOUNT);
         this.noData = localStorage.getItem(LOCAL_STORAGE_NAME) === null
     }
@@ -301,6 +300,14 @@ export class Wallet {
         localStorage.removeItem(LOCAL_STORAGE_NAME)
         localStorage.removeItem(LOCAL_STORAGE_PASSWORD)
         localStorage.removeItem(LOCAL_STORAGE_CURRENT_ACCOUNT)
+    }
+
+    fetchAccount(address) {
+        for(let account of this.walletData.accounts) {
+            if(account.address === address) {
+                return account;
+            }
+        }
     }
 
 }

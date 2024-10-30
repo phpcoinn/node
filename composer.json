@@ -9,7 +9,8 @@
       "ext-gd": "*",
       "ext-curl": "*",
       "ext-posix": "*",
-      "ext-bcmath": "*"
+      "ext-bcmath": "*",
+      "jdenticon/jdenticon": "1.0.2"
     },
     "autoload": {
         "classmap": ["include/class"],
@@ -19,4 +20,5 @@
         "build-wallet": "php --define phar.readonly=0 build/make_wallet.php",
         "build-miner": "php --define phar.readonly=0 build/make_miner.php"
     }
+
 }
