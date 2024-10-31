@@ -2,12 +2,16 @@
 
 function humanDiff($amount) {
     $sign = $amount == 0 ? "" : ($amount > 0 ? "+" : "-");
+    return $sign . humanAmount($amount);
+}
+
+function humanAmount($amount) {
     if($amount < 1000) {
-        return $sign . round($amount, 2);
+        return round($amount, 2);
     } else if ($amount < 1000000) {
-        return $sign .round($amount / 1000, 2)."k";
+        return round($amount / 1000, 2)."k";
     } else {
-        return $sign .round($amount / 1000000, 2)."m";
+        return round($amount / 1000000, 2)."m";
     }
 }
 
@@ -34,4 +38,22 @@ function getHistoryData($address, $height) {
         "transactions"=>$cnt1 + $cnt2,
         "reward"=>$reward
     ];
+}
+
+function getWalletRewardsInfo($address) {
+    global $db;
+    $address = "PZFVJUMiWjb1daUnUtZFaPbbN2gwPCFo4o";
+    $sql="select t.message, sum(t.val) as val
+        from transactions t
+        where t.dst = ? and t.type = 0
+        group by t.message";
+    $rows = $db->run($sql, [$address], false);
+    $map=[];
+    foreach($rows as $row) {
+        $map[$row['message']]=floatval($row['val']);
+    }
+    uasort($map, function($a, $b) {
+        return $b - $a;
+    });
+    return $map;
 }
