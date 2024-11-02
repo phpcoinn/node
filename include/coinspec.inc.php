@@ -8,9 +8,9 @@ if($_config['chain_id'] != DEFAULT_CHAIN_ID && file_exists(__DIR__ . "/coinspec.
 const NETWORK = "testnet";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
-const VERSION = "1.5.6";
-const BUILD_VERSION = 471;
-const MIN_VERSION = "1.5.5";
+const VERSION = "1.5.7";
+const BUILD_VERSION = 472;
+const MIN_VERSION = "1.5.6";
 const GIT_BRANCH = "test";
 const MIN_MINER_VERSION = "1.3";
 
