@@ -310,7 +310,7 @@ if ($q == "info") {
         $rewardinfo = Block::reward($height);
         if (isset($rewardinfo['dev']) && $rewardinfo['dev'] > 0) {
             $devReward = num($rewardinfo['dev']);
-            $devRewardTx = Transaction::getDevRewardTx($this->public_key, $this->private_key, $devReward, $new_block_date);
+            $devRewardTx = Transaction::getDevRewardTx($_config['generator_public_key'], $_config['generator_private_key'], $devReward, $new_block_date);
             $data[$devRewardTx['id']] = $devRewardTx;
         }
     }
