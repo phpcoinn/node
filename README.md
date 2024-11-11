@@ -51,8 +51,8 @@ https://bitcointalk.org/index.php?topic=5371138.0
 Github source: 
 https://github.com/phpcoinn/node
 
-Twitter: 
-https://twitter.com/phpcoin
+X (formerly Twitter): 
+https://x.com/phpcoin
 
 Whitepaper: 
 https://docs.google.com/document/d/1zb3j1Gyz0i40Iydnt_1Bz532Jqxw-crpGAWZSqYeflg/edit
