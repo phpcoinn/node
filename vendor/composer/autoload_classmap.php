@@ -34,6 +34,7 @@ return array(
     'SmartContractContext' => $baseDir . '/include/class/sc/SmartContractWrapper.php',
     'SmartContractEngine' => $baseDir . '/include/class/SmartContractEngine.php',
     'SmartContractMap' => $baseDir . '/include/class/sc/SmartContractMap.php',
+    'SmartContractVirtualMap' => $baseDir . '/include/class/sc/SmartContractVirtualMap.php',
     'SmartContractWrapper' => $baseDir . '/include/class/sc/SmartContractWrapper.php',
     'Sync' => $baseDir . '/include/class/Sync.php',
     'Task' => $baseDir . '/include/class/Task.php',

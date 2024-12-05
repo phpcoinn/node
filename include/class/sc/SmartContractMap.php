@@ -7,7 +7,7 @@ class SmartContractMap implements ArrayAccess, Countable
 
     protected $name;
     protected $height;
-    private $address;
+    protected $address;
 
     function __construct($address, $name, $height) {
         $this->name = $name;
@@ -98,4 +98,7 @@ class SmartContractMap implements ArrayAccess, Countable
         $this[$key] = $pw;
     }
 
+    public function query($sql, $params) {
+        return SmartContractBase::query($this->address, $this->name, $this->height, $sql, $params);
+    }
 }

@@ -55,6 +55,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         'SmartContractContext' => __DIR__ . '/../..' . '/include/class/sc/SmartContractWrapper.php',
         'SmartContractEngine' => __DIR__ . '/../..' . '/include/class/SmartContractEngine.php',
         'SmartContractMap' => __DIR__ . '/../..' . '/include/class/sc/SmartContractMap.php',
+        'SmartContractVirtualMap' => __DIR__ . '/../..' . '/include/class/sc/SmartContractVirtualMap.php',
         'SmartContractWrapper' => __DIR__ . '/../..' . '/include/class/sc/SmartContractWrapper.php',
         'Sync' => __DIR__ . '/../..' . '/include/class/Sync.php',
         'Task' => __DIR__ . '/../..' . '/include/class/Task.php',

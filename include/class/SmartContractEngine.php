@@ -5,7 +5,7 @@ class SmartContractEngine
 
 	public static $virtual = false;
 	public static $debug_logs = [];
-	public static $smartContract;
+	public static $smartContracts = [];
 
 
 	private static function getRunFolder() {
@@ -16,10 +16,10 @@ class SmartContractEngine
 	static function verifySmartContract($sc_address, $test = false) {
 
 		if(self::$virtual) {
-            if(self::$smartContract['address']!=$sc_address) {
+            if(!self::$smartContracts[$sc_address]) {
                 throw new Exception("Not found Smart Contract with address $sc_address");
             }
-			return self::$smartContract;
+			return self::$smartContracts[$sc_address];
 		}
 
 		$smartContract = SmartContract::getById($sc_address);
@@ -95,7 +95,7 @@ class SmartContractEngine
             }
 
             $data = json_decode(base64_decode($code), true);
-            $code = base64_decode($data['code']);
+            $code = base64_decode(@$data['code']);
             if(empty($code)) {
                 throw new Exception("Invalid code for smart contract process");
             }
@@ -136,7 +136,7 @@ class SmartContractEngine
 				$params = [$params];
 			}
 
-            $height = Block::getHeight();
+            $height =  self::$virtual ? 0 : Block::getHeight();
 
 			$cmd_args = [
 				'type'=>'view',
@@ -178,9 +178,9 @@ class SmartContractEngine
 
         global $_config;
         $config=[
-            "db_connect"=>$_config['db_connect'],
-            "db_user"=>$_config['db_user'],
-            "db_pass"=>$_config['db_pass'],
+            "db_connect"=>@$_config['db_connect'],
+            "db_user"=>@$_config['db_user'],
+            "db_pass"=>@$_config['db_pass'],
         ];
 
         $config=base64_encode(json_encode($config));
@@ -346,7 +346,8 @@ class SmartContractEngine
             $sc_verify_file = self::buildRunFile($name, $code);
 
             $cmd_args = [
-                'type'=>'verify'
+                'type'=>'verify',
+                "virtual"=>self::$virtual
             ];
 
             $cmd_args = base64_encode(json_encode($cmd_args));

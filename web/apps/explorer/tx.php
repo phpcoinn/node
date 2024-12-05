@@ -136,10 +136,17 @@ require_once __DIR__. '/../common/include/top.php';
         </tr>
     </table>
 
-    <?php if ($tx['type']==TX_TYPE_SC_EXEC) {
+    <?php if ($tx['type']==TX_TYPE_SC_EXEC || $tx['type']==TX_TYPE_SC_SEND) {
         $sc_data = json_decode(base64_decode($tx['message']), true);
         if(!is_array($sc_data['params'])) {
 	        $sc_data['params'] = [$sc_data['params']];
+        }
+        if($tx['type'] == TX_TYPE_SC_EXEC) {
+            $contract = $tx['dst'];
+        } else if ($tx['type'] == TX_TYPE_SC_SEND) {
+            $contract = Account::getAddress($tx['public_key']);
+        } else {
+            $contract = "?";
         }
         ?>
         <h3>Smart Contract</h3>
@@ -148,10 +155,39 @@ require_once __DIR__. '/../common/include/top.php';
                 <tr>
                     <td>Contract</td>
                     <td>
-                        <a href="/apps/explorer/smart_contract.php?id=<?php echo $tx['dst'] ?>">
-                            <?php echo $tx['dst'] ?>
+                        <a href="/apps/explorer/smart_contract.php?id=<?php echo $contract ?>">
+                            <?php echo $contract ?>
                         </a>
                     </td>
+                </tr>
+                <tr>
+                    <td>Type</td>
+                    <td>
+                        <?php echo $tx['type'] ?> -
+                        <?php echo Transaction::typeLabel($tx['type']) ?>
+                    </td>
+                </tr>
+                <?php if($tx['type']==TX_TYPE_SC_EXEC) {
+                    $src = Account::getAddress($tx['public_key']);
+                    ?>
+                    <tr>
+                        <td>Sender</td>
+                        <td>
+                            <?php echo explorer_address_link($src) ?>
+                        </td>
+                    </tr>
+                <?php } ?>
+                <?php if($tx['type']==TX_TYPE_SC_SEND) { ?>
+                    <tr>
+                        <td>Receiver</td>
+                        <td>
+                            <?php echo explorer_address_link($tx['dst']) ?>
+                        </td>
+                    </tr>
+                <?php } ?>
+                <tr>
+                    <td>Amount</td>
+                    <td><?php echo $tx['val'] ?></td>
                 </tr>
                 <tr>
                     <td>Method</td>

@@ -318,7 +318,7 @@ global $loggedIn;
                                 echo "(";
                                 if(!empty($method['params'])) {
                                     foreach ($method['params'] as $ix => $param) {
-                                        if(version_compare($interface['version'], "2.0.0.")) {
+                                        if(version_compare($interface['version'], "2.0.0", ">=")) {
                                             echo '$'.$param['name'];
                                             if(!empty($param['value'])) {
                                                 echo "=".$param['value'];
@@ -364,66 +364,68 @@ global $loggedIn;
                 </table>
             </td>
           </tr>
-          <tr>
-            <td class="fw-bold">Views</td>
-            <td>
-                <table class="table table-sm table-striped">
-                    <?php foreach ($interface['views'] as $view) { ?>
-                        <tr>
-                            <td>
-                                <?php
-                                echo $view['name'];
-                                echo "(";
-                                if(!empty($view['params'])) {
-                                    foreach ($view['params'] as $ix => $param) {
-                                        if(version_compare($interface['version'], "2.0.0.")) {
-                                            echo '$'.$param['name'];
-                                            if(!empty($param['value'])) {
-                                                echo "=".$param['value'];
+            <?php if(isset($interface['views'])) { ?>
+              <tr>
+                <td class="fw-bold">Views</td>
+                <td>
+                    <table class="table table-sm table-striped">
+                        <?php foreach ($interface['views'] as $view) { ?>
+                            <tr>
+                                <td>
+                                    <?php
+                                    echo $view['name'];
+                                    echo "(";
+                                    if(!empty($view['params'])) {
+                                        foreach ($view['params'] as $ix => $param) {
+                                            if(version_compare($interface['version'], "2.0.0.")) {
+                                                echo '$'.$param['name'];
+                                                if(!empty($param['value'])) {
+                                                    echo "=".$param['value'];
+                                                }
+                                            } else {
+                                                echo '$'.$param;
                                             }
-                                        } else {
-                                            echo '$'.$param;
+                                            if($ix < count($view['params'])-1) echo ", ";
                                         }
-                                        if($ix < count($view['params'])-1) echo ", ";
                                     }
-                                }
-                                echo ")";
-                                ?>
-                            </td>
-                            <td class="text-end">
-                                <?php foreach ($view['params'] as $ix => $param) {
-                                    if(is_array($param)) {
-                                        $name=$param['name'];
-                                    } else {
-                                        $name = $param;
-                                    }
+                                    echo ")";
                                     ?>
-                                    <input type="text" class="form-control form-control-sm d-inline w-auto"
-                                           name="sc_view_params[<?php echo $view['name'] ?>][<?php echo $name ?>]" value="" placeholder="<?php echo $name ?>">
-                                <?php } ?>
-                                <button type="submit" class="btn btn-sm btn-soft-primary" name="sc_view" value="<?php echo $view['name'] ?>">Call</button>
-                            </td>
-                            <td>
-                                <?php if (isset($sv_view_res) && $sv_view_name == $view['name']) { ?>
-                                    <?php if(!empty($sv_view_err)) { ?>
-                                        <span class="fa fa-exclamation-triangle text-danger"></span>
-                                        <?php echo $sv_view_err ?>
-                                    <?php } else { ?>
-                                        <span><?php echo $sv_view_res ?></span>
+                                </td>
+                                <td class="text-end">
+                                    <?php foreach ($view['params'] as $ix => $param) {
+                                        if(is_array($param)) {
+                                            $name=$param['name'];
+                                        } else {
+                                            $name = $param;
+                                        }
+                                        ?>
+                                        <input type="text" class="form-control form-control-sm d-inline w-auto"
+                                               name="sc_view_params[<?php echo $view['name'] ?>][<?php echo $name ?>]" value="" placeholder="<?php echo $name ?>">
                                     <?php } ?>
+                                    <button type="submit" class="btn btn-sm btn-soft-primary" name="sc_view" value="<?php echo $view['name'] ?>">Call</button>
+                                </td>
+                                <td>
+                                    <?php if (isset($sv_view_res) && $sv_view_name == $view['name']) { ?>
+                                        <?php if(!empty($sv_view_err)) { ?>
+                                            <span class="fa fa-exclamation-triangle text-danger"></span>
+                                            <?php echo $sv_view_err ?>
+                                        <?php } else { ?>
+                                            <span><?php echo $sv_view_res ?></span>
+                                        <?php } ?>
 
-                                <?php } ?>
-                            </td>
-                            <td class="text-end">
-                                <?php if (isset($sv_view_res) && $sv_view_name == $view['name']) { ?>
-                                    <a class="btn btn-sm btn-soft-primary" href="<?php echo $base_url ?>">Clear</a>
-                                <?php } ?>
-                            </td>
-                        </tr>
-                    <?php } ?>
-                </table>
-            </td>
-          </tr>
+                                    <?php } ?>
+                                </td>
+                                <td class="text-end">
+                                    <?php if (isset($sv_view_res) && $sv_view_name == $view['name']) { ?>
+                                        <a class="btn btn-sm btn-soft-primary" href="<?php echo $base_url ?>">Clear</a>
+                                    <?php } ?>
+                                </td>
+                            </tr>
+                        <?php } ?>
+                    </table>
+                </td>
+              </tr>
+            <?php } ?>
         </table>
     </div>
 </form>
