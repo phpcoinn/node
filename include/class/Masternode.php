@@ -955,7 +955,7 @@ class Masternode extends Task
 				$collateral = Block::getMasternodeCollateral($block->height);
 				$mn_count = Masternode::getCountForCollateral($collateral, $block->height);
 				_log("check collateral : $collateral count=$mn_count", 5);
-				if($mn_count > 0) {
+				if($mn_count > 0  && !DEVELOPMENT) {
 					throw new Exception("Masternode: not found winner for block");
 				}
 			}

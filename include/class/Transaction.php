@@ -526,8 +526,8 @@ class Transaction
         if($data['total']['days'] > 0) {
             $data['total']['daily']=$row['total'] / $data['total']['days'];
         }
-        $data['total']['weekly']=$data['total']['daily'] * 7;
-        $data['total']['monthly']=$data['total']['daily'] * 30;
+        $data['total']['weekly']=@$data['total']['daily'] * 7;
+        $data['total']['monthly']=@$data['total']['daily'] * 30;
         $data['total']['yearly']=$data['total']['monthly'] * 12;
         return $data;
     }
