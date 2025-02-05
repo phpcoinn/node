@@ -10,7 +10,7 @@ class SmartContractVirtualMap extends SmartContractMap
         if(strlen($offset)==0) {
             return isset($state[$this->name]);
         } else {
-            return isset($state[$this->name][$offset]);
+            return is_array($state[$this->name]) && key_exists($offset, $state[$this->name]);
         }
     }
 
