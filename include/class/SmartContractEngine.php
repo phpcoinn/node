@@ -294,7 +294,7 @@ class SmartContractEngine
 			}
 
             if($map) {
-                if($key == null) {
+                if($key === null) {
                     return count($state[$property]);
                 } else {
 				    return $state[$property][$key];
@@ -413,7 +413,7 @@ class SmartContractEngine
     }
 
     static function parseCmdLineArgs($args) {
-        $args = trim($args);
+        $args = trim($args ?? '');
         $arr=str_getcsv($args, " ");
 
         $arr = @array_map('trim', $arr);

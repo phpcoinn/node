@@ -72,11 +72,13 @@ class SmartContractVirtualMap extends SmartContractMap
 
     public function keys() {
         $state = $this->loadState();
+        ksort($state[$this->name]);
         return array_keys($state[$this->name]);
     }
 
     public function all() {
         $state = $this->loadState();
+        ksort($state[$this->name]);
         return $state[$this->name];
     }
 
