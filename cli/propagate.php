@@ -287,7 +287,7 @@ if($type == "message") {
     global $_config;
     $msg = $argv[2];
     $envelope = json_decode(base64_decode($msg), true);
-    $peers = Peer::getPeersForPropagate3(2);
+    $peers = Peer::getPeersForPropagate3();
     _log("PM: cmd propagate envelope ".json_encode($envelope)." found peers=".count($peers));
     $info = Peer::getInfo();
 
