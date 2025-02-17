@@ -1258,6 +1258,14 @@ class Util
 			exit;
 		}
         $id=time().uniqid();
+
+        $msg=[
+            'sender'=>$_config['hostname'],
+            'time'=>time()
+        ];
+
+        $message = json_encode($msg);
+
         $base = [
             "id"=>$id,
             "public_key"=>$public_key,

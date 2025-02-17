@@ -598,7 +598,10 @@ class PeerRequest
 
         $message = $payload['message'];
         _log("PM: PROCESS MESSAGE $message");
-        $res = peer_post('http://node1.phpcoin.net/peer.php?q=processedMessage',["id"=>$id]);
+        $msg=json_decode($message,true);
+        $sender=$msg['sender'];
+        $response = ["msg"=>$msg, "received"=>time()];
+        $res = peer_post($sender.'/peer.php?q=processedMessage',$response);
         _log("PM: send event to master res=".$res);
         Propagate::message($envelope);
         api_echo(true);
@@ -606,7 +609,12 @@ class PeerRequest
 
     static function processedMessage() {
         $data = self::$data;
-        _log("PM: processedMessage on peer ".self::$peer['hostname']." data: ".json_encode($data));
+        $received = $data['received'];
+        $sent = $data['msg']['time'];
+        $elapsed = $received - $sent;
+        $returned = time() - $received;
+        _log("PM: processedMessage on peer ".self::$peer['hostname']." data: ".json_encode($data)." received: "
+            .$received." sent: ".$sent." elapsed: ".$elapsed." returned: ".$returned);
         api_echo(true);
     }
 
