@@ -123,6 +123,24 @@ class Peer
         return $rows;
     }
 
+    static function getPeersForPropagate3($limit = 10) {
+        global $db;
+        $sql="select * from peers p 
+            where p.blacklisted < unix_timestamp()
+            order by response_time/response_cnt limit $limit";
+        $rows = $db->run($sql);
+        $sql= "select * from peers p where p.blacklisted < unix_timestamp() order by rand() limit $limit";
+        $rows2 = $db->run($sql);
+        $peers = [];
+        foreach ($rows as $row) {
+            $peers[$row['hostname']]=$row;
+        }
+        foreach ($rows2 as $row) {
+            $peers[$row['hostname']]=$row;
+        }
+        return $peers;
+    }
+
 
     static function getPeersForMasternode($limit = null) {
 		global $db;
