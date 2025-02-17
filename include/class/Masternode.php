@@ -195,6 +195,13 @@ class Masternode extends Task
 		return @$res[0];
 	}
 
+    static function getById($id) {
+        global $db;
+        $sql="select * from masternode where id=:id";
+        $res=$db->run($sql, [":id"=>$id]);
+        return @$res[0];
+    }
+
 	static function create($publicKey, $height, $collateral=null) {
 		$mn = new Masternode();
 		$mn->id = Account::getAddress($publicKey);
@@ -591,6 +598,7 @@ class Masternode extends Task
 	static function propagate($id) {
 		global $_config, $db;
 		$height = Block::getHeight();
+
 		if(!Masternode::allowedMasternodes($height)) {
 			return;
 		}
@@ -598,82 +606,150 @@ class Masternode extends Task
 			return;
 		}
 
-		$public_key = $_config['masternode_public_key'];
-		$masternode = Masternode::get($public_key);
-
-		if(Propagate::PROPAGATE_BY_FORKING && $id === "local") {
-			_log("PF: start propagate", 5);
-			$start = microtime(true);
-			$peers = Peer::getPeersForPropagate();
-			$info = Peer::getInfo();
-			define("FORKED_PROCESS", getmypid());
-            $cnt = count($peers);
-            $i=0;
-            $pipes = [];
-			foreach ($peers as $peer) {
-                $i++;
-                $socket = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
-                if (!$socket) {
-                    continue;
+        //new propagate function
+        if(true) {
+            _log("pm5: Propagate masternode id=$id");
+            if($id === "local") {
+                $public_key = $_config['masternode_public_key'];
+                $masternode = Masternode::get($public_key);
+                $limit = 100;
+            } else {
+                $masternode = Masternode::getById($id);
+                if(!$masternode) {
+                    _log("node3: Masternode $id not found");
+                    return;
                 }
-				$pid = pcntl_fork();
-				if ($pid == -1) {
-					die('could not fork');
-                } elseif ($pid > 0) {
-                    fclose($socket[1]);
-                    $pipes[$i] = $socket;
-				} else if ($pid == 0) {
-                    pcntl_signal(SIGALRM, function($signal){
-                        if ($signal == SIGALRM) {
-                            exit();
-                        }
-                    });
-                    pcntl_alarm(10);
-                    register_shutdown_function(function() use ($socket){
-                        fclose($socket[1]);
-                        posix_kill(getmypid(), SIGKILL);
-                    });
-                    fclose($socket[0]);
-					$hostname = $peer['hostname'];
-					$url = $hostname."/peer.php?q=updateMasternode";
-					$res = peer_post($url, ["height"=>$height, "masternode"=>$masternode], 10, $err, $info, $curl_info);
+                $limit=null;
+            }
+            $peers = Peer::getPeersForPropagate3($limit);
+            _log("pm5: Total ".count($peers)." to propagate");
+            $info = Peer::getInfo();
+            $forker = new Forker();
+            $cnt = count($peers);
+            $i = 0;
+            $start = microtime(true);
+            foreach($peers as $peer) {
+                $i++;
+                $forker->fork(function() use ($peer,$height,$masternode,$info,$i, $cnt, $start) {
+                    $hostname = $peer['hostname'];
+                    $url = $hostname . "/peer.php?q=updateMasternode";
+                    $res = peer_post($url, ["height" => $height, "masternode" => $masternode], 10, $err, $info, $curl_info);
                     $t2 = microtime(true);
-                    $elapsed = $t2  - $start;
-					_log("PF: Propagating to peer $i/$cnt: ".$hostname." res=".json_encode($res). " err=$err elapsed=$elapsed", 2);
-                    $res = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time'], "elapsed"=>$elapsed, "res"=>$res, "err"=>$err];
-                    fwrite($socket[1], json_encode($res));
-					exit();
-				}
-			}
-			while (pcntl_waitpid(0, $status) != -1) ;
+                    $elapsed = $t2 - $start;
+//                        _log("pm5: Propagating to peer $i/$cnt: " . $hostname . " res=" . json_encode($res) . " err=$err elapsed=$elapsed");
+                    $res = ["hostname" => $hostname, "connect_time" => $curl_info['connect_time'], "elapsed" => $elapsed, "res" => $res, "err" => $err];
+                    return $res;
+                });
+            }
             $connect_times = [];
             $elapsed_times = [];
             $ok_responses = 0;
-            foreach($pipes as $pipe) {
-                $output = stream_get_contents($pipe[0]);
-                fclose($pipe[0]);
-                $output = json_decode($output, true);
+            $forker->on(function ($output) use (&$connect_times, &$ok_responses, &$elapsed_times) {
+//                    _log("pm5: Received response ".json_encode($output,true));
+                if(empty($output)) {
+                    _log("pm5: Empty response from fork");
+                    return;
+                }
                 $hostname = $output['hostname'];
                 $connect_time = $output['connect_time'];
                 $elapsed = $output['elapsed'];
-                if(!empty($connect_time)) {
-                    $connect_times[]=$connect_time;
+                if (!empty($connect_time)) {
+                    $connect_times[] = $connect_time;
                 }
                 $res = $output['res'];
                 $err = $output['err'];
-                if($res !== false) {
+                if ($res !== false) {
                     $ok_responses++;
                     Peer::storeResponseTime($hostname, $connect_time);
                 } else {
-                    _log("PM: $err", 2);
+                    _log("pm5: Error response from $hostname err=$err");
                 }
-                $elapsed_times[]=$elapsed;
-            }
+                $elapsed_times[] = $elapsed;
+            });
+            $forker->exec();
+            _log("pm5: fork complete");
+
             $avg_connect_time = array_sum($connect_times) / count($connect_times);
             $avg_elapsed_times = array_sum($elapsed_times) / count($elapsed_times);
-            _log("PF: Connect times avg = ".$avg_connect_time ." min=".min($connect_times). " max = ".max($connect_times), 5);
-            _log("PF: Elapsed times avg = ".$avg_elapsed_times ." min=".min($elapsed_times). " max = ".max($elapsed_times), 5);
-			_log("PF: Total time = ".(microtime(true)-$start). " total=".count($pipes). " ok_responses=$ok_responses", 5);
+            _log("pm5: Connect times avg = " . $avg_connect_time . " min=" . min($connect_times) . " max = " . max($connect_times));
+            _log("pm5: Elapsed times avg = " . $avg_elapsed_times . " min=" . min($elapsed_times) . " max = " . max($elapsed_times));
+            _log("pm5: Total time = " . (microtime(true) - $start) . " total=" . count($connect_times) . " ok_responses=$ok_responses");
+            return;
+        }
+
+		if(Propagate::PROPAGATE_BY_FORKING && $id === "local") {
+                _log("PF: start propagate", 5);
+                $start = microtime(true);
+                $peers = Peer::getPeersForPropagate();
+                $info = Peer::getInfo();
+                define("FORKED_PROCESS", getmypid());
+                $cnt = count($peers);
+                $i = 0;
+                $pipes = [];
+                foreach ($peers as $peer) {
+                    $i++;
+                    $socket = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+                    if (!$socket) {
+                        continue;
+                    }
+                    $pid = pcntl_fork();
+                    if ($pid == -1) {
+                        die('could not fork');
+                    } elseif ($pid > 0) {
+                        fclose($socket[1]);
+                        $pipes[$i] = $socket;
+                    } else if ($pid == 0) {
+                        pcntl_signal(SIGALRM, function ($signal) {
+                            if ($signal == SIGALRM) {
+                                exit();
+                            }
+                        });
+                        pcntl_alarm(10);
+                        register_shutdown_function(function () use ($socket) {
+                            fclose($socket[1]);
+                            posix_kill(getmypid(), SIGKILL);
+                        });
+                        fclose($socket[0]);
+                        $hostname = $peer['hostname'];
+                        $url = $hostname . "/peer.php?q=updateMasternode";
+                        $res = peer_post($url, ["height" => $height, "masternode" => $masternode], 10, $err, $info, $curl_info);
+                        $t2 = microtime(true);
+                        $elapsed = $t2 - $start;
+                        _log("PF: Propagating to peer $i/$cnt: " . $hostname . " res=" . json_encode($res) . " err=$err elapsed=$elapsed", 2);
+                        $res = ["hostname" => $hostname, "connect_time" => $curl_info['connect_time'], "elapsed" => $elapsed, "res" => $res, "err" => $err];
+                        fwrite($socket[1], json_encode($res));
+                        exit();
+                    }
+                }
+                while (pcntl_waitpid(0, $status) != -1) ;
+                $connect_times = [];
+                $elapsed_times = [];
+                $ok_responses = 0;
+                foreach ($pipes as $pipe) {
+                    $output = stream_get_contents($pipe[0]);
+                    fclose($pipe[0]);
+                    $output = json_decode($output, true);
+                    $hostname = $output['hostname'];
+                    $connect_time = $output['connect_time'];
+                    $elapsed = $output['elapsed'];
+                    if (!empty($connect_time)) {
+                        $connect_times[] = $connect_time;
+                    }
+                    $res = $output['res'];
+                    $err = $output['err'];
+                    if ($res !== false) {
+                        $ok_responses++;
+                        Peer::storeResponseTime($hostname, $connect_time);
+                    } else {
+                        _log("PM: $err", 2);
+                    }
+                    $elapsed_times[] = $elapsed;
+                }
+                $avg_connect_time = array_sum($connect_times) / count($connect_times);
+                $avg_elapsed_times = array_sum($elapsed_times) / count($elapsed_times);
+                _log("PF: Connect times avg = " . $avg_connect_time . " min=" . min($connect_times) . " max = " . max($connect_times), 5);
+                _log("PF: Elapsed times avg = " . $avg_elapsed_times . " min=" . min($elapsed_times) . " max = " . max($elapsed_times), 5);
+                _log("PF: Total time = " . (microtime(true) - $start) . " total=" . count($pipes) . " ok_responses=$ok_responses", 5);
 		} else {
 
 			if ($id === "local") {
@@ -687,12 +763,12 @@ class Masternode extends Task
 					}
 				}
 			} else {
-				//propagate to single peer
-				$peer = base64_decode($id);
-				_log("Masternode: propagating masternode to $peer pid=" . getmypid(), 5);
-				$url = $peer . "/peer.php?q=updateMasternode";
-				$res = peer_post($url, ["height" => $height, "masternode" => $masternode], 30, $err);
-				_log("Masternode: Propagating to peer: " . $peer . " res=" . json_encode($res) . " err=$err", 5);
+                    //propagate to single peer
+                    $peer = base64_decode($id);
+                    _log("Masternode: propagating masternode to $peer pid=" . getmypid(), 5);
+                    $url = $peer . "/peer.php?q=updateMasternode";
+                    $res = peer_post($url, ["height" => $height, "masternode" => $masternode], 30, $err);
+                    _log("Masternode: Propagating to peer: " . $peer . " res=" . json_encode($res) . " err=$err", 5);
 			}
 		}
 	}
@@ -784,6 +860,11 @@ class Masternode extends Task
 			if(!$res) {
 				throw new Exception("Masternode: Can not sync local with remote masternode");
 			}
+
+            if(Propagate::PROPAGATE_METHOD == Propagate::PROPAGATE_METHOD_GOSSIP) {
+                _log("pm6: propagate received masternode " . $masternode['id']);
+                Propagate::masternode($masternode['id']);
+            }
 
 			_log("Masternode: synced remote masternode $ip id=".$masternode['id']. " signature=".$masternode['signature'],1);
 			return true;

@@ -123,21 +123,39 @@ class Peer
         return $rows;
     }
 
-    static function getPeersForPropagate3($limit = 10) {
+    static function getPeersForPropagate3($limit=null) {
         global $db;
-        $sql="select * from peers p 
-            where p.blacklisted < unix_timestamp()
-            order by response_time/response_cnt limit $limit";
-        $rows = $db->run($sql);
-        $sql= "select * from peers p where p.blacklisted < unix_timestamp() order by rand() limit $limit";
-        $rows2 = $db->run($sql);
-        $peers = [];
-        foreach ($rows as $row) {
-            $peers[$row['hostname']]=$row;
+
+        if(Propagate::PROPAGATE_METHOD == Propagate::PROPAGATE_METHOD_FLOODING) {
+            $sql='select * from peers p where p.blacklisted < unix_timestamp() order by response_time/response_cnt';
+            $rows = $db->run($sql);
+            return $rows;
         }
-        foreach ($rows2 as $row) {
-            $peers[$row['hostname']]=$row;
+
+
+        if($limit == null) {
+            $cnt = Peer::getCount();
+            _log("pm5: total peers found=" . $cnt);
+            $limit = floor(sqrt($cnt));
+            $half = round($limit / 2);
+        } else {
+            $half = ceil($limit / 2);
         }
+        $sql="with latest as (select p.*
+                from peers p
+                where p.blacklisted < unix_timestamp()
+                order by response_time / response_cnt
+                limit $half)
+            select *
+            from latest
+            union
+            (select p2.*
+             from peers p2
+             where p2.id not in (select p.id from latest p)
+               and p2.blacklisted < unix_timestamp()
+             order by rand()
+             limit $half)";
+        $peers = $db->run($sql);
         return $peers;
     }
 
