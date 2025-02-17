@@ -612,16 +612,14 @@ class Masternode extends Task
             if($id === "local") {
                 $public_key = $_config['masternode_public_key'];
                 $masternode = Masternode::get($public_key);
-                $limit = 100;
             } else {
                 $masternode = Masternode::getById($id);
                 if(!$masternode) {
                     _log("node3: Masternode $id not found");
                     return;
                 }
-                $limit=null;
             }
-            $peers = Peer::getPeersForPropagate3($limit);
+            $peers = Peer::getPeersForPropagate3();
             _log("pm5: Total ".count($peers)." to propagate");
             $info = Peer::getInfo();
             $forker = new Forker();
