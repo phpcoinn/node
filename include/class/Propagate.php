@@ -6,7 +6,7 @@ class Propagate
 	public const PROPAGATE_BY_FORKING = true;
     public const PROPAGATE_METHOD_FLOODING = "FLOODING";
     public const PROPAGATE_METHOD_GOSSIP = "GOSSIP";
-    public const PROPAGATE_METHOD = self::PROPAGATE_METHOD_GOSSIP;
+    public const PROPAGATE_METHOD = self::PROPAGATE_METHOD_FLOODING;
 
 	static function blockToAll($id) {
 		_log("Propagate: block to all id=$id", 4);
