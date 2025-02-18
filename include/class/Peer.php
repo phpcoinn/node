@@ -136,7 +136,7 @@ class Peer
         if($limit == null) {
             $cnt = Peer::getCount();
             _log("pm5: total peers found=" . $cnt);
-            $limit = floor(sqrt($cnt));
+            $limit = round($cnt / 2);
             $half = round($limit / 2);
         } else {
             $half = ceil($limit / 2);
