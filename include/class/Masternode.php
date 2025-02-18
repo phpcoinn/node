@@ -851,7 +851,7 @@ class Masternode extends Task
             _log("pm7: check masternode ip=".$data['masternode']['ip']. " peer_ip=" . PeerRequest::$ip . " saved ip=".$mn_pk['ip']);
 
             if($mn_pk && $mn_pk['ip']!=$masternode['ip']) {
-                Masternode::deleteInvalid($ip, $masternode['public_key']);
+                Masternode::deleteInvalid($mn_pk['ip'], $masternode['public_key']);
                 return true;
             }
 
