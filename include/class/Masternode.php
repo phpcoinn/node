@@ -812,6 +812,10 @@ class Masternode extends Task
 		try {
 
 			$masternode=$data['masternode'];
+            if(empty($masternode['ip'])) {
+                $masternode['ip'] = PeerRequest::$ip;
+            }
+            $ip=$masternode['ip'];
 			$mn_height=$data['height'];
 			$height = Block::getHeight();
 			_log("Masternode: updateMasternode ip=$ip mn_height=$mn_height height=$height masternode=" . $masternode['public_key']. " win_height=".$masternode['win_height']. " signature=".$masternode['signature'], 5);
