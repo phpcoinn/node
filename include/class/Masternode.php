@@ -608,7 +608,6 @@ class Masternode extends Task
 
         //new propagate function
         if(true) {
-            _log("pm5: Propagate masternode id=$id");
             if($id === "local") {
                 $public_key = $_config['masternode_public_key'];
                 $masternode = Masternode::get($public_key);
