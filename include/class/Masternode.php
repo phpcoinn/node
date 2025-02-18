@@ -847,12 +847,20 @@ class Masternode extends Task
 				return true;
 			}
 
-			$mn_ip = Masternode::getByIp($ip);
-			if($mn_ip && $mn_ip['public_key']!=$masternode['public_key']) {
-				_log("Masternode: invalid IP address $ip for public_key ".$masternode['public_key']);
-				Masternode::deleteInvalid($ip, $masternode['public_key']);
-				return true;
-			}
+            $mn_pk=Masternode::getByPublicKey($masternode['public_key']);
+            _log("pm7: check masternode ip=".$data['masternode']['ip']. " peer_ip=" . PeerRequest::$ip . " saved ip=".$mn_pk['ip']);
+
+            if($mn_pk && $mn_pk['ip']!=$masternode['ip']) {
+                Masternode::deleteInvalid($ip, $masternode['public_key']);
+                return true;
+            }
+
+//			$mn_ip = Masternode::getByIp($ip);
+//			if($mn_ip && $mn_ip['public_key']!=$masternode['public_key']) {
+//				_log("Masternode: invalid IP address $ip for public_key ".$masternode['public_key']);
+//				Masternode::deleteInvalid($ip, $masternode['public_key']);
+//				return true;
+//			}
 
 //		    _log("Masternode: synced ".$masternode['public_key']." win_height=".$masternode['win_height']);
 			$masternode['ip']=$ip;
@@ -1290,6 +1298,13 @@ class Masternode extends Task
 		global $db;
 		$sql = "select * from masternode m where m.ip = :ip";
 		$row = $db->row($sql, [":ip"=>$ip]);
+		return $row;
+	}
+
+	static function getByPublicKey($public_key) {
+		global $db;
+		$sql = "select * from masternode m where m.public_key = :public_key";
+		$row = $db->row($sql, [":public_key"=>$public_key]);
 		return $row;
 	}
 
