@@ -606,73 +606,8 @@ class Masternode extends Task
 			return;
 		}
 
-        //new propagate function
-        if(true) {
-            if($id === "local") {
                 $public_key = $_config['masternode_public_key'];
                 $masternode = Masternode::get($public_key);
-            } else {
-                $masternode = Masternode::getById($id);
-                if(!$masternode) {
-                    _log("node3: Masternode $id not found");
-                    return;
-                }
-            }
-            $peers = Peer::getPeersForPropagate3();
-            _log("pm5: Total ".count($peers)." to propagate");
-            $info = Peer::getInfo();
-            $forker = new Forker();
-            $cnt = count($peers);
-            $i = 0;
-            $start = microtime(true);
-            foreach($peers as $peer) {
-                $i++;
-                $forker->fork(function() use ($peer,$height,$masternode,$info,$i, $cnt, $start) {
-                    $hostname = $peer['hostname'];
-                    $url = $hostname . "/peer.php?q=updateMasternode";
-                    $res = peer_post($url, ["height" => $height, "masternode" => $masternode], 10, $err, $info, $curl_info);
-                    $t2 = microtime(true);
-                    $elapsed = $t2 - $start;
-//                        _log("pm5: Propagating to peer $i/$cnt: " . $hostname . " res=" . json_encode($res) . " err=$err elapsed=$elapsed");
-                    $res = ["hostname" => $hostname, "connect_time" => $curl_info['connect_time'], "elapsed" => $elapsed, "res" => $res, "err" => $err];
-                    return $res;
-                });
-            }
-            $connect_times = [];
-            $elapsed_times = [];
-            $ok_responses = 0;
-            $forker->on(function ($output) use (&$connect_times, &$ok_responses, &$elapsed_times) {
-//                    _log("pm5: Received response ".json_encode($output,true));
-                if(empty($output)) {
-                    _log("pm5: Empty response from fork");
-                    return;
-                }
-                $hostname = $output['hostname'];
-                $connect_time = $output['connect_time'];
-                $elapsed = $output['elapsed'];
-                if (!empty($connect_time)) {
-                    $connect_times[] = $connect_time;
-                }
-                $res = $output['res'];
-                $err = $output['err'];
-                if ($res !== false) {
-                    $ok_responses++;
-                    Peer::storeResponseTime($hostname, $connect_time);
-                } else {
-                    _log("pm5: Error response from $hostname err=$err");
-                }
-                $elapsed_times[] = $elapsed;
-            });
-            $forker->exec();
-            _log("pm5: fork complete");
-
-            $avg_connect_time = array_sum($connect_times) / count($connect_times);
-            $avg_elapsed_times = array_sum($elapsed_times) / count($elapsed_times);
-            _log("pm5: Connect times avg = " . $avg_connect_time . " min=" . min($connect_times) . " max = " . max($connect_times));
-            _log("pm5: Elapsed times avg = " . $avg_elapsed_times . " min=" . min($elapsed_times) . " max = " . max($elapsed_times));
-            _log("pm5: Total time = " . (microtime(true) - $start) . " total=" . count($connect_times) . " ok_responses=$ok_responses");
-            return;
-        }
 
 		if(Propagate::PROPAGATE_BY_FORKING && $id === "local") {
                 _log("PF: start propagate", 5);
@@ -811,10 +746,6 @@ class Masternode extends Task
 		try {
 
 			$masternode=$data['masternode'];
-            if(empty($masternode['ip'])) {
-                $masternode['ip'] = PeerRequest::$ip;
-            }
-            $ip=$masternode['ip'];
 			$mn_height=$data['height'];
 			$height = Block::getHeight();
 			_log("Masternode: updateMasternode ip=$ip mn_height=$mn_height height=$height masternode=" . $masternode['public_key']. " win_height=".$masternode['win_height']. " signature=".$masternode['signature'], 5);
@@ -847,20 +778,12 @@ class Masternode extends Task
 				return true;
 			}
 
-            $mn_pk=Masternode::getByPublicKey($masternode['public_key']);
-            _log("pm7: check masternode ip=".$data['masternode']['ip']. " peer_ip=" . PeerRequest::$ip . " saved ip=".$mn_pk['ip']);
-
-            if($mn_pk && $mn_pk['ip']!=$masternode['ip']) {
-                Masternode::deleteInvalid($mn_pk['ip'], $masternode['public_key']);
+			$mn_ip = Masternode::getByIp($ip);
+			if($mn_ip && $mn_ip['public_key']!=$masternode['public_key']) {
+				_log("Masternode: invalid IP address $ip for public_key ".$masternode['public_key']);
+				Masternode::deleteInvalid($ip, $masternode['public_key']);
                 return true;
             }
-
-//			$mn_ip = Masternode::getByIp($ip);
-//			if($mn_ip && $mn_ip['public_key']!=$masternode['public_key']) {
-//				_log("Masternode: invalid IP address $ip for public_key ".$masternode['public_key']);
-//				Masternode::deleteInvalid($ip, $masternode['public_key']);
-//				return true;
-//			}
 
 //		    _log("Masternode: synced ".$masternode['public_key']." win_height=".$masternode['win_height']);
 			$masternode['ip']=$ip;
@@ -869,11 +792,6 @@ class Masternode extends Task
 			if(!$res) {
 				throw new Exception("Masternode: Can not sync local with remote masternode");
 			}
-
-            if(Propagate::PROPAGATE_METHOD == Propagate::PROPAGATE_METHOD_GOSSIP) {
-                _log("pm6: propagate received masternode " . $masternode['id']);
-                Propagate::masternode($masternode['id']);
-            }
 
 			_log("Masternode: synced remote masternode $ip id=".$masternode['id']. " signature=".$masternode['signature'],1);
 			return true;
