@@ -406,6 +406,7 @@ class Api
 	 * @apiParam {numeric} val Transaction value (without fees)
 	 * @apiParam {string} dst Destination address
 	 * @apiParam {string} public_key Sender's public key
+	 * @apiParam {string} fee Transaction fee. Must be 0
 	 * @apiParam {string} [signature] Transaction signature. It's recommended that the transaction is signed before being sent to the node to avoid sending your private key to the node.
 	 * @apiParam {numeric} [date] Transaction's date in UNIX TIMESTAMP format. Requried when the transaction is pre-signed.
 	 * @apiParam {string} [message] A message to be included with the transaction. Maximum 128 chars.
