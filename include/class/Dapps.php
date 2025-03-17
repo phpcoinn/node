@@ -352,6 +352,7 @@ class Dapps extends Task
 			$parsed[$key]=$val;
 		}
 		$get_data = base64_encode(json_encode($parsed));
+        $input_data = base64_encode(json_encode(file_get_contents('php://input')));
 
 		$cookie_data = base64_encode(json_encode($_COOKIE));
 
@@ -382,7 +383,7 @@ class Dapps extends Task
         $debug="-dxdebug.start_with_request=1";
         $debug="";
 
-		$cmd = "$server_args GET_DATA=$get_data POST_DATA=$post_data SESSION_ID=$session_id SESSION_DATA=$session_data COOKIE_DATA=$cookie_data" .
+        $cmd = "$server_args GET_DATA=$get_data INPUT_DATA=$input_data POST_DATA=$post_data SESSION_ID=$session_id SESSION_DATA=$session_data COOKIE_DATA=$cookie_data" .
 			" DAPPS_ID=$dapps_id DAPPS_LOCAL=$dapps_local " .
 			" php $debug -d disable_functions=exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,set_time_limit,ini_set" .
 			" -d open_basedir=" . $dapps_dir . "/$dapps_id:".$tmp_dir.":".$allowed_files_list .
