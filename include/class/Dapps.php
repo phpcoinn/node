@@ -295,6 +295,7 @@ class Dapps extends Task
 		$file_info = pathinfo($file);
 		$ext = $file_info['extension'];
         if($ext === "css") $file_type = "text/css";
+        if($ext === "js") $file_type = "text/javascript";
 		_log("Dapps: Resolve file $file content-type:" . $file_type." ext=$ext", 5);
 
 
