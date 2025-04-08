@@ -318,7 +318,7 @@ global $loggedIn;
                                 echo "(";
                                 if(!empty($method['params'])) {
                                     foreach ($method['params'] as $ix => $param) {
-                                        if(version_compare($interface['version'], "2.0.0.")) {
+                                        if(version_compare($interface['version'], "2.0.0", ">=")) {
                                             echo '$'.$param['name'];
                                             if(!empty($param['value'])) {
                                                 echo "=".$param['value'];
@@ -364,6 +364,7 @@ global $loggedIn;
                 </table>
             </td>
           </tr>
+            <?php if(isset($interface['views'])) { ?>
           <tr>
             <td class="fw-bold">Views</td>
             <td>
@@ -424,6 +425,7 @@ global $loggedIn;
                 </table>
             </td>
           </tr>
+            <?php } ?>
         </table>
     </div>
 </form>

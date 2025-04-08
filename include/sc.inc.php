@@ -5,6 +5,7 @@ require_once ROOT . "/include/common.functions.php";
 require_once ROOT . "/include/class/sc/SmartContractBase.php";
 require_once ROOT . "/include/class/sc/SmartContractWrapper.php";
 require_once ROOT . "/include/class/sc/SmartContractMap.php";
+require_once ROOT . "/include/class/sc/SmartContractVirtualMap.php";
 
 const CHAIN_PREFIX = "38";
 const TX_TYPE_SC_CREATE = 5;

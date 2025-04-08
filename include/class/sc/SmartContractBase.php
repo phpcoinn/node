@@ -4,6 +4,9 @@ class SmartContractBase
 {
 
 	protected $src;
+	protected $dst;
+	protected $tx;
+	protected $id;
 
 	protected $value;
 	protected $height;
@@ -81,8 +84,8 @@ class SmartContractBase
         }
         if(SmartContractContext::$virtual) {
             $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
-            $state = json_decode(file_get_contents($state_file), true);
-            if(strlen($key)==0) {
+            $state = @json_decode(file_get_contents($state_file), true);
+            if($key==null || strlen($key)==0) {
                 $state[$name]=$value;
             } else {
                 $state[$name][$key]=$value;
@@ -175,15 +178,6 @@ class SmartContractBase
 
     static function existsStateVar($address, $height, $name, $key=null) {
         $db = SmartContractContext::$db;
-        if(SmartContractContext::$virtual) {
-            $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
-            $state = json_decode(file_get_contents($state_file), true);
-            if(strlen($key)==0) {
-                return isset($state[$name]);
-            } else {
-                return isset($state[$name][$key]);
-            }
-        }
 
         if(strlen($key)==0) {
             $sql="select 1 from smart_contract_state s 
@@ -199,11 +193,6 @@ class SmartContractBase
 
     static function countStateVar($address, $height, $name) {
         $db = SmartContractContext::$db;
-        if(SmartContractContext::$virtual) {
-            $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
-            $state = json_decode(file_get_contents($state_file), true);
-            return @count($state[$name] ?? []);
-        }
 
         $sql = "select count(distinct s.var_key) from smart_contract_state s 
            where s.sc_address = :sc_address and s.variable = :variable and s.height <= :height";
@@ -214,11 +203,6 @@ class SmartContractBase
 
     static function stateVarKeys($address, $height, $name) {
         $db = SmartContractContext::$db;
-        if(SmartContractContext::$virtual) {
-            $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
-            $state = json_decode(file_get_contents($state_file), true);
-            return array_keys($state[$name]);
-        }
 
         $sql="select distinct(s.var_key) from smart_contract_state s 
                where s.sc_address = :sc_address and s.variable = :variable and s.height<=:height order by s.var_key";
@@ -232,11 +216,6 @@ class SmartContractBase
 
     static function stateAll($address, $height, $name) {
         $db = SmartContractContext::$db;
-        if(SmartContractContext::$virtual) {
-            $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
-            $state = json_decode(file_get_contents($state_file), true);
-            return $state[$name];
-        }
 
         $sql="select s.var_key, s.var_value from smart_contract_state s 
                where s.sc_address = :sc_address and s.variable = :variable and s.height <= :height order by s.var_key";
@@ -252,16 +231,6 @@ class SmartContractBase
 
     static function stateClear($address, $name, $key=null) {
         $db = SmartContractContext::$db;
-        if(SmartContractContext::$virtual) {
-            $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
-            $state = json_decode(file_get_contents($state_file), true);
-            if($key == null) {
-                unset($state[$name]);
-            } else {
-                unset($state[$name][$key]);
-            }
-            file_put_contents($state_file, json_encode($state));
-        }
 
         if($key == null) {
             $sql = "delete from smart_contract_state 
@@ -276,6 +245,25 @@ class SmartContractBase
             throw new Exception("Error deleting map variable $name for Smart Contract ".$address.": ".$db->errorInfo()[2]);
         }
         return $res;
+    }
+
+    static function query($address, $name, $height, $sql, $params =[]) {
+        $db = SmartContractContext::$db;
+
+        $sql="select s.var_key, s.var_value from smart_contract_state s 
+               where s.sc_address = :sc_address and s.variable = :variable and s.height <= :height $sql order by s.var_key";
+        $all_params = $params;
+        $all_params[":sc_address"] = $address;
+        $all_params[":variable"] = $name;
+        $all_params[":height"] = $height;
+        $rows=$db->run($sql, $all_params);
+        $list = [];
+        foreach ($rows as $row) {
+            $key = $row['var_key'];
+            $val = $row['var_value'];
+            $list[$key]=$val;
+        }
+        return $list;
     }
 
     public function debug($log) {

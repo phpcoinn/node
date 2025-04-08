@@ -180,7 +180,7 @@ class SmartContract
 
 	static function getById($id, $virtual = false) {
         if($virtual) {
-            return SmartContractEngine::$smartContract;
+            return SmartContractEngine::$smartContracts[$id];
         }
 		global $db;
 		$sql = "select * from smart_contracts where address = :address";
