@@ -99,7 +99,7 @@ function _log($data, $verbosity = 0)
 			    }
 		    }
 		    $log_file = @$_config['log_file'];
-		    if(substr($log_file, 0, 1)!= "/") {
+		    if(@substr($log_file, 0, 1)!= "/") {
 			    $log_file = ROOT . "/" . $log_file;
 		    }
 	        @file_put_contents($log_file, $res, FILE_APPEND);

@@ -21,6 +21,7 @@ class Forker {
     }
 
     function exec() {
+        define("FORKED_PROCESS", getmypid());
         if($this->parent) {
             $this->parent[0]->call($this, ...$this->parent[1]);
         }

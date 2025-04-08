@@ -568,89 +568,54 @@ class PeerRequest
     static function propagateMsg7()
     {
         global $db, $_config;
-
-        _log("PMM: received propagateMsg7");
-
+        _log("PM: received propagateMsg7 from ".self::$peer['hostname']);
         $envelope = self::$data;
-        $time=$envelope['time'];
+        $envelope = json_decode(base64_decode($envelope),true);
         $payload = $envelope['payload'];
-        $payload = json_decode($payload, true);
-
-        $elapsed = microtime(true) - $time;
-        $hops = count($envelope['hops']);
-
-        $info = $_POST['info'];
-
-        if($payload['onlyLatestVersion'] && $info['version'] != VERSION.".".BUILD_VERSION) {
-            api_err("PMM: Only latest version allowed", 0);
+        $payload = json_decode(base64_decode($payload),true);
+        $public_key = $payload['public_key'];
+        if($public_key == $_config['masternode_public_key']) {
+            api_echo("PM: Origin node received message",0);
         }
-
-        if($elapsed > $payload['maxTime']) {
-            api_err("PMM: message expired", 0);
+        $id = $payload['id'];
+        $cfg="msg-".$id;
+        $sql="select * from config c where cfg = ?";
+        $row = $db->run($sql, [$cfg], false);
+        if($row) {
+            api_echo("PM: Message already processed",0);
         }
-
-        if($hops > $payload['maxHops']) {
-            api_err("PMM: to many hops", 0);
-        }
-
-        _log("PMM: received peer request propagateMsg6 elapsed=$elapsed hops=$hops");
         $signature = $envelope['signature'];
-        $public_key = $envelope['public_key'];
-        $base = $envelope;
-        unset($base['hops']);
-        unset($base['signature']);
-        unset($base['extra']);
-        $res = ec_verify(json_encode($base), $signature, $public_key);
-        _log("PMM: check signature=$signature res=$res base=".json_encode($base));
+        $res = ec_verify($envelope['payload'], $signature, $public_key);
         if(!$res) {
-            api_err("PROPAGATE: Signature failed", 0);
+            api_err("PM: Signature failed", 0);
         }
+
+        $sql="insert into config (cfg, val) values (?, ?)";
+        $res = $db->run($sql, [$cfg, time()], false);
+        if($res === false) {
+            api_err("PM: Error saving message", 0);
+        }
+
         $message = $payload['message'];
-        $notifyReceived = $payload['notifyReceived'];
-
-
-        $val = $db->getConfig('propagate_msg');
-
-        $requestId=$envelope['id'];
-        _log("PMM: requestId=$requestId");
-        $requestFile = ROOT . "/tmp/propagate/$requestId";
-        $completed = ($val == $message);
-        $rayId = $envelope['extra']['rayId'];
-        $src = self::$peer['hostname'];
-        $dst = $_config['hostname'];
-
-        if($notifyReceived) {
-            Propagate::propagateSocketEvent2("messageReceived", ['envelope' => $envelope,'rayId'=>$rayId, 'src'=>$src, 'dst'=>$dst, 'requestId'=>$envelope['id'],'elapsed'=>$elapsed, 'completed'=>$completed]);
-        }
-
-        $type = $payload['type'];
-        _log("PMM: propagate type = $type");
-        if($type == "all") {
-            $db->setConfig('propagate_msg', $message);
-            api_echo("PMM: node received message");
-        }
-
-        if(file_exists($requestFile)) {
-            api_echo("Message already processing");
-        }
-        $peers=[];
-//        $peers = @json_decode(@file_get_contents($requestFile), true);
-//        if(!$peers) {
-//            $peers=[];
-//        }
-//        _log("PMM: GET sentPeers=".json_encode($peers));
-        $peers[self::$peer['hostname']]=self::$peer['hostname'];
-        @file_put_contents($requestFile, json_encode($peers));
-//        _log("PMM: STORE sentPeers=".json_encode($peers));
-
-        if ($val == $message) {
-            api_echo("PMM: This node already receive message $message - do not propagate elapsed=$elapsed hops=$hops",0);
-        } else {
-            $db->setConfig('propagate_msg', $message);
-            $envelope['hops'][]=["time"=>microtime(true), "host"=>$_config['hostname']];
+        _log("PM: PROCESS MESSAGE $message");
+        $msg=json_decode($message,true);
+        $sender=$msg['sender'];
+        $response = ["msg"=>$msg, "received"=>time()];
+        $res = peer_post($sender.'/peer.php?q=processedMessage',$response);
+        _log("PM: send event to master res=".$res);
             Propagate::message($envelope);
-            api_echo("PMM: This node not receive message $message - store and propagate further elapsed=$elapsed hops=$hops",0);
+        api_echo(true);
         }
+
+    static function processedMessage() {
+        $data = self::$data;
+        $received = $data['received'];
+        $sent = $data['msg']['time'];
+        $elapsed = $received - $sent;
+        $returned = time() - $received;
+        _log("PM: processedMessage on peer ".self::$peer['hostname']." data: ".json_encode($data)." received: "
+            .$received." sent: ".$sent." elapsed: ".$elapsed." returned: ".$returned);
+        api_echo(true);
     }
 
 	static function logPropagate() {

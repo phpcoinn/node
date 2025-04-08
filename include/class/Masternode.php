@@ -195,6 +195,13 @@ class Masternode extends Task
 		return @$res[0];
 	}
 
+    static function getById($id) {
+        global $db;
+        $sql="select * from masternode where id=:id";
+        $res=$db->run($sql, [":id"=>$id]);
+        return @$res[0];
+    }
+
 	static function create($publicKey, $height, $collateral=null) {
 		$mn = new Masternode();
 		$mn->id = Account::getAddress($publicKey);
@@ -955,7 +962,7 @@ class Masternode extends Task
 				$collateral = Block::getMasternodeCollateral($block->height);
 				$mn_count = Masternode::getCountForCollateral($collateral, $block->height);
 				_log("check collateral : $collateral count=$mn_count", 5);
-				if($mn_count > 0) {
+				if($mn_count > 0  && !DEVELOPMENT) {
 					throw new Exception("Masternode: not found winner for block");
 				}
 			}
@@ -1208,6 +1215,13 @@ class Masternode extends Task
 		global $db;
 		$sql = "select * from masternode m where m.ip = :ip";
 		$row = $db->row($sql, [":ip"=>$ip]);
+		return $row;
+	}
+
+	static function getByPublicKey($public_key) {
+		global $db;
+		$sql = "select * from masternode m where m.public_key = :public_key";
+		$row = $db->row($sql, [":public_key"=>$public_key]);
 		return $row;
 	}
 

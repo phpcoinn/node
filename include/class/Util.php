@@ -1243,8 +1243,9 @@ class Util
         echo $db->getConfig($config_name) . "\n";
     }
 
+    //php -dxdebug.start_with_request=1 cli/util.php propagate abc --log
 	static function propagate($argv) {
-		global $_config, $db;
+		global $_config;
 		$message = trim($argv[2]);
 		if(empty($message)) {
 			echo "Message not specified".PHP_EOL;
@@ -1256,34 +1257,26 @@ class Util
 			echo "No masternode private key".PHP_EOL;
 			exit;
 		}
-        $db->setConfig('propagate_msg', $message);
+        $id=time().uniqid();
 
-        $payload = [
-            "message"=>$message,
-            "type"=>"propagate",
-            "limit"=>3,
-            "maxTime"=>30,
-            "maxHops"=>5,
-            "internal"=>true,
-            "add_cond"=>"",
-            "onlyLatestVersion"=>true,
-            "notifySent"=>true,
-            "notifyReceived"=>true,
+        $msg=[
+            'sender'=>$_config['hostname'],
+            'time'=>time()
         ];
+
+        $message = json_encode($msg);
 
         $base = [
-            "id"=>time().uniqid(),
-            "origin"=>$_config['hostname'],
-            "time"=>microtime(true),
+            "id"=>$id,
             "public_key"=>$public_key,
-            "payload"=>json_encode($payload),
+            "message"=>$message,
         ];
-        $signature = ec_sign(json_encode($base), $private_key);
-        $envelope = $base;
+        $payload=base64_encode(json_encode($base));
+        $signature = ec_sign($payload, $private_key);
+        $envelope['payload']=$payload;
         $envelope['signature']=$signature;
-        $envelope['hops']=[];
-        _log("PM2: created envelope ".json_encode($envelope));
-        Propagate::propagateSocketEvent2("messageCreated", ['time'=>microtime(true)]);
+        _log("PM: propagate message $message id=$id signature=$signature");
+//        Propagate::propagateSocketEvent2("messageCreated", ['time'=>microtime(true)]);
         Propagate::message($envelope);
 	}
 

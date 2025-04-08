@@ -287,85 +287,20 @@ if($type == "message") {
     global $_config;
     $msg = $argv[2];
     $envelope = json_decode(base64_decode($msg), true);
-    _log("PMM: cmd propagate envelope ".json_encode($envelope));
-
-    $sender = $envelope['sender'];
-    $origin = $envelope['origin'];
-    $requestId=$envelope['id'];
-    $requestFile = ROOT . "/tmp/propagate/$requestId";
-    @mkdir(ROOT . "/tmp/propagate");
-    $ignorePeers = @json_decode(@file_get_contents($requestFile), true);
-    if(!$ignorePeers) {
-        $ignorePeers=[];
-    }
-
-    _log("PMM: READ ignorePeers=".json_encode($ignorePeers));
-
-    $payload = $envelope['payload'];
-    $payload = json_decode($payload, true);
-    $message = $payload['message'];
-    $limit = $payload['limit'];
-    $internal = $payload['internal'];
-    $add_cond = $payload['add_cond'];
-    $notifySent = $payload['notifySent'];
-
-    $ignoreList = array_merge([$origin, $sender], array_keys($ignorePeers));
-    $peers = Peer::getPeersForPropagate2($limit, $ignoreList, $internal, $add_cond);
-    _log("PMM: sender=$sender ignoreList=".json_encode($ignoreList)." peers=".count($peers)." limit=$limit");
-    define("FORKED_PROCESS", getmypid());
+    $peers = Peer::getPeersForPropagate3();
+    _log("PM: cmd propagate envelope ".json_encode($envelope)." found peers=".count($peers));
     $info = Peer::getInfo();
-    $i=0;
-    $pipes = [];
+
+    $forker = new Forker();
     foreach ($peers as $peer) {
+        $forker->fork(function() use ($peer, $info, $msg) {
         $hostname = $peer['hostname'];
-        $i++;
-        $socket = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
-        if (!$socket) {
-            continue;
-        }
-        $pid = pcntl_fork();
-        if ($pid == -1) {
-            die('could not fork');
-        } elseif ($pid > 0) {
-            fclose($socket[1]);
-            $pipes[$i] = $socket;
-        } else if ($pid == 0) {
-            register_shutdown_function(function(){
-                posix_kill(getmypid(), SIGKILL);
-            });
-            fclose($socket[0]);
             $url = $hostname."/peer.php?q=propagateMsg7";
-            $data['src']=$_config['hostname'];
-            $data['dst']=$hostname;
-            $data['envelope']=$envelope;
-            $data['ignorePeers']=$ignorePeers;
-            $rayId = time().uniqid();
-            $data['rayId']=$rayId;
-            $envelope['extra']['rayId']=$rayId;
-            if($notifySent) {
-                Propagate::propagateSocketEvent2("messageSent", $data);
-            }
-            $res = peer_post($url, $envelope, 5, $err, $info, $curl_info);
-            _log("PMM: propagate msg to peer $hostname res=$res err=".json_encode($err));
-            $output = ["hostname"=>$hostname, "connect_time" => $curl_info['connect_time'], "res"=>$res, "err"=>$err];
-            fwrite($socket[1], json_encode($output));
-            fclose($socket[1]);
-            exit();
+            $res = peer_post($url, $msg, 5, $err, $info, $curl_info);
+            _log("PM: Send message to peer $hostname: $msg res=".json_encode($res));
+        });
         }
-    }
-    while (pcntl_waitpid(0, $status) != -1) ;
-    foreach($pipes as $pipe) {
-        $output = stream_get_contents($pipe[0]);
-        fclose($pipe[0]);
-        $output = json_decode($output, true);
-        $hostname = $output['hostname'];
-        $connect_time = $output['connect_time'];
-        $res = $output['res'];
-        if($res!==false) {
-            Peer::storeResponseTime($hostname, $connect_time);
-        }
-    }
-    exit;
+    $forker->exec();
 }
 
 if($type == "dapps") {

@@ -4,6 +4,9 @@ class Propagate
 {
 
 	public const PROPAGATE_BY_FORKING = true;
+    public const PROPAGATE_METHOD_FLOODING = "FLOODING";
+    public const PROPAGATE_METHOD_GOSSIP = "GOSSIP";
+    public const PROPAGATE_METHOD = self::PROPAGATE_METHOD_FLOODING;
 
 	static function blockToAll($id) {
 		_log("Propagate: block to all id=$id", 4);
@@ -25,10 +28,10 @@ class Propagate
 		Nodeutil::runSingleProcess($cmd);
 	}
 
-	static function masternode() {
+	static function masternode($id="local") {
 		_log("Propagate: masternode",4);
 		$dir = ROOT."/cli";
-        $cmd = "php $dir/propagate.php masternode local";
+        $cmd = "php $dir/propagate.php masternode $id";
 		Nodeutil::runSingleProcess($cmd);
 	}
 
