@@ -38,8 +38,10 @@ class SmartContractWrapper
 	}
 
 	public function run() {
-        $this->connectDb();
-		$method = $this->args['type'];
+        $method = $this->args['type'];
+        if($method != "verify") {
+            $this->connectDb();
+        }
         $this->initSmartContractVars();
 		try {
 			if ($method == "view") {

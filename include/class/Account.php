@@ -219,7 +219,7 @@ class Account
         );
         foreach ($res as $x) {
             $trans = [
-                "block"      => $x['block'],
+                "block"      => @$x['block'],
                 "height"     => $x['height'],
                 "id"         => $x['id'],
                 "dst"        => $x['dst'],

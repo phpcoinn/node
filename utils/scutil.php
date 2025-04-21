@@ -24,12 +24,12 @@ class SCUtil {
 
         if(empty($metadata)) {
             $metadata = [];
-            if(!empty($name)) {
-                $metadata['name']=$name;
-            }
-            if(!empty($description)) {
-                $metadata['description']=$description;
-            }
+        }
+        if(!empty($name)) {
+            $metadata['name']=$name;
+        }
+        if(!empty($description)) {
+            $metadata['description']=$description;
         }
 
         $deploy_data=[
