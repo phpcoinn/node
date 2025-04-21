@@ -35,7 +35,7 @@ if (!DEVELOPMENT && php_sapi_name() !== 'cli' && substr_count($_SERVER['PHP_SELF
 	&& (substr($_SERVER['PHP_SELF'], 0, 7) != "/atheos" || NETWORK!="testnet")
 	&& ($_SERVER['SERVER_NAME'] != "atheos.phpcoin.net" || NETWORK!="testnet")
 	&& substr($_SERVER['PHP_SELF'], 0, 6) != "/dapps") {
-    die("This application should only be run in the main directory /");
+    die("This application should only be run in the main directory / ");
 }
 
 if(PHP_VERSION_ID < 80000 && NETWORK == "testnet") {

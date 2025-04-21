@@ -69,7 +69,7 @@ function _log($data, $verbosity = 0)
 		if(!empty(PeerRequest::$requestId)) {
 			$dev_part .= "[".PeerRequest::$requestId."]";
 		}
-		$ua = @$_SERVER['HTTP_USER_AGENT'];
+		$ua = $_SERVER['HTTP_USER_AGENT']??'';
 		$dev_part .= " $ua";
 	}
 
