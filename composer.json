@@ -9,8 +9,7 @@
       "ext-gd": "*",
       "ext-curl": "*",
       "ext-posix": "*",
-      "ext-bcmath": "*",
-      "jdenticon/jdenticon": "1.0.2"
+      "ext-bcmath": "*"
     },
     "autoload": {
         "classmap": ["include/class"],
