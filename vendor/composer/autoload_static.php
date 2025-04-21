@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
+class ComposerStaticInit2194f6688160511c482e6ad0f67eb5d0
 {
     public static $files = array (
         'dfbc31af31c3b5cf20b2a5c72ff37b12' => __DIR__ . '/../..' . '/include/coinspec.inc.php',
@@ -41,6 +41,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
         'SmartContractContext' => __DIR__ . '/../..' . '/include/class/sc/SmartContractWrapper.php',
         'SmartContractEngine' => __DIR__ . '/../..' . '/include/class/SmartContractEngine.php',
         'SmartContractMap' => __DIR__ . '/../..' . '/include/class/sc/SmartContractMap.php',
+        'SmartContractVirtualMap' => __DIR__ . '/../..' . '/include/class/sc/SmartContractVirtualMap.php',
         'SmartContractWrapper' => __DIR__ . '/../..' . '/include/class/sc/SmartContractWrapper.php',
         'Sync' => __DIR__ . '/../..' . '/include/class/Sync.php',
         'Task' => __DIR__ . '/../..' . '/include/class/Task.php',
@@ -52,7 +53,7 @@ class ComposerStaticInit039bf9dca7ac723b723c07ac837a90be
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->classMap = ComposerStaticInit039bf9dca7ac723b723c07ac837a90be::$classMap;
+            $loader->classMap = ComposerStaticInit2194f6688160511c482e6ad0f67eb5d0::$classMap;
 
         }, null, ClassLoader::class);
     }
