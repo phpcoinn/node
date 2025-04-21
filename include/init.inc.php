@@ -38,7 +38,7 @@ if (!DEVELOPMENT && php_sapi_name() !== 'cli' && substr_count($_SERVER['PHP_SELF
     die("This application should only be run in the main directory / ");
 }
 
-if(PHP_VERSION_ID < 80000 && NETWORK == "testnet") {
+if(PHP_VERSION_ID < 80000) {
     die("Invalid php version! Please upgrade your node");
 }
 
