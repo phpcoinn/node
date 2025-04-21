@@ -15079,105 +15079,173 @@ module.exports = function xor (a, b) {
 
 }).call(this)}).call(this,require("buffer").Buffer)
 },{"buffer":48}],66:[function(require,module,exports){
-var Buffer = require('safe-buffer').Buffer
-var Transform = require('stream').Transform
-var StringDecoder = require('string_decoder').StringDecoder
-var inherits = require('inherits')
+'use strict';
 
-function CipherBase (hashMode) {
-  Transform.call(this)
-  this.hashMode = typeof hashMode === 'string'
-  if (this.hashMode) {
-    this[hashMode] = this._finalOrDigest
-  } else {
-    this.final = this._finalOrDigest
-  }
-  if (this._final) {
-    this.__final = this._final
-    this._final = null
-  }
-  this._decoder = null
-  this._encoding = null
+var Buffer = require('safe-buffer').Buffer;
+var Transform = require('stream').Transform;
+var StringDecoder = require('string_decoder').StringDecoder;
+var inherits = require('inherits');
+
+function CipherBase(hashMode) {
+	Transform.call(this);
+	this.hashMode = typeof hashMode === 'string';
+	if (this.hashMode) {
+		this[hashMode] = this._finalOrDigest;
+	} else {
+		this['final'] = this._finalOrDigest;
+	}
+	if (this._final) {
+		this.__final = this._final;
+		this._final = null;
+	}
+	this._decoder = null;
+	this._encoding = null;
 }
-inherits(CipherBase, Transform)
+inherits(CipherBase, Transform);
+
+var useUint8Array = typeof Uint8Array !== 'undefined';
+var useArrayBuffer = typeof ArrayBuffer !== 'undefined'
+	&& typeof Uint8Array !== 'undefined'
+	&& ArrayBuffer.isView
+	&& (Buffer.prototype instanceof Uint8Array || Buffer.TYPED_ARRAY_SUPPORT);
+
+function toBuffer(data, encoding) {
+	/*
+	 * No need to do anything for exact instance
+	 * This is only valid when safe-buffer.Buffer === buffer.Buffer, i.e. when Buffer.from/Buffer.alloc existed
+	 */
+	if (data instanceof Buffer) {
+		return data;
+	}
+
+	// Convert strings to Buffer
+	if (typeof data === 'string') {
+		return Buffer.from(data, encoding);
+	}
+
+	/*
+	 * Wrap any TypedArray instances and DataViews
+	 * Makes sense only on engines with full TypedArray support -- let Buffer detect that
+	 */
+	if (useArrayBuffer && ArrayBuffer.isView(data)) {
+		// Bug in Node.js <6.3.1, which treats this as out-of-bounds
+		if (data.byteLength === 0) {
+			return Buffer.alloc(0);
+		}
+
+		var res = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+		/*
+		 * Recheck result size, as offset/length doesn't work on Node.js <5.10
+		 * We just go to Uint8Array case if this fails
+		 */
+		if (res.byteLength === data.byteLength) {
+			return res;
+		}
+	}
+
+	/*
+	 * Uint8Array in engines where Buffer.from might not work with ArrayBuffer, just copy over
+	 * Doesn't make sense with other TypedArray instances
+	 */
+	if (useUint8Array && data instanceof Uint8Array) {
+		return Buffer.from(data);
+	}
+
+	/*
+	 * Old Buffer polyfill on an engine that doesn't have TypedArray support
+	 * Also, this is from a different Buffer polyfill implementation then we have, as instanceof check failed
+	 * Convert to our current Buffer implementation
+	 */
+	if (
+		Buffer.isBuffer(data)
+			&& data.constructor
+			&& typeof data.constructor.isBuffer === 'function'
+			&& data.constructor.isBuffer(data)
+	) {
+		return Buffer.from(data);
+	}
+
+	throw new TypeError('The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView.');
+}
 
 CipherBase.prototype.update = function (data, inputEnc, outputEnc) {
-  if (typeof data === 'string') {
-    data = Buffer.from(data, inputEnc)
-  }
+	var bufferData = toBuffer(data, inputEnc); // asserts correct input type
+	var outData = this._update(bufferData);
+	if (this.hashMode) {
+		return this;
+	}
 
-  var outData = this._update(data)
-  if (this.hashMode) return this
+	if (outputEnc) {
+		outData = this._toString(outData, outputEnc);
+	}
 
-  if (outputEnc) {
-    outData = this._toString(outData, outputEnc)
-  }
+	return outData;
+};
 
-  return outData
-}
-
-CipherBase.prototype.setAutoPadding = function () {}
+CipherBase.prototype.setAutoPadding = function () {};
 CipherBase.prototype.getAuthTag = function () {
-  throw new Error('trying to get auth tag in unsupported state')
-}
+	throw new Error('trying to get auth tag in unsupported state');
+};
 
 CipherBase.prototype.setAuthTag = function () {
-  throw new Error('trying to set auth tag in unsupported state')
-}
+	throw new Error('trying to set auth tag in unsupported state');
+};
 
 CipherBase.prototype.setAAD = function () {
-  throw new Error('trying to set aad in unsupported state')
-}
+	throw new Error('trying to set aad in unsupported state');
+};
 
 CipherBase.prototype._transform = function (data, _, next) {
-  var err
-  try {
-    if (this.hashMode) {
-      this._update(data)
-    } else {
-      this.push(this._update(data))
-    }
-  } catch (e) {
-    err = e
-  } finally {
-    next(err)
-  }
-}
+	var err;
+	try {
+		if (this.hashMode) {
+			this._update(data);
+		} else {
+			this.push(this._update(data));
+		}
+	} catch (e) {
+		err = e;
+	} finally {
+		next(err);
+	}
+};
 CipherBase.prototype._flush = function (done) {
-  var err
-  try {
-    this.push(this.__final())
-  } catch (e) {
-    err = e
-  }
+	var err;
+	try {
+		this.push(this.__final());
+	} catch (e) {
+		err = e;
+	}
 
-  done(err)
-}
+	done(err);
+};
 CipherBase.prototype._finalOrDigest = function (outputEnc) {
-  var outData = this.__final() || Buffer.alloc(0)
-  if (outputEnc) {
-    outData = this._toString(outData, outputEnc, true)
-  }
-  return outData
-}
+	var outData = this.__final() || Buffer.alloc(0);
+	if (outputEnc) {
+		outData = this._toString(outData, outputEnc, true);
+	}
+	return outData;
+};
 
 CipherBase.prototype._toString = function (value, enc, fin) {
-  if (!this._decoder) {
-    this._decoder = new StringDecoder(enc)
-    this._encoding = enc
-  }
+	if (!this._decoder) {
+		this._decoder = new StringDecoder(enc);
+		this._encoding = enc;
+	}
 
-  if (this._encoding !== enc) throw new Error('can\'t switch encodings')
+	if (this._encoding !== enc) {
+		throw new Error('can’t switch encodings');
+	}
 
-  var out = this._decoder.write(value)
-  if (fin) {
-    out += this._decoder.end()
-  }
+	var out = this._decoder.write(value);
+	if (fin) {
+		out += this._decoder.end();
+	}
 
-  return out
-}
+	return out;
+};
 
-module.exports = CipherBase
+module.exports = CipherBase;
 
 },{"inherits":119,"safe-buffer":166,"stream":50,"string_decoder":189}],67:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
@@ -15871,15 +15939,15 @@ function formatReturnValue (bn, enc, len) {
         var w = this.words[i];
         var word = (((w << off) | carry) & 0xffffff).toString(16);
         carry = (w >>> (24 - off)) & 0xffffff;
-        if (carry !== 0 || i !== this.length - 1) {
-          out = zeros[6 - word.length] + word + out;
-        } else {
-          out = word + out;
-        }
         off += 2;
         if (off >= 26) {
           off -= 26;
           i--;
+        }
+        if (carry !== 0 || i !== this.length - 1) {
+          out = zeros[6 - word.length] + word + out;
+        } else {
+          out = word + out;
         }
       }
       if (carry !== 0) {
@@ -22455,8 +22523,18 @@ EC.prototype.sign = function sign(msg, key, enc, options) {
   if (!options)
     options = {};
 
+  if (typeof msg !== 'string' && typeof msg !== 'number' && !BN.isBN(msg)) {
+    assert(typeof msg === 'object' && msg && typeof msg.length === 'number',
+      'Expected message to be an array-like, a hex string, or a BN instance');
+    assert((msg.length >>> 0) === msg.length); // non-negative 32-bit integer
+    for (var i = 0; i < msg.length; i++) assert((msg[i] & 255) === msg[i]);
+  }
+
   key = this.keyFromPrivate(key, enc);
   msg = this._truncateToN(msg, false, options.msgBitLength);
+
+  // Would fail further checks, but let's make the error message clear
+  assert(!msg.isNeg(), 'Can not sign a negative message');
 
   // Zero-extend key to provide enough entropy
   var bytes = this.n.byteLength();
@@ -22464,6 +22542,9 @@ EC.prototype.sign = function sign(msg, key, enc, options) {
 
   // Zero-extend nonce to have the same byte size as N
   var nonce = msg.toArray('be', bytes);
+
+  // Recheck nonce to be bijective to msg
+  assert((new BN(nonce)).eq(msg), 'Can not sign message');
 
   // Instantiate Hmac_DRBG
   var drbg = new HmacDRBG({
@@ -24104,7 +24185,7 @@ arguments[4][69][0].apply(exports,arguments)
 },{"buffer":7,"dup":69}],102:[function(require,module,exports){
 module.exports={
   "name": "elliptic",
-  "version": "6.6.0",
+  "version": "6.6.1",
   "description": "EC cryptography",
   "main": "lib/elliptic.js",
   "files": [
@@ -24212,12 +24293,6 @@ var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
 var inherits = require('inherits')
 
-function throwIfNotStringOrBuffer (val, prefix) {
-  if (!Buffer.isBuffer(val) && typeof val !== 'string') {
-    throw new TypeError(prefix + ' must be a string or a buffer')
-  }
-}
-
 function HashBase (blockSize) {
   Transform.call(this)
 
@@ -24253,10 +24328,59 @@ HashBase.prototype._flush = function (callback) {
   callback(error)
 }
 
+var useUint8Array = typeof Uint8Array !== 'undefined'
+var useArrayBuffer = typeof ArrayBuffer !== 'undefined' &&
+  typeof Uint8Array !== 'undefined' &&
+  ArrayBuffer.isView &&
+  (Buffer.prototype instanceof Uint8Array || Buffer.TYPED_ARRAY_SUPPORT)
+
+function toBuffer (data, encoding) {
+  // No need to do anything for exact instance
+  // This is only valid when safe-buffer.Buffer === buffer.Buffer, i.e. when Buffer.from/Buffer.alloc existed
+  if (data instanceof Buffer) return data
+
+  // Convert strings to Buffer
+  if (typeof data === 'string') return Buffer.from(data, encoding)
+
+  /*
+   * Wrap any TypedArray instances and DataViews
+   * Makes sense only on engines with full TypedArray support -- let Buffer detect that
+   */
+  if (useArrayBuffer && ArrayBuffer.isView(data)) {
+    if (data.byteLength === 0) return Buffer.alloc(0) // Bug in Node.js <6.3.1, which treats this as out-of-bounds
+    var res = Buffer.from(data.buffer, data.byteOffset, data.byteLength)
+    // Recheck result size, as offset/length doesn't work on Node.js <5.10
+    // We just go to Uint8Array case if this fails
+    if (res.byteLength === data.byteLength) return res
+  }
+
+  /*
+   * Uint8Array in engines where Buffer.from might not work with ArrayBuffer, just copy over
+   * Doesn't make sense with other TypedArray instances
+   */
+  if (useUint8Array && data instanceof Uint8Array) return Buffer.from(data)
+
+  /*
+   * Old Buffer polyfill on an engine that doesn't have TypedArray support
+   * Also, this is from a different Buffer polyfill implementation then we have, as instanceof check failed
+   * Convert to our current Buffer implementation
+   */
+  if (
+    Buffer.isBuffer(data) &&
+    data.constructor &&
+    typeof data.constructor.isBuffer === 'function' &&
+    data.constructor.isBuffer(data)
+  ) {
+    return Buffer.from(data)
+  }
+
+  throw new TypeError('The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView.')
+}
+
 HashBase.prototype.update = function (data, encoding) {
-  throwIfNotStringOrBuffer(data, 'Data')
   if (this._finalized) throw new Error('Digest already called')
-  if (!Buffer.isBuffer(data)) data = Buffer.from(data, encoding)
+
+  data = toBuffer(data, encoding) // asserts correct input type
 
   // consume data
   var block = this._block
