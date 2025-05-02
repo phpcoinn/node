@@ -74,9 +74,32 @@ class SmartContractWrapper
             $method = $reflect->getMethod($methodName);
             $this->invoke($method, $params);
             $this->saveState();
+        } catch (Throwable $e) {
+            $this->error($e, $methodName);
+        }
+    }
+
+    public function callExt($caller, $methodName, $params) {
+        try {
+            $this->db=SmartContractContext::$db;
+//            $this->log("DB in tx ".$this->db->inTransaction());
+            $this->log(" execExt method=$methodName params=".json_encode($params). " caller=" . json_encode($caller));
+            $this->log("address=".$caller->address);
+            $args = $caller->getExtFields();
+            $args['address']=$this->address;
+            $args['transaction']['src']=$caller->address;
+            $this->log("args=".json_encode($args));
+            $this->smartContract->setFields($args);
+            $this->initSmartContractVars();
+            $this->cleanState($args['height']);
+            $this->loadState();
+            $reflect = new ReflectionClass($this->smartContract);
+            $method = $reflect->getMethod($methodName);
+            $this->invoke($method, $params);
             return $this->response;
         } catch (Throwable $e) {
             $this->error($e, $methodName);
+            return null;
         }
     }
 
@@ -157,16 +180,48 @@ class SmartContractWrapper
 		if(!$this->hasAnnotation($method, "SmartContractView")) {
 			throw new Exception("Method $methodName is not callable");
 		}
-        if(!$this->isVirtual()) {
-        $this->db->beginTransaction();
-        }
+        $this->beginTransaction();
         $this->loadState();
 		$this->invoke($method, $params);
-        if(!$this->isVirtual()) {
-        $this->db->rollBack();
-        }
+        $this->rollBack();
 		$this->outResponse();
 	}
+
+    private function beginTransaction() {
+        if(!$this->isVirtual()) {
+            $this->db->beginTransaction();
+        } else {
+            $state_file = ROOT . '/tmp/sc/'.$this->address.'.state.json';
+            if(file_exists($state_file)) {
+                _log("RB: begin transaction $state_file");
+                copy($state_file, $state_file.".rollback");
+            }
+        }
+    }
+
+
+    private function commit() {
+        if(!$this->isVirtual()) {
+            $this->db->commit();
+        } else {
+            $state_file = ROOT . '/tmp/sc/'.$this->address.'.state.json';
+            if(file_exists($state_file.".rollback")) {
+                unlink($state_file.".rollback");
+            }
+        }
+    }
+
+    private function rollBack(){
+        if(!$this->isVirtual()) {
+            $this->db->rollBack();
+        } else {
+            $state_file = ROOT . '/tmp/sc/'.$this->address.'.state.json';
+            if(file_exists($state_file.".rollback")) {
+                unlink($state_file);
+                rename($state_file.".rollback", $state_file);
+            }
+        }
+    }
 
 	private function invoke($method, $params) {
         unset($_SERVER);
@@ -181,7 +236,7 @@ class SmartContractWrapper
     public function process() {
         $transactions = $this->args['transactions'];
         $height=$this->args['height'];
-        $this->startTx();
+        $this->beginTransaction();
         $res = $this->cleanState($height);
         if($res === false) {
             throw new Exception("Error cleaning SmartContract state");
@@ -409,14 +464,6 @@ class SmartContractWrapper
 		return in_array($annotation, $annotations);
 	}
 
-    private function startTx() {
-        $virtual=$this->args['virtual'];
-        if($virtual) {
-            return;
-        }
-        $this->db->beginTransaction();
-    }
-
     private function isVirtual() {
         $virtual=$this->args['virtual'];
         return $virtual;
@@ -424,7 +471,7 @@ class SmartContractWrapper
 
     private function cleanState($height) {
         if($this->isVirtual()) {
-            return;
+            return true;
         }
         $sql="delete from smart_contract_state where height >= :height and sc_address = :sc_address";
         $res = $this->db->run($sql, [":height"=>$height, ":sc_address"=>$this->address]);
@@ -432,14 +479,11 @@ class SmartContractWrapper
     }
 
     private function endTx() {
-        if($this->isVirtual()) {
-            return;
-        }
         $test = $this->args['test'];
         if($test) {
-            $this->db->rollBack();
+            $this->rollBack();
         } else {
-            $this->db->commit();
+            $this->commit();
         }
     }
 
@@ -488,6 +532,16 @@ class SmartContractWrapper
             $this->smartContract->log($s);
         }
 	}
+
+    public function isTransactMethod($method)
+    {
+        $reflect = new ReflectionClass($this->smartContract);
+        $classMethod = $reflect->getMethod($method);
+        if($this->hasAnnotation($classMethod, "SmartContractTransact")) {
+            return true;
+        }
+        return false;
+    }
 
 
 }

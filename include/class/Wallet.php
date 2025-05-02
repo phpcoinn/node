@@ -525,7 +525,11 @@ class Wallet
 		}
 
         $code = base64_encode($contents);
-        $res = $this->wallet_peer_post("/api.php?q=getSmartContractInterface", ["code"=>$code]);
+        $res = $this->wallet_peer_post("/api.php?q=getSmartContractInterface",
+            [
+                "code"=>$code,
+                "address"=>$sc_address
+            ]);
         $this->checkApiResponse($res);
         $interface = $res['data'];
         if(!$interface) {
