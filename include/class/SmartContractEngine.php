@@ -7,6 +7,9 @@ class SmartContractEngine
 	public static $debug_logs = [];
 	public static $smartContracts = [];
 
+    public static $sourcesMap = [];
+    public static $debug = false;
+
 
 	private static function getRunFolder() {
 		return ROOT . "/tmp/sc";
@@ -169,6 +172,14 @@ class SmartContractEngine
             ROOT . "/include/class/sc"
         ];
 
+        if(SmartContractEngine::$debug) {
+            foreach (SmartContractEngine::$sourcesMap as $source_file) {
+                if(!empty($source_file) && file_exists($source_file)) {
+                    $allowed_files[]= $source_file;
+                }
+            }
+        }
+
         if(file_exists(ROOT."/chain_id")) {
             $chain_id = trim(file_get_contents(ROOT."/chain_id"));
             $allowed_files[]=ROOT . "/include/coinspec.".$chain_id.".inc.php";
@@ -256,6 +267,18 @@ class SmartContractEngine
             return $sc_run_file;
         }
 
+        $require_file = "phar://$phar_file";
+        if(SmartContractEngine::$debug) {
+            $source_file = SmartContractEngine::$sourcesMap[$sc_address];
+            if(!empty($source_file) && file_exists($source_file)) {
+                if(is_dir($source_file)) {
+                    $require_file = $source_file . "/index.php";
+                } else {
+                    $require_file = $source_file;
+                }
+            }
+        }
+
         $run_code = "<?php
 
         if(function_exists('xdebug_disable')) {
@@ -263,7 +286,7 @@ class SmartContractEngine
         }
 		
 		require_once dirname(dirname(__DIR__)) . '/include/sc.inc.php';
-		require_once \"phar://$phar_file\";
+		require_once \"$require_file\";
 		
 		ob_start();
 
