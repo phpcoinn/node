@@ -536,6 +536,13 @@ class Wallet
             die("Error getting contract interface");
         }
 
+        $res=$this->wallet_peer_post("/api.php?q=getSmartContractCreateFee");
+        $this->checkApiResponse($res);
+        $scCreateFee = $res['data'];
+        if(!$scCreateFee) {
+            die("Error getting contract create fee");
+        }
+
 		$data = [
             "code"=>$code,
             "amount"=>num($amount),
@@ -550,7 +557,7 @@ class Wallet
 		$date=time();
 		$msg = $sc_signature;
 		$tx = new Transaction($this->public_key, $sc_address, $amount, TX_TYPE_SC_CREATE, $date, $msg);
-		$tx->fee = TX_SC_CREATE_FEE;
+		$tx->fee = $scCreateFee;
 		$tx->data = $text;
 		$signature = $tx->sign($this->private_key);
 
@@ -578,6 +585,13 @@ class Wallet
 			exit;
 		}
 
+        $res=$this->wallet_peer_post("/api.php?q=getSmartContractExecFee");
+        $this->checkApiResponse($res);
+        $scExecFee = $res['data'];
+        if(!$scExecFee) {
+            die("Error getting contract create fee");
+        }
+
         $amount = @$this->namedAgs['amount'];
         $params = @$this->namedAgs['params'];
 
@@ -593,7 +607,7 @@ class Wallet
 			"params"=>$params
 		]));
 		$tx = new Transaction($this->public_key, $dst_address, $amount, TX_TYPE_SC_EXEC, $date, $msg);
-		$tx->fee = TX_SC_EXEC_FEE;
+		$tx->fee = $scExecFee;
 		$signature = $tx->sign($this->private_key);
 
         $debug="&XDEBUG_SESSION_START=PHPSTORM";
@@ -621,6 +635,12 @@ class Wallet
 			echo "Smart contract Address not valid".PHP_EOL;
 			exit;
 		}
+        $res=$this->wallet_peer_post("/api.php?q=getSmartContractExecFee");
+        $this->checkApiResponse($res);
+        $scExecFee = $res['data'];
+        if(!$scExecFee) {
+            die("Error getting contract create fee");
+        }
         $amount = @$this->namedAgs['amount'];
         $params = @$this->namedAgs['params'];
         if(strlen($amount)==0) {
@@ -635,7 +655,7 @@ class Wallet
 			"params"=>$params
 		]));
 		$tx = new Transaction($this->public_key, $dst_address, $amount, TX_TYPE_SC_SEND, $date, $msg);
-		$tx->fee = TX_SC_EXEC_FEE;
+		$tx->fee = $scExecFee;
 		$signature = $tx->sign($this->private_key);
 
 		$res = $this->wallet_peer_post("/api.php?q=send",

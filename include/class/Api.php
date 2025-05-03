@@ -664,6 +664,38 @@ class Api
 	}
 
     /**
+     * @api            {get} /api.php?q=getSmartContractCreateFee  getSmartContractCreateFee
+     * @apiName        getSmartContractCreateFee
+     * @apiGroup       API
+     * @apiDescription Get smart contract create fee
+     *
+     * @apiParam {number} height Height for which to retrieve fee.
+     * If empty last fee is returned
+     *
+     * @apiSuccess {numeric} Smart contract creation fee
+     */
+    static function getSmartContractCreateFee($data) {
+        $fee = Blockchain::getSmartContractCreateFee($data['height']);
+        api_echo($fee);
+    }
+
+    /**
+     * @api            {get} /api.php?q=getSmartContractExecFee  getSmartContractExecFee
+     * @apiName        getSmartContractExecFee
+     * @apiGroup       API
+     * @apiDescription Get smart contract execution fee
+     *
+     * @apiParam {number} height Height for which to retrieve fee.
+     * If empty last fee is returned
+     *
+     * @apiSuccess {numeric} Smart contract execution fee
+     */
+    static function getSmartContractExecFee($data) {
+        $fee = Blockchain::getSmartContractExecFee($data['height']);
+        api_echo($fee);
+    }
+
+    /**
      * @api            {get} /api.php?q=getSmartContract  getSmartContract
      * @apiName        getSmartContract
      * @apiGroup       SC
@@ -718,10 +750,10 @@ class Api
 	static function getSmartContractInterface($data) {
 		$sc_address = @$data['address'];
 		$code = @$data['code'];
-        if(!empty($sc_address)) {
-		    $interface = SmartContractEngine::getInterface($sc_address);
-        } else if (!empty($code)) {
+        if(!empty($code)) {
             $interface = SmartContractEngine::verifyCode($code, $error, $sc_address);
+        } else if (!empty($sc_address)) {
+            $interface = SmartContractEngine::getInterface($sc_address);
         }
 		api_echo($interface);
 	}
