@@ -60,7 +60,8 @@ if(isset($_GET['sc_get_property_read'])) {
 } else if (isset($_GET['sc_exec'])) {
     $public_key = $_SESSION['account']['public_key'];
     $method = $_GET['sc_exec'];
-    $amount = $_GET['sc_exec_amount'][$method] || 0;
+    $amount = $_GET['sc_exec_amount'][$method];
+    if(empty($amount)) $amount=0;
     $params=[];
     foreach ($_GET['sc_exec_params'][$method] as $name => $val) {
         $params[]=$val;
@@ -77,6 +78,7 @@ if(isset($_GET['sc_get_property_read'])) {
     $public_key = $_SESSION['account']['public_key'];
     $dst_address=$_GET['sc_send_dst'][$method];
     $amount = $_GET['sc_exec_amount'][$method];
+    if(empty($amount)) $amount=0;
     $params=[];
     foreach ($_GET['sc_exec_params'][$method] as $name => $val) {
         $params[]=$val;

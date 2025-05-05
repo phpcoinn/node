@@ -246,7 +246,7 @@ class SmartContractEngine
         if(!file_exists($sc_dir)) {
             $res = @mkdir($sc_dir);
             if(!$res) {
-                throw new Exception("Unalbe to create smart contracts run dir");
+                throw new Exception("Unable to create smart contracts run dir");
             }
         }
 
