@@ -31,7 +31,7 @@ $circulation = Account::getCirculation();
 $peersCount = Peer::getCount();
 if(FEATURE_SMART_CONTRACTS) {
     $scCount=SmartContract::getCount();
-    $tokensCount = 0 ;
+    $tokensCount = $db->single("select count(*) from tokens");
 }
 
 $hashRate10 = round(Blockchain::getHashRate(10),2);
