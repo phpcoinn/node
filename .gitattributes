@@ -1,0 +1,10 @@
+config/config.default.php merge=ours
+include/checkpoints.php merge=ours
+include/coinspec.inc.php merge=ours
+include/dapps.functions.php merge=ours
+include/genesis.inc.php merge=ours
+include/init.inc.php merge=ours
+include/rewards.inc.php merge=ours
+include/schema.inc.php merge=ours
+utils/wallet.php merge=ours
+chain_id merge=ours
