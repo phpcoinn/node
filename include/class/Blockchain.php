@@ -190,4 +190,20 @@ class Blockchain
             return 100;
         }
     }
+
+    static function getSmartContractCreateFee($height=null) {
+        if(NETWORK == "testnet") {
+            return 100;
+        } else {
+            return 1000;
+        }
+    }
+
+    static function getSmartContractExecFee($height=null) {
+        if(NETWORK == "testnet") {
+            return 0.01;
+        } else {
+            return 1;
+        }
+    }
 }

@@ -31,7 +31,7 @@ class SmartContract
 
 
 			$fee = $transaction->fee;
-			if($fee != TX_SC_CREATE_FEE) {
+			if($fee != Blockchain::getSmartContractCreateFee($height)) {
 				throw new Exception("Invalid fee for transaction");
 			}
 
@@ -71,7 +71,7 @@ class SmartContract
 				throw new Exception("Smart contract with address $dst does not exists");
 			}
 			$fee = $transaction->fee;
-			if($fee != TX_SC_EXEC_FEE) {
+			if($fee != Blockchain::getSmartContractExecFee($height)) {
 				throw new Exception("Invalid fee for transaction");
 			}
 			return true;
@@ -90,7 +90,7 @@ class SmartContract
 				throw new Exception("Smart contract with address $src does not exists");
 			}
 			$fee = $transaction->fee;
-			if($fee != TX_SC_EXEC_FEE) {
+			if($fee != Blockchain::getSmartContractExecFee($height)) {
 				throw new Exception("Invalid fee for transaction");
 			}
 			return true;

@@ -273,10 +273,48 @@ class SmartContractBase
     }
 
     public function execSmartContract($contract, $method, $params) {
-//        $this->log("execSmartContract $contract root=".ROOT);
-        require_once "phar://".ROOT."/tmp/sc/$contract.phar";
+        $this->requireExtFile($contract);
         $smartContractWrapper = new SmartContractWrapper($contract);
-        return $smartContractWrapper->execExt($this, $method, $params);
+        if($this->isFromTransactMethod()) {
+            $is_transact_method = $smartContractWrapper->isTransactMethod($method);
+            if($is_transact_method) {
+                $smartContractWrapper->execExt($this, $method, $params);
+            } else {
+                $this->error("Can not exec transact external method from non-transact method");
+            }
+        } else {
+            $this->error("Can not exec external method from non-transact method");
+        }
+    }
+
+    public function callSmartContract($contract, $method, $params) {
+        $this->requireExtFile($contract);
+        $smartContractWrapper = new SmartContractWrapper($contract);
+        return $smartContractWrapper->callExt($this, $method, $params);
+    }
+
+    private function requireExtFile($contract) {
+        require_once "phar://".ROOT."/tmp/sc/$contract.phar";
+    }
+
+    private function isFromTransactMethod() {
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        foreach ($backtrace as $frame) {
+            if (isset($frame['class'], $frame['function'])) {
+                try {
+                    $reflection = new ReflectionMethod($frame['class'], $frame['function']);
+                    $docComment = $reflection->getDocComment();
+                    if ($docComment && strpos($docComment, '@SmartContractTransact') !== false) {
+                        _log("Detected @SmartContractView in {$frame['class']}::{$frame['function']}");
+                        return true;
+                    }
+                } catch (ReflectionException $e) {
+                    // Handle cases where the method doesn't exist
+                    continue;
+                }
+            }
+        }
+        return false;
     }
 
     public function getExtFields() {

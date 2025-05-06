@@ -39,11 +39,11 @@ class Transaction
 			$fee_ratio = Blockchain::getFee($block_height);
 			$fee = round($fee_ratio * $this->val, 8);
 		} else if($this->type == TX_TYPE_SC_CREATE) {
-			$fee = TX_SC_CREATE_FEE;
+			$fee = Blockchain::getSmartContractCreateFee($block_height);
 		} else if($this->type == TX_TYPE_SC_EXEC) {
-			$fee = TX_SC_EXEC_FEE;
+			$fee = Blockchain::getSmartContractExecFee($block_height);
 		} else if($this->type == TX_TYPE_SC_SEND) {
-			$fee = TX_SC_EXEC_FEE;
+			$fee = Blockchain::getSmartContractExecFee($block_height);
 		} else if($this->type == TX_TYPE_BURN) {
 			$fee = 0;
 		}
@@ -1458,7 +1458,7 @@ class Transaction
         $date = time();
         $text = base64_encode(json_encode($deploy_data));
         $tx = new Transaction($public_key, $sc_address, $amount, TX_TYPE_SC_CREATE, $date, $sc_signature);
-        $tx->fee = TX_SC_CREATE_FEE;
+        $tx->fee = Blockchain::getSmartContractCreateFee();
         $tx->data = $text;
         return $tx;
     }
@@ -1470,7 +1470,7 @@ class Transaction
             "params"=>$params
         ]));
         $tx = new Transaction($public_key, $sc_address, $amount, TX_TYPE_SC_EXEC, $date, $msg);
-        $tx->fee = TX_SC_EXEC_FEE;
+        $tx->fee = Blockchain::getSmartContractExecFee();
         return $tx;
     }
 
@@ -1481,7 +1481,7 @@ class Transaction
             "params"=>$params
         ]));
         $tx = new Transaction($sc_public_key, $dst_address, $amount, TX_TYPE_SC_SEND, $date, $msg);
-        $tx->fee = TX_SC_EXEC_FEE;
+        $tx->fee = Blockchain::getSmartContractExecFee();
         return $tx;
     }
 }

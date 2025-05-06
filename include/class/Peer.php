@@ -266,7 +266,7 @@ class Peer
 		return [
 			"height" => $current['height'],
 			"appshash" => $appsHash,
-			"score"=>$_config['node_score'],
+			"score"=>@$_config['node_score'],
 			"version"=> VERSION . "." . BUILD_VERSION,
 			"miner"=>$miner,
 			"generator"=>$generator,

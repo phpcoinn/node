@@ -31,6 +31,7 @@ $circulation = Account::getCirculation();
 $peersCount = Peer::getCount();
 if(FEATURE_SMART_CONTRACTS) {
     $scCount=SmartContract::getCount();
+    $tokensCount = 0 ;
 }
 
 $hashRate10 = round(Blockchain::getHashRate(10),2);
@@ -69,17 +70,33 @@ global $btcPrice, $usdPrice;
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
             <div class="card-body p-3">
-                <div class="row align-items-center">
-                    <div class="col-12">
+                <div class="row align-items-start">
+                    <div class="col-6">
                         <i class="fas fa-database me-1 h4"></i>
                         <span class="text-muted mb-3 lh-1 text-truncate h4">Blocks</span>
                         <h2 class="my-2">
                             <?php echo $blockCount  ?>
                         </h2>
+                        <div class="">
+                            <span class="text-muted font-size-13">Last block before <strong><?php echo $elapsed ?></strong> seconds</span>
                     </div>
                 </div>
+                    <?php if(FEATURE_SMART_CONTRACTS) { ?>
+                        <div class="col-6">
+                            <i class="fas fa-exchange-alt me-1 h4"></i>
+                            <span class="text-muted mb-3 lh-1 text-truncate h4">
+                                <a href="/apps/explorer/txs.php">Transactions</a>
+                            </span>
+                            <h2 class="my-2">
+                                ~<?php echo $txCount  ?>
+                            </h2>
                 <div class="text-nowrap">
-                    <span class="text-muted font-size-13">Last block before <strong><?php echo $elapsed ?></strong> seconds</span>
+                                <strong><?php echo $mempoolCount ?></strong> in <a href="/apps/explorer/mempool.php">mempool</a>
+                                <br/>
+                                <span class="text-muted font-size-13">Fee <?php echo number_format($fee,5) ?></span>
+                            </div>
+                        </div>
+                    <?php } ?>
                 </div>
             </div>
         </div>
@@ -171,8 +188,7 @@ global $btcPrice, $usdPrice;
         </div>
     </div>
 
-    <?php if (NETWORK == "mainnet") { ?>
-
+    <?php if(!FEATURE_SMART_CONTRACTS) { ?>
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
             <div class="card-body p-3">
@@ -202,19 +218,49 @@ global $btcPrice, $usdPrice;
             </div>
         </div>
     </div>
+    <?php } ?>
 
-    <div class="col-xl-3 col-lg-4 col-md-6">
-        <div class="card card-h-100">
-            <div class="card-body p-3">
-                <div class="row align-items-center">
+    <?php if(FEATURE_SMART_CONTRACTS) { ?>
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card card-h-100">
+                <div class="card-body p-3">
+                    <div class="row align-items-start">
+                        <div class="col-6">
+                            <i class="fas fa-file-code  me-1 h4"></i>
+                            <span class="text-muted mb-3 lh-1 text-truncate h4">
+                                        <a href="/apps/explorer/smart_contracts.php" style="letter-spacing: -1.5px">Smart Contracts</a>
+                        </span>
+                            <h2 class="my-2">
+                                <?php echo $scCount ?>
+                            </h2>
+                        </div>
+                            <div class="col-6">
+                            <i class="fas fa-money-bill me-1 h4"></i>
+                                <span class="text-muted mb-3 lh-1 text-truncate h4">
+                                        <a href="/apps/explorer/tokens/list.php">Tokens</a>
+                                </span>
+                                <h2 class="my-2">
+                                <?php echo $tokensCount ?>
+                                </h2>
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php } ?>
+
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card card-h-100">
+                <div class="card-body p-3">
+                    <div class="row align-items-center">
                     <div class="col-12">
                         <i class="fas fa-dollar-sign  me-1 h4"></i>
-                        <span class="text-muted mb-3 lh-1 text-truncate h4">
+                            <span class="text-muted mb-3 lh-1 text-truncate h4">
                             <a href="https://xeggex.com/market/PHP_USDT" target="_blank">Price</a>
                         </span>
-                        <h2 class="my-2">
+                            <h2 class="my-2">
                             <?php echo empty(floatval($btcPrice)) ? "-" : $btcPrice ?> ₿
-                        </h2>
+                            </h2>
                         <div class="text-nowrap">
                             <span class="text-muted font-size-13"><?php echo empty(floatval($usdPrice)) ? "-" : $usdPrice ?> $</span>
                         </div>
@@ -223,60 +269,6 @@ global $btcPrice, $usdPrice;
             </div>
         </div>
     </div>
-
-    <?php } else { ?>
-
-        <div class="col-xl-3 col-lg-4 col-md-6">
-            <div class="card card-h-100">
-                <div class="card-body p-3">
-                    <div class="row align-items-start">
-                        <div class="col-6">
-                            <i class="fas fa-exchange-alt me-1 h4"></i>
-                            <span class="text-muted mb-3 lh-1 text-truncate h4">
-                            <a href="/apps/explorer/txs.php">Transactions</a>
-                        </span>
-                            <h2 class="my-2">
-                                ~<?php echo $txCount  ?>
-                            </h2>
-                            <div class="text-nowrap">
-                                <span class="text-muted font-size-13">Fee <?php echo number_format($fee,5) ?></span>
-                            </div>
-                        </div>
-                        <?php if(NETWORK == "testnet") { ?>
-                            <div class="col-6">
-                                <i class="fas fa-file-code  me-1 h4"></i>
-                                <span class="text-muted mb-3 lh-1 text-truncate h4">
-                                    <a href="/apps/explorer/smart_contracts.php" style="letter-spacing: -1.5px">Smart Contracts</a>
-                                </span>
-                                <h2 class="my-2">
-                                    <?php echo $scCount ?>
-                                </h2>
-                            </div>
-                        <?php } ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-lg-4 col-md-6">
-            <div class="card card-h-100">
-                <div class="card-body p-3">
-                    <div class="row align-items-center">
-                        <div class="col-6">
-                            <i class="fas fa-hourglass-start  me-1 h4"></i>
-                            <span class="text-muted mb-3 lh-1 text-truncate h4">
-                            <a href="/apps/explorer/mempool.php">Mempool</a>
-                        </span>
-                            <h2 class="my-2">
-                                <?php echo $mempoolCount ?>
-                            </h2>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    <?php } ?>
 
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="card card-h-100">
