@@ -69,6 +69,7 @@ foreach ($indexes as $index) {
 
 $sql="select * from token_balances tb where tb.token = ? order by tb.balance desc limit 10";
 $topHolders = $db->run($sql,[$id], false);
+$scExecFee = Blockchain::getSmartContractExecFee();
 
 ?>
 
@@ -156,11 +157,11 @@ $topHolders = $db->run($sql,[$id], false);
                 </div>
                 <div class="mb-3">
                     <label for="fee" class="form-label">Fee:</label>
-                    <?php if($accountBalance < TX_SC_EXEC_FEE) { ?>
-                        <div class="text-danger"><?php echo TX_SC_EXEC_FEE ?> PHPCoin</div>
+                    <?php if($accountBalance < $scExecFee) { ?>
+                        <div class="text-danger"><?php echo $scExecFee ?> PHPCoin</div>
                         <div class="text-danger">You do not have enough coins to execute this transfer</div>
                     <?php } else { ?>
-                        <div><?php echo TX_SC_EXEC_FEE ?> PHPCoin</div>
+                        <div><?php echo $scExecFee ?> PHPCoin</div>
                     <?php } ?>
                 </div>
             </div>
