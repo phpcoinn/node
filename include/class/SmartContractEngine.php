@@ -297,7 +297,6 @@ class SmartContractEngine
 
         $sc_run_file = $sc_dir. "/{$sc_address}_run.php";
         $res = file_put_contents($sc_run_file, $run_code);
-
         if(!$res) {
             throw new Exception("Enable to write run file");
         }

@@ -79,8 +79,8 @@ global $btcPrice, $usdPrice;
                         </h2>
                         <div class="">
                             <span class="text-muted font-size-13">Last block before <strong><?php echo $elapsed ?></strong> seconds</span>
+                        </div>
                     </div>
-                </div>
                     <?php if(FEATURE_SMART_CONTRACTS) { ?>
                         <div class="col-6">
                             <i class="fas fa-exchange-alt me-1 h4"></i>
@@ -90,7 +90,7 @@ global $btcPrice, $usdPrice;
                             <h2 class="my-2">
                                 ~<?php echo $txCount  ?>
                             </h2>
-                <div class="text-nowrap">
+                            <div class="text-nowrap">
                                 <strong><?php echo $mempoolCount ?></strong> in <a href="/apps/explorer/mempool.php">mempool</a>
                                 <br/>
                                 <span class="text-muted font-size-13">Fee <?php echo number_format($fee,5) ?></span>
@@ -189,35 +189,35 @@ global $btcPrice, $usdPrice;
     </div>
 
     <?php if(!FEATURE_SMART_CONTRACTS) { ?>
-    <div class="col-xl-3 col-lg-4 col-md-6">
-        <div class="card card-h-100">
-            <div class="card-body p-3">
-                <div class="row align-items-start">
-                    <div class="col-6">
-                        <i class="fas fa-exchange-alt me-1 h4"></i>
-                        <span class="text-muted mb-3 lh-1 text-truncate h4">
-                            <a href="/apps/explorer/txs.php">Transactions</a>
-                        </span>
-                        <h2 class="my-2">
-                            ~<?php echo $txCount  ?>
-                        </h2>
-                        <div class="text-nowrap">
-                            <span class="text-muted font-size-13">Fee <?php echo number_format($fee,5) ?></span>
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card card-h-100">
+                <div class="card-body p-3">
+                    <div class="row align-items-start">
+                        <div class="col-6">
+                            <i class="fas fa-exchange-alt me-1 h4"></i>
+                            <span class="text-muted mb-3 lh-1 text-truncate h4">
+                                <a href="/apps/explorer/txs.php">Transactions</a>
+                            </span>
+                            <h2 class="my-2">
+                                ~<?php echo $txCount  ?>
+                            </h2>
+                            <div class="text-nowrap">
+                                <span class="text-muted font-size-13">Fee <?php echo number_format($fee,5) ?></span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-6">
-                        <i class="fas fa-hourglass-start  me-1 h4"></i>
-                        <span class="text-muted mb-3 lh-1 text-truncate h4">
-                            <a href="/apps/explorer/mempool.php">Mempool</a>
-                        </span>
-                        <h2 class="my-2">
-                            <?php echo $mempoolCount ?>
-                        </h2>
+                        <div class="col-6">
+                            <i class="fas fa-hourglass-start  me-1 h4"></i>
+                            <span class="text-muted mb-3 lh-1 text-truncate h4">
+                                <a href="/apps/explorer/mempool.php">Mempool</a>
+                            </span>
+                            <h2 class="my-2">
+                                <?php echo $mempoolCount ?>
+                            </h2>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
     <?php } ?>
 
     <?php if(FEATURE_SMART_CONTRACTS) { ?>
@@ -229,38 +229,38 @@ global $btcPrice, $usdPrice;
                             <i class="fas fa-file-code  me-1 h4"></i>
                             <span class="text-muted mb-3 lh-1 text-truncate h4">
                                         <a href="/apps/explorer/smart_contracts.php" style="letter-spacing: -1.5px">Smart Contracts</a>
-                        </span>
+                                    </span>
                             <h2 class="my-2">
                                 <?php echo $scCount ?>
                             </h2>
                         </div>
-                            <div class="col-6">
+                        <div class="col-6">
                             <i class="fas fa-money-bill me-1 h4"></i>
-                                <span class="text-muted mb-3 lh-1 text-truncate h4">
+                            <span class="text-muted mb-3 lh-1 text-truncate h4">
                                         <a href="/apps/explorer/tokens/list.php">Tokens</a>
-                                </span>
-                                <h2 class="my-2">
+                                    </span>
+                            <h2 class="my-2">
                                 <?php echo $tokensCount ?>
-                                </h2>
-                            </div>
+                            </h2>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     <?php } ?>
 
-        <div class="col-xl-3 col-lg-4 col-md-6">
-            <div class="card card-h-100">
-                <div class="card-body p-3">
-                    <div class="row align-items-center">
+    <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="card card-h-100">
+            <div class="card-body p-3">
+                <div class="row align-items-center">
                     <div class="col-12">
                         <i class="fas fa-dollar-sign  me-1 h4"></i>
-                            <span class="text-muted mb-3 lh-1 text-truncate h4">
+                        <span class="text-muted mb-3 lh-1 text-truncate h4">
                             <a href="https://xeggex.com/market/PHP_USDT" target="_blank">Price</a>
                         </span>
-                            <h2 class="my-2">
+                        <h2 class="my-2">
                             <?php echo empty(floatval($btcPrice)) ? "-" : $btcPrice ?> ₿
-                            </h2>
+                        </h2>
                         <div class="text-nowrap">
                             <span class="text-muted font-size-13"><?php echo empty(floatval($usdPrice)) ? "-" : $usdPrice ?> $</span>
                         </div>

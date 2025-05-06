@@ -308,10 +308,10 @@ if ($q == "info") {
 
     if($height >= UPDATE_17_DEV_MINER_START) {
         $rewardinfo = Block::reward($height);
-        if (isset($rewardinfo['dev']) && $rewardinfo['dev'] > 0) {
+        if(isset($rewardinfo['dev']) && $rewardinfo['dev']>0) {
             $devReward = num($rewardinfo['dev']);
-            $devRewardTx = Transaction::getDevRewardTx($_config['generator_public_key'], $_config['generator_private_key'], $devReward, $new_block_date);
-            $data[$devRewardTx['id']] = $devRewardTx;
+                $devRewardTx = Transaction::getDevRewardTx($_config['generator_public_key'], $_config['generator_private_key'], $devReward, $new_block_date);
+            $data[$devRewardTx['id']]=$devRewardTx;
         }
     }
 

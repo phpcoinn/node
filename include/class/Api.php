@@ -15,7 +15,7 @@ class Api
 
 	static function getData() {
 		if (!empty($_POST['data'])) {
-            $data = json_decode($_POST['data'], true);
+			$data = json_decode($_POST['data'], true);
         } else if (file_get_contents("php://input")) {
             $data = json_decode(file_get_contents("php://input"), true);
 		} else {
@@ -753,7 +753,7 @@ class Api
         if(!empty($code)) {
             $interface = SmartContractEngine::verifyCode($code, $error, $sc_address);
         } else if (!empty($sc_address)) {
-		    $interface = SmartContractEngine::getInterface($sc_address);
+            $interface = SmartContractEngine::getInterface($sc_address);
         }
 		api_echo($interface);
 	}

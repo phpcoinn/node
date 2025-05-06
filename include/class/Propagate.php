@@ -186,5 +186,4 @@ class Propagate
         $data['requestId']=$requestId;
         self::propagateSocketEvent("postReceived", $data);
     }
-
 }

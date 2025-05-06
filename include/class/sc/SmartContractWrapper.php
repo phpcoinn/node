@@ -219,9 +219,9 @@ class SmartContractWrapper
             if(file_exists($state_file.".rollback")) {
                 unlink($state_file);
                 rename($state_file.".rollback", $state_file);
+            }
         }
-        }
-	}
+    }
 
 	private function invoke($method, $params) {
         unset($_SERVER);

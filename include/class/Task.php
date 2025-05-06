@@ -73,15 +73,15 @@ class Task
 
     static function runTask() {
         $name = static::$name;
-        $dir = ROOT . "/cli";
-        $cmd = "php $dir/$name.php";
-        _log("Task: run $name task",3);
-        $userInfo = posix_getpwuid(posix_geteuid());
-        $user=null;
+            $dir = ROOT . "/cli";
+            $cmd = "php $dir/$name.php";
+            _log("Task: run $name task",3);
+            $userInfo = posix_getpwuid(posix_geteuid());
+            $user=null;
         if($userInfo['name']!="www-data" && $userInfo['name']=="root") {
-            $user="www-data";
-        }
-        Nodeutil::runSingleProcess($cmd, null, $user);
+                $user="www-data";
+            }
+            Nodeutil::runSingleProcess($cmd, null, $user);
     }
 
     static function processTask() {

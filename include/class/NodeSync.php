@@ -660,18 +660,18 @@ class NodeSync
 
 		for($i=0;$i<count($peersForSync);$i++){
 			$peer = $peersForSync[$i];
-			$hostname = $peer['hostname'];
+            $hostname = $peer['hostname'];
 			self::peerSync($hostname,100,10,$ret);
 			if($ret=="no_peer_data"){
 				_log("Select next peer",3);
-				continue;                                                 
-            		}
+				continue;
+            }
 			break;
-        	}
+        }
 
-            Config::setSync(0);
-            _log("Finished sync");
-            return;
+        Config::setSync(0);
+        _log("Finished sync");
+        return;
 
 				$syncing = true;
 				$limit_cnt = 0;
@@ -882,7 +882,7 @@ class NodeSync
             } else {
                 _log("PeerSync: NO peer block data");
                 $syncing = false;
-		$ret="no_peer_data";
+		        $ret="no_peer_data";
                 break;
             }
         }

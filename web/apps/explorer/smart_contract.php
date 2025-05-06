@@ -350,7 +350,7 @@ global $loggedIn;
                                                 echo "=".$param['value'];
                                             }
                                         } else {
-                                            echo '$'.$param;
+                                        echo '$'.$param;
                                         }
                                         if($ix < count($method['params'])-1) echo ", ";
                                     }
@@ -360,7 +360,8 @@ global $loggedIn;
                             </td>
                             <td>
                                 <?php if($loggedIn) { ?>
-                                    <input type="text" class="form-control form-control-sm w-auto" name="sc_exec_amount[<?php echo $method['name'] ?>]" value="" placeholder="PHPCoin amount">
+                                    <input type="text" class="form-control form-control-sm w-auto"
+                                           name="sc_exec_amount[<?php echo $method['name'] ?>]" value="" placeholder="PHPCoin amount">
                                 <?php } ?>
                             </td>
 
@@ -382,7 +383,8 @@ global $loggedIn;
                             </td>
                             <td class="text-end">
                                 <?php if($loggedIn && $id == $_SESSION['account']['address']) { ?>
-                                    <input type="text" class="form-control form-control-sm w-auto d-inline" name="sc_send_dst[<?php echo $method['name'] ?>]" placeholder="Dst address">
+                                    <input type="text" class="form-control form-control-sm w-auto d-inline"
+                                           name="sc_send_dst[<?php echo $method['name'] ?>]" placeholder="Dst address">
                                     <button type="button" onclick="runAction('sc_send', ['<?php echo $method['name'] ?>'])" class="btn btn-sm btn-soft-primary" name="sc_send"
                                             value="<?php echo $method['name'] ?>">Send</button>
                                 <?php } ?>
@@ -393,68 +395,68 @@ global $loggedIn;
             </td>
           </tr>
             <?php if(isset($interface['views'])) { ?>
-              <tr>
-                <td class="fw-bold">Views</td>
-                <td>
-                    <table class="table table-sm table-striped">
-                        <?php foreach ($interface['views'] as $view) { ?>
-                            <tr>
-                                <td>
-                                    <?php
-                                    echo $view['name'];
-                                    echo "(";
-                                    if(!empty($view['params'])) {
-                                        foreach ($view['params'] as $ix => $param) {
-                                            if(version_compare($interface['version'], "2.0.0.")) {
-                                                echo '$'.$param['name'];
-                                                if(!empty($param['value'])) {
-                                                    echo "=".$param['value'];
-                                                }
-                                            } else {
-                                                echo '$'.$param;
+          <tr>
+            <td class="fw-bold">Views</td>
+            <td>
+                <table class="table table-sm table-striped">
+                    <?php foreach ($interface['views'] as $view) { ?>
+                        <tr>
+                            <td>
+                                <?php
+                                echo $view['name'];
+                                echo "(";
+                                if(!empty($view['params'])) {
+                                    foreach ($view['params'] as $ix => $param) {
+                                        if(version_compare($interface['version'], "2.0.0.")) {
+                                            echo '$'.$param['name'];
+                                            if(!empty($param['value'])) {
+                                                echo "=".$param['value'];
                                             }
-                                            if($ix < count($view['params'])-1) echo ", ";
-                                        }
-                                    }
-                                    echo ")";
-                                    ?>
-                                </td>
-                                <td class="text-end">
-                                    <?php foreach ($view['params'] as $ix => $param) {
-                                        if(is_array($param)) {
-                                            $name=$param['name'];
                                         } else {
-                                            $name = $param;
+                                            echo '$'.$param;
                                         }
-                                        ?>
-                                        <input type="text" class="form-control form-control-sm d-inline w-auto"
+                                        if($ix < count($view['params'])-1) echo ", ";
+                                    }
+                                }
+                                echo ")";
+                                ?>
+                            </td>
+                            <td class="text-end">
+                                <?php foreach ($view['params'] as $ix => $param) {
+                                    if(is_array($param)) {
+                                        $name=$param['name'];
+                                    } else {
+                                        $name = $param;
+                                    }
+                                    ?>
+                                    <input type="text" class="form-control form-control-sm d-inline w-auto"
                                            name="sc_view_params[<?php echo $view['name'] ?>][<?php echo $name ?>]"
                                            value="<?php echo $_REQUEST['sc_view_params'][$view['name']][$name] ?>" placeholder="<?php echo $name ?>">
-                                    <?php } ?>
+                                <?php } ?>
                                 <button type="button" onclick="runAction('sc_view', ['<?php echo $view['name'] ?>'])" class="btn btn-sm btn-soft-primary"
                                         name="sc_view" value="<?php echo $view['name'] ?>">Call</button>
-                                </td>
-                                <td>
-                                    <?php if (isset($sv_view_res) && $sv_view_name == $view['name']) { ?>
-                                        <?php if(!empty($sv_view_err)) { ?>
-                                            <span class="fa fa-exclamation-triangle text-danger"></span>
-                                            <?php echo $sv_view_err ?>
-                                        <?php } else { ?>
-                                            <span><?php echo $sv_view_res ?></span>
-                                        <?php } ?>
+                            </td>
+                            <td>
+                                <?php if (isset($sv_view_res) && $sv_view_name == $view['name']) { ?>
+                                    <?php if(!empty($sv_view_err)) { ?>
+                                        <span class="fa fa-exclamation-triangle text-danger"></span>
+                                        <?php echo $sv_view_err ?>
+                                    <?php } else { ?>
+                                        <span><?php echo $sv_view_res ?></span>
+                                    <?php } ?>
 
-                                    <?php } ?>
-                                </td>
-                                <td class="text-end">
-                                    <?php if (isset($sv_view_res) && $sv_view_name == $view['name']) { ?>
+                                <?php } ?>
+                            </td>
+                            <td class="text-end">
+                                <?php if (isset($sv_view_res) && $sv_view_name == $view['name']) { ?>
                                     <button type="button" onclick="runAction('sc_view_clear', ['<?php echo $view['name'] ?>'])" class="btn btn-sm btn-soft-primary">Clear</button>
-                                    <?php } ?>
-                                </td>
-                            </tr>
-                        <?php } ?>
-                    </table>
-                </td>
-              </tr>
+                                <?php } ?>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                </table>
+            </td>
+          </tr>
             <?php } ?>
         </table>
     </div>

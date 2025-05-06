@@ -294,12 +294,12 @@ if($type == "message") {
     $forker = new Forker();
     foreach ($peers as $peer) {
         $forker->fork(function() use ($peer, $info, $msg) {
-            $hostname = $peer['hostname'];
+        $hostname = $peer['hostname'];
             $url = $hostname."/peer.php?q=propagateMsg7";
             $res = peer_post($url, $msg, 5, $err, $info, $curl_info);
             _log("PM: Send message to peer $hostname: $msg res=".json_encode($res));
         });
-    }
+        }
     $forker->exec();
 }
 

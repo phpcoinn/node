@@ -67,9 +67,9 @@ class Peer
 			$sql.=" and blacklisted < ".DB::unixTimeStamp();
 		}
 		if($live === true) {
-			$sql.= "and ping > ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES;
+			$sql.= " and ping > ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES;
 		} else if ($live === false) {
-			$sql.= "and ping < ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES;
+			$sql.= " and ping < ".DB::unixTimeStamp()."- 60*".self::PEER_PING_MAX_MINUTES;
 		}
 
 		if(!empty($order)) {

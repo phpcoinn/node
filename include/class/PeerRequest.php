@@ -603,9 +603,9 @@ class PeerRequest
         $response = ["msg"=>$msg, "received"=>time()];
         $res = peer_post($sender.'/peer.php?q=processedMessage',$response);
         _log("PM: send event to master res=".$res);
-        Propagate::message($envelope);
+            Propagate::message($envelope);
         api_echo(true);
-    }
+        }
 
     static function processedMessage() {
         $data = self::$data;
