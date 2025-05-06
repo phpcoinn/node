@@ -1,7 +1,7 @@
 <?php
 $GLOBALS['start_time']=microtime(true);
 
-const DEFAULT_CHAIN_ID = "00";
+const DEFAULT_CHAIN_ID = "01";
 
 $blocked_agents = ["DataForSeoBot","BLEXBot","SemrushBot","YandexBot","AhrefsBot"];
 if (php_sapi_name() !== 'cli') {
@@ -30,8 +30,10 @@ if($version[0] > 7) {
 	ini_set('display_startup_errors', 1);
 }
 // not accessible directly
-if (php_sapi_name() !== 'cli' && substr_count($_SERVER['PHP_SELF'], "/") > 1
+if (!DEVELOPMENT && php_sapi_name() !== 'cli' && substr_count($_SERVER['PHP_SELF'], "/") > 1
 	&& substr($_SERVER['PHP_SELF'], 0, 5) != "/apps"
+	&& (substr($_SERVER['PHP_SELF'], 0, 7) != "/atheos" || NETWORK!="testnet")
+	&& ($_SERVER['SERVER_NAME'] != "atheos.phpcoin.net" || NETWORK!="testnet")
 	&& substr($_SERVER['PHP_SELF'], 0, 6) != "/dapps") {
     die("This application should only be run in the main directory /");
 }

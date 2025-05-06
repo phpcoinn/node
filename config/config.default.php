@@ -16,9 +16,9 @@ $_config['allowed_hosts'] = ['*'];
 
 // The initial peers to sync from
 $_config['initial_peer_list'] = [
-    'https://main1.phpcoin.net',
-    'https://main2.phpcoin.net',
-    'https://main3.phpcoin.net'
+    'https://node1.phpcoin.net',
+    'https://node2.phpcoin.net',
+    'https://node3.phpcoin.net'
 ];
 
 // does not peer with any of the peers. Uses the seed peers and syncs only from those peers. Requires a cronjob on sync.php

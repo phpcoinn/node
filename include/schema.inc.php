@@ -80,7 +80,7 @@ $db->beginTransaction();
 $was_empty = false;
 if (empty($dbversion)) {
 	$was_empty = true;
-    $dbversion=36;
+    $dbversion=40;
     _log("Initializing database");
     migrate_with_lock($dbversion, function() {
         global $db;
@@ -284,10 +284,16 @@ if (empty($dbversion)) {
     });
 }
 
-if($dbversion <= 37) {
+if($dbversion <= 40) {
     migrate_with_lock($dbversion, function() {
         global $db;
         $db->run("alter table smart_contracts add metadata json null");
+    });
+}
+
+if($dbversion <= 41) {
+    migrate_with_lock($dbversion, function() {
+        global $db;
         $db->run("alter table smart_contracts modify code MEDIUMTEXT not null");
     });
 }

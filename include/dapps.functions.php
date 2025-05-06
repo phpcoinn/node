@@ -6,7 +6,7 @@ if(!defined("ROOT")) {
 }
 
 if(!defined("DEFAULT_CHAIN_ID")) {
-    define("DEFAULT_CHAIN_ID", "00");
+    define("DEFAULT_CHAIN_ID", "01");
 }
 
 require_once ROOT . "/include/coinspec.inc.php";
