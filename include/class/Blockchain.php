@@ -203,7 +203,7 @@ class Blockchain
         if(NETWORK == "testnet") {
             return 0.01;
         } else {
-            return 0.1;
+            return 1;
         }
     }
 }

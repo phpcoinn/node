@@ -9,6 +9,14 @@ if(!FEATURE_SMART_CONTRACTS) {
     exit;
 }
 
+if(isset($_SERVER['HTTP_AJAX_ACTION'])) {
+    ob_clean();
+    ob_start();
+    $ajaxAction = $_SERVER['HTTP_AJAX_ACTION'];
+    $ajaxParams = $_SERVER['HTTP_AJAX_PARAMS'];
+    $ajaxParams = json_decode(base64_decode($ajaxParams), true);
+}
+
 if(!isset($_GET['id'])) {
     header("location: /apps/explorer");
     exit;
@@ -53,17 +61,22 @@ $metadata = json_decode($smartContract['metadata'],true);
 require_once __DIR__. '/../common/include/top.php';
 
 $base_url="/apps/explorer/smart_contract.php?id=$id";
-if(isset($_GET['sc_get_property_read'])) {
-    $sc_get_property_name = $_GET['sc_get_property_read'];
-    $sc_get_property_key = $_GET['sc_property_key'][$sc_get_property_name];
+if($ajaxAction == 'sc_get_property_read') {
+    $sc_get_property_name = $ajaxParams[0];
+    $sc_get_property_key = $_REQUEST['sc_property_key'][$sc_get_property_name];
     $sc_get_property_result = SmartContractEngine::get($id, $sc_get_property_name, $sc_get_property_key, $sc_get_property_error);
-} else if (isset($_GET['sc_exec'])) {
+} else if ($ajaxAction == 'sc_property_clear') {
+    $sc_get_property_name = $ajaxParams[0];
+    $_REQUEST['sc_property_key'][$sc_get_property_name]=null;
+    $sc_get_property_key = null;
+    $sc_get_property_result = null;
+} else if ($ajaxAction == "sc_exec") {
     $public_key = $_SESSION['account']['public_key'];
-    $method = $_GET['sc_exec'];
-    $amount = $_GET['sc_exec_amount'][$method];
+    $method =  $ajaxParams[0];
+    $amount = $_REQUEST['sc_exec_amount'][$method];
     if(empty($amount)) $amount=0;
     $params=[];
-    foreach ($_GET['sc_exec_params'][$method] as $name => $val) {
+    foreach ($_REQUEST['sc_exec_params'][$method] as $name => $val) {
         $params[]=$val;
     }
     $tx=Transaction::generateSmartContractExecTx($public_key, $id, $method, $amount, $params);
@@ -71,13 +84,15 @@ if(isset($_GET['sc_get_property_read'])) {
     $request_code = uniqid("signtx");
     $redirect = urlencode($base_url);
     $approve_link = "/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/gateway/approve.php?app=".APP_NAME."&request_code=$request_code&tx=$tx&redirect=$redirect";
-    header("location: $approve_link");
+    ob_clean();
+    header('Content-Type: application/json');
+    echo json_encode(['redirect'=>$approve_link]);
     exit;
-} else if (isset($_GET['sc_send'])) {
-    $method = $_GET['sc_send'];
+} else if ($ajaxAction == "sc_send") {
+    $method =  $ajaxParams[0];
     $public_key = $_SESSION['account']['public_key'];
-    $dst_address=$_GET['sc_send_dst'][$method];
-    $amount = $_GET['sc_exec_amount'][$method];
+    $dst_address=$_REQUEST['sc_send_dst'][$method];
+    $amount = $_REQUEST['sc_exec_amount'][$method];
     if(empty($amount)) $amount=0;
     $params=[];
     foreach ($_GET['sc_exec_params'][$method] as $name => $val) {
@@ -88,16 +103,22 @@ if(isset($_GET['sc_get_property_read'])) {
     $request_code = uniqid("signtx");
     $redirect = urlencode($base_url);
     $approve_link = "/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/gateway/approve.php?app=".APP_NAME."&request_code=$request_code&tx=$tx&redirect=$redirect";
-    header("location: $approve_link");
+    ob_clean();
+    header('Content-Type: application/json');
+    echo json_encode(['redirect'=>$approve_link]);
     exit;
-} else if (isset($_GET['sc_view'])) {
-    $view = $_GET['sc_view'];
+} else if ($ajaxAction == 'sc_view') {
+    $view = $ajaxParams[0];
     $params=[];
-    foreach ($_GET['sc_view_params'][$view] as $name => $val) {
+    foreach ($_REQUEST['sc_view_params'][$view] as $name => $val) {
         $params[]=$val;
     }
     $sv_view_name=$view;
     $sv_view_res = SmartContractEngine::view($id, $view, $params, $sv_view_err);
+} else if ($ajaxAction == 'sc_view_clear') {
+    $view = $ajaxParams[0];
+    $_REQUEST['sc_view_params'][$view]=[];
+    $sv_view_res = null;
 } else if (isset($_GET['action']) && $_GET['action']=="download_code") {
     $code=$smartContract['code'];
     $decoded=json_decode(base64_decode($code), true);
@@ -258,7 +279,7 @@ global $loggedIn;
 
 
 
-<form method="get" action="">
+<form method="post" action="" id="interact-form" autocomplete="off">
     <div class="table-responsive">
         <table class="table table-sm table-striped">
           <tr>
@@ -283,9 +304,11 @@ global $loggedIn;
                             <td class="text-end nowrap">
                                 <?php if($property['type']=="map") { ?>
                                     <input class="form-control w-auto d-inline form-control-sm" type="text"
-                                           name="sc_property_key[<?php echo $property['name'] ?>]" value="<?php echo $_GET['sc_property_key'][$property['name']] ?>" placeholder="Key">
+                                           name="sc_property_key[<?php echo $property['name'] ?>]"
+                                           value="<?php echo $_REQUEST['sc_property_key'][$property['name']] ?>" placeholder="Key">
                                 <?php } ?>
-                                <button type="submit" name="sc_get_property_read" value="<?php echo $property['name'] ?>" class="btn btn-sm btn-soft-primary">Read</button>
+                                <button type="button" onclick="runAction('sc_get_property_read',['<?php echo $property['name'] ?>'])"
+                                        name="sc_get_property_read" value="<?php echo $property['name'] ?>" class="btn btn-sm btn-soft-primary">Read</button>
                             </td>
                             <td>
                                 <?php if (isset($sc_get_property_result) && $sc_get_property_name == $property['name']) { ?>
@@ -300,7 +323,8 @@ global $loggedIn;
                             </td>
                             <td class="text-end">
                                 <?php if (isset($sc_get_property_result) && $sc_get_property_name == $property['name']) { ?>
-                                    <a class="btn btn-sm btn-soft-primary" href="<?php echo $base_url ?>">Clear</a>
+                                    <button class="btn btn-sm btn-soft-primary" type="button"
+                                            onclick="runAction('sc_property_clear',['<?php echo $property['name'] ?>'])">Clear</button>
                                 <?php } ?>
                             </td>
                         </tr>
@@ -336,7 +360,8 @@ global $loggedIn;
                             </td>
                             <td>
                                 <?php if($loggedIn) { ?>
-                                    <input type="text" class="form-control form-control-sm w-auto" name="sc_exec_amount[<?php echo $method['name'] ?>]" value="" placeholder="PHPCoin amount">
+                                    <input type="text" class="form-control form-control-sm w-auto"
+                                           name="sc_exec_amount[<?php echo $method['name'] ?>]" value="" placeholder="PHPCoin amount">
                                 <?php } ?>
                             </td>
 
@@ -352,13 +377,16 @@ global $loggedIn;
                                         <input type="text" class="form-control form-control-sm d-inline w-auto"
                                                name="sc_exec_params[<?php echo $method['name'] ?>][<?php echo $name ?>]" value="" placeholder="<?php echo $name ?>">
                                     <?php } ?>
-                                    <button type="submit" class="btn btn-sm btn-soft-primary" name="sc_exec" value="<?php echo $method['name'] ?>">Execute</button>
+                                    <button type="button" onclick="runAction('sc_exec',['<?php echo $method['name'] ?>'])" class="btn btn-sm btn-soft-primary" name="sc_exec"
+                                            value="<?php echo $method['name'] ?>">Execute</button>
                                 <?php } ?>
                             </td>
                             <td class="text-end">
                                 <?php if($loggedIn && $id == $_SESSION['account']['address']) { ?>
-                                    <input type="text" class="form-control form-control-sm w-auto d-inline" name="sc_send_dst[<?php echo $method['name'] ?>]" placeholder="Dst address">
-                                    <button type="submit" class="btn btn-sm btn-soft-primary" name="sc_send" value="<?php echo $method['name'] ?>">Send</button>
+                                    <input type="text" class="form-control form-control-sm w-auto d-inline"
+                                           name="sc_send_dst[<?php echo $method['name'] ?>]" placeholder="Dst address">
+                                    <button type="button" onclick="runAction('sc_send', ['<?php echo $method['name'] ?>'])" class="btn btn-sm btn-soft-primary" name="sc_send"
+                                            value="<?php echo $method['name'] ?>">Send</button>
                                 <?php } ?>
                             </td>
                         </tr>
@@ -402,9 +430,11 @@ global $loggedIn;
                                     }
                                     ?>
                                     <input type="text" class="form-control form-control-sm d-inline w-auto"
-                                           name="sc_view_params[<?php echo $view['name'] ?>][<?php echo $name ?>]" value="" placeholder="<?php echo $name ?>">
+                                           name="sc_view_params[<?php echo $view['name'] ?>][<?php echo $name ?>]"
+                                           value="<?php echo $_REQUEST['sc_view_params'][$view['name']][$name] ?>" placeholder="<?php echo $name ?>">
                                 <?php } ?>
-                                <button type="submit" class="btn btn-sm btn-soft-primary" name="sc_view" value="<?php echo $view['name'] ?>">Call</button>
+                                <button type="button" onclick="runAction('sc_view', ['<?php echo $view['name'] ?>'])" class="btn btn-sm btn-soft-primary"
+                                        name="sc_view" value="<?php echo $view['name'] ?>">Call</button>
                             </td>
                             <td>
                                 <?php if (isset($sv_view_res) && $sv_view_name == $view['name']) { ?>
@@ -419,7 +449,7 @@ global $loggedIn;
                             </td>
                             <td class="text-end">
                                 <?php if (isset($sv_view_res) && $sv_view_name == $view['name']) { ?>
-                                    <a class="btn btn-sm btn-soft-primary" href="<?php echo $base_url ?>">Clear</a>
+                                    <button type="button" onclick="runAction('sc_view_clear', ['<?php echo $view['name'] ?>'])" class="btn btn-sm btn-soft-primary">Clear</button>
                                 <?php } ?>
                             </td>
                         </tr>
@@ -520,6 +550,56 @@ global $loggedIn;
         </tbody>
     </table>
 </div>
+
+<?php
+if($ajaxAction) {
+
+    function getInnerHTML(DOMNode $node): string {
+        $innerHTML = '';
+        foreach ($node->childNodes as $child) {
+            $innerHTML .= $node->ownerDocument->saveHTML($child);
+        }
+        return $innerHTML;
+    }
+
+    $html = ob_get_clean();
+    $doc = new DOMDocument();
+    libxml_use_internal_errors(true);
+    $doc->loadHTML($html);
+    libxml_clear_errors();
+    $element = $doc->getElementById('interact-form');
+
+    header('Content-Type: application/json');
+    echo json_encode(array('content' => getInnerHTML($element)));
+    exit;
+}
+
+
+?>
+
+<script type="text/javascript">
+    function runAction(action, params) {
+        event.preventDefault();
+        fetch("/apps/explorer/smart_contract.php?id=<?= $id ?>", {
+            method: "POST",
+            headers: {
+                'ajax-action' : action,
+                'ajax-params' : btoa(JSON.stringify(params)),
+            },
+            body: new FormData(document.getElementById("interact-form"))
+        }).then(function (response) {
+            response.json().then(function (data) {
+                if(data.redirect) {
+                    window.location.href = data.redirect;
+                    return;
+                }
+                if(data.content) {
+                    document.getElementById("interact-form").innerHTML = data.content;
+                }
+            });
+        })
+    }
+</script>
 <?php
 require_once __DIR__ . '/../common/include/bottom.php';
 ?>
