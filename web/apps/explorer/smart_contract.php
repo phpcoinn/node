@@ -9,6 +9,7 @@ if(!FEATURE_SMART_CONTRACTS) {
     exit;
 }
 
+$ajaxAction = false;
 if(isset($_SERVER['HTTP_AJAX_ACTION'])) {
     ob_clean();
     ob_start();

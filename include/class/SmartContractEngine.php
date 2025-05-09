@@ -204,7 +204,7 @@ class SmartContractEngine
         if($debug) {
             $debug_str="-dxdebug.start_with_request=1";
             $disable_functions = str_replace("getenv,", '', $disable_functions);
-            $env="PHP_IDE_CONFIG=serverName=local";
+            $env="PHP_IDE_CONFIG=\"serverName=local\"";
         }
 
 		$exec_cmd = "CONFIG=$config $env php $debug_str -d disable_functions=$disable_functions ";
@@ -297,6 +297,14 @@ class SmartContractEngine
 
         $sc_run_file = $sc_dir. "/{$sc_address}_run.php";
         $res = file_put_contents($sc_run_file, $run_code);
+        if(DEVELOPMENT) {
+            chmod($sc_run_file, 0777);
+            touch($sc_run_file);
+            touch(dirname($sc_dir));
+            clearstatcache($sc_run_file);;
+            shell_exec("touch ".dirname($sc_dir));
+            sleep(5);
+        }
         if(!$res) {
             throw new Exception("Enable to write run file");
         }
@@ -378,7 +386,9 @@ class SmartContractEngine
             $res = self::isolateCmd($cmd);
 			$interface = self::processOutput($res);
 
-            unlink($sc_verify_file);
+            if(!DEVELOPMENT) {
+                unlink($sc_verify_file);
+            }
 
 			return $interface;
 
