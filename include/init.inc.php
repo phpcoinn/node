@@ -30,7 +30,7 @@ if($version[0] > 7) {
 	ini_set('display_startup_errors', 1);
 }
 // not accessible directly
-if (php_sapi_name() !== 'cli' && substr_count($_SERVER['PHP_SELF'], "/") > 1
+if (!DEVELOPMENT && php_sapi_name() !== 'cli' && substr_count($_SERVER['PHP_SELF'], "/") > 1
 	&& substr($_SERVER['PHP_SELF'], 0, 5) != "/apps"
 	&& substr($_SERVER['PHP_SELF'], 0, 6) != "/dapps") {
     die("This application should only be run in the main directory /");
