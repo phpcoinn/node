@@ -6,5 +6,6 @@ include/genesis.inc.php merge=ours
 include/init.inc.php merge=ours
 include/rewards.inc.php merge=ours
 include/schema.inc.php merge=ours
+include/sc.inc.php merge=ours
 utils/wallet.php merge=ours
 chain_id merge=ours
