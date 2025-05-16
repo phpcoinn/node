@@ -68,7 +68,7 @@ class Api
 	 * @apiSuccess {string} data The PHP balance
 	 */
 	static function getBalance($data) {
-		$public_key = $data['public_key'];
+		$public_key = @$data['public_key'];
 		$address = $data['address'];
 		if (!empty($public_key) && strlen($public_key) < 32) {
 			api_err("Invalid public key");
@@ -209,12 +209,12 @@ class Api
 		if(!Account::valid($address)) {
 			api_err("Invalid address");
 		}
-		$limit = intval($data['limit']);
-		$offset = intval($data['offset']);
+		$limit = intval($data['limit']??100);
+		$offset = intval($data['offset']??0);
 		if(empty($offset)) {
 			$offset = 0;
 		}
-		$transactions = Transaction::getByAddress($address, $limit, $offset, $data['filter']);
+		$transactions = Transaction::getByAddress($address, $limit, $offset, @$data['filter']);
 		api_echo($transactions);
 	}
 
@@ -1478,6 +1478,30 @@ class Api
         global $db;
         $rows = $db->run($sql, $params, false);
         api_echo($rows);
+    }
+
+    static function generateSendTransaction($data) {
+        $publicKey = @$data['public_key'];
+        $address = @$data['address'];
+        $amount = @$data['amount'];
+        $msg = @$data['message'];
+        $fee = @$data['fee'];
+        if(empty($publicKey)) {
+            api_err("Missing public_key");
+        }
+        if(empty($address)) {
+            api_err("Missing address");
+        }
+        if(empty($amount)) {
+            api_err("Missing amount");
+        }
+        if(empty($fee)) $fee = 0;
+        $tx = new Transaction($publicKey,$address,$amount,TX_TYPE_SEND,time(),$msg,$fee);
+        $out = [
+            "signature_base"=>$tx->getSignatureBase(),
+            "tx"=>$tx->toArray()
+        ];
+        api_echo($out);
     }
 
 
