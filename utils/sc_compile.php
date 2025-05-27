@@ -25,11 +25,17 @@ try {
 	$phar = new Phar($phar_file);
 	$phar->startBuffering();
 	if(is_dir($file)) {
+        $index = "index.php";
+        foreach($argv as $arg) {
+            if(strpos($arg, "--index=") === 0) {
+                $index = substr($arg, strlen("--index="));
+            }
+        }
 		$defaultStub = $phar->createDefaultStub();
 		$phar->buildFromDirectory($file);
-        $index_file = $file . "/index.php";
+        $index_file = $file . "/$index";
         $content = file_get_contents($index_file);
-        $phar->delete("index.php");
+        $phar->delete($index);
         $content = str_replace("class SmartContract extends", "class $sc_address extends", $content);
         $phar->addFromString("index.php", $content);
 	} else {
