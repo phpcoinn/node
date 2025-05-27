@@ -155,6 +155,8 @@ if(isset($_SESSION['account'])) {
 }
 
 $scBalance = Account::getBalance($smartContract['address']);
+$sql="select * from transactions t where t.dst = ? and t.height = ?";
+$tx = $db->row($sql, [$smartContract['address'], $smartContract['height']], false);
 
 global $loggedIn;
 ?>
@@ -174,6 +176,10 @@ global $loggedIn;
         <tr>
             <td>Height</td>
             <td><?php echo explorer_height_link($smartContract['height']) ?></td>
+        </tr>
+        <tr>
+            <td>Creator</td>
+            <td><?php echo explorer_address_link($tx['src']) ?></td>
         </tr>
         <tr>
             <td>Code</td>
