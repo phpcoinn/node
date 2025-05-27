@@ -373,7 +373,7 @@ class Api
 	 */
 	static function getBlockTransactions($data) {
 		$height = san($data['height']);
-		$block = san($data['block']);
+		$block = san(@$data['block']);
 
 		$ret = Transaction::get_transactions($height, $block);
 
@@ -1480,6 +1480,26 @@ class Api
         api_echo($rows);
     }
 
+    /**
+     * @api            {get} /api.php?q=generateSendTransaction  generateSendTransaction
+     * @apiName        generateSendTransaction
+     * @apiGroup       API
+     * @apiDescription Generates ready to use data for signing transaction
+     *
+     * User just need to sign signature_base with its private key and send transaction with sendTransaction
+     *
+     * Note that signature_base must be prepended with CHAIN_ID for target network before signing
+     *
+     * @apiParam {string} public_key Public key of sender
+     * @apiParam {string} address Address of sender
+     * @apiParam {numeric} amount Amount to send
+     * @apiParam {string} [message] Message for transaction
+     * @apiParam {numeric} [fee] Transaction fee
+     *
+     * @apiSuccess Transaction data as JSON
+     * @apiSuccess {string} signature_base Generated signature base
+     * @apiSuccess {json} tx Transaction as JSON object
+     */
     static function generateSendTransaction($data) {
         $publicKey = @$data['public_key'];
         $address = @$data['address'];
