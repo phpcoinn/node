@@ -918,10 +918,18 @@ class Util
 			$cmd="cd ".ROOT." && git checkout -b $branch 2>&1";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
-//
-//			$cmd="cd ".ROOT." && git reset --hard origin/$branch";
-//			$res = shell_exec($cmd);
-//			_log("AUTO_UPDATE: cmd=$cmd res=$res");
+
+			$cmd="cd ".ROOT." && git reset --hard origin/$branch";
+			$res = shell_exec($cmd);
+			_log("AUTO_UPDATE: cmd=$cmd res=$res");
+
+            $cmd="cd ".ROOT." && git config user.name \"PHP Coin Auto Updater\"";
+            $res = shell_exec($cmd);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
+
+            $cmd="cd ".ROOT." && git config user.email \"auto-updater@phpcoin.net\"";
+            $res = shell_exec($cmd);
+            _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
 			$cmd="cd ".ROOT." && git pull origin $branch  2>&1";
 			$res = shell_exec($cmd);
