@@ -31,9 +31,19 @@ function create_views() {
                txs.block,
                txs.date,
                txs.dst as token,
-               case when txs.method = 'transfer' then txs.src else p1 end as src,
-               case when txs.method = 'transfer' then p1 else p2 end      as dst,
-               case when txs.method = 'transfer' then p2 else p3 end      as amount
+               txs.method,
+               case when txs.method = 'transfer' then txs.src
+                   when txs.method = 'mint' then null
+                   when txs.method = 'burn' then txs.src
+                   else p1 end as src,
+               case when txs.method = 'transfer' then p1
+                    when txs.method = 'mint' then txs.src
+                    when txs.method = 'burn' then null
+                   else p2 end      as dst,
+               case when txs.method = 'transfer' then p2
+                    when txs.method = 'mint' then p1
+                    when txs.method = 'burn' then p1
+                   else p3 end      as amount
         from (select t.*,
                      json_unquote(json_extract(from_base64(t.message), '$.method'))    as method,
                      json_unquote(json_extract(from_base64(t.message), '$.params[0]')) as p1,
@@ -42,16 +52,26 @@ function create_views() {
               from transactions t
               where t.type = 6
                 and exists (select 1 from tokens tt where tt.address = t.dst)) as txs
-        where txs.method in ('transfer', 'transferFrom');");
+        where txs.method in ('transfer', 'transferFrom', 'mint', 'burn');");
 
     $db->run("create or replace view token_mempool_txs as
         select txs.id,
                txs.height,
                txs.date,
                txs.dst as token,
-               case when txs.method = 'transfer' then txs.src else p1 end as src,
-               case when txs.method = 'transfer' then p1 else p2 end      as dst,
-               case when txs.method = 'transfer' then p2 else p3 end      as amount
+               txs.method,
+               case when txs.method = 'transfer' then txs.src
+                    when txs.method = 'mint' then null
+                    when txs.method = 'burn' then txs.src
+                    else p1 end as src,
+               case when txs.method = 'transfer' then p1
+                    when txs.method = 'mint' then txs.src
+                    when txs.method = 'burn' then null
+                    else p2 end      as dst,
+               case when txs.method = 'transfer' then p2
+                    when txs.method = 'mint' then p1
+                    when txs.method = 'burn' then p1
+                    else p3 end      as amount
         from (select t.*,
                      json_unquote(json_extract(from_base64(t.message), '$.method'))    as method,
                      json_unquote(json_extract(from_base64(t.message), '$.params[0]')) as p1,
@@ -60,7 +80,7 @@ function create_views() {
               from mempool t
               where t.type = 6
                 and exists (select 1 from tokens tt where tt.address = t.dst)) as txs
-        where txs.method in ('transfer', 'transferFrom');");
+        where txs.method in ('transfer', 'transferFrom', 'mint', 'burn');");
 
     $db->run("create or replace view token_balances as
         select b.token, b.address,
@@ -80,7 +100,7 @@ $db->beginTransaction();
 $was_empty = false;
 if (empty($dbversion)) {
 	$was_empty = true;
-    $dbversion=40;
+    $dbversion=44;
     _log("Initializing database");
     migrate_with_lock($dbversion, function() {
         global $db;
@@ -284,30 +304,10 @@ if (empty($dbversion)) {
     });
 }
 
-if($dbversion <= 40) {
-    migrate_with_lock($dbversion, function() {
-        global $db;
-        $db->run("alter table smart_contracts add metadata json null");
-    });
-}
-
-if($dbversion <= 41) {
-    migrate_with_lock($dbversion, function() {
-        global $db;
-        $db->run("alter table smart_contracts modify code MEDIUMTEXT not null");
-    });
-}
-
-if($dbversion <= 42) {
+if($dbversion <= 44) {
     migrate_with_lock($dbversion, function() {
         create_views();
     });
-}
-
-if($dbversion <= 43) {
-    global $db;
-    $db->run("drop table if exists minepool");
-    $dbversion++;
 }
 
 // update the db version to the latest one
