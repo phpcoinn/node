@@ -116,7 +116,7 @@ class ERC20Token extends SmartContractBase
      * Internal function that converts decimal amount to amount that will be stored in db
      * @return string
      */
-    private function amountToInt($amount) {
+    protected function amountToInt($amount) {
         return bcmul($amount, bcpow(10, $this->decimals));
     }
 
@@ -199,7 +199,7 @@ class ERC20Token extends SmartContractBase
      *
      * Emits a {Transfer} event.
     */
-    private function _update($from,$to,$value) {
+    protected function _update($from, $to, $value) {
         if(!$from) {
             $this->totalSupply = bcadd($this->totalSupply, $value);
         } else {
