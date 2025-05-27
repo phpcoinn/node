@@ -10,7 +10,7 @@ const NETWORK = "testnet";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
 const VERSION = "1.6.1";
-const BUILD_VERSION = 490;
+const BUILD_VERSION = 491;
 const MIN_VERSION = "1.5.8";
 const DEVELOPMENT = false;
 const XDEBUG = "&XDEBUG_SESSION_START=PHPSTORM";
