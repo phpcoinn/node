@@ -23,8 +23,15 @@ class Pajax
             $pAjax = json_decode(base64_decode($_SERVER['HTTP_P_AJAX']), true);
             $data = json_decode(base64_decode($_POST['p-form-data']), true);
             $class = $pAjax['class'];
+            self::$options = json_decode(base64_decode($pAjax['options']), true);
             $action = $pAjax['action'];
             $actionData = $pAjax['actionData'];
+            if(!class_exists($class)) {
+                $class_file = dirname($_SERVER['SCRIPT_FILENAME']) ."/inc/class/$class.php";
+                if(file_exists($class_file)) {
+                    require $class_file;
+                }
+            }
             self::$ajax = true;
             self::$class = new $class();
             foreach($data as $k => $v) {
@@ -63,16 +70,22 @@ class Pajax
         }
     }
 
-    static function render($form=true)
+    static function render()
     {
         $view = self::getViewId();
+        ob_flush();
+        ob_clean();
+        ob_start();
+        call_user_func(self::getTemplate());
+        $body = ob_get_contents();
+        ob_clean();
+        ob_start();
         ?>
-        <form method="post" action="" id="<?= $view ?>" data-p-view="<?= $view ?>" autocomplete="off">
-            <?php call_user_func(self::getTemplate()) ?>
-            <input type="hidden" name="p-view" value="<?= $view ?>"/>
-            <input type="hidden" name="p-class" value="<?= get_class(self::$class) ?>"/>
-            <input type="hidden" name="p-form-data" value="<?= base64_encode(json_encode(self::getData())) ?>"/>
-        </form>
+        <div id="<?= $view ?>" data-p-view="<?= $view ?>" data-p-class="<?= get_class(self::$class) ?>"
+             data-p-options="<?= base64_encode(json_encode(self::$options)) ?>"
+             data-p-form-data="<?= base64_encode(json_encode(self::getData())) ?>" class="<?= self::$options['class'] ?? '' ?>">
+            <?php echo $body ?>
+        </div>
         <?php
     }
 
@@ -108,6 +121,16 @@ class Pajax
                 call_user_func($fn, $param, ...$args);
             }
         }
+    }
+
+    public static function component($class, $props = []) {
+        $classInstance = new $class();
+        foreach($props as $k => $v) {
+            $classInstance->$k = $v;
+        }
+        $template = (new ReflectionClass($classInstance))->getMethod('getTemplate')->getClosure($classInstance);
+        $template = $template->bindTo($classInstance);
+        call_user_func($template);
     }
 
 }
