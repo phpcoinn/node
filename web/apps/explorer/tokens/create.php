@@ -13,16 +13,28 @@ if(isset($_GET['action'])) {
     $action = $_GET['action'];
     $data = json_decode(file_get_contents("php://input"), true);
     $address = $data['address'];
+    $ext = $data['ext'];
     if($action == "compileTokenSmartContract") {
         $compile_dir = ROOT."/tmp/compile";
         @mkdir($compile_dir);
         chmod($compile_dir, 0777);
-        $template_file = ROOT . "/include/templates/tokens/erc_20_token.php";
+        $template_dir = ROOT . "/include/templates/tokens";
+        $mintable = $ext['mintable'];
+        $burnable = $ext['burnable'];
+        if(!$mintable && !$burnable) {
+            $index_file = "erc_20_token.php";
+        } else if ($mintable && !$burnable) {
+            $index_file = "erc_20_token_mintable.php";
+        } else if (!$mintable && $burnable) {
+            $index_file = "erc_20_token_burnable.php";
+        } else {
+            $index_file = "erc_20_token_burnable_mintable.php";
+        }
         $compile_id = uniqid();
-        $token_file = $compile_dir."/token_$compile_id.php";
-        copy($template_file, $token_file);
+//        $token_file = $compile_dir."/token_$compile_id.php";
+//        copy($template_file, $token_file);
         $phar_file = $compile_dir . "/token_$compile_id.phar";
-        $res = SmartContract::compile($address, $token_file, $phar_file, $err);
+        $res = SmartContract::compile($address, $template_dir, $phar_file, $err, $index_file);
         if($res && file_exists($phar_file)) {
             api_echo($compile_id);
         } else {
@@ -134,6 +146,8 @@ if(isset($_SESSION['account'])) {
     $address = $_SESSION['account']['address'];
 }
 
+$createTokenFee = Blockchain::getSmartContractCreateFee();
+
 ?>
 
 <div class="container">
@@ -199,6 +213,28 @@ if(isset($_SESSION['account'])) {
                 </div>
 
                 <div class="mb-3">
+                    <label for="token-init-supply" class="form-label">Exensions:</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="mintable" v-model="newToken.ext.mintable">
+                        <label class="form-check-label" for="mintable">
+                            Mintable
+                        </label>
+                        <div class="form-text">
+                            Token owner can mint new tokens
+                        </div>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="burnable" v-model="newToken.ext.burnable">
+                        <label class="form-check-label" for="burnable">
+                            Burnable
+                        </label>
+                        <div class="form-text">
+                            Token holder can burn tokens
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
                     <label for="token-image" class="form-label">Image:</label>
                     <div class="row">
                         <div class="col-6">
@@ -217,7 +253,7 @@ if(isset($_SESSION['account'])) {
                 </div>
 
                 <div class="alert alert-warning">
-                    Creation of token will cost <strong>100 PHPCoin</strong>.
+                    Creation of token will cost <strong><?php echo $createTokenFee ?> PHPCoin</strong>.
                     <br/>
                     Please check if you have enough funds on account
                 </div>
@@ -254,6 +290,10 @@ if(isset($_SESSION['account'])) {
                     decimals: null,
                     initialSupply: null,
                     image: null,
+                    ext: {
+                        mintable: true,
+                        burnable: false,
+                    }
                 }
             };
         },
@@ -272,12 +312,22 @@ if(isset($_SESSION['account'])) {
                 this.newToken.image = null
             },
             createToken() {
+                if(!this.newToken.address) {
+                    Swal.fire(
+                        {
+                            title: 'Error compiling token',
+                            text: 'Missing smart contract address',
+                            icon: 'error'
+                        }
+                    )
+                    return
+                }
                 confirmMsg("Confirm create token", "Are you sure to want to create new token?",()=>{
                     this.execCreateToken();
                 })
             },
             execCreateToken() {
-                axios.post('/apps/explorer/tokens/create.php?action=compileTokenSmartContract', {address:this.newToken.address}).then(res=>{
+                axios.post('/apps/explorer/tokens/create.php?action=compileTokenSmartContract', {address:this.newToken.address, ext: this.newToken.ext}).then(res=>{
                     if(res.data.status !== 'ok') {
                         Swal.fire(
                             {

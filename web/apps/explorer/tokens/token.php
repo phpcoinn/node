@@ -32,6 +32,7 @@ if($loggedIn) {
     $sql="select * from token_balances where token = ? and address = ?";
     $row = $db->row($sql,[$id, $address], false);
     $balance = $row['balance'];
+    $coinBalance = Account::getBalance($address);
 }
 
 $transfers_start = $_GET['transfers_start'] ?? 0;
@@ -67,9 +68,22 @@ foreach ($indexes as $index) {
     $c.=$color[$index];
 }
 
-$sql="select * from token_balances tb where tb.token = ? order by tb.balance desc limit 10";
+$sql="select * from token_balances tb where tb.token = ? order by cast(tb.balance as double) desc limit 10";
 $topHolders = $db->run($sql,[$id], false);
 $scExecFee = Blockchain::getSmartContractExecFee();
+
+$mintable = false;
+$interface = SmartContractEngine::getInterface($id);
+$burnable = false;
+foreach ($interface['methods'] as $method) {
+    if($method['name'] === 'mint') {
+        $mintable = true;
+    }
+    if($method['name'] === 'burn') {
+        $burnable = true;
+    }
+}
+
 
 ?>
 
@@ -102,6 +116,8 @@ $scExecFee = Blockchain::getSmartContractExecFee();
             </div>
             <div class="col">
                 <dl class="row">
+                    <dt class="col-sm-3">Address:</dt>
+                    <dd class="col-sm-9"><?php echo $token['address'] ?></dd>
                     <dt class="col-sm-3">Decimals:</dt>
                     <dd class="col-sm-9"><?php echo $metadata['decimals'] ?></dd>
                     <dt class="col-sm-3">Total supply:</dt>
@@ -118,11 +134,19 @@ $scExecFee = Blockchain::getSmartContractExecFee();
                         <div>
                             <h5>Your balance</h5>
                             <h5><?php echo explorer_address_link($_SESSION['account']['address']) ?></h5>
-                            <h4><?php echo $balance ?></h4>
+                            <h4><?php echo $balance ?> <?php echo $metadata['symbol'] ?></h4>
+                            <h5 class="text-muted"><?php echo $coinBalance ?> PHP</h5>
                         </div>
                         <div class="ms-2">
-                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#send-token">Send</button>
+                            <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#send-token">Send</button>
+                            <?php if($mintable) { ?>
+                                <button class="btn btn-success m-2" data-bs-toggle="modal" data-bs-target="#mint-token">Mint</button>
+                            <?php } ?>
+                            <?php if($burnable) { ?>
+                                <button class="btn btn-danger m-2" data-bs-toggle="modal" data-bs-target="#burn-token">Burn</button>
+                            <?php } ?>
                         </div>
+
                     </div>
                 <?php } else { ?>
                     <div class="ms-0 ms-sm-5 d-flex flex align-items-center flex-grow-1">
@@ -138,36 +162,100 @@ $scExecFee = Blockchain::getSmartContractExecFee();
     </div>
 </div>
 
-<div class="modal fade" id="send-token" ref="sendTokenModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel"
-     style="display: none;" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="staticBackdropLabel">Send token</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div id="token-app">
+    <div class="modal fade" id="send-token" ref="sendTokenModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel"
+         style="display: none;" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">Send token</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="token-address" class="form-label">Receiver address:</label>
+                        <input class="form-control" type="text" v-model="address" id="token-address"/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount:</label>
+                        <input class="form-control" type="text" v-model="amount" id="amount"/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fee" class="form-label">Fee:</label>
+                        <?php if($accountBalance < $scExecFee) { ?>
+                            <div class="text-danger"><?php echo $scExecFee ?> PHPCoin</div>
+                            <div class="text-danger">You do not have enough coins to execute this transfer</div>
+                        <?php } else { ?>
+                            <div><?php echo $scExecFee ?> PHPCoin</div>
+                        <?php } ?>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @click="sendToken">Send</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="token-address" class="form-label">Receiver address:</label>
-                    <input class="form-control" type="text" v-model="address" id="token-address"/>
+        </div>
+    </div>
+
+    <div class="modal fade" id="mint-token" ref="mintTokenModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel"
+         style="display: none;" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">Mint token</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="mb-3">
-                    <label for="amount" class="form-label">Amount:</label>
-                    <input class="form-control" type="text" v-model="amount" id="amount"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount:</label>
+                        <input class="form-control" type="text" v-model="mintAmount"/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fee" class="form-label">Fee:</label>
+                        <?php if($accountBalance < $scExecFee) { ?>
+                            <div class="text-danger"><?php echo $scExecFee ?> PHPCoin</div>
+                            <div class="text-danger">You do not have enough coins to execute this transfer</div>
+                        <?php } else { ?>
+                            <div><?php echo $scExecFee ?> PHPCoin</div>
+                        <?php } ?>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label for="fee" class="form-label">Fee:</label>
-                    <?php if($accountBalance < $scExecFee) { ?>
-                        <div class="text-danger"><?php echo $scExecFee ?> PHPCoin</div>
-                        <div class="text-danger">You do not have enough coins to execute this transfer</div>
-                    <?php } else { ?>
-                        <div><?php echo $scExecFee ?> PHPCoin</div>
-                    <?php } ?>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" @click="mintToken">Mint</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" @click="sendToken">Send</button>
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+        </div>
+    </div>
+
+    <div class="modal fade" id="burn-token" ref="burnTokenModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel"
+         style="display: none;" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">Burn token</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount:</label>
+                        <input class="form-control" type="text" v-model="burnAmount"/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fee" class="form-label">Fee:</label>
+                        <?php if($accountBalance < $scExecFee) { ?>
+                            <div class="text-danger"><?php echo $scExecFee ?> PHPCoin</div>
+                            <div class="text-danger">You do not have enough coins to execute this transfer</div>
+                        <?php } else { ?>
+                            <div><?php echo $scExecFee ?> PHPCoin</div>
+                        <?php } ?>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" @click="burnToken">Burn</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -185,6 +273,7 @@ $scExecFee = Blockchain::getSmartContractExecFee();
                     <tr>
                         <th>Height</th>
                         <th>Date</th>
+                        <th>Method</th>
                         <th>From</th>
                         <th>To</th>
                         <th>Amount</th>
@@ -196,6 +285,7 @@ $scExecFee = Blockchain::getSmartContractExecFee();
                         <tr>
                             <td><?php echo $transfer['height'] ?></td>
                             <td><?php echo display_date($transfer['date']) ?></td>
+                            <td><?php echo $transfer['method'] ?></td>
                             <td><?php echo $transfer['src'] ?></td>
                             <td><?php echo $transfer['dst'] ?></td>
                             <td><?php echo $transfer['amount'] ?></td>
@@ -213,6 +303,7 @@ $scExecFee = Blockchain::getSmartContractExecFee();
                     <tr>
                         <th>Height</th>
                         <th>Date</th>
+                        <th>Method</th>
                         <th>From</th>
                         <th>To</th>
                         <th>Amount</th>
@@ -224,6 +315,7 @@ $scExecFee = Blockchain::getSmartContractExecFee();
                         <tr>
                             <td><?php echo $transfer['height'] ?></td>
                             <td><?php echo display_date($transfer['date']) ?></td>
+                            <td><?php echo $transfer['method'] ?></td>
                             <td><?php echo $transfer['src'] ?></td>
                             <td><?php echo $transfer['dst'] ?></td>
                             <td><?php echo $transfer['amount'] ?></td>
@@ -282,6 +374,7 @@ $scExecFee = Blockchain::getSmartContractExecFee();
                         <tr>
                             <th>Height</th>
                             <th>Date</th>
+                            <th>Method</th>
                             <th>From</th>
                             <th>To</th>
                             <th>Amount</th>
@@ -293,6 +386,7 @@ $scExecFee = Blockchain::getSmartContractExecFee();
                             <tr>
                                 <td><?php echo $transfer['height'] ?></td>
                                 <td><?php echo display_date($transfer['date']) ?></td>
+                                <td><?php echo $transfer['method'] ?></td>
                                 <td><?php echo $transfer['src'] ?></td>
                                 <td><?php echo $transfer['dst'] ?></td>
                                 <td><?php echo $transfer['amount'] ?></td>
@@ -310,6 +404,7 @@ $scExecFee = Blockchain::getSmartContractExecFee();
                     <tr>
                         <th>Height</th>
                         <th>Date</th>
+                        <th>Method</th>
                         <th>From</th>
                         <th>To</th>
                         <th>Amount</th>
@@ -321,6 +416,7 @@ $scExecFee = Blockchain::getSmartContractExecFee();
                         <tr>
                             <td><?php echo $transfer['height'] ?></td>
                             <td><?php echo display_date($transfer['date']) ?></td>
+                            <td><?php echo $transfer['method'] ?></td>
                             <td><?php echo $transfer['src'] ?></td>
                             <td><?php echo $transfer['dst'] ?></td>
                             <td><?php echo $transfer['amount'] ?></td>
@@ -353,6 +449,8 @@ $scExecFee = Blockchain::getSmartContractExecFee();
                 return {
                     amount: null,
                     address: null,
+                    mintAmount: null,
+                    burnAmount: null
                 };
             },
             methods: {
@@ -379,6 +477,36 @@ $scExecFee = Blockchain::getSmartContractExecFee();
                     }
                     confirmMsg("Confirm sending token","Are you sure to want to execute this transfer?",()=>{
                         this.execSendToken();
+                    })
+                },
+                mintToken() {
+                    if(!this.mintAmount || this.mintAmount <= 0 || isNaN(this.mintAmount)) {
+                        Swal.fire(
+                            {
+                                title: 'Invalid amount',
+                                text: 'Enter valid amount',
+                                icon: 'error'
+                            }
+                        )
+                        return;
+                    }
+                    confirmMsg("Confirm mint token","Are you sure to want to execute this transfer?",()=>{
+                        this.execMintToken();
+                    })
+                },
+                burnToken() {
+                    if(!this.burnAmount || this.burnAmount <= 0 || isNaN(this.burnAmount)) {
+                        Swal.fire(
+                            {
+                                title: 'Invalid amount',
+                                text: 'Enter valid amount',
+                                icon: 'error'
+                            }
+                        )
+                        return;
+                    }
+                    confirmMsg("Confirm burning token","Are you sure to want to execute this transfer?",()=>{
+                        this.execBurnToken();
                     })
                 },
                 execSendToken() {
@@ -421,10 +549,89 @@ $scExecFee = Blockchain::getSmartContractExecFee();
                         )
                     });
                 },
+                execMintToken() {
+                    let data = {
+                        public_key: publicKey,
+                        sc_address: scAddress,
+                        amount: 0,
+                        method: 'mint',
+                        params: [this.mintAmount]
+                    };
 
+                    axios.post('/api.php?q=generateSmartContractExecTx', data).then(res=>{
+                        if(res.data.status === 'ok') {
+                            let tx = res.data.data.tx;
+                            let signature_base = res.data.data.signature_base;
+
+                            enterPrivateKey(privateKey=>{
+                                sendTransaction(tx, signature_base, privateKey);
+                                bootstrap.Modal.getInstance(document.getElementById('mint-token')).hide();
+                            })
+
+
+                        } else {
+                            Swal.fire(
+                                {
+                                    title: 'Error generating transaction',
+                                    text: 'Error from API server when generating transaction',
+                                    icon: 'error'
+                                }
+                            )
                         }
+                    }).catch(err=>{
+                        console.error(err);
+                        Swal.fire(
+                            {
+                                title: 'Error sending transaction',
+                                text: 'Error contacting API server',
+                                icon: 'error'
+                            }
+                        )
+                    });
+                },
+                execBurnToken() {
+                    let data = {
+                        public_key: publicKey,
+                        sc_address: scAddress,
+                        amount: 0,
+                        method: 'burn',
+                        params: [this.burnAmount]
+                    };
 
-        }).mount("#send-token");
+                    axios.post('/api.php?q=generateSmartContractExecTx', data).then(res=>{
+                        if(res.data.status === 'ok') {
+                            let tx = res.data.data.tx;
+                            let signature_base = res.data.data.signature_base;
+
+                            enterPrivateKey(privateKey=>{
+                                sendTransaction(tx, signature_base, privateKey);
+                                bootstrap.Modal.getInstance(document.getElementById('burn-token')).hide();
+                            })
+
+
+                        } else {
+                            Swal.fire(
+                                {
+                                    title: 'Error generating transaction',
+                                    text: 'Error from API server when generating transaction',
+                                    icon: 'error'
+                                }
+                            )
+                        }
+                    }).catch(err=>{
+                        console.error(err);
+                        Swal.fire(
+                            {
+                                title: 'Error sending transaction',
+                                text: 'Error contacting API server',
+                                icon: 'error'
+                            }
+                        )
+                    });
+                },
+            }
+
+        }).mount("#token-app");
     </script>
 
 
