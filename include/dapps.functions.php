@@ -13,6 +13,16 @@ require_once ROOT . "/include/coinspec.inc.php";
 require_once ROOT . "/include/common.functions.php";
 require_once ROOT . "/include/class/CommonSessionHandler.php";
 
+if(php_sapi_name() == "cli") {
+    $cmdDataJson = stream_get_contents(STDIN);
+    $cmdData = json_decode($cmdDataJson, true);
+    $_SERVER['GET_DATA']=$cmdData['GET_DATA'];
+    $_SERVER['POST_DATA']=$cmdData['POST_DATA'];
+    $_SERVER['INPUT_DATA']=$cmdData['INPUT_DATA'];
+    $_SERVER['SESSION_DATA']=$cmdData['SESSION_DATA'];
+    $_SERVER['COOKIE_DATA']=$cmdData['COOKIE_DATA'];
+}
+
 /**
  * Function call all common functions for app work: dapps_get, dapps_post, dapps_get_session
  */
@@ -28,7 +38,7 @@ function dapps_init() {
  * @return array
  */
 function dapps_get() {
-	$get_data = $_SERVER['GET_DATA'];
+    $get_data = $_SERVER['GET_DATA'];
 	$_GET = json_decode(base64_decode($get_data), true);
 	return $_GET;
 }
@@ -38,7 +48,7 @@ function dapps_get() {
  * @return array
  */
 function dapps_post() {
-	$post_data = $_SERVER['POST_DATA'];
+    $post_data = $_SERVER['POST_DATA'];
 	$_POST = json_decode(base64_decode($post_data), true);
 	return $_POST;
 }

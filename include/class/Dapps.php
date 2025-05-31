@@ -384,9 +384,7 @@ class Dapps extends Task
         $debug="-dxdebug.start_with_request=1";
         $debug="";
 
-        $cmd = "$server_args GET_DATA=$get_data INPUT_DATA=$input_data POST_DATA=$post_data SESSION_ID=$session_id SESSION_DATA=$session_data COOKIE_DATA=$cookie_data" .
-			" DAPPS_ID=$dapps_id DAPPS_LOCAL=$dapps_local " .
-			" php $debug -d disable_functions=exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,set_time_limit,ini_set" .
+        $cmd = "php $debug -d disable_functions=exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,set_time_limit,ini_set" .
 			" -d open_basedir=" . $dapps_dir . "/$dapps_id:".$tmp_dir.":".$allowed_files_list .
 			" -d max_execution_time=5 -d memory_limit=128M " .
 			" -d auto_prepend_file=$functions_file $file 2>&1";
@@ -398,15 +396,46 @@ class Dapps extends Task
             session_write_close();
         }
 
-		$res = exec ($cmd, $output2);
-//		_log("Dapps: Parsing output ". json_encode($output2), 5);
+        $cmdData = json_encode([
+            'GET_DATA' => $get_data,
+            'POST_DATA' => $post_data,
+            'INPUT_DATA' => $input_data,
+            'SESSION_DATA' => $session_data,
+            'COOKIE_DATA' => $cookie_data,
+        ]);
+
+        $descriptors = [
+            0 => ['pipe', 'r'], // stdin
+            1 => ['pipe', 'w'], // stdout
+            2 => ['pipe', 'w'], // stderr
+        ];
+
+        $env = $_SERVER;
+        $env['SESSION_ID']=$session_id;
+        $env['DAPPS_ID']=$dapps_id;
+        $env['DAPPS_LOCAL']=$dapps_local;
+
+        $process = proc_open($cmd, $descriptors, $pipes, null, $env);
+        $output = "";
+        if (is_resource($process)) {
+            fwrite($pipes[0], $cmdData);
+            fclose($pipes[0]);
+
+            $output = stream_get_contents($pipes[1]);
+            fclose($pipes[1]);
+
+            $errors = stream_get_contents($pipes[2]);
+            fclose($pipes[2]);
+
+            $return_value = proc_close($process);
+        }
+//		_log("Dapps: Parsing output ". json_encode($output), 5);
 
 		ob_end_clean();
 		ob_start();
 		header("X-Dapps-Id: $dapps_id");
 
-		$out = implode(PHP_EOL, $output2);
-        $out = trim($out);
+        $out = trim($output);
 		_log("Dapps: Parsing output $out", 5);
 
 		header("Access-Control-Allow-Origin: *");
