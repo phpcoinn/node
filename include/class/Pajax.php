@@ -56,16 +56,22 @@ class Pajax
             }
             ob_clean();
             ob_start();
-            self::render();
-            $content = ob_get_contents();
-            if(self::$class) {
-                $data = base64_encode(json_encode(self::$class));
-            } else {
-                $data = base64_encode(json_encode(self::$data));
+            try {
+                self::render();
+                $content = ob_get_contents();
+                if(self::$class) {
+                    $data = base64_encode(json_encode(self::$class));
+                } else {
+                    $data = base64_encode(json_encode(self::$data));
+                }
+                ob_end_clean();
+                header('Content-Type: application/json');
+                echo json_encode(['content' => $content, 'data' => $data]);
+            } catch (Throwable $t) {
+                ob_end_clean();
+                header('Content-Type: application/json');
+                echo json_encode( ['error' => $t->getMessage()]);
             }
-            ob_end_clean();
-            header('Content-Type: application/json');
-            echo json_encode(['content' => $content, 'data' => $data]);
             exit;
         }
     }
@@ -91,7 +97,8 @@ class Pajax
 
     static function getViewId() {
         if(self::$ajax) {
-            return $_POST['p-view'];
+            $pAjax = json_decode(base64_decode($_SERVER['HTTP_P_AJAX']), true);
+            return $pAjax['view'];
         } else {
             if(isset(self::$options['id'])) {
                 return self::$options['id'];
