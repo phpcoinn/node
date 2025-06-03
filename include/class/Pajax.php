@@ -21,7 +21,7 @@ class Pajax
     {
         if (isset($_SERVER['HTTP_P_AJAX'])) {
             $pAjax = json_decode(base64_decode($_SERVER['HTTP_P_AJAX']), true);
-            $data = json_decode(base64_decode($_POST['p-form-data']), true);
+            $viewData = json_decode(base64_decode($pAjax['viewData']), true);
             $class = $pAjax['class'];
             self::$options = json_decode(base64_decode($pAjax['options']), true);
             $action = $pAjax['action'];
@@ -34,7 +34,7 @@ class Pajax
             }
             self::$ajax = true;
             self::$class = new $class();
-            foreach($data as $k => $v) {
+            foreach($viewData as $k => $v) {
                 if(property_exists(self::$class, $k)) {
                     self::$class->$k = $v;
                 }
@@ -70,7 +70,7 @@ class Pajax
             } catch (Throwable $t) {
                 ob_end_clean();
                 header('Content-Type: application/json');
-                echo json_encode( ['error' => $t->getMessage()]);
+                echo json_encode( ['error' => $t->getMessage(), 'details' => $t->getTraceAsString()]);
             }
             exit;
         }
@@ -89,7 +89,7 @@ class Pajax
         ?>
         <div id="<?= $view ?>" data-p-view="<?= $view ?>" data-p-class="<?= get_class(self::$class) ?>"
              data-p-options="<?= base64_encode(json_encode(self::$options)) ?>"
-             data-p-form-data="<?= base64_encode(json_encode(self::getData())) ?>" class="<?= self::$options['class'] ?? '' ?>">
+             data-p-view-data="<?= base64_encode(json_encode(self::getData())) ?>" class="<?= self::$options['class'] ?? '' ?>">
             <?php echo $body ?>
         </div>
         <?php
