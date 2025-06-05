@@ -23,6 +23,19 @@ if(php_sapi_name() == "cli") {
     $_SERVER['COOKIE_DATA']=$cmdData['COOKIE_DATA'];
 }
 
+function dapps_debug($s) {
+    if($_SERVER['REMOTE_ADDR']=="") {
+        if(is_array($s)) {
+            echo print_r($s, true);
+        } else {
+            echo $s;
+        }
+        exit;
+    }
+}
+
+
+
 /**
  * Function call all common functions for app work: dapps_get, dapps_post, dapps_get_session
  */
@@ -38,7 +51,7 @@ function dapps_init() {
  * @return array
  */
 function dapps_get() {
-    $get_data = $_SERVER['GET_DATA'];
+	$get_data = $_SERVER['GET_DATA']??"";
 	$_GET = json_decode(base64_decode($get_data), true);
 	return $_GET;
 }
@@ -48,7 +61,7 @@ function dapps_get() {
  * @return array
  */
 function dapps_post() {
-    $post_data = $_SERVER['POST_DATA'];
+	$post_data = $_SERVER['POST_DATA']??"";
 	$_POST = json_decode(base64_decode($post_data), true);
 	return $_POST;
 }
@@ -68,7 +81,7 @@ function dapps_get_session() {
  * @return string id of session
  */
 function dapps_get_cookies() {
-	$cookie_data = $_SERVER['COOKIE_DATA'];
+	$cookie_data = $_SERVER['COOKIE_DATA']??"";
 	$_COOKIE = json_decode(base64_decode($cookie_data), true);
 	return $_COOKIE;
 }
