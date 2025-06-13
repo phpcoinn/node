@@ -264,18 +264,18 @@ class Nodeutil
 		opcache_reset();
 	}
 
-	static function measure($out=false) {
+	static function measure($out=false, $min_time=1, $min_diff = 1) {
         global $argv;
         if(isset($GLOBALS['start_time'])) {
 			$GLOBALS['end_time']=microtime(true);
 			$time = $GLOBALS['end_time'] - $GLOBALS['start_time'];
-			if($time > 1) {
+			if($time > $min_time) {
 //				_log("Time: url=".$_SERVER['REQUEST_URI']." time=$time HTTP_USER_AGENT=".$_SERVER['HTTP_USER_AGENT']);
 				$prev_time = $GLOBALS['start_time'];
                 $prev_section = null;
 				foreach($GLOBALS['measure'] as $section => $t) {
 					$diff = round($t - $prev_time,3);
-                    if($diff>1) {
+                    if($diff>$min_diff) {
                         if(php_sapi_name() === 'cli') {
                             $url="CLI:".$argv[0];
                         } else {
