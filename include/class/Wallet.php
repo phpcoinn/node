@@ -27,14 +27,35 @@ class Wallet
 				$this->{$argName} = $val;
 			}
 		}
-		if ((empty($this->arg1) && file_exists($this->wallet))
-			|| @$this->arg1 == "help" || @$this->arg1 == "-h" || @$this->arg1 == "--help") {
-			$this->help();
-		}
         $this->namedAgs = process_cmdline_args($argv);
+        $this->checkImport();
 		$this->openWallet();
+        if ((empty($this->arg1) && file_exists($this->wallet))
+            || @$this->arg1 == "help" || @$this->arg1 == "-h" || @$this->arg1 == "--help") {
+            $this->help();
+        }
 		$this->processCommand();
 	}
+
+    function checkImport() {
+        if(isset($this->namedAgs['import'])) {
+            try {
+                $privateKey=readline("Please enter private key: ");
+                $publicKey = priv2pub($privateKey);
+                $wallet=COIN."\n".$privateKey."\n".$publicKey;
+                if(file_exists($this->wallet)) {
+                    die("Wallet already exists.");
+                }
+                $res=file_put_contents($this->wallet, $wallet);
+                if ($res===false||$res<30) {
+                    die("Could not write the wallet file! Please check the permissions on the current directory.\n");
+                }
+                $this->create = true;
+            } catch (Throwable $t) {
+                die("Could not create wallet from private key!\n");
+            }
+        }
+    }
 
 	function openWallet() {
 		if (!file_exists($this->wallet)) {
