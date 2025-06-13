@@ -117,12 +117,34 @@ class Account
 			}
 	    }
 
-        $res = $db->run(
-            "SELECT * FROM transactions t
-				WHERE (t.dst=:dst or t.src=:src)
-				$cond
-				ORDER by t.height DESC LIMIT :offset, :limit", $params
-        );
+        $sql="(
+            SELECT * FROM transactions
+            WHERE src = :src
+            $cond
+            ORDER BY height DESC
+            LIMIT :limit1
+        )
+        UNION ALL
+        (
+            SELECT * FROM transactions
+            WHERE dst = :dst
+            $cond
+            ORDER BY height DESC
+            LIMIT :limit2
+        )
+        ORDER BY height DESC
+        LIMIT :limit offset :offset";
+        $params[':limit1']=$offset + $limit;
+        $params[':limit2']=$offset + $limit;
+        $res = $db->sql($sql, $params);
+
+
+//        $res = $db->run(
+//            "SELECT * FROM transactions t
+//				WHERE (t.dst=:dst or t.src=:src)
+//				$cond
+//				ORDER by t.height DESC LIMIT :offset, :limit", $params
+//        );
 
         $transactions = [];
         if(is_array($res)) {
@@ -202,12 +224,21 @@ class Account
 
     static function getCountByAddress($id) {
 		global $db;
-	    $res = $db->single(
-		    "SELECT count(*) as cnt FROM transactions 
-				WHERE dst=:dst or src=:src",
-		    [":src" => $id, ":dst" => $id]
-	    );
-		return $res;
+
+        $sql="SELECT
+    (SELECT COUNT(*) FROM transactions FORCE INDEX (idx_dst) WHERE dst = :dst) +
+    (SELECT COUNT(*) FROM transactions FORCE INDEX (idx_src) WHERE src = :src)
+        AS cnt";
+
+        $res = $db->single($sql, [":src" => $id, ":dst" => $id]);
+
+
+//        $res = $db->single(
+//		    "SELECT count(*) as cnt FROM transactions
+//				WHERE dst=:dst or src=:src",
+//		    [":src" => $id, ":dst" => $id]
+//	    );
+        return $res;
     }
 
     static function getMempoolTransactions($id) {
