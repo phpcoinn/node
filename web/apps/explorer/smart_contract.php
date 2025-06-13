@@ -64,7 +64,7 @@ require_once __DIR__. '/../common/include/top.php';
 $base_url="/apps/explorer/smart_contract.php?id=$id";
 if($ajaxAction == 'sc_get_property_read') {
     $sc_get_property_name = $ajaxParams[0];
-    $sc_get_property_key = $_REQUEST['sc_property_key'][$sc_get_property_name];
+    $sc_get_property_key = @$_REQUEST['sc_property_key'][$sc_get_property_name];
     $sc_get_property_result = SmartContractEngine::get($id, $sc_get_property_name, $sc_get_property_key, $sc_get_property_error);
 } else if ($ajaxAction == 'sc_property_clear') {
     $sc_get_property_name = $ajaxParams[0];
@@ -221,7 +221,7 @@ global $loggedIn;
                             <td>
                                 <?php if ($key == "image") { ?>
                                     <img src="<?php echo $value ?>"/>
-                                <?php } else if ($key == "name" && $metadata['class'] == "ERC-20") { ?>
+                                <?php } else if ($key == "name" && @$metadata['class'] == "ERC-20") { ?>
                                     <a href="/apps/explorer/tokens/token.php?id=<?php echo $smartContract['address'] ?>"><?php echo $metadata['name'] ?></a>
                                 <?php } else { ?>
                                     <?php echo $value ?>
@@ -303,13 +303,13 @@ global $loggedIn;
                             <td>
                                 <?php
                                     echo '$'.$property['name'];
-                                    if($property['type']=="map") {
+                                    if(@$property['type']=="map") {
                                         echo "[]";
                                     }
                                 ?>
                             </td>
                             <td class="text-end nowrap">
-                                <?php if($property['type']=="map") { ?>
+                                <?php if(@$property['type']=="map") { ?>
                                     <input class="form-control w-auto d-inline form-control-sm" type="text"
                                            name="sc_property_key[<?php echo $property['name'] ?>]"
                                            value="<?php echo $_REQUEST['sc_property_key'][$property['name']] ?>" placeholder="Key">
