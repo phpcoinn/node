@@ -93,50 +93,60 @@ class Account
 
         $current = Block::current();
 
-		$cond = '';
+		$cond1 = '';
+		$cond2 = '';
 		$params = [":src" => $id, ":dst" => $id,
 			":limit" => $limit, ":offset" => $offset];
 		if(isset($filter['address']) && !empty($filter['address'])) {
-			$cond .= ' and (t.src = :address_src or t.dst = :address_dst) ';
-			$params['address_src'] = $filter['address'];
-			$params['address_dst'] = $filter['address'];
+			$cond1 .= ' and (t.src = :address_src1 or t.dst = :address_dst1) ';
+			$params['address_src1'] = $filter['address'];
+			$params['address_dst1'] = $filter['address'];
+			$cond2 .= ' and (t.src = :address_src2 or t.dst = :address_dst2) ';
+			$params['address_src2'] = $filter['address'];
+			$params['address_dst2'] = $filter['address'];
 		}
 
 	    if(isset($filter['type']) && strlen($filter['type']) > 0) {
-			$cond .= ' and t.type = :type ';
-		    $params['type']=$filter['type'];
+			$cond1 .= ' and t.type = :type1 ';
+		    $params['type1']=$filter['type'];
+			$cond2 .= ' and t.type = :type2 ';
+		    $params['type2']=$filter['type'];
 	    }
 
 	    if(isset($filter['dir']) && !empty($filter['dir'])) {
 			if($filter['dir'] == 'send') {
-				$cond .= ' and t.src = :send ';
-				$params['send']=$id;
+				$cond1 .= ' and t.src = :send1 ';
+				$params['send1']=$id;
+				$cond2 .= ' and t.src = :send2 ';
+				$params['send2']=$id;
 			} else if ($filter['dir'] == 'receive') {
-				$cond .= ' and t.dst = :receive ';
-				$params['receive']=$id;
+				$cond1 .= ' and t.dst = :receive1 ';
+				$params['receive1']=$id;
+				$cond2 .= ' and t.dst = :receive2 ';
+				$params['receive2']=$id;
 			}
 	    }
 
-        $sql="(
-            SELECT * FROM transactions
-            WHERE src = :src
-            $cond
-            ORDER BY height DESC
+            $sql = "(
+            SELECT * FROM transactions t
+            WHERE t.src = :src
+            $cond1
+            ORDER BY t.height DESC
             LIMIT :limit1
         )
         UNION ALL
         (
-            SELECT * FROM transactions
-            WHERE dst = :dst
-            $cond
-            ORDER BY height DESC
+            SELECT * FROM transactions t
+            WHERE t.dst = :dst
+            $cond2
+            ORDER BY t.height DESC
             LIMIT :limit2
         )
         ORDER BY height DESC
         LIMIT :limit offset :offset";
-        $params[':limit1']=$offset + $limit;
-        $params[':limit2']=$offset + $limit;
-        $res = $db->sql($sql, $params);
+            $params[':limit1'] = $offset + $limit;
+            $params[':limit2'] = $offset + $limit;
+            $res = $db->sql($sql, $params);
 
 
 //        $res = $db->run(
