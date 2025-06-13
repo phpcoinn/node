@@ -551,7 +551,7 @@ global $loggedIn;
                 <td><?php echo Transaction::typeLabel($tx['type']) ?></td>
                 <td><?php echo $tx['val'] ?></td>
                 <td><?php echo $method ?></td>
-                <td><?php echo implode(", ", $params) ?></td>
+                <td><?php echo !empty($params) ? implode(", ", $params) : '' ?></td>
             </tr>
             <?php } ?>
         </tbody>
