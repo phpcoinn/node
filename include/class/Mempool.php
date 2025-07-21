@@ -156,7 +156,7 @@ class Mempool
                 if($type == TX_TYPE_REWARD) {
                     throw new Error("Invalid transaction in mempool");
                 } else if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE || $type == TX_TYPE_MN_REMOVE || $type == TX_TYPE_SC_CREATE
-                    || $type == TX_TYPE_SC_EXEC || $type == TX_TYPE_SC_SEND) {
+                    || $type == TX_TYPE_SC_EXEC || $type == TX_TYPE_SC_SEND || $type == TX_TYPE_SYSTEM) {
                     $balances[$src] -= $transaction->val + $transaction->fee;
                     $balances[$dst] += $transaction->val;
                 } else if ($type == TX_TYPE_FEE) {

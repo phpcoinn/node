@@ -212,6 +212,13 @@ class Account
 		        } elseif ($x['type'] == TX_TYPE_BURN) {
 			        $sign="-";
 			        $trans['type_label'] = "burn";
+		        } elseif ($x['type'] == TX_TYPE_SYSTEM) {
+                    $trans['type_label'] = "system";
+                    if ($x['dst'] == $id) {
+                        $sign="+";
+                    } else {
+                        $sign="-";
+                    }
                 } elseif ($x['type'] == TX_TYPE_SC_CREATE || $x['type'] == TX_TYPE_SC_EXEC) {
                     if ($x['dst'] == $id) {
                         $sign="+";
@@ -279,7 +286,7 @@ class Account
             // they are unconfirmed, so they will have -1 confirmations.
             $trans['confirmations'] = -1;
 	        $sign="";
-	        if ($x['type'] == TX_TYPE_SEND) {
+	        if ($x['type'] == TX_TYPE_SEND || $x['type'] == TX_TYPE_SYSTEM) {
 		        if ($x['src'] == $id) {
 			        $sign = "-";
 		        } else {

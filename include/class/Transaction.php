@@ -44,7 +44,7 @@ class Transaction
 			$fee = Blockchain::getSmartContractExecFee($block_height);
 		} else if($this->type == TX_TYPE_SC_SEND) {
 			$fee = Blockchain::getSmartContractExecFee($block_height);
-		} else if($this->type == TX_TYPE_BURN) {
+		} else if($this->type == TX_TYPE_BURN || $this->type == TX_TYPE_SYSTEM) {
 			$fee = 0;
 		}
 		return $fee;
@@ -92,7 +92,7 @@ class Transaction
 		        if($type == TX_TYPE_REWARD) {
 			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 		        }
-				if ($type == TX_TYPE_SEND) {
+				if ($type == TX_TYPE_SEND || $type == TX_TYPE_SYSTEM) {
 			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 			        $res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee),$src_height);
 					$tx->add_mempool();
@@ -545,7 +545,7 @@ class Transaction
 			//allow receive on unverified address
 			if ($this->type == TX_TYPE_SEND ||
                 $this->type == TX_TYPE_SC_CREATE || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_SEND ||
-                $this->type == TX_TYPE_MN_REMOVE) {
+                $this->type == TX_TYPE_MN_REMOVE || $this->type == TX_TYPE_SYSTEM) {
 				$res = Account::checkAccount($this->dst, "", $block, $height);
 				if ($res === false) {
 					throw new Exception("Error checking account address for send");
@@ -578,7 +578,7 @@ class Transaction
 			$res = true;
 			if($type == TX_TYPE_REWARD && $this->val > 0) {
 				$res = $res && Account::addBalance($this->dst, $this->val,$height);
-			} else if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE) {
+			} else if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE || $type == TX_TYPE_SYSTEM) {
 				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
 				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
 			} else if ($type == TX_TYPE_FEE) {
@@ -587,9 +587,6 @@ class Transaction
 				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
 				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
 			} else if ($type == TX_TYPE_SC_EXEC) {
-				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
-				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
-			} else if ($type == TX_TYPE_SC_SEND) {
 				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
 				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
 			} else if ($type == TX_TYPE_BURN) {
@@ -726,7 +723,7 @@ class Transaction
 
 			//check types
 		    $type = $this->type;
-			$allowedTypes = [TX_TYPE_REWARD, TX_TYPE_SEND];
+			$allowedTypes = [TX_TYPE_REWARD, TX_TYPE_SEND, TX_TYPE_SYSTEM];
 			if(Masternode::allowedMasternodes($height)) {
 				$allowedTypes[]=TX_TYPE_MN_CREATE;
 				$allowedTypes[]=TX_TYPE_MN_REMOVE;
@@ -788,7 +785,7 @@ class Transaction
 
 
             if ($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_MN_CREATE || $this->type == TX_TYPE_MN_REMOVE || $this->type == TX_TYPE_SC_SEND
-                || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_CREATE) {
+                || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_CREATE || $this->type == TX_TYPE_SYSTEM) {
 	            // invalid destination address
 	            if (!Account::valid($this->dst)) {
 		            throw new Exception("{$this->id} - Invalid destination address");
@@ -833,11 +830,18 @@ class Transaction
 	        }
 
 	        //verify the ecdsa signature
-	        if (!Account::checkSignature($base, $this->signature, $this->publicKey, $height)) {
-		        throw new Exception("{$this->id} - Invalid signature - $base");
-	        }
+            if($this->type == TX_TYPE_SYSTEM) {
+                if (!Account::checkSignature($base, $this->signature, GENESIS_DATA['public_key'], $height)) {
+                    throw new Exception("{$this->id} - Invalid signature - $base");
+                }
+            } else {
+                if (!Account::checkSignature($base, $this->signature, $this->publicKey, $height)) {
+                    throw new Exception("{$this->id} - Invalid signature - $base");
+                }
+            }
 
-			if($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_BURN || $this->type == TX_TYPE_MN_CREATE) {
+
+			if($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_BURN || $this->type == TX_TYPE_MN_CREATE || $this->type == TX_TYPE_SYSTEM) {
 				$res = Masternode::checkIsSendFromMasternode($height, $this, $error, $verify);
 				if(!$res) {
 					throw new Exception("Invalid transaction for send: $error");
@@ -1090,6 +1094,8 @@ class Transaction
 		    $trans['type_label'] = "masternode remove";
 	    } elseif ($x['type'] == TX_TYPE_FEE) {
 		    $trans['type_label'] = "fee";
+	    } elseif ($x['type'] == TX_TYPE_SYSTEM) {
+		    $trans['type_label'] = "system";
 	    } else {
 		    $trans['type_label'] = "other";
 	    }
@@ -1234,6 +1240,12 @@ class Transaction
 				throw new Exception("Invalid Date");
 			}
 
+            $src = Account::getAddress($this->publicKey);
+            _log("addToMemPool $src");
+            if(Blacklist::checkAddress($src)) {
+                throw new Exception("Address {$src} is blacklisted");
+            }
+
 		    if (!$this->check(null, false, $err)) {
 			    throw new Exception("Transaction check failed. Error: $err");
 		    }
@@ -1271,7 +1283,7 @@ class Transaction
                 }
             }
 
-			if($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_BURN) {
+			if($this->type == TX_TYPE_SEND || $this->type == TX_TYPE_BURN || $this->type == TX_TYPE_SYSTEM) {
 				Masternode::checkSend($this);
 			}
 
@@ -1403,6 +1415,8 @@ class Transaction
 				return "Execute smart contract";
 			case TX_TYPE_SC_SEND:
 				return "Send smart contract";
+			case TX_TYPE_SYSTEM:
+				return "System";
 		}
 	}
 
