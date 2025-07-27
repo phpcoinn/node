@@ -80,6 +80,7 @@ left join blocks b on (t.block = b.id)
 left join accounts a on (a.id = t.dst)
 where t.type = 0 and t.message = 'stake'
 and b.generator <> t.dst
+and t.height > (select max(height) from blocks b) - 1440
 order by t.height desc
 limit 10";
 
