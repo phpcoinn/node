@@ -586,7 +586,7 @@ class Transaction
 			} else if ($type == TX_TYPE_SC_CREATE) {
 				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
 				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
-			} else if ($type == TX_TYPE_SC_EXEC) {
+			} else if ($type == TX_TYPE_SC_EXEC || $type == TX_TYPE_SC_SEND) {
 				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
 				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
 			} else if ($type == TX_TYPE_BURN) {

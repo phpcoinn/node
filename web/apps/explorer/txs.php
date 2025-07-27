@@ -93,6 +93,7 @@ require_once __DIR__. '/../common/include/top.php';
             <option value="<?php echo TX_TYPE_FEE ?>" <?php if(isset($dm['search']['type']) && in_array(TX_TYPE_FEE,$dm['search']['type'])) { ?> selected<?php } ?>>Fee</option>
             <option value="<?php echo TX_TYPE_SC_CREATE ?>" <?php if(isset($dm['search']['type']) && in_array(TX_TYPE_SC_CREATE,$dm['search']['type'])) { ?> selected<?php } ?>>Create Smart Contract</option>
             <option value="<?php echo TX_TYPE_SC_EXEC ?>" <?php if(isset($dm['search']['type']) && in_array(TX_TYPE_SC_EXEC,$dm['search']['type'])) { ?> selected<?php } ?>>Execute Smart Contract</option>
+            <option value="<?php echo TX_TYPE_SC_SEND ?>" <?php if(isset($dm['search']['type']) && in_array(TX_TYPE_SC_SEND,$dm['search']['type'])) { ?> selected<?php } ?>>Send Smart Contract</option>
             <option value="<?php echo TX_TYPE_SYSTEM ?>" <?php if(isset($dm['search']['type']) && in_array(TX_TYPE_SYSTEM,$dm['search']['type'])) { ?> selected<?php } ?>>System</option>
         </select>
     </div>

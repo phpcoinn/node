@@ -96,7 +96,7 @@ if($ajaxAction == 'sc_get_property_read') {
     $amount = $_REQUEST['sc_exec_amount'][$method];
     if(empty($amount)) $amount=0;
     $params=[];
-    foreach ($_GET['sc_exec_params'][$method] as $name => $val) {
+    foreach ($_REQUEST['sc_exec_params'][$method] as $name => $val) {
         $params[]=$val;
     }
     $tx=Transaction::generateSmartContractSendTx($public_key, $dst_address, $method, $amount, $params);
