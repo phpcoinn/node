@@ -49,7 +49,9 @@ function get_data_model($total, $link, $default_sorting = "", $rowsPerPage=10) {
 		$page = $pages;
 	}
 
+    $sort=null;
 	$sorting_query = '';
+    $order = 'desc';
 	if(isset($_GET['sort'])) {
 		$sort = $_GET['sort'];
 		if(isset($_GET['order'])) {
@@ -61,6 +63,7 @@ function get_data_model($total, $link, $default_sorting = "", $rowsPerPage=10) {
 	}
 
 	$search = null;
+    $search_query = null;
 	if(isset($_GET['search'])) {
 		$search = $_GET['search'];
 		if(is_array($search)) {

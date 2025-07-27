@@ -21,7 +21,12 @@ if(isset($_SESSION['account'])) {
 
 global $db;
 
-$allTokens = $db->query("select * from tokens order by height desc");
+$allTokens = $db->query("select t.*,
+       (select ss.var_value from smart_contract_state ss
+        where ss.variable = 'totalSupply' and ss.sc_address = t.address
+        order by height desc limit 1)/pow(10,t.decimals) as totalSupply
+from tokens t
+order by t.height desc");
 
 
 if($loggedIn) {
@@ -60,6 +65,7 @@ if($loggedIn) {
             <th>Symbol</th>
             <th>Address</th>
             <th>Initial supply</th>
+            <th>Total supply</th>
             <?php if($loggedIn) { ?>
                 <th>Your balance</th>
             <?php } ?>
@@ -111,9 +117,12 @@ if($loggedIn) {
                 <td>
                     <?php if($metadata['initialSupply']) echo num($metadata['initialSupply'], $metadata['decimals']) ?>
                 </td>
+                <td>
+                    <?php echo num($token['totalSupply'],$token['decimals']) ?>
+                </td>
                 <?php if($loggedIn) { ?>
                     <td>
-                        <?php echo num(floatval($tokenBalance),$decimals) ?>
+                        <?php echo num(floatvalue($tokenBalance),$token['decimals']) ?>
                     </td>
                 <?php } ?>
             </tr>

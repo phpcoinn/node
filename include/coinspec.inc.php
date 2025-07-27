@@ -41,6 +41,7 @@ const TX_TYPE_SC_CREATE = 5;
 const TX_TYPE_SC_EXEC = 6;
 const TX_TYPE_SC_SEND = 7;
 const TX_TYPE_BURN = 8;
+const TX_TYPE_SYSTEM = 9;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];

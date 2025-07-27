@@ -93,36 +93,68 @@ class Account
 
         $current = Block::current();
 
-		$cond = '';
+		$cond1 = '';
+		$cond2 = '';
 		$params = [":src" => $id, ":dst" => $id,
 			":limit" => $limit, ":offset" => $offset];
 		if(isset($filter['address']) && !empty($filter['address'])) {
-			$cond .= ' and (t.src = :address_src or t.dst = :address_dst) ';
-			$params['address_src'] = $filter['address'];
-			$params['address_dst'] = $filter['address'];
+			$cond1 .= ' and (t.src = :address_src1 or t.dst = :address_dst1) ';
+			$params['address_src1'] = $filter['address'];
+			$params['address_dst1'] = $filter['address'];
+			$cond2 .= ' and (t.src = :address_src2 or t.dst = :address_dst2) ';
+			$params['address_src2'] = $filter['address'];
+			$params['address_dst2'] = $filter['address'];
 		}
 
 	    if(isset($filter['type']) && strlen($filter['type']) > 0) {
-			$cond .= ' and t.type = :type ';
-		    $params['type']=$filter['type'];
+			$cond1 .= ' and t.type = :type1 ';
+		    $params['type1']=$filter['type'];
+			$cond2 .= ' and t.type = :type2 ';
+		    $params['type2']=$filter['type'];
 	    }
 
 	    if(isset($filter['dir']) && !empty($filter['dir'])) {
 			if($filter['dir'] == 'send') {
-				$cond .= ' and t.src = :send ';
-				$params['send']=$id;
+				$cond1 .= ' and t.src = :send1 ';
+				$params['send1']=$id;
+				$cond2 .= ' and t.src = :send2 ';
+				$params['send2']=$id;
 			} else if ($filter['dir'] == 'receive') {
-				$cond .= ' and t.dst = :receive ';
-				$params['receive']=$id;
+				$cond1 .= ' and t.dst = :receive1 ';
+				$params['receive1']=$id;
+				$cond2 .= ' and t.dst = :receive2 ';
+				$params['receive2']=$id;
 			}
 	    }
 
-        $res = $db->run(
-            "SELECT * FROM transactions t
-				WHERE (t.dst=:dst or t.src=:src)
-				$cond
-				ORDER by t.height DESC LIMIT :offset, :limit", $params
-        );
+            $sql = "(
+            SELECT * FROM transactions t
+            WHERE t.src = :src
+            $cond1
+            ORDER BY t.height DESC
+            LIMIT :limit1
+        )
+        UNION ALL
+        (
+            SELECT * FROM transactions t
+            WHERE t.dst = :dst
+            $cond2
+            ORDER BY t.height DESC
+            LIMIT :limit2
+        )
+        ORDER BY height DESC
+        LIMIT :limit offset :offset";
+            $params[':limit1'] = $offset + $limit;
+            $params[':limit2'] = $offset + $limit;
+            $res = $db->sql($sql, $params);
+
+
+//        $res = $db->run(
+//            "SELECT * FROM transactions t
+//				WHERE (t.dst=:dst or t.src=:src)
+//				$cond
+//				ORDER by t.height DESC LIMIT :offset, :limit", $params
+//        );
 
         $transactions = [];
         if(is_array($res)) {
@@ -180,6 +212,13 @@ class Account
 		        } elseif ($x['type'] == TX_TYPE_BURN) {
 			        $sign="-";
 			        $trans['type_label'] = "burn";
+		        } elseif ($x['type'] == TX_TYPE_SYSTEM) {
+                    $trans['type_label'] = "system";
+                    if ($x['dst'] == $id) {
+                        $sign="+";
+                    } else {
+                        $sign="-";
+                    }
                 } elseif ($x['type'] == TX_TYPE_SC_CREATE || $x['type'] == TX_TYPE_SC_EXEC) {
                     if ($x['dst'] == $id) {
                         $sign="+";
@@ -202,11 +241,20 @@ class Account
 
     static function getCountByAddress($id) {
 		global $db;
-	    $res = $db->single(
-		    "SELECT count(*) as cnt FROM transactions 
-				WHERE dst=:dst or src=:src",
-		    [":src" => $id, ":dst" => $id]
-	    );
+
+        $sql="SELECT
+    (SELECT COUNT(*) FROM transactions FORCE INDEX (idx_dst) WHERE dst = :dst) +
+    (SELECT COUNT(*) FROM transactions FORCE INDEX (idx_src) WHERE src = :src)
+        AS cnt";
+
+        $res = $db->single($sql, [":src" => $id, ":dst" => $id]);
+
+
+//        $res = $db->single(
+//		    "SELECT count(*) as cnt FROM transactions
+//				WHERE dst=:dst or src=:src",
+//		    [":src" => $id, ":dst" => $id]
+//	    );
 		return $res;
     }
 
@@ -238,7 +286,7 @@ class Account
             // they are unconfirmed, so they will have -1 confirmations.
             $trans['confirmations'] = -1;
 	        $sign="";
-	        if ($x['type'] == TX_TYPE_SEND) {
+	        if ($x['type'] == TX_TYPE_SEND || $x['type'] == TX_TYPE_SYSTEM) {
 		        if ($x['src'] == $id) {
 			        $sign = "-";
 		        } else {

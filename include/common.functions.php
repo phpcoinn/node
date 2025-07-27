@@ -4,6 +4,12 @@ function num($val, $dec = COIN_DECIMALS) {
 	return @number_format($val, $dec, '.', '');
 }
 
+function floatvalue($val) {
+    $clean = str_replace(',', '', $val);
+    $float = floatval($clean);
+    return $float;
+}
+
 // sign data with private key
 function ec_sign($data, $key, $chain_id = CHAIN_ID)
 {

@@ -68,7 +68,7 @@ foreach ($indexes as $index) {
     $c.=$color[$index];
 }
 
-$sql="select * from token_balances tb where tb.token = ? order by cast(tb.balance as double) desc limit 10";
+$sql="select * from token_balances tb where tb.token = ? order by cast(replace(tb.balance,',','') as double) desc limit 10";
 $topHolders = $db->run($sql,[$id], false);
 $scExecFee = Blockchain::getSmartContractExecFee();
 
@@ -83,7 +83,14 @@ foreach ($interface['methods'] as $method) {
         $burnable = true;
     }
 }
+$decimals = $metadata['decimals'];
 
+$sql="select var_value from smart_contract_state
+        where variable = 'totalSupply' and sc_address = ?
+        order by height desc limit 1";
+$row=$db->row($sql,[$id], false);
+$totalSupply = $row['var_value'];
+$totalSupply = $totalSupply / pow(10, $decimals);
 
 ?>
 
@@ -117,15 +124,17 @@ foreach ($interface['methods'] as $method) {
             <div class="col">
                 <dl class="row">
                     <dt class="col-sm-3">Address:</dt>
-                    <dd class="col-sm-9"><?php echo $token['address'] ?></dd>
+                    <dd class="col-sm-9"><?php echo explorer_address_link($token['address']) ?></dd>
                     <dt class="col-sm-3">Decimals:</dt>
                     <dd class="col-sm-9"><?php echo $metadata['decimals'] ?></dd>
-                    <dt class="col-sm-3">Total supply:</dt>
+                    <dt class="col-sm-3">Initial supply:</dt>
                     <dd class="col-sm-9"><?php echo num($metadata['initialSupply'], $metadata['decimals']) ?></dd>
+                    <dt class="col-sm-3">Total supply:</dt>
+                    <dd class="col-sm-9"><?php echo num($totalSupply,$decimals) ?></dd>
                     <dt class="col-sm-3">Created:</dt>
                     <dd class="col-sm-9"><?php echo $createTx['height'] ?> (<?php echo display_date($createTx['date']) ?>)</dd>
                     <dt class="col-sm-3">Creator:</dt>
-                    <dd class="col-sm-9"><?php echo $createTx['src'] ?></dd>
+                    <dd class="col-sm-9"><?php echo explorer_address_link($createTx['src']) ?></dd>
                 </dl>
             </div>
             <div class="col">
@@ -306,19 +315,19 @@ foreach ($interface['methods'] as $method) {
                         <th>Method</th>
                         <th>From</th>
                         <th>To</th>
-                        <th>Amount</th>
+                        <th style="text-align: right">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($transfers as $transfer) {
                         ?>
                         <tr>
-                            <td><?php echo $transfer['height'] ?></td>
+                            <td><?php echo explorer_height_link($transfer['height']) ?></td>
                             <td><?php echo display_date($transfer['date']) ?></td>
                             <td><?php echo $transfer['method'] ?></td>
-                            <td><?php echo $transfer['src'] ?></td>
-                            <td><?php echo $transfer['dst'] ?></td>
-                            <td><?php echo $transfer['amount'] ?></td>
+                            <td><?php echo explorer_address_link($transfer['src']) ?></td>
+                            <td><?php echo explorer_address_link($transfer['dst']) ?></td>
+                            <td style="text-align: right"><?php echo num($transfer['amount'],$decimals) ?></td>
                         </tr>
                     <?php } ?>
                 </tbody>
@@ -347,15 +356,15 @@ foreach ($interface['methods'] as $method) {
                 <thead class="table-light">
                 <tr>
                     <th>Address</th>
-                    <th>Amount</th>
+                    <th style="text-align: right">Amount</th>
                 </tr>
                 </thead>
                 <tbody>
                 <?php foreach ($topHolders as $holder) {
                     ?>
                     <tr>
-                        <td><?php echo $holder['address'] ?></td>
-                        <td><?php echo $holder['balance'] ?></td>
+                        <td><?php echo explorer_address_link($holder['address']) ?></td>
+                        <td style="text-align: right"><?php echo $holder['balance'] ?></td>
                     </tr>
                 <?php } ?>
                 </tbody>
@@ -407,19 +416,19 @@ foreach ($interface['methods'] as $method) {
                         <th>Method</th>
                         <th>From</th>
                         <th>To</th>
-                        <th>Amount</th>
+                        <th class="text-end">Amount</th>
                     </tr>
                     </thead>
                     <tbody>
                     <?php foreach ($myTransfers as $transfer) {
                         ?>
                         <tr>
-                            <td><?php echo $transfer['height'] ?></td>
+                            <td><?php echo explorer_height_link($transfer['height']) ?></td>
                             <td><?php echo display_date($transfer['date']) ?></td>
                             <td><?php echo $transfer['method'] ?></td>
-                            <td><?php echo $transfer['src'] ?></td>
-                            <td><?php echo $transfer['dst'] ?></td>
-                            <td><?php echo $transfer['amount'] ?></td>
+                            <td><?php echo explorer_address_link($transfer['src']) ?></td>
+                            <td><?php echo explorer_address_link($transfer['dst']) ?></td>
+                            <td class="text-end"><?php echo num($transfer['amount'],$decimals) ?></td>
                         </tr>
                     <?php } ?>
                     </tbody>

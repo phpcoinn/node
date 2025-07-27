@@ -154,6 +154,15 @@ class DB extends PDO
         return false;
     }
 
+    public function sql($sql, $params)
+    {
+        $pdostmt = $this->prepare($sql);
+        if ($pdostmt->execute($params) !== false) {
+            $res = $pdostmt->fetchAll(PDO::FETCH_ASSOC);
+            return $res;
+        }
+    }
+
 	private function logSql($sql, $start) {
 //		$time2 = microtime(true);
 //		$diff = round(($time2-$start)*1000);

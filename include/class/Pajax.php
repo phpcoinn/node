@@ -10,8 +10,8 @@ class Pajax
 
     static function app($class, $options = [])
     {
-        self::$class = new $class();
         self::$options = $options;
+        self::$class = new $class();
         self::processAjax();
         self::render();
 

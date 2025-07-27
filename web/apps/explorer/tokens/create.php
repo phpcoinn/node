@@ -125,8 +125,13 @@ if(isset($_GET['action'])) {
             "interface"=>$interface,
             "metadata"=>$metadata
         ];
-        _log(json_encode($scData));
+//        _log(json_encode($scData));
+        _log("imageB64Data size=".strlen($imageB64Data));
         $signatureBase = base64_encode(json_encode($scData));
+        _log("signatureBase size=".strlen($signatureBase));
+        if(!empty($imageB64Data) && strlen($signatureBase)>65000) {
+            api_err("Please check size of image and reduce it");
+        }
         api_echo([
             "signatureBase"=>$signatureBase,
             "code"=>$code,
@@ -213,7 +218,7 @@ $createTokenFee = Blockchain::getSmartContractCreateFee();
                 </div>
 
                 <div class="mb-3">
-                    <label for="token-init-supply" class="form-label">Exensions:</label>
+                    <label for="token-init-supply" class="form-label">Extensions:</label>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="mintable" v-model="newToken.ext.mintable">
                         <label class="form-check-label" for="mintable">

@@ -77,7 +77,7 @@ class PeerRequest
 			if($peer['blacklisted'] > time() && strpos($peer['blacklist_reason'],"Invalid hostname") === 0) {
 				$hostname=$info['hostname'];
 				_log("Peer request from blacklisted peer ip=$ip hostname=$hostname reason=".$peer['blacklist_reason']." info=".json_encode($info). "REMOTE_ADDR=".$_SERVER['REMOTE_ADDR'].
-				" HTTP_X_FORWARDED_FOR=".$_SERVER['HTTP_X_FORWARDED_FOR']);
+				" HTTP_X_FORWARDED_FOR=".@$_SERVER['HTTP_X_FORWARDED_FOR']);
 				_logf("blacklisted-peer");
 				api_err("blacklisted-peer SERVER=".json_encode($_SERVER). " peer=".json_encode($peer));
 			}

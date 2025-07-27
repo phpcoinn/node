@@ -713,10 +713,14 @@ class Util
 		if(empty($file)) {
 			$file = getcwd() . "/blockchain.txt";
 		}
-		$height = Block::getHeight();
+		$height = Block::getHeight() - 100;
 		echo "Exporting blockchain to file: " . $file.PHP_EOL;
-		@file_put_contents($file,"");
-		for($i=1;$i<=$height;$i++) {
+        $cmd="cat $file | tail -n 1";
+        $res=shell_exec($cmd);
+        $block = json_decode($res, true);
+        $last_height = $block['height'];
+        echo "Found last height in file: " . $last_height.PHP_EOL;
+		for($i=$last_height+1;$i<=$height;$i++) {
 			$block = Block::export("",$i);
 			if($i % 100 == 0) {
 				echo "Exporting block $i".PHP_EOL;

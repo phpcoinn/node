@@ -64,7 +64,7 @@ require_once __DIR__. '/../common/include/top.php';
 $base_url="/apps/explorer/smart_contract.php?id=$id";
 if($ajaxAction == 'sc_get_property_read') {
     $sc_get_property_name = $ajaxParams[0];
-    $sc_get_property_key = $_REQUEST['sc_property_key'][$sc_get_property_name];
+    $sc_get_property_key = @$_REQUEST['sc_property_key'][$sc_get_property_name];
     $sc_get_property_result = SmartContractEngine::get($id, $sc_get_property_name, $sc_get_property_key, $sc_get_property_error);
 } else if ($ajaxAction == 'sc_property_clear') {
     $sc_get_property_name = $ajaxParams[0];
@@ -80,6 +80,8 @@ if($ajaxAction == 'sc_get_property_read') {
     foreach ($_REQUEST['sc_exec_params'][$method] as $name => $val) {
         $params[]=$val;
     }
+    $_SESSION[$id]['sc_exec_amount'][$method]=$_REQUEST['sc_exec_amount'][$method];
+    $_SESSION[$id]['sc_exec_params']=$_REQUEST['sc_exec_params'];
     $tx=Transaction::generateSmartContractExecTx($public_key, $id, $method, $amount, $params);
     $tx = base64_encode(json_encode($tx));
     $request_code = uniqid("signtx");
@@ -96,9 +98,12 @@ if($ajaxAction == 'sc_get_property_read') {
     $amount = $_REQUEST['sc_exec_amount'][$method];
     if(empty($amount)) $amount=0;
     $params=[];
-    foreach ($_GET['sc_exec_params'][$method] as $name => $val) {
+    foreach ($_REQUEST['sc_exec_params'][$method] as $name => $val) {
         $params[]=$val;
     }
+    $_SESSION[$id]['sc_exec_amount'][$method]=$_REQUEST['sc_exec_amount'][$method];
+    $_SESSION[$id]['sc_exec_params']=$_REQUEST['sc_exec_params'];
+    $_SESSION[$id]['sc_send_dst'][$method]=$dst_address;
     $tx=Transaction::generateSmartContractSendTx($public_key, $dst_address, $method, $amount, $params);
     $tx = base64_encode(json_encode($tx));
     $request_code = uniqid("signtx");
@@ -221,7 +226,7 @@ global $loggedIn;
                             <td>
                                 <?php if ($key == "image") { ?>
                                     <img src="<?php echo $value ?>"/>
-                                <?php } else if ($key == "name" && $metadata['class'] == "ERC-20") { ?>
+                                <?php } else if ($key == "name" && @$metadata['class'] == "ERC-20") { ?>
                                     <a href="/apps/explorer/tokens/token.php?id=<?php echo $smartContract['address'] ?>"><?php echo $metadata['name'] ?></a>
                                 <?php } else { ?>
                                     <?php echo $value ?>
@@ -303,13 +308,13 @@ global $loggedIn;
                             <td>
                                 <?php
                                     echo '$'.$property['name'];
-                                    if($property['type']=="map") {
+                                    if(@$property['type']=="map") {
                                         echo "[]";
                                     }
                                 ?>
                             </td>
                             <td class="text-end nowrap">
-                                <?php if($property['type']=="map") { ?>
+                                <?php if(@$property['type']=="map") { ?>
                                     <input class="form-control w-auto d-inline form-control-sm" type="text"
                                            name="sc_property_key[<?php echo $property['name'] ?>]"
                                            value="<?php echo $_REQUEST['sc_property_key'][$property['name']] ?>" placeholder="Key">
@@ -368,7 +373,7 @@ global $loggedIn;
                             <td>
                                 <?php if($loggedIn) { ?>
                                     <input type="text" class="form-control form-control-sm w-auto"
-                                           name="sc_exec_amount[<?php echo $method['name'] ?>]" value="" placeholder="PHPCoin amount">
+                                           name="sc_exec_amount[<?php echo $method['name'] ?>]" value="<?php echo @$_SESSION[$id]['sc_exec_amount'][$method['name']] ?>" placeholder="PHPCoin amount">
                                 <?php } ?>
                             </td>
 
@@ -382,7 +387,8 @@ global $loggedIn;
                                         }
                                         ?>
                                         <input type="text" class="form-control form-control-sm d-inline w-auto"
-                                               name="sc_exec_params[<?php echo $method['name'] ?>][<?php echo $name ?>]" value="" placeholder="<?php echo $name ?>">
+                                               name="sc_exec_params[<?php echo $method['name'] ?>][<?php echo $name ?>]"
+                                               value="<?php echo @$_SESSION[$id]['sc_exec_params'][$method['name']][$name] ?>" placeholder="<?php echo $name ?>">
                                     <?php } ?>
                                     <button type="button" onclick="runAction('sc_exec',['<?php echo $method['name'] ?>'])" class="btn btn-sm btn-soft-primary" name="sc_exec"
                                             value="<?php echo $method['name'] ?>">Execute</button>
@@ -390,7 +396,7 @@ global $loggedIn;
                             </td>
                             <td class="text-end">
                                 <?php if($loggedIn && $id == $_SESSION['account']['address']) { ?>
-                                    <input type="text" class="form-control form-control-sm w-auto d-inline"
+                                    <input type="text" class="form-control form-control-sm w-auto d-inline" value="<?php echo @$_SESSION[$id]['sc_send_dst'][$method['name']] ?>"
                                            name="sc_send_dst[<?php echo $method['name'] ?>]" placeholder="Dst address">
                                     <button type="button" onclick="runAction('sc_send', ['<?php echo $method['name'] ?>'])" class="btn btn-sm btn-soft-primary" name="sc_send"
                                             value="<?php echo $method['name'] ?>">Send</button>
@@ -551,7 +557,7 @@ global $loggedIn;
                 <td><?php echo Transaction::typeLabel($tx['type']) ?></td>
                 <td><?php echo $tx['val'] ?></td>
                 <td><?php echo $method ?></td>
-                <td><?php echo implode(", ", $params) ?></td>
+                <td><?php echo !empty($params) ? implode(", ", $params) : '' ?></td>
             </tr>
             <?php } ?>
         </tbody>
