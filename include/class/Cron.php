@@ -36,7 +36,7 @@ class Cron extends Task
 
         }
 
-        if($hour == 2 && $min == 30) {
+        if($min == 30) {
             Nodeutil::runSingleProcess("php ".ROOT."/cli/util.php check-accounts");
         }
         if($min == 15) {
