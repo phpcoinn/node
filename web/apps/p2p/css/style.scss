@@ -1,0 +1,26 @@
+body {
+
+  #offers-book {
+    font-size: 0.8rem;
+    tr {
+      cursor: pointer;
+      &.type-sell {
+        &:hover {
+          background-color: rgba(var(--bs-danger-rgb), 0.1) !important;
+        }
+        &.sel-offers-book {
+          background-color: rgba(var(--bs-danger-rgb), 0.4) !important;
+        }
+      }
+      &.type-buy {
+        &:hover {
+          background-color: rgba(var(--bs-success-rgb), 0.1) !important;
+        }
+        &.sel-offers-book {
+          background-color: rgba(var(--bs-success-rgb), 0.4) !important;
+        }
+      }
+    }
+  }
+
+}

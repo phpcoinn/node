@@ -1,0 +1,20 @@
+body #offers-book {
+  font-size: 0.8rem;
+}
+body #offers-book tr {
+  cursor: pointer;
+}
+body #offers-book tr.type-sell:hover {
+  background-color: rgba(var(--bs-danger-rgb), 0.1) !important;
+}
+body #offers-book tr.type-sell.sel-offers-book {
+  background-color: rgba(var(--bs-danger-rgb), 0.4) !important;
+}
+body #offers-book tr.type-buy:hover {
+  background-color: rgba(var(--bs-success-rgb), 0.1) !important;
+}
+body #offers-book tr.type-buy.sel-offers-book {
+  background-color: rgba(var(--bs-success-rgb), 0.4) !important;
+}
+
+/*# sourceMappingURL=style.css.map */
