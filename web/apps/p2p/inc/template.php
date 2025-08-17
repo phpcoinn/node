@@ -73,13 +73,15 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
             <div class="card-body p-0 d-flex flex-wrap align-items-center gap-2">
                 <?=$this->market['image'] ?>
                 <div class="fw-bold font-size-16"><?= $this->market_name() ?></div>
-                <div>
-                    <div class="font-size-16 fw-bold <?= $lastOfferType == 'sell' ? 'text-danger' : 'text-success' ?>">
-                        <?= $lastPrice ?>
-                        <span class="fa fa-arrow-down"></span>
+                <?php if(!empty($lastOfferType)) { ?>
+                    <div>
+                        <div class="font-size-16 fw-bold <?=  $lastOfferType == 'sell' ? 'text-danger' : 'text-success' ?>">
+                            <?= $lastPrice ?>
+                            <span class="fa fa-arrow-down"></span>
+                        </div>
+                        <div class="text-muted font-size-12"><?= $prevPrice ?></div>
                     </div>
-                    <div class="text-muted font-size-12"><?= $prevPrice ?></div>
-                </div>
+                <?php } ?>
                 <a class="fa fa-info-circle fa-lg ms-auto d-none" data-bs-toggle="collapse" data-bs-target="#market-info-details" id="market-info-details-toggle"></a>
                 <div id="market-info-details" class="d-flex ms-auto gap-2 collapse flex-wrap scale-up-ver-top">
                     <div>
@@ -197,19 +199,21 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                                     <th class="text-end total">Total (<?= $this->quote ?>)</th>
                                 </tr>
                             </tbody>
-                            <tbody class="price-tbody">
-                                <tr>
-                                    <td colspan="3">
-                                        <div class="d-flex align-items-center gap-2">
-                                                    <span class="font-size-16 fw-bold <?= $lastOfferType == 'sell' ? 'text-danger' : 'text-success' ?>">
-                                                        <?= $lastPrice ?>
-                                                        <span class="fa fa-arrow-down"></span>
-                                                    </span>
-                                            <span class="text-muted"><?= $prevPrice ?></span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
+                            <?php if(!empty($lastOfferType)) { ?>
+                                <tbody class="price-tbody">
+                                    <tr>
+                                        <td colspan="3">
+                                            <div class="d-flex align-items-center gap-2">
+                                                        <span class="font-size-16 fw-bold <?= $lastOfferType == 'sell' ? 'text-danger' : 'text-success' ?>">
+                                                            <?= $lastPrice ?>
+                                                            <span class="fa fa-arrow-down"></span>
+                                                        </span>
+                                                <span class="text-muted"><?= $prevPrice ?></span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            <?php } ?>
                             <tbody class="buy-tbody">
                                 <tr class="header d-none">
                                     <th>Price</th>
@@ -272,37 +276,35 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
             <div class="row" id="trade-cards">
                 <div class="col-sm-6">
                     <div class="card p-2" id="buy-card">
-                        <div class="card-header p-0 d-none" id="close-buy-card">
-                            <div class="card-title">
-                                <h5>Create buy offer</h5>
+                        <div class="card-body p-0">
+                            <div class="row">
+                                <div id="base_price_div" class="col-6 col-sm-12 mb-2">
+                                    <label  class="form-label" for="buy_base_price">Price</label>
+                                    <input type="text" id="buy_base_price" name="buy_base_price" class="form-control"
+                                           oninput="changedBuyBasePrice(<?= $this->quoteDecimals() ?>)" data-max-price="<?= $this->maxBuyPrice() ?>"
+                                           <?php if($this->disablebBuyInputs()) { ?>disabled<?php } ?>
+                                           value="<?=$this->buy_base_price ?>"/>
+                                </div>
+                                <div id="base_amount_div" class="col-6 col-sm-12  mb-2">
+                                    <label class="form-label" for="buy_base_amount"><?=$this->base ?> amount</label>
+                                    <input type="text" id="buy_base_amount" name="buy_base_amount" class="form-control"
+                                           oninput="changedBuyBasePrice(<?= $this->quoteDecimals() ?>)"
+                                           <?php if($this->disablebBuyInputs()) { ?>disabled<?php } ?>
+                                           value="<?=$this->buy_base_amount ?>"/>
+                                </div>
+                                <div id="quote_total_div" class="col-6 col-sm-12  mb-2">
+                                    <label class="form-label" for="buy_quote_total"><?=$this->quote ?> Total</label>
+                                    <input type="text" id="buy_quote_total" name="buy_quote_total" class="form-control"
+                                           oninput="changedBuyQuoteTotal()"
+                                           <?php if($this->disablebBuyInputs()) { ?>disabled<?php } ?>
+                                           value="<?=$this->buy_quote_total ?>"/>
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <label class="form-label" for="base_receive_address"><?=$this->base ?> Receiving address</label>
+                                    <input type="text" id="base_receive_address" name="base_receive_address" class="form-control"
+                                           value="<?=$this->base_receive_address ?>"/>
+                                </div>
                             </div>
-                            <button type="button" class="btn-close ms-auto" onclick="closeBuyCard()"></button>
-                        </div>
-                        <div id="base_price_div" class="mb-3">
-                            <label  class="form-label" for="buy_base_price">Price</label>
-                            <input type="text" id="buy_base_price" name="buy_base_price" class="form-control"
-                                   oninput="changedBuyBasePrice(<?= $this->quoteDecimals() ?>)" data-max-price="<?= $this->maxBuyPrice() ?>"
-                                   <?php if($this->disablebBuyInputs()) { ?>disabled<?php } ?>
-                                   value="<?=$this->buy_base_price ?>"/>
-                        </div>
-                        <div id="base_amount_div" class="mb-3">
-                            <label class="form-label" for="buy_base_amount"><?=$this->base ?> amount</label>
-                            <input type="text" id="buy_base_amount" name="buy_base_amount" class="form-control"
-                                   oninput="changedBuyBasePrice(<?= $this->quoteDecimals() ?>)"
-                                   <?php if($this->disablebBuyInputs()) { ?>disabled<?php } ?>
-                                   value="<?=$this->buy_base_amount ?>"/>
-                        </div>
-                        <div id="quote_total_div" class="mb-3">
-                            <label class="form-label" for="buy_quote_total"><?=$this->quote ?> Total</label>
-                            <input type="text" id="buy_quote_total" name="buy_quote_total" class="form-control"
-                                   oninput="changedBuyQuoteTotal()"
-                                   <?php if($this->disablebBuyInputs()) { ?>disabled<?php } ?>
-                                   value="<?=$this->buy_quote_total ?>"/>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="base_receive_address"><?=$this->base ?> Receiving address</label>
-                            <input type="text" id="base_receive_address" name="base_receive_address" class="form-control"
-                                   value="<?=$this->base_receive_address ?>"/>
                         </div>
                         <?php if($loggedIn) { ?>
                             <?php if($this->sell_offer['type']==OfferService::TYPE_SELL) { ?>
@@ -313,41 +315,40 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                         <?php } else { ?>
                             <button type="button" class="btn btn-secondary" disabled>Login to trade</button>
                         <?php } ?>
+                        <button type="button" class="btn btn-secondary close-btn d-none" onclick="closeBuyCard()">Close</button>
                     </div>
                 </div>
                 <div class="col-sm-6">
                     <div class="card p-2" id="sell-card">
-                        <div class="card-header p-0 d-none" id="close-sell-card">
-                            <div class="card-title">
-                                <h5>Create sell offer</h5>
+                        <div class="card-body p-0">
+                            <div class="row">
+                                <div id="base_price_div" class="col-6 col-sm-12 mb-2">
+                                    <label  class="form-label" for="sell_base_price">Price</label>
+                                    <input type="text" id="sell_base_price" name="sell_base_price" class="form-control"
+                                           oninput="changedSellBasePrice(<?=$this->baseDecimals()?>)" data-min-price="<?= $this->minSellPrice() ?>"
+                                           <?php if($this->disablebSellInputs()) { ?>disabled<?php } ?>
+                                           value="<?=$this->sell_base_price ?>"/>
+                                </div>
+                                <div id="base_amount_div" class="col-6 col-sm-12 mb-2">
+                                    <label class="form-label" for="sell_base_amount"><?=$this->base ?> amount</label>
+                                    <input type="text" id="sell_base_amount" name="sell_base_amount" class="form-control"
+                                           oninput="changedSellBasePrice(<?=$this->baseDecimals()?>)"
+                                           <?php if($this->disablebSellInputs()) { ?>disabled<?php } ?>
+                                           value="<?=$this->sell_base_amount ?>"/>
+                                </div>
+                                <div id="quote_total_div" class="col-6 col-sm-12 mb-2">
+                                    <label class="form-label" for="sell_quote_total"><?=$this->quote ?> Total</label>
+                                    <input type="text" id="sell_quote_total" name="sell_quote_total" class="form-control"
+                                           oninput="changedSellQuoteTotal()"
+                                           <?php if($this->disablebSellInputs()) { ?>disabled<?php } ?>
+                                           value="<?=$this->sell_quote_total ?>"/>
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <label class="form-label" for="quote_receive_address"><?=$this->quote ?> Receiving address</label>
+                                    <input type="text" id="quote_receive_address" name="quote_receive_address" class="form-control"
+                                           value="<?=$this->quote_receive_address ?>"/>
+                                </div>
                             </div>
-                            <button type="button" class="btn-close ms-auto" onclick="closeSellCard()"></button>
-                        </div>
-                        <div id="base_price_div" class="mb-3">
-                            <label  class="form-label" for="sell_base_price">Price</label>
-                            <input type="text" id="sell_base_price" name="sell_base_price" class="form-control"
-                                   oninput="changedSellBasePrice(<?=$this->baseDecimals()?>)" data-min-price="<?= $this->minSellPrice() ?>"
-                                   <?php if($this->disablebSellInputs()) { ?>disabled<?php } ?>
-                                   value="<?=$this->sell_base_price ?>"/>
-                        </div>
-                        <div id="base_amount_div" class="mb-3">
-                            <label class="form-label" for="sell_base_amount"><?=$this->base ?> amount</label>
-                            <input type="text" id="sell_base_amount" name="sell_base_amount" class="form-control"
-                                   oninput="changedSellBasePrice(<?=$this->baseDecimals()?>)"
-                                   <?php if($this->disablebSellInputs()) { ?>disabled<?php } ?>
-                                   value="<?=$this->sell_base_amount ?>"/>
-                        </div>
-                        <div id="quote_total_div" class="mb-3">
-                            <label class="form-label" for="sell_quote_total"><?=$this->quote ?> Total</label>
-                            <input type="text" id="sell_quote_total" name="sell_quote_total" class="form-control"
-                                   oninput="changedSellQuoteTotal()"
-                                   <?php if($this->disablebSellInputs()) { ?>disabled<?php } ?>
-                                   value="<?=$this->sell_quote_total ?>"/>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="quote_receive_address"><?=$this->quote ?> Receiving address</label>
-                            <input type="text" id="quote_receive_address" name="quote_receive_address" class="form-control"
-                                   value="<?=$this->quote_receive_address ?>"/>
                         </div>
                         <?php if($loggedIn) { ?>
                             <?php if($this->sell_offer['type']==OfferService::TYPE_BUY) { ?>
@@ -358,6 +359,7 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                         <?php } else { ?>
                             <button type="button" class="btn btn-secondary" disabled>Login to trade</button>
                         <?php } ?>
+                        <button type="button" class="btn btn-secondary close-btn d-none" onclick="closeSellCard()">Close</button>
                     </div>
                 </div>
             </div>
@@ -633,6 +635,7 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                 </div>
                 <?php  if ($this->offer_id) {
                     $offer = OfferService::getOffer($this->offer_id);
+                    if($offer['user_created']==OfferService::userAddress() || $offer['user_accepted']==OfferService::userAddress()) {
                     $quote_total = $offer['base_price'] * $offer['base_amount'];
                     ?>
                     <div class="modal-body">
@@ -684,7 +687,9 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                         <?php } ?>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
                     </div>
-                <?php } ?>
+                <?php }
+                }
+                ?>
             </div>
         </div>
     </div>

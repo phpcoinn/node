@@ -14,7 +14,7 @@ class UsdtPolygonService implements AssetService
     const RPC_URL = "https://polygon-mainnet.infura.io/v3/7fe3e0cd4aeb461aa2004466caeabce2";
 //    const RPC_URL = "https://go.getblock.io/0d0beedb875942f8818097eab0fa1f49";
 //    const RPC_URL = "https://cosmopolitan-green-arrow.matic.quiknode.pro/239ffdf84f76e4f555730cf74c59166c408d628f/";
-    const COIN_ESCROW_ADDRESS = "0x6045cff6c05f06cbc33560bbbf2ae8e4b1d1bece";
+    const COIN_ESCROW_ADDRESS = "0x9fcfa25924b60b7e80c90f932c4b4f562dcdc39c";
 
     public function getEscrowPrivateKey()
     {
@@ -29,7 +29,7 @@ class UsdtPolygonService implements AssetService
 
     public function getStartBlockNumber()
     {
-        return 69813700;
+        return 75285389;
     }
 
     public function findTransfers($block_number)
@@ -117,9 +117,7 @@ class UsdtPolygonService implements AssetService
     public function getConfirmations(string $type)
     {
         return match ($type) {
-            'wait' => 10,
-            'transferring' => 10,
-            default => 10,
+            default => 100,
         };
     }
 
@@ -159,6 +157,7 @@ class UsdtPolygonService implements AssetService
 
     public function transferFromWallet(mixed $amount, mixed $offer)
     {
+        $amount = round($amount, $this->getDecimals());
         Pajax::executeScript('closeOfferModal');
         Pajax::executeScript('transferWithMetamask', $amount, self::USDT_CONTRACT_ADDRESS, self::COIN_ESCROW_ADDRESS, 'transferFromWalletCallback');
 
@@ -168,6 +167,8 @@ class UsdtPolygonService implements AssetService
     {
         $hash = $data['hash'];
         OfferService::setAcceptedOfferTransferring($offer['id'], $hash);
+        $_SESSION['offer_id'] = $offer['id'];
+        Pajax::redirect(AppView::BASE_URL);
     }
 
     public function getEscrowAddress()
@@ -304,6 +305,6 @@ class UsdtPolygonService implements AssetService
 
     public function resendTx(string $txId)
     {
-        $this->transferToken(0.11, "0x4d08ac79236b2a1d2784644743726290ebe4564a");
+        //$this->transferToken(0.11, "0x4d08ac79236b2a1d2784644743726290ebe4564a");
     }
 }

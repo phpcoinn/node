@@ -391,7 +391,7 @@ class AppView
             }
             ?>
             <div class="card p-2">
-                <div class="d-flex flex-wrap">
+                <div class="d-flex flex-wrap flex-sm-nowrap">
                     <div>
                         <h5>Your offer is in status created</h5>
                         <h6>You need to deposit <?= $depositCoin ?> to make offer available for other users</h6>
@@ -582,8 +582,8 @@ class AppView
             }
             ?>
             <div class="card p-2">
-                <div class="d-flex flex-wrap">
-                    <div>
+                <div class="d-flex flex-wrap flex-column flex-sm-row">
+                    <div style="flex:1">
                         <h5>You accepted this offer</h5>
                         <h6>You need to transfer your <?= $transferCoin ?> to escrow address</h6>
                         <dl class="row my-3">
@@ -620,7 +620,7 @@ class AppView
                             </p>
                         </div>
                     </div>
-                    <div class="text-center">
+                    <div class="text-sm-center text-start">
                         Remain time
                         <div class="circle-progress mt-2" style="--progress: <?=$remain['perc']?>">
                             <div class="circle-inner">
@@ -633,7 +633,7 @@ class AppView
         <?php } ?>
         <?php if ($offer['user_created']==OfferService::userAddress()) { ?>
             <div class="card p-2 d-flex flex-row">
-                <div>
+                <div style="flex:1">
                     <h5>Your offer is accepted</h5>
                     <h6>Please wait until another party starts trade</h6>
                     <p class="text-muted">
@@ -744,7 +744,7 @@ class AppView
             $paymentAddress = $offer['base_receive_address'];
             $paymentAddressLink = $service->addressLink($paymentAddress);
             $paymentTxId = $offer['base_transfer_tx_id'];
-            $paymentTxLink = $service->txLink($paymentAddress);
+            $paymentTxLink = $service->txLink($paymentTxId);
             $last_height = $service->getLastHeight();
             $tx = $service->findTransaction($paymentTxId);
             $confirmations = $last_height - $tx['height'];

@@ -629,7 +629,7 @@ from (select m.id,
 
     public static function getMinCoinTrade()
     {
-        return 0.1;
+        return 1;
     }
 
     public static function getMarketByName(mixed $market)

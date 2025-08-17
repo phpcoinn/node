@@ -3,8 +3,8 @@
 class PhpCoinService implements AssetService
 {
 
-    const PHP_ESCROW_ADDRESS = "PY5DYYC6Kj7npy1tyMnQP3TeipbHdxCx6f";
-    const START_BLOCK_NUMBER = 1070000;
+    const PHP_ESCROW_ADDRESS = "Pi2WhtnUZ3AjNHMf9TbCT4ys1zk9t9KMaK";
+    const START_BLOCK_NUMBER = 1121911;
 
     public function getEscrowPrivateKey()
     {
@@ -63,8 +63,7 @@ class PhpCoinService implements AssetService
     public function getConfirmations($type)
     {
         return match ($type) {
-            'wait' => 1,
-            default => 1,
+            default => 10,
         };
     }
 
@@ -159,6 +158,7 @@ class PhpCoinService implements AssetService
             if($offer_id) {
                 OfferService::setAcceptedOfferTransferring($offer_id, $accept_tx_id);
             }
+            $_SESSION['offer_id'] = $offer_id;
         }
         Pajax::redirect(AppView::BASE_URL);
     }

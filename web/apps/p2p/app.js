@@ -1,9 +1,9 @@
 window.pajaxUrl = '/apps/p2p/index.php'
 window.pBeforeSend = (formData) => {
-    Pace.restart();
+    //Pace.restart();
 }
 window.pOnComplete = () => {
-    Pace.stop();
+    //Pace.stop();
 }
 window.pOnError = (json) => {
     showError('There was an error performing your action')

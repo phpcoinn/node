@@ -52,25 +52,24 @@ class CliService
         }
         $offer = OfferService::getOfferByReceiveTx($depositTxId);
         if($offer) {
-            _log("Found offer {$offer['id']} for deposit #{$depositTxId}");
             if($offer['status'] != OfferService::STATUS_DEPOSITING) {
-                _log("offer #{$offer['id']} status is {$offer['status']}");
+                _log($asset['symbol']. " Offer #{$offer['id']} status is {$offer['status']} - not deposit status");
                 return;
             }
             $depositTx = $service->findTransaction($depositTxId);
             $last_height = $depositTx['height'];
             if(!$depositTx) {
-                _log("Transaction #{$depositTxId} not found");
+                _log($asset['symbol']. " Offer #{$offer['id']} Transaction {$depositTxId} not found");
                 return;
             }
             $confirmations= $block_height - $last_height;
             $requiredConfirmations=$service->getConfirmations('wait');
             if($confirmations <= $requiredConfirmations) {
-                _log("Deposit #{$depositTxId} waiting confirmations $confirmations/".$requiredConfirmations);
+                _log($asset['symbol']. " Offer #{$offer['id']} deposit {$depositTxId} waiting confirmations $confirmations/".$requiredConfirmations);
                 return;
             }
             OfferService::setOfferOpen($offer['id']);
-            _log("Deposit #{$depositTxId} opened");
+            _log($asset['symbol']. " Offer #{$offer['id']} Deposit #{$depositTxId} - set status opened");
         } else {
             _log("Not found offer by deposit tx id {$depositTxId}");
             if($depositTxId == "0x07fbf96ce3b9e25ccfa09e2511c5e43be9c7f882cad09a51f09a12bdcd296aca") {
@@ -100,8 +99,8 @@ class CliService
 
     public static function checkExpiredAcceptedOffers()
     {
-        _log("Checking expired accepted offers");
         $expiredOffers = OfferService::getExpiredAcceoptedOffers();
+        _log("Checking expired accepted offers count=".count($expiredOffers));
         foreach ($expiredOffers as $offer) {
             $accepted_at = strtotime($offer['accepted_at']);
             $now = time();
@@ -135,23 +134,22 @@ class CliService
         foreach ($txIds as $txId) {
             $offer = OfferService::getOffersByReceiveTxId($txId);
             if($offer) {
-                _log("Found offer #{$offer['id']} for transfer transaction $txId status: ".$offer['status']);
                 if(!($offer['status']==OfferService::STATUS_TRANSFERRING && $offer['accept_tx_id'] == $txId)) {
-                    _log("Not valid offer");
+                    _log($asset['symbol'] . " Offer #{$offer['id']} status={$offer['status']} - not transferring");
                     continue;
                 }
                 $tx = $service->findTransaction($txId);
                 if(!$tx) {
-                    _log("Transaction #{$txId} not found");
+                    _log($asset['symbol'] . " Offer #{$offer['id']} - Transaction #{$txId} not found");
                     continue;
                 }
                 $confirmations = $block_height - $tx['height'];
                 $requiredConfirmations = $service->getConfirmations('transferring');
                 if($confirmations <= $requiredConfirmations) {
-                    _log("Waiting confirmations $confirmations / ".$requiredConfirmations." for offer transfer {$offer['id']}");
+                    _log($asset['symbol'] . " Offer #{$offer['id']} Waiting confirmations $confirmations / ".$requiredConfirmations);
                     continue;
                 }
-                _log("Set offer #{$offer['id']} for transfer transaction $txId completed");
+                _log($asset['symbol'] . " Offer #{$offer['id']} - set offer transferred");
                 OfferService::setAcceptedOfferTransferred($offer['id']);
             } else {
                 $tx = $service->findTransaction($txId);
@@ -247,7 +245,7 @@ class CliService
             $confirmations= $block_height - $tx['height'];
             $requiredConfirmations=$baseService->getConfirmations('paying');
             if($confirmations <= $requiredConfirmations) {
-                _log("Waiting confirmations $confirmations / ".$requiredConfirmations);
+                _log("Offer #".$offer['id']." base=".$market['base']." tx=".$offer['base_transfer_tx_id']." Waiting confirmations $confirmations / ".$requiredConfirmations);
                 continue;
             }
             if(empty($offer['quote_transfer_tx_id'])) {
@@ -264,9 +262,10 @@ class CliService
             $confirmations= $block_height - $tx['height'];
             $requiredConfirmations=$baseService->getConfirmations('paying');
             if($confirmations <= $requiredConfirmations) {
-                _log("Waiting confirmations $confirmations / ".$requiredConfirmations);
+                _log("Offer #".$offer['id']."  base=".$market['quote']." tx=".$offer['quote_transfer_tx_id']."  Waiting confirmations $confirmations / ".$requiredConfirmations);
                 continue;
             }
+            _log("Offer #".$offer['id']." payments completed - closed");
             OfferService::setOfferClosed($offer);
         }
     }

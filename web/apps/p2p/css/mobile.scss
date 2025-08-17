@@ -7,6 +7,7 @@
   }
 }
 #market-info {
+  margin-bottom: 0 !important;
   #market-info-details-toggle {
     display: inline-block !important;
   }
@@ -23,6 +24,7 @@
 }
 #offers-book {
   display: flex;
+  min-height: 30vh;
   thead {
     display: none;
   }
@@ -81,11 +83,16 @@
   }
 }
 
+#markets-card {
+  min-height: 30vh;
+}
+
 #buy-sell-switch {
   display: flex !important;
 }
 #buy-card {
   display: none;
+  margin-bottom: 0;
   &.open {
     display: block;
     position: fixed;
@@ -97,9 +104,13 @@
   #close-buy-card {
     display: flex !important;
   }
+  .close-btn {
+    display: inline-block !important;
+  }
 }
 #sell-card {
   display: none;
+  margin-bottom: 0;
   &.open {
     display: block;
     position: fixed;
@@ -110,6 +121,9 @@
   }
   #close-sell-card {
     display: flex !important;
+  }
+  .close-btn {
+    display: inline-block !important;
   }
 }
 .center-col {

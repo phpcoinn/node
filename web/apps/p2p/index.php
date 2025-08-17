@@ -143,6 +143,14 @@ $loggedIn = isset($_SESSION['account']);
         paction(null, '<?= $_REQUEST['callback'] ?>', [<?= json_encode($_REQUEST) ?>], {view: '#p2p-app'});
         <?php } ?>
     });
+    <?php if(isset($_SESSION['offer_id'])) {
+        $offer_id=$_SESSION['offer_id'];
+        unset($_SESSION['offer_id']);
+        ?>
+        $(function(){
+            openOffer(<?=$offer_id?>);
+        })
+    <?php } ?>
 </script>
 <script src="/apps/common/js/pace.min.js"></script>
 <script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.development.js"></script>
