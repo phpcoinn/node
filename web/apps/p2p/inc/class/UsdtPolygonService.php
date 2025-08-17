@@ -87,13 +87,13 @@ class UsdtPolygonService implements AssetService
         $eth = $web3->eth;
         $eth->getTransactionReceipt($id, function ($err, $tx) use (&$txData) {
             if($err) {
-                _log("Error: " . $err->getMessage());
+                _log("findTransaction: Error: " . $err->getMessage());
                 return false;
             }
             $txData = $tx;
         });
         if(!$txData) {
-            _log("Not found buy transaction $id");
+            _log("findTransaction: Not found buy transaction $id");
             return false;
         }
         foreach ($txData->logs as $log) {
@@ -153,6 +153,7 @@ class UsdtPolygonService implements AssetService
     {
         $hash = $data['hash'];
         OfferService::setOfferDepositing($offer['id'], $hash);
+        Pajax::executeScript('focusOffer', $offer['id']);
     }
 
     public function transferFromWallet(mixed $amount, mixed $offer)
@@ -199,11 +200,11 @@ class UsdtPolygonService implements AssetService
                 $txNonce = $nonce->toString();
             }
         });
-        _log("Trader: transferCoin fromAddress=$fromAddress txNonce=$txNonce");
+        _log("UsdtPolygonService: transferCoin fromAddress=$fromAddress txNonce=$txNonce");
 
         if($txNonce == null) {
             $err="Error getting transaction nonce";
-            _log("Trader: $err");
+            _log("UsdtPolygonService: $err");
             return false;
         }
 
@@ -213,11 +214,11 @@ class UsdtPolygonService implements AssetService
             }
         });
 
-        _log("Trader: transferCoin gasPrice=$gasPrice");
+        _log("UsdtPolygonService: transferCoin gasPrice=$gasPrice");
 
         if(empty($gasPrice)) {
             $err="Error getting transaction price";
-            _log("Trader: $err");
+            _log("UsdtPolygonService: $err");
             return false;
         }
 
@@ -228,7 +229,7 @@ class UsdtPolygonService implements AssetService
             'value' => '0x0',
             'data' => $data
         ];
-        _log("Trader: Coin transfer to seller from=$fromAddress to=$toAddress and amount=$amount");
+        _log("UsdtPolygonService: Coin transfer to seller from=$fromAddress to=$toAddress and amount=$amount");
         $eth->estimateGas($transactionParams, function ($err, $gas) use (&$gasLimit, &$error) {
             if ($err === null) {
                 $gasLimit = $gas->toString();
@@ -239,11 +240,11 @@ class UsdtPolygonService implements AssetService
 
         if(empty($gasLimit)) {
             $err="Error getting transaction gas limit: $error";
-            _log("Trader: $err");
+            _log("UsdtPolygonService: $err");
             return false;
         }
 
-        _log("Trader: transferCoin gasLimit=$gasLimit");
+        _log("UsdtPolygonService: transferCoin gasLimit=$gasLimit");
 
         $transactionParams['gas']='0x' .dechex($gasLimit);
         $transactionParams['gasPrice']='0x' . dechex($gasPrice);
@@ -256,13 +257,13 @@ class UsdtPolygonService implements AssetService
             if ($err === null) {
                 $txHash = $txResult;
             } else {
-                _log("Trader: Error sending transaction: " . $err->getMessage());
+                _log("UsdtPolygonService: Error sending transaction: " . $err->getMessage());
             }
         });
 
         if(empty($txHash)) {
             $err="Error getting transaction hash";
-            _log("Trader: $err");
+            _log("UsdtPolygonService: $err");
             return false;
         }
 

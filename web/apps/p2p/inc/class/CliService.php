@@ -39,7 +39,7 @@ class CliService
         }
         $last_block_number = $last_block_number - 10;
         $depositTxIds = $service->findTransfers($last_block_number);
-        _log("Checking $symbol deposits last_block_number=$last_block_number deposits: found " . count($depositTxIds));
+        _log("$symbol Checking deposits last_block_number=$last_block_number deposits: found " . count($depositTxIds));
         $block_height = $service->getLastHeight();
         foreach ($depositTxIds as $depositTxId) {
             self::processDepositTxId($service, $asset, $depositTxId, $block_height);
@@ -71,28 +71,23 @@ class CliService
             OfferService::setOfferOpen($offer['id']);
             _log($asset['symbol']. " Offer #{$offer['id']} Deposit #{$depositTxId} - set status opened");
         } else {
-            _log("Not found offer by deposit tx id {$depositTxId}");
-            if($depositTxId == "0x07fbf96ce3b9e25ccfa09e2511c5e43be9c7f882cad09a51f09a12bdcd296aca") {
-                $a=1;
-            }
             $depositTx = $service->findTransaction($depositTxId);
             if(!$depositTx) {
-                _log("Transaction #{$depositTxId} not found");
+                _log($asset['symbol']. " Deposit $depositTxId not found");
                 return;
             }
             $amount = $depositTx['amount'];
             $offers = OfferService::getOfferByDepositAmount(floatval($amount), $asset['id']);
-            _log("Found offers by amount {$amount}: found " . count($offers));
             if(count($offers)>1) {
-                _log("Multiple offers found for amount $amount");
+                _log($asset['symbol']. " Deposit $depositTxId - Multiple offers found for amount $amount");
                 return;
             }
             if(count($offers)==0) {
-                _log("No offer found for amount $amount");
+                _log($asset['symbol']. " Deposit $depositTxId - No offer found for amount $amount");
                 return;
             }
             $offer = $offers[0];
-            _log("Set offer #{$offer['id']} deposition for #{$depositTxId}");
+            _log($asset['symbol']. " Deposit $depositTxId - amount $amount - found offer #{$offer['id']} - set status depositing");
             OfferService::setOfferDepositing($offer['id'], $depositTxId);
         }
     }
@@ -164,19 +159,18 @@ class CliService
                     _log("Transaction check failed");
                     continue;
                 }
-                _log("No offer found for transfer transaction $txId - looking for amount $amount");
                 $offers = OfferService::getAcceptedOfferByAmount($amount, $asset['id']);
                 if(count($offers)>1) {
-                    _log("Found multiple offers for $amount");
+                    _log($asset['symbol'] . " Found multiple offers for $amount");
                     continue;
                 }
                 if(count($offers)==0) {
-                    _log("No offer found for amount $amount");
+                    _log($asset['symbol'] . " No offer found for amount $amount");
                     continue;
                 }
                 $offer = $offers[0];
-                _log("Found offer #{$offer['id']} for transfer transaction $txId");
                 OfferService::setAcceptedOfferTransferring($offer['id'], $txId);
+                _log($asset['symbol']." Found offer #{$offer['id']} for transfer transaction $txId - set status transferring");
             }
         }
     }
@@ -311,5 +305,26 @@ class CliService
             }
             OfferService::updateTransferLogWithTransaction($log['id'], $tx);
         }
+    }
+
+    public static function returnDeposit(string $symbol, string $deposit_tx_id)
+    {
+        _log("$symbol Return deposit tx $deposit_tx_id");
+        $asset = OfferService::getAssetBySymbol($symbol);
+        $service = OfferService::getService($asset['service']);
+        $tx = $service->findTransaction($deposit_tx_id);
+        if(!$tx) {
+            _log("$symbol Not found transaction $deposit_tx_id");
+            return;
+        }
+        if($tx['to'] != $service->getEscrowAddress()) {
+            _log("$symbol transaction $deposit_tx_id - not deposit tx");
+            return;
+        }
+        $amount = $tx['amount'];
+        $dst = $tx['from'];
+        _log("$symbol Return deposit tx $deposit_tx_id amount = $amount to = $dst");
+        $hash = $service->createPayment($amount, $dst, null);
+        _log("$symbol Return deposit tx $deposit_tx_id - created transaction $hash");
     }
 }

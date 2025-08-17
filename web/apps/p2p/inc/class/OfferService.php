@@ -99,6 +99,7 @@ class OfferService
 
     public static function setOfferDepositing($id, $deposit_tx_id)
     {
+        _log("setOfferDepositing: Offer #$id deposit_tx_id=$deposit_tx_id");
         DBService::runInTransaction(function() use ($id, $deposit_tx_id) {
             self::exec("update p2p_offers set status=?, deposit_tx_id = ? where id=?",[OfferService::STATUS_DEPOSITING,$deposit_tx_id, $id]);
             self::saveOfferLog($id);
@@ -218,24 +219,27 @@ class OfferService
     }
 
     static function cancelOpenOffer($offer, $status = OfferService::STATUS_CANCELED) {
-        _log("Returning funds to offer creator");
         $market = OfferService::getMarket($offer['market_id']);
         if($offer['type']==OfferService::TYPE_SELL) {
             $service = OfferService::getService($market['base_service']);
+            $symbol = $market['base'];
         } else {
             $service = OfferService::getService($market['quote_service']);
+            $symbol = $market['quote'];
         }
         $depositTx = $service->findTransaction($offer['deposit_tx_id']);
         if(!$depositTx) {
+            _log("cancelOpenOffer: $symbol Offer #{$offer['id']} - Cannot find deposit transaction ".$offer['deposit_tx_id']);
             throw new \Exception("Cannot find deposit transaction");
         }
         $amount = $depositTx['amount'];
         $toAddress = $depositTx['from'];
-        _log("Return deposited amount=".$amount." to src: ".$toAddress);
         $return_tx_id = $service->createPayment($amount,$toAddress,$offer);
         if(!$return_tx_id) {
+            _log("cancelOpenOffer: $symbol Offer #{$offer['id']} - Cannot create cancel transaction");
             throw new \Exception("Cannot create return transaction");
         }
+        _log("cancelOpenOffer: $symbol Offer #{$offer['id']} - Created cancel transaction $return_tx_id amount=$amount to src: ".$toAddress);
         DBService::runInTransaction(function() use ($status,$return_tx_id,$offer,&$res) {
             $res = self::exec('update p2p_offers set status=?, return_tx_id =?, canceled_at=now() where id=?',
                 [$status,$return_tx_id,$offer['id']]);
@@ -243,9 +247,9 @@ class OfferService
             OfferService::saveReturnTransferLog($offer['id'],$return_tx_id);
         });
         if(!$res) {
-            _log("Cannot update offer status");
+            _log("cancelOpenOffer: $symbol Offer #{$offer['id']} - Cannot update offer status");
         } else {
-            _log("Offer #".$offer['id']." updated status to: ".$status);
+            _log("cancelOpenOffer: $symbol Offer #{$offer['id']} - updated status to: ".$status);
         }
     }
 
@@ -331,7 +335,7 @@ class OfferService
     {
         $limit = 100;
         $counter = 0;
-        $quote_dust_amount = 0;
+        $quote_dust_amount = rand(1, 99) / pow(10, $service->getDecimals());
         while(true) {
             $counter++;
             if($counter >= $limit) {
@@ -357,7 +361,7 @@ class OfferService
     {
         $limit = 100;
         $counter = 0;
-        $base_dust_amount = 0;
+        $base_dust_amount = rand(1, 99) / pow(10, $service->getDecimals());
         while(true) {
             $counter++;
             if($counter >= $limit) {

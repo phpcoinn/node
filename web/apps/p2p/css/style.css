@@ -16,5 +16,43 @@ body #offers-book tr.type-buy:hover {
 body #offers-book tr.type-buy.sel-offers-book {
   background-color: rgba(var(--bs-success-rgb), 0.4) !important;
 }
+body .wait-process-div {
+  display: none;
+}
+body.wait-process-body .wait-process-div {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  display: flex !important;
+  flex-direction: column;
+}
+body.wait-process-body .wait-process-div .wait-process-div-inner {
+  background-color: var(--bs-primary);
+  padding: 1rem;
+  text-align: center;
+}
+body.wait-process-body .wait-process-div .wait-process-div-inner * {
+  color: #fff;
+}
+
+@keyframes flashFade {
+  0% {
+    background-color: var(--bs-primary);
+  } /* bright yellow */
+  100% {
+    background-color: transparent;
+  }
+}
+.table tbody tr.flash {
+  animation: flashFade 2s ease-out;
+}
+
+.flash {
+  animation: flashFade 2s ease-out;
+}
 
 /*# sourceMappingURL=style.css.map */

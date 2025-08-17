@@ -64,6 +64,14 @@ if($command == "checkAssetsDeposits") {
     }
     $service = OfferService::getService($asset['service']);
     CliService::processDepositTxId($service, $asset, $deposit_tx_id);
+} else if ($command == "returnDeposit") {
+    $symbol = @$argv[2];
+    $deposit_tx_id = @$argv[3];
+    if(!$symbol || !$deposit_tx_id) {
+        _log("Missing parameters");
+        exit;
+    }
+    CliService::returnDeposit($symbol, $deposit_tx_id);
 } else {
     _log("Unknown command $command");
 }

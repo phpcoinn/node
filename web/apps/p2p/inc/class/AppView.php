@@ -140,7 +140,10 @@ class AppView
         OfferService::storeUserCoinAddress(OfferService::userAddress(), $this->base, $this->base_receive_address);
         $this->clearTradeInputs();
         $this->success("Your offer has been created");
+        Pajax::executeScript('stopWaitProcess');
+        Pajax::executeScript('openHistoryTab');
         Pajax::executeScript('openOffer', $offer_id);
+        Pajax::executeScript('flashOfferRow', $offer_id);
     }
     function createSellOffer() {
         if(empty($this->sell_base_amount)) {
@@ -332,20 +335,26 @@ class AppView
         if($offer['type']==OfferService::TYPE_SELL) {
             $amount = $offer['base_amount'] + $offer['base_dust_amount'];
             $service = OfferService::getService($offer['base_service']);
+            $symbol = $offer['base'];
         } else {
             $amount = $offer['base_amount']*$offer['base_price'] + $offer['quote_dust_amount'];
             $service = OfferService::getService($offer['quote_service']);
+            $symbol = $offer['quote'];
         }
         $_SESSION['offer'] = $offer;
+        _log("depositFromWallet: $symbol Offer #".$offer['id']." amount=$amount");
         $service->depositFromWallet($amount, $offer);
     }
     function depositFromWalletCallback($data) {
         $offer = $_SESSION['offer'];
         if($offer['type']==OfferService::TYPE_SELL) {
             $service = OfferService::getService($offer['base_service']);
+            $symbol = $offer['base'];
         } else {
             $service = OfferService::getService($offer['quote_service']);
+            $symbol = $offer['quote'];
         }
+        _log("depositFromWalletCallback: $symbol Offer #".$offer['id']." data=".json_encode($data));
         $service->depositFromWalletCallback($offer, $data);
     }
     function transferFromWallet() {
@@ -420,11 +429,7 @@ class AppView
                             You have 2 hours to make a deposit. After that time offer will expire.
                         </p>
                         <div class="d-flex align-items-baseline gap-2 flex-wrap">
-                            <?php if($offer['type']==OfferService::TYPE_SELL) { ?>
-                                <a href="" class="btn btn-primary" onclick="paction(event, 'depositFromWallet'); return false">Deposit from wallet</a>
-                            <?php } else { ?>
-                                <a href="" class="btn btn-primary" onclick="paction(event, 'depositFromWallet', {}, {update: '#offer-modal .modal-content'}); return false">Deposit from wallet</a>
-                            <?php } ?>
+                            <a href="" class="btn btn-primary" onclick="depositFromWallet(event); return false">Deposit from wallet</a>
                             <p class="text-muted">
                                 You can also deposit directly from your wallet
                             </p>

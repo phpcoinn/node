@@ -71,6 +71,7 @@ function copyToClipboard(event, text) {
 function transferWithMetamask(total, usdtAddress, recipient, callback) {
     if (window.ethereum == null) {
         showError("MetaMask not installed");
+        stopWaitProcess();
         return;
     }
     window.provider = new ethers.BrowserProvider(window.ethereum);
@@ -88,10 +89,12 @@ function transferWithMetamask(total, usdtAddress, recipient, callback) {
         }).catch(err => {
             console.error(err)
             showError("Error creating wallet transaction");
+            stopWaitProcess();
         })
     }).catch(err => {
         console.error(err)
         showError("Error connecting metamask");
+        stopWaitProcess();
     })
 }
 
@@ -260,4 +263,45 @@ function closeBuyCard() {
 function closeSellCard() {
     $("#sell-card").removeClass("open")
     $("body .container").css("padding-bottom", 0)
+}
+
+function startWaitForProcess() {
+    $("body").addClass("wait-process-body");
+}
+function stopWaitProcess() {
+    $("body").removeClass("wait-process-body");
+}
+function openHistoryTab() {
+    $('#my-offers-card .nav-link').each(function() {
+       $(this).removeClass('active')
+    });
+    $('#my-offers-card .tab-pane').each(function() {
+       $(this).removeClass('active')
+    });
+    $("#my-offers-card .nav-link[href='#offers-history']").addClass('active')
+    $('#my-offers-card .tab-pane#offers-history').addClass('active')
+}
+function flashOfferRow(id) {
+    $('#my-offers-card .tab-pane#offers-history tr[data-offer-id="'+id+'"]').addClass('flash')
+    setTimeout(()=>{
+        $('#my-offers-card .tab-pane#offers-history tr[data-offer-id="'+id+'"]').removeClass('flash')
+    }, 2500)
+}
+
+function focusOffer(id) {
+    stopWaitProcess()
+    openHistoryTab()
+    flashOfferRow(id)
+    openOffer(id)
+}
+
+function cancelOffer(event, id) {
+    startWaitForProcess();
+    paction(event, 'cancelOffer', [id], {afterUpdate:()=>{
+        focusOffer(id)
+    }})
+}
+function depositFromWallet(event) {
+    startWaitForProcess();
+    paction(event, 'depositFromWallet', {}, {update: '#offer-modal .modal-content'})
 }

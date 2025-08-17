@@ -199,21 +199,21 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                                     <th class="text-end total">Total (<?= $this->quote ?>)</th>
                                 </tr>
                             </tbody>
-                            <?php if(!empty($lastOfferType)) { ?>
-                                <tbody class="price-tbody">
-                                    <tr>
-                                        <td colspan="3">
-                                            <div class="d-flex align-items-center gap-2">
-                                                        <span class="font-size-16 fw-bold <?= $lastOfferType == 'sell' ? 'text-danger' : 'text-success' ?>">
-                                                            <?= $lastPrice ?>
-                                                            <span class="fa fa-arrow-down"></span>
-                                                        </span>
+                            <tbody class="price-tbody">
+                                <tr>
+                                    <td colspan="3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <?php if(!empty($lastOfferType)) { ?>
+                                                <span class="font-size-16 fw-bold <?= $lastOfferType == 'sell' ? 'text-danger' : 'text-success' ?>">
+                                                    <?=  $lastPrice  ?>
+                                                    <span class="fa fa-arrow-down"></span>
+                                                </span>
                                                 <span class="text-muted"><?= $prevPrice ?></span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            <?php } ?>
+                                            <?php } ?>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
                             <tbody class="buy-tbody">
                                 <tr class="header d-none">
                                     <th>Price</th>
@@ -308,9 +308,9 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                         </div>
                         <?php if($loggedIn) { ?>
                             <?php if($this->sell_offer['type']==OfferService::TYPE_SELL) { ?>
-                                <button type="button" class="btn btn-success" onclick="paction(event, 'acceptSellOffer', <?=$this->sell_offer['id']?>)">Buy <?=$this->base ?></button>
+                                <button type="button" class="btn btn-success" onclick="paction(event, 'acceptSellOffer', <?=$this->sell_offer['id']?>, {beforeSend: startWaitForProcess})">Buy <?=$this->base ?></button>
                             <?php } else { ?>
-                                <button type="button" class="btn btn-success" onclick="paction(event, 'createBuyOffer')">Buy <?=$this->base ?></button>
+                                <button type="button" class="btn btn-success" onclick="paction(event, 'createBuyOffer', {}, {beforeSend: startWaitForProcess})">Buy <?=$this->base ?></button>
                             <?php } ?>
                         <?php } else { ?>
                             <button type="button" class="btn btn-secondary" disabled>Login to trade</button>
@@ -352,9 +352,9 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                         </div>
                         <?php if($loggedIn) { ?>
                             <?php if($this->sell_offer['type']==OfferService::TYPE_BUY) { ?>
-                                <button type="button" class="btn btn-danger" onclick="paction(event, 'acceptBuyOffer', <?=$this->sell_offer['id']?>)">Sell <?=$this->base ?></button>
+                                <button type="button" class="btn btn-danger" onclick="paction(event, 'acceptBuyOffer', <?=$this->sell_offer['id']?>, {beforeSend: startWaitForProcess} )">Sell <?=$this->base ?></button>
                             <?php } else { ?>
-                                <button type="button" class="btn btn-danger" onclick="paction(event, 'createSellOffer')">Sell <?=$this->base ?></button>
+                                <button type="button" class="btn btn-danger" onclick="paction(event, 'createSellOffer', {}, {beforeSend: startWaitForProcess})">Sell <?=$this->base ?></button>
                             <?php } ?>
                         <?php } else { ?>
                             <button type="button" class="btn btn-secondary" disabled>Login to trade</button>
@@ -521,7 +521,7 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                                                 <td>
                                                     <?php if($this->canCancelOffer($offer)) { ?>
                                                         <button type="button" class="btn btn-outline-danger btn-sm"
-                                                                onclick="if(!confirm('Are you sure you want to cancel this offer?')) return false; paction(event, 'cancelOffer', [<?= $offer['id'] ?>])">Cancel</button>
+                                                                onclick="if(!confirm('Are you sure you want to cancel this offer?')) return false; cancelOffer(event, <?= $offer['id'] ?>)">Cancel</button>
                                                     <?php } ?>
                                                     <?php if($this->canAcceptOffer($offer)) { ?>
                                                         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#offer-modal"
@@ -565,11 +565,11 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                                         <?php foreach ($myOffersHistory as $offer) {
                                             $quote_total = $offer['base_price'] * $offer['base_amount'];
                                             ?>
-                                            <tr class="<?php if ($offer['type']==OfferService::TYPE_SELL) { ?>text-danger<?php } else { ?>text-success<?php } ?>">
+                                            <tr data-offer-id="<?= $offer['id'] ?>" class="<?php if ($offer['type']==OfferService::TYPE_SELL) { ?>text-danger<?php } else { ?>text-success<?php } ?>">
                                                 <td>
                                                     <?php if($this->canCancelOffer($offer)) { ?>
                                                         <button type="button" class="btn btn-outline-danger btn-sm"
-                                                                onclick="if(!confirm('Are you sure you want to cancel this offer?')) return false; paction(event, 'cancelOffer', [<?= $offer['id'] ?>])">Cancel</button>
+                                                                onclick="if(!confirm('Are you sure you want to cancel this offer?')) return false; cancelOffer(event, <?= $offer['id'] ?>)">Cancel</button>
                                                     <?php } ?>
                                                     <?php if($this->canAcceptOffer($offer)) { ?>
                                                         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#offer-modal"
@@ -676,7 +676,7 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                         <?php if($this->canCancelOffer($offer)) { ?>
                             <button type="button" class="btn btn btn-danger" aria-label="Cancel offer" data-bs-dismiss="modal"
                                     onclick="if(!confirm('Are you sure you want to cancel this offer?')) return false;
-                                        paction(event, 'cancelOffer', [<?= $offer['id'] ?>])">
+                                            cancelOffer(event, <?= $offer['id'] ?>)">
                                 Cancel offer</button>
                         <?php } ?>
                         <?php if($this->canAcceptOffer($offer)) { ?>
@@ -694,6 +694,15 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
         </div>
     </div>
 
+    <div class="wait-process-div">
+        <div class="wait-process-div-inner">
+            <h3>Please wait for a process to complete ...</h3>
+            <h5>
+                Refresh or
+                <a href="" onclick="paction(event, 'logout')" class="text-decoration-underline">Logout</a> if a process takes a long time
+            </h5>
+        </div>
+    </div>
 
 <script type="text/javascript">
     document.addEventListener("DOMContentLoaded", function () {

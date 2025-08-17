@@ -73,8 +73,8 @@ class PhpCoinService implements AssetService
         $msg = json_encode([
             "app"=>"p2p-trader",
             "action"=>"return",
-            "offer"=>$offer['id'],
-            "accept_tx_id"=>$offer['accept_tx_id']
+            "offer"=>$offer['id'] ?? null,
+            "accept_tx_id"=>$offer['accept_tx_id'] ?? null,
         ]);
         $tx = new Transaction($public_key, $toAddress, $amount, TX_TYPE_SEND, time(), $msg);
         $tx->sign(self::getEscrowPrivateKey());

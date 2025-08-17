@@ -30,7 +30,6 @@ _log("Open p2p page from ".$_SERVER['REMOTE_ADDR']);
 //    $error = error_get_last();
 //    print_r($error);
 //});
-
 $loggedIn = isset($_SESSION['account']);
 ?>
 
@@ -49,7 +48,7 @@ $loggedIn = isset($_SESSION['account']);
     <link rel="stylesheet" href="/apps/common/css/preloader.min.css" type="text/css" />
     <link href="/apps/common/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="/apps/common/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
-    <link href="/apps/p2p/css/style.css" rel="stylesheet" type="text/css" />
+    <link href="/apps/p2p/css/style.css?v=2" rel="stylesheet" type="text/css" />
     <?php if (is_mobile()) { ?>
         <link href="/apps/p2p/css/mobile.css" rel="stylesheet" type="text/css" />
     <?php } ?>
@@ -118,7 +117,7 @@ $loggedIn = isset($_SESSION['account']);
         #controls { margin-bottom: 1rem; }
     </style>
 </head>
-<body class="p-0">
+<body class="p-0 <?php if(isset($_SESSION['waitProcessForComplete'])) { ?>wait-process-body<?php } ?>">
 
 <div class="container">
     <?php
