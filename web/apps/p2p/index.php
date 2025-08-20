@@ -139,7 +139,8 @@ $loggedIn = isset($_SESSION['account']);
     window.isMobile = <?= is_mobile() ? 'true' : 'false' ?>;
     $(function(){
         <?php if(isset($_REQUEST['callback'])) { ?>
-        paction(null, '<?= $_REQUEST['callback'] ?>', [<?= json_encode($_REQUEST) ?>], {view: '#p2p-app'});
+        startWaitForProcess()
+        paction(null, '<?= $_REQUEST['callback'] ?>', [<?= json_encode($_REQUEST) ?>], {view: '#p2p-app', onComplete: stopWaitProcess});
         <?php } ?>
     });
     <?php if(isset($_SESSION['offer_id'])) {

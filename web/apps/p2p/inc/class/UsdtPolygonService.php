@@ -168,8 +168,7 @@ class UsdtPolygonService implements AssetService
     {
         $hash = $data['hash'];
         OfferService::setAcceptedOfferTransferring($offer['id'], $hash);
-        $_SESSION['offer_id'] = $offer['id'];
-        Pajax::redirect(AppView::BASE_URL);
+        Pajax::executeScript('focusOffer', $offer['id']);
     }
 
     public function getEscrowAddress()

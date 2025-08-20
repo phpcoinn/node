@@ -64,11 +64,13 @@ class AppView
         if($offer['status']==OfferService::STATUS_CREATED) {
             OfferService::cancelCreatedOffer($offer['id']);
             $this->success("Offer #$offer_id has been cancelled");
+            Pajax::executeScript('focusOffer', $offer['id']);
             return;
         }
         if($offer['status']==OfferService::STATUS_OPEN) {
             OfferService::cancelOpenOffer($offer);
             $this->success("Offer #$offer_id has been cancelled");
+            Pajax::executeScript('focusOffer', $offer['id']);
             return;
         }
         if($offer['status']==OfferService::STATUS_ACCEPTED) {
@@ -140,10 +142,7 @@ class AppView
         OfferService::storeUserCoinAddress(OfferService::userAddress(), $this->base, $this->base_receive_address);
         $this->clearTradeInputs();
         $this->success("Your offer has been created");
-        Pajax::executeScript('stopWaitProcess');
-        Pajax::executeScript('openHistoryTab');
-        Pajax::executeScript('openOffer', $offer_id);
-        Pajax::executeScript('flashOfferRow', $offer_id);
+        Pajax::executeScript('focusOffer', $offer_id);
     }
     function createSellOffer() {
         if(empty($this->sell_base_amount)) {
@@ -206,7 +205,7 @@ class AppView
         OfferService::storeUserCoinAddress(OfferService::userAddress(), $this->quote, $this->quote_receive_address);
         $this->clearTradeInputs();
         $this->success("Your offer has been created");
-        Pajax::executeScript('openOffer', $offer_id);
+        Pajax::executeScript('focusOffer', $offer_id);
     }
 
     function clearTradeInputs() {
@@ -362,20 +361,26 @@ class AppView
         if($offer['type']==OfferService::TYPE_SELL) {
             $service = OfferService::getService($offer['quote_service']);
             $amount = $offer['base_amount']*$offer['base_price'] + $offer['quote_dust_amount'];
+            $symbol = $offer['base'];
         } else {
             $service = OfferService::getService($offer['base_service']);
             $amount = $offer['base_amount'] + $offer['base_dust_amount'];
+            $symbol = $offer['quote'];
         }
         $_SESSION['offer'] = $offer;
+        _log("transferFromWallet: $symbol Offer #".$offer['id']." amount=$amount");
         $service->transferFromWallet($amount, $offer);
     }
     function transferFromWalletCallback($data) {
         $offer = $_SESSION['offer'];
         if($offer['type']==OfferService::TYPE_SELL) {
             $service = OfferService::getService($offer['quote_service']);
+            $symbol = $offer['base'];
         } else {
             $service = OfferService::getService($offer['base_service']);
+            $symbol = $offer['quote'];
         }
+        _log("transferFromWalletCallback: $symbol Offer #".$offer['id']." data=".json_encode($data));
         $service->transferFromWalletCallback($offer, $data);
     }
 
@@ -593,7 +598,11 @@ class AppView
                         <h6>You need to transfer your <?= $transferCoin ?> to escrow address</h6>
                         <dl class="row my-3">
                             <dt class="col-sm-3">Transfer amount:</dt>
-                            <dd class="col-sm-9 fw-bold"><?= $transferAmount ?> <?= $transferCoin ?></dd>
+                            <dd class="col-sm-9 fw-bold">
+                                <span><?= $transferAmount ?></span>
+                                <span class="fa fa-copy" data-bs-toggle="tooltip" title="Copy" onclick="copyToClipboard(event, '<?=$transferAmount ?>')"
+                                      style="cursor: pointer"></span>
+                                <?= $transferCoin ?></dd>
                             <dt class="col-sm-3">Transfer to address:</dt>
                             <dd class="col-sm-9">
                                 <a class="fw-bold text-break" href="<?= $transferAddressLink ?>" target="_blank"><?=$transferAddress ?></a>
@@ -616,13 +625,8 @@ class AppView
                             You have 2 hours to make transfer. After that time offer will expire
                         </p>
                         <div class="d-flex align-items-baseline gap-2 flex-wrap">
-                            <?php if($offer['type']==OfferService::TYPE_SELL) { ?>
-                                <a href="" class="btn btn-primary" onclick="paction(event, 'transferFromWallet', {}, {update: '#offer-modal .modal-content'}); return false">Transfer from wallet</a>
-                            <?php } else { ?>
-                                <a href="" class="btn btn-primary" onclick="paction(event, 'transferFromWallet'); return false">Transfer from wallet</a>
-                            <?php  } ?>
-                                You can also transfer directly from your wallet
-                            </p>
+                            <a href="" class="btn btn-primary" onclick="transferFromWallet(event); return false">Transfer from wallet</a>
+                            You can also transfer directly from your wallet
                         </div>
                     </div>
                     <div class="text-sm-center text-start">
@@ -916,7 +920,8 @@ class AppView
         $this->clearTradeInputs();
         OfferService::storeUserCoinAddress(OfferService::userAddress(), $this->base, $this->base_receive_address);
         $this->success("You accepted offer");
-        Pajax::executeScript('openOffer', $offer['id']);
+        _log("acceptSellOffer: " .$offer['base']." User ".OfferService::userAddress()." accepted offer #".$offer['id']);
+        Pajax::executeScript('focusOffer', $offer['id']);
     }
 
     function acceptBuyOffer($offer_id) {
@@ -954,7 +959,8 @@ class AppView
         $this->clearTradeInputs();
         OfferService::storeUserCoinAddress(OfferService::userAddress(), $this->quote, $this->quote_receive_address);
         $this->success("You accepted offer");
-        Pajax::executeScript('openOffer', $offer['id']);
+        _log("acceptBuyOffer: " .$offer['base']." User ".OfferService::userAddress()." accepted offer #".$offer['id']);
+        Pajax::executeScript('focusOffer', $offer['id']);
     }
 
     function getChartData($params) {

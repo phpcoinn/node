@@ -142,6 +142,7 @@ class OfferService
             } else {
                 OfferService::cancelAcceptedBuyOffer($offer['id']);
             }
+            _log("cancelAcceptedOffer: ".$offer['base']." User ".OfferService::userAddress()." cancel accepted offer #{$offer['id']}");
             OfferService::saveOfferLog($offer['id']);
         });
     }
@@ -782,6 +783,12 @@ from (select m.id,
         $sql='select * from p2p_log l where l.offer_id = ? and l.action = ? order by l.created_at';
         $rows = self::rows($sql, [$id, 'offer']);
         return $rows;
+    }
+
+    public static function getDepositingOffers()
+    {
+        $sql="select * from p2p_offers o where o.status = ? order by o.created_at";
+        return self::rows($sql, ['depositing']);
     }
 
 }

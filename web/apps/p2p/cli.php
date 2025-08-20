@@ -54,6 +54,7 @@ if($command == "checkAssetsDeposits") {
     CliService::checkAssetsTransferring();
     CliService::checkExpiredAcceptedOffers();
     CliService::checkExpiredCreatedOffers();
+    CliService::checkDepositingOffers();
     CliService::checkAssetsDeposits();
 } else if ($command == "processDeposit") {
     $symbol = @$argv[2];

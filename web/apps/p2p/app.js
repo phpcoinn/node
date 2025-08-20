@@ -297,11 +297,27 @@ function focusOffer(id) {
 
 function cancelOffer(event, id) {
     startWaitForProcess();
-    paction(event, 'cancelOffer', [id], {afterUpdate:()=>{
-        focusOffer(id)
-    }})
+    paction(event, 'cancelOffer', [id], {onComplete: stopWaitProcess})
 }
 function depositFromWallet(event) {
     startWaitForProcess();
     paction(event, 'depositFromWallet', {}, {update: '#offer-modal .modal-content'})
+}
+function transferFromWallet(event) {
+    startWaitForProcess();
+    paction(event, 'transferFromWallet', {}, {update: '#offer-modal .modal-content'})
+}
+
+function createBuyOffer(event) {
+    paction(event, 'createBuyOffer', {}, {beforeSend: startWaitForProcess, onComplete: stopWaitProcess})
+}
+function createSellOffer(event) {
+    paction(event, 'createSellOffer', {}, {beforeSend: startWaitForProcess, onComplete: stopWaitProcess})
+}
+
+function acceptBuyOffer(event, id) {
+    paction(event, 'acceptBuyOffer', id, {beforeSend: startWaitForProcess, onComplete: stopWaitProcess} )
+}
+function acceptSellOffer(event, id) {
+    paction(event, 'acceptSellOffer', id, {beforeSend: startWaitForProcess, onComplete: stopWaitProcess} )
 }

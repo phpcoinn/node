@@ -124,6 +124,7 @@ class PhpCoinService implements AssetService
             $deposit_tx_id = $data['res'];
             $offer_id = $offer['id'];
             OfferService::setOfferDepositing($offer_id, $deposit_tx_id);
+            $_SESSION['offer_id']=$offer_id;
         }
         Pajax::redirect(AppView::BASE_URL);
     }

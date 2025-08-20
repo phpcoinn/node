@@ -178,9 +178,8 @@ class CliService
     public static function processTreansferred()
     {
         $offers = OfferService::getTransferredOffers();
-        _log("Processing treansferred offers count=".count($offers));
+        _log("Processing transferred offers count=".count($offers));
         foreach ($offers as $offer) {
-            _log("Processing treansferred offer #{$offer['id']}");
             $base_transfer_tx_id = null;
             $quote_transfer_tx_id = null;
             $market = OfferService::getMarket($offer['market_id']);
@@ -189,13 +188,15 @@ class CliService
                 $amount = $offer['base_amount'];
                 $toAddress = $offer['base_receive_address'];
                 $base_transfer_tx_id = $baseService->createPayment($amount, $toAddress, $offer);
+                $symbol = $market['base'];
                 if(!$base_transfer_tx_id) {
-                    _log("Failed to create PHPCoin Payment");
+                    _log("$symbol Offer #{$offer['id']} - Failed to create $symbol Payment");
                 } else {
                     $res = OfferService::setBaseTransferTxId($base_transfer_tx_id, $offer['id'], $market['base_asset_id']);
                     if(!$res) {
-                        _log("Failed to set base_transfer_tx_id");
+                        _log("$symbol Offer #{$offer['id']} - Failed to set base_transfer_tx_id");
                     }
+                    _log("$symbol Offer #{$offer['id']} - Created $symbol payment txid=$base_transfer_tx_id");
                 }
             }
             if(empty($offer['quote_transfer_tx_id'])) {
@@ -203,18 +204,20 @@ class CliService
                 $amount = $offer['base_amount'] * $offer['base_price'];
                 $toAddress = $offer['quote_receive_address'];
                 $quote_transfer_tx_id = $quoteService->createPayment($amount, $toAddress, $offer);
+                $symbol = $market['quote'];
                 if(!$quote_transfer_tx_id) {
-                    _log("Failed to create Coin Payment");
+                    _log("$symbol Offer #{$offer['id']} - Failed to create $symbol Payment");
                 } else {
                     $res = OfferService::setQuoteTransferTxId($quote_transfer_tx_id, $offer['id'], $market['quote_asset_id']);
                     if(!$res) {
-                        _log("Failed to set quote_transfer_tx_id");
+                        _log("$symbol Offer #{$offer['id']} - Failed to set quote_transfer_tx_id");
                     }
+                    _log("$symbol Offer #{$offer['id']} - Created $symbol payment txid=$quote_transfer_tx_id");
                 }
             }
             $res = OfferService::setOfferPaying($offer['id']);
             if(!$res) {
-                _log("Failed to set offer paying");
+                _log("Offer #{$offer['id']} - Failed to set offer paying");
             }
         }
     }
@@ -225,42 +228,52 @@ class CliService
         _log("Processing paying offers count=".count($offers));
         foreach ($offers as $offer) {
             $market = OfferService::getMarket($offer['market_id']);
+            $base_completed = false;
             if(empty($offer['base_transfer_tx_id'])) {
-                _log("No base_transfer_tx_id");
-                continue;
+                _log("Offer #{$offer['id']} - No base_transfer_tx_id");
+            } else {
+                $baseService = OfferService::getService($market['base_service']);
+                $tx = $baseService->findTransaction($offer['base_transfer_tx_id']);
+                if(!$tx) {
+                    _log("Offer #{$offer['id']} Not found php payment tx id");
+                } else {
+                    $block_height = $baseService->getLastHeight();
+                    $confirmations= $block_height - $tx['height'];
+                    $requiredConfirmations=$baseService->getConfirmations('paying');
+                    if($confirmations <= $requiredConfirmations) {
+                        _log("Offer #".$offer['id']." base=".$market['base']." tx=".$offer['base_transfer_tx_id']." Waiting confirmations $confirmations / ".$requiredConfirmations);
+                    } else {
+                        _log("Offer #".$offer['id']." base=".$market['base']." tx=".$offer['base_transfer_tx_id']." - completed");
+                        $base_completed = true;
+                    }
+                }
+
             }
-            $baseService = OfferService::getService($market['base_service']);
-            $tx = $baseService->findTransaction($offer['base_transfer_tx_id']);
-            if(!$tx) {
-                _log("Not found php payment tx id");
-                continue;
-            }
-            $block_height = $baseService->getLastHeight();
-            $confirmations= $block_height - $tx['height'];
-            $requiredConfirmations=$baseService->getConfirmations('paying');
-            if($confirmations <= $requiredConfirmations) {
-                _log("Offer #".$offer['id']." base=".$market['base']." tx=".$offer['base_transfer_tx_id']." Waiting confirmations $confirmations / ".$requiredConfirmations);
-                continue;
-            }
+
+            $quote_completed = false;
             if(empty($offer['quote_transfer_tx_id'])) {
-                _log("No quote_transfer_tx_id");
-                continue;
+                _log("Offer #{$offer['id']}  - No quote_transfer_tx_id");
+            } else {
+                $quoteService = OfferService::getService($market['quote_service']);
+                $tx = $quoteService->findTransaction($offer['quote_transfer_tx_id']);
+                if(!$tx) {
+                    _log("Offer #{$offer['id']} - Not found coin payment tx id");
+                } else {
+                    $block_height = $quoteService->getLastHeight();
+                    $confirmations= $block_height - $tx['height'];
+                    $requiredConfirmations=$baseService->getConfirmations('paying');
+                    if($confirmations <= $requiredConfirmations) {
+                        _log("Offer #".$offer['id']." quote=".$market['quote']." tx=".$offer['quote_transfer_tx_id']."  Waiting confirmations $confirmations / ".$requiredConfirmations);
+                    } else {
+                        _log("Offer #".$offer['id']." quote=".$market['quote']." tx=".$offer['quote_transfer_tx_id']." - completed");
+                        $quote_completed = true;
+                    }
+                }
             }
-            $quoteService = OfferService::getService($market['quote_service']);
-            $tx = $quoteService->findTransaction($offer['quote_transfer_tx_id']);
-            if(!$tx) {
-                _log('Not found coin payment tx id');
-                continue;
+            if($base_completed && $quote_completed) {
+                _log("Offer #".$offer['id']." payments completed - closed");
+                OfferService::setOfferClosed($offer);
             }
-            $block_height = $quoteService->getLastHeight();
-            $confirmations= $block_height - $tx['height'];
-            $requiredConfirmations=$baseService->getConfirmations('paying');
-            if($confirmations <= $requiredConfirmations) {
-                _log("Offer #".$offer['id']."  base=".$market['quote']." tx=".$offer['quote_transfer_tx_id']."  Waiting confirmations $confirmations / ".$requiredConfirmations);
-                continue;
-            }
-            _log("Offer #".$offer['id']." payments completed - closed");
-            OfferService::setOfferClosed($offer);
         }
     }
 
@@ -326,5 +339,37 @@ class CliService
         _log("$symbol Return deposit tx $deposit_tx_id amount = $amount to = $dst");
         $hash = $service->createPayment($amount, $dst, null);
         _log("$symbol Return deposit tx $deposit_tx_id - created transaction $hash");
+    }
+
+    public static function checkDepositingOffers()
+    {
+        $offers = OfferService::getDepositingOffers();
+        _log("Found ".count($offers)." depositing offers");
+        foreach($offers as $offer) {
+            $deposit_tx_id = $offer['deposit_tx_id'];
+            $market = OfferService::getMarket($offer['market_id']);
+            if($offer['type']==OfferService::TYPE_SELL) {
+                $symbol = $market['base'];
+                $service = OfferService::getService($market['base_service']);
+            } else {
+                $symbol = $market['quote'];
+                $service = OfferService::getService($market['quote_service']);
+            }
+            $depositTx = $service->findTransaction($deposit_tx_id);
+            if(!$depositTx) {
+                _log("$symbol Offer #{$offer['id']} Not found deposit tx $deposit_tx_id");
+                continue;
+            }
+            $block_height = $service->getLastHeight();
+            $last_height = $depositTx['height'];
+            $confirmations= $block_height - $last_height;
+            $requiredConfirmations=$service->getConfirmations('wait');
+            if($confirmations <= $requiredConfirmations) {
+                _log($symbol. " Offer #{$offer['id']} deposit {$deposit_tx_id} waiting confirmations $confirmations/".$requiredConfirmations);
+                return;
+            }
+            OfferService::setOfferOpen($offer['id']);
+            _log($symbol. " Offer #{$offer['id']} Deposit #{$deposit_tx_id} - set status opened");
+        }
     }
 }

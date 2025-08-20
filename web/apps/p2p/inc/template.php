@@ -308,9 +308,9 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                         </div>
                         <?php if($loggedIn) { ?>
                             <?php if($this->sell_offer['type']==OfferService::TYPE_SELL) { ?>
-                                <button type="button" class="btn btn-success" onclick="paction(event, 'acceptSellOffer', <?=$this->sell_offer['id']?>, {beforeSend: startWaitForProcess})">Buy <?=$this->base ?></button>
+                                <button type="button" class="btn btn-success" onclick="acceptSellOffer(event,<?=$this->sell_offer['id']?>)">Buy <?=$this->base ?></button>
                             <?php } else { ?>
-                                <button type="button" class="btn btn-success" onclick="paction(event, 'createBuyOffer', {}, {beforeSend: startWaitForProcess})">Buy <?=$this->base ?></button>
+                                <button type="button" class="btn btn-success" onclick="createBuyOffer(event)">Buy <?=$this->base ?></button>
                             <?php } ?>
                         <?php } else { ?>
                             <button type="button" class="btn btn-secondary" disabled>Login to trade</button>
@@ -352,9 +352,9 @@ $tradeHistory = OfferService::getTradeHistory($this->market_id);
                         </div>
                         <?php if($loggedIn) { ?>
                             <?php if($this->sell_offer['type']==OfferService::TYPE_BUY) { ?>
-                                <button type="button" class="btn btn-danger" onclick="paction(event, 'acceptBuyOffer', <?=$this->sell_offer['id']?>, {beforeSend: startWaitForProcess} )">Sell <?=$this->base ?></button>
+                                <button type="button" class="btn btn-danger" onclick="acceptBuyOffer(event, <?=$this->sell_offer['id']?>)">Sell <?=$this->base ?></button>
                             <?php } else { ?>
-                                <button type="button" class="btn btn-danger" onclick="paction(event, 'createSellOffer', {}, {beforeSend: startWaitForProcess})">Sell <?=$this->base ?></button>
+                                <button type="button" class="btn btn-danger" onclick="createSellOffer(event)">Sell <?=$this->base ?></button>
                             <?php } ?>
                         <?php } else { ?>
                             <button type="button" class="btn btn-secondary" disabled>Login to trade</button>
