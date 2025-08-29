@@ -34,7 +34,7 @@ class Pajax
             self::$options = json_decode(base64_decode($pAjax['options']), true);
             $action = $pAjax['action'];
             $actionData = $pAjax['actionData'];
-            self::$process = $pAjax['process'];
+            self::$process = @$pAjax['process'];
             if(!class_exists($class)) {
                 $class_file = dirname($_SERVER['SCRIPT_FILENAME']) ."/inc/class/$class.php";
                 if(file_exists($class_file)) {
@@ -43,9 +43,11 @@ class Pajax
             }
             self::$ajax = true;
             self::$class = new $class();
-            foreach($viewData as $k => $v) {
-                if(property_exists(self::$class, $k)) {
-                    self::$class->$k = $v;
+            if(is_array($viewData)) {
+                foreach($viewData as $k => $v) {
+                    if(property_exists(self::$class, $k)) {
+                        self::$class->$k = $v;
+                    }
                 }
             }
             foreach($_POST as $k => $v) {
