@@ -253,10 +253,10 @@ global $btcPrice, $usdPrice;
         <div class="card card-h-100">
             <div class="card-body p-3">
                 <div class="row align-items-center">
-                    <div class="col-12">
+                    <div class="col-9">
                         <i class="fas fa-dollar-sign  me-1 h4"></i>
                         <span class="text-muted mb-3 lh-1 text-truncate h4">
-                            <a href="https://xeggex.com/market/PHP_USDT" target="_blank">Price</a>
+                            <a href="https://klingex.io/trade/PHP-USDT?ref=3436CA42" target="_blank">Price</a>
                         </span>
                         <h2 class="my-2">
                             <?php echo empty(floatval($btcPrice)) ? "-" : $btcPrice ?> ₿
@@ -264,6 +264,13 @@ global $btcPrice, $usdPrice;
                         <div class="text-nowrap">
                             <span class="text-muted font-size-13"><?php echo empty(floatval($usdPrice)) ? "-" : $usdPrice ?> $</span>
                         </div>
+                    </div>
+                    <div class="col-3">
+                        Trade on
+                        <a href="https://klingex.io/trade/PHP-USDT?ref=3436CA42" target="_blank">
+                            <img src="https://klingex.io/symbol.svg" style="width:50px;height:50px"/>
+                        </a>
+                        KlingEx
                     </div>
                 </div>
             </div>

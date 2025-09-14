@@ -29,7 +29,7 @@ class Pajax
     {
         if (isset($_SERVER['HTTP_P_AJAX'])) {
             $pAjax = json_decode(base64_decode($_SERVER['HTTP_P_AJAX']), true);
-            $viewData = json_decode(base64_decode($pAjax['viewData']), true);
+            $viewData = unserialize(base64_decode($pAjax['viewData']));
             $class = $pAjax['class'];
             self::$options = json_decode(base64_decode($pAjax['options']), true);
             $action = $pAjax['action'];
@@ -42,14 +42,14 @@ class Pajax
                 }
             }
             self::$ajax = true;
-            self::$class = new $class();
-            if(is_array($viewData)) {
-                foreach($viewData as $k => $v) {
-                    if(property_exists(self::$class, $k)) {
-                        self::$class->$k = $v;
-                    }
-                }
-            }
+            self::$class = $viewData;
+//            if(is_array($viewData)) {
+//                foreach($viewData as $k => $v) {
+//                    if(property_exists(self::$class, $k)) {
+//                        self::$class->$k = $v;
+//                    }
+//                }
+//            }
             foreach($_POST as $k => $v) {
                 if(property_exists(self::$class, $k)) {
                     self::$class->$k = $v;
@@ -71,7 +71,7 @@ class Pajax
                 self::render();
                 $content = ob_get_contents();
                 if(self::$class) {
-                    $data = base64_encode(json_encode(self::$class));
+                    $data = base64_encode(serialize(self::$class));
                 } else {
                     $data = base64_encode(json_encode(self::$data));
                 }
@@ -157,7 +157,7 @@ class Pajax
         ?>
         <div id="<?= $view ?>" data-p-view="<?= $view ?>" data-p-class="<?= get_class(self::$class) ?>"
              data-p-options="<?= base64_encode(json_encode(self::$options)) ?>"
-             data-p-view-data="<?= base64_encode(json_encode(self::getData())) ?>" class="<?= self::$options['class'] ?? '' ?>">
+             data-p-view-data="<?= base64_encode(serialize(self::getData())) ?>" class="<?= self::$options['class'] ?? '' ?>">
             <?php echo $body ?>
         </div>
         <?php

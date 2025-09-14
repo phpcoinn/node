@@ -141,6 +141,7 @@ function pem2hex($data)
 function hex2pem($data, $is_private_key = false)
 {
     $data = hex2bin($data);
+    $data = base58_encode($data);
     $data = base64_encode($data);
     if ($is_private_key) {
         return "-----BEGIN EC PRIVATE KEY-----\n".$data."\n-----END EC PRIVATE KEY-----";
