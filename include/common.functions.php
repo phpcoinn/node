@@ -31,6 +31,28 @@ function ec_sign($data, $key, $chain_id = CHAIN_ID)
 	return base58_encode($signature);
 }
 
+if(!function_exists("ec_verify")) {
+    function ec_verify($data, $signature, $key, $chain_id = CHAIN_ID)
+    {
+        // transform the base58 key to PEM
+        $public_key = coin2pem($key);
+
+        $data = $chain_id . $data;
+
+        $signature = base58_decode($signature);
+
+        $pkey = openssl_pkey_get_public($public_key);
+
+        $res = openssl_verify($data, $signature, $pkey, OPENSSL_ALGO_SHA256);
+
+        _log("Sign: verify signature for data: $data chain_id=$chain_id res=$res", 5);
+        if ($res === 1) {
+            return true;
+        }
+        return false;
+    }
+}
+
 // converts the key in base58 to PEM
 function coin2pem($data, $is_private_key = false)
 {
@@ -157,6 +179,20 @@ function valid($address)
     $checksum=substr($checksumCalc3, 0, 8);
     $valid = $addressChecksum == $checksum;
     return $valid;
+}
+
+function getAddress($public_key) {
+    if(empty($public_key)) return null;
+    $hash1=hash('sha256', $public_key);
+    $hash2=hash('ripemd160',$hash1);
+    $baseAddress=CHAIN_PREFIX.$hash2;
+    $checksumCalc1=hash('sha256', $baseAddress);
+    $checksumCalc2=hash('sha256', $checksumCalc1);
+    $checksumCalc3=hash('sha256', $checksumCalc2);
+    $checksum=substr($checksumCalc3, 0, 8);
+    $addressHex = $baseAddress.$checksum;
+    $address = base58_encode(hex2bin($addressHex));
+    return $address;
 }
 
 function get_sc_disable_functions() {

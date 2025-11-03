@@ -99,6 +99,6 @@ class SmartContractMap implements ArrayAccess, Countable
     }
 
     public function query($sql, $params) {
-        return SmartContractBase::query($this->address, $this->name, $this->height, $sql, $params);
+        return SmartContractBase::query($this->address, $sql, $params);
     }
 }

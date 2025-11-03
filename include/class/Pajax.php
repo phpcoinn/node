@@ -29,7 +29,6 @@ class Pajax
     {
         if (isset($_SERVER['HTTP_P_AJAX'])) {
             $pAjax = json_decode(base64_decode($_SERVER['HTTP_P_AJAX']), true);
-            $viewData = unserialize(base64_decode($pAjax['viewData']));
             $class = $pAjax['class'];
             self::$options = json_decode(base64_decode($pAjax['options']), true);
             $action = $pAjax['action'];
@@ -42,6 +41,7 @@ class Pajax
                 }
             }
             self::$ajax = true;
+            $viewData = unserialize(base64_decode($pAjax['viewData']));
             self::$class = $viewData;
 //            if(is_array($viewData)) {
 //                foreach($viewData as $k => $v) {
