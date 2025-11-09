@@ -408,7 +408,7 @@ class Api
 	 * @apiParam {string} public_key Sender's public key
 	 * @apiParam {string} fee Transaction fee. Must be 0
 	 * @apiParam {string} [signature] Transaction signature. It's recommended that the transaction is signed before being sent to the node to avoid sending your private key to the node.
-	 * @apiParam {numeric} [date] Transaction's date in UNIX TIMESTAMP format. Requried when the transaction is pre-signed.
+	 * @apiParam {numeric} [date] Transaction's date in UNIX TIMESTAMP format. Required when the transaction is pre-signed.
 	 * @apiParam {string} [message] A message to be included with the transaction. Maximum 128 chars.
 	 * @apiParam {numeric} [type] The type of the transaction. 1 to send coins.
 	 *
@@ -568,8 +568,8 @@ class Api
 	 * @apiSuccess {string} hostname Peer hostname
 	 * @apiSuccess {numeric} blacklisted UNIX timestamp until peer is blacklisted
 	 * @apiSuccess {numeric} ping UNIX timestamp when peer was last pinged
-	 * @apiSuccess {numeric} fails Number of failed conections to peer
-	 * @apiSuccess {numeric} stuckfail Number of failed stuck conentions to peer
+	 * @apiSuccess {numeric} fails Number of failed connections to peer
+	 * @apiSuccess {numeric} stuckfail Number of failed stuck connections to peer
 	 * @apiSuccess {numeric} height Blockchain height of peer
 	 * @apiSuccess {string} appshash Hash of peer apps
 	 * @apiSuccess {numeric} score Peer node score
@@ -590,7 +590,7 @@ class Api
      * @apiSuccess {string} [public_key] Public key of masternode
      * @apiSuccess {numeric} [height] Height at which masternode is created
      * @apiSuccess {string} [ip] IP address of masternode
-     * @apiSuccess {numeric} [win_height] Last height whem masternode received reward
+	 * @apiSuccess {numeric} [win_height] Last height when masternode received reward
      * @apiSuccess {string} [signature] current masternode signature
      * @apiSuccess {string} [id] Address of masternode
      * @apiSuccess {numeric} [collateral] Locked collateral in masternode
@@ -634,7 +634,7 @@ class Api
      * @apiSuccess {string} [public_key] Public key of masternode
      * @apiSuccess {numeric} [height] Height at which masternode is created
      * @apiSuccess {string} [ip] IP address of masternode
-     * @apiSuccess {numeric} [win_height] Last height whem masternode received reward
+	 * @apiSuccess {numeric} [win_height] Last height when masternode received reward
      * @apiSuccess {string} [signature] current masternode signature
      * @apiSuccess {string} [id] Address of masternode
      * @apiSuccess {numeric} [collateral] Locked collateral in masternode
