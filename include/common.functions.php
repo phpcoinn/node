@@ -135,7 +135,7 @@ function base58_encode($string)
 	return (string)$output;
 }
 
-// convers hex to base58
+// converts hex to base58
 function hex2coin($hex)
 {
 	$data = hex2bin($hex);

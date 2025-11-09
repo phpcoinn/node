@@ -6,7 +6,7 @@ Symbol: PHP
 
 Block time: 60 sec
 
-Consensys: EPOW (Elapsed proof of Work)
+Consensus: EPOW (Elapsed proof of Work)
 
 Address generation:
 
