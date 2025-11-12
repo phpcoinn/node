@@ -24,7 +24,7 @@
   "apidoc": {
     "title": "PHPCoin Node API",
     "url": "",
-    "sampleUrl": "https://main1.phpcoin.net"
+    "sampleUrl": "https://node1.phpcoin.net"
   },
   "scripts": {
     "build_doc": "rm -rf ../web/doc && node_modules/.bin/apidoc -o ../web/doc/ -i ../include -f Api.php",

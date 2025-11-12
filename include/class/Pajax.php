@@ -14,8 +14,8 @@ class Pajax
 
     static function app($class, $options = [])
     {
-        self::$options = $options;
         self::$class = new $class();
+        self::$options = $options;
         self::processAjax();
         try {
         self::render();
@@ -68,7 +68,6 @@ class Pajax
             }
             ob_clean();
             ob_start();
-            try {
                 self::render();
                 $content = ob_get_contents();
                 if(self::$class) {

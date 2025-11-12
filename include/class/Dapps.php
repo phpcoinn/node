@@ -484,11 +484,11 @@ class Dapps extends Task
 			$fn_name = $actionObj['fn_name'];
 			$params = $actionObj['params'];
 			$dapps_fn_file = ROOT . "/include/dapps.local.inc.php";
-			if(!file_exists($dapps_fn_file)) {
-				die("Dapps local functions file not exists");
-			}
-                require_once $dapps_fn_file;
-			if(!function_exists($fn_name)) {
+            if(!file_exists($dapps_fn_file)) {
+                die("Dapps local functions file not exists");
+            }
+            require_once $dapps_fn_file;
+            if(!function_exists($fn_name)) {
 				die("Called function $fn_name not exists");
 			}
 			call_user_func($fn_name, ...$params);

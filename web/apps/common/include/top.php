@@ -229,11 +229,16 @@ $redirect=$_SERVER['REQUEST_URI'];
                                     <i class="fas fa-faucet me-2"></i><span data-key="t-dashboards">Faucet</span>
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link dropdown-toggle arrow-none" href="https://trade.phpcoin.net" id="topnav-p2p" role="button" target="_blank">
-                                    <i class="fas fa-chart-line me-2"></i><span data-key="t-p2p">P2P Trade</span>
-                                    <span class="badge bg-success">New</span>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-pages" role="button">
+                                    <i class="fas fa-network-wired me-2"></i><span data-key="t-peers">Peers</span> <div class="arrow-down"></div>
                                 </a>
+                                <div class="dropdown-menu" aria-labelledby="topnav-pages" id="peers-menu">
+                                    <?php foreach($menuPeers as $peer) { ?>
+                                        <a href="<?php echo $peer['hostname'] . $_SERVER['REQUEST_URI'] ?>" class="dropdown-item <?php if ($peer['ip'] == $_SERVER['SERVER_ADDR']) { ?>active<?php } ?>" data-key="t-calendar"><?php echo $peer['hostname'] ?></a>
+                                    <?php } ?>
+                                </div>
                             </li>
                         </ul>
                         <ul class="navbar-nav d-flex">
