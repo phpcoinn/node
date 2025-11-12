@@ -2,7 +2,7 @@
 
 require_once __DIR__ . "/common.functions.php";
 
-// simple santization function to accept only alphanumeric characters
+// simple sanitization function to accept only alphanumeric characters
 function san($a, $b = "")
 {
     $a = preg_replace("/[^a-zA-Z0-9".$b."]/", "", $a??"");
