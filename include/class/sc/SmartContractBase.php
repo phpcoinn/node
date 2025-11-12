@@ -247,16 +247,23 @@ class SmartContractBase
         return $res;
     }
 
-    static function query($address, $name, $height, $sql, $params =[]) {
+    static function query($address, $sql, $params =[]) {
         $db = SmartContractContext::$db;
-
-        $sql="select s.var_key, s.var_value from smart_contract_state s 
-               where s.sc_address = :sc_address and s.variable = :variable and s.height <= :height $sql order by s.var_key";
+        $final_sql="with s as (select ss.variable, ss.var_key, ss.var_value
+               from (select s.sc_address, s.variable, ifnull(s.var_key, 'null') as var_key, max(s.height) as height
+                     from smart_contract_state s
+                     where s.sc_address = :sc_address
+                     group by s.variable, s.var_key, s.sc_address) as last_vars
+                        join smart_contract_state ss
+                             on (ss.sc_address = last_vars.sc_address and ss.variable = last_vars.variable
+                                 and ifnull(ss.var_key, 'null') = last_vars.var_key and ss.height = last_vars.height))
+                                 select *
+                from s
+                where 1=1 ";
+        $final_sql.= " $sql";
         $all_params = $params;
         $all_params[":sc_address"] = $address;
-        $all_params[":variable"] = $name;
-        $all_params[":height"] = $height;
-        $rows=$db->run($sql, $all_params);
+        $rows=$db->run($final_sql, $all_params);
         $list = [];
         foreach ($rows as $row) {
             $key = $row['var_key'];

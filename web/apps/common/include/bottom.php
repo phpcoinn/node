@@ -18,6 +18,8 @@ $updateAvb = $maxPeerBuildNumber > $currentVersion;
                 <?php if ($updateAvb) { ?>
                     <span class="badge rounded-pill bg-success">Update available!</span>
                 <?php } ?>
+                |
+                Trade on <a href="https://klingex.io/trade/PHP-USDT?ref=3436CA42" target="_blank">KlingEx</a>
             </div>
             <div class="col-sm-6">
                 <div class="text-center text-md-end d-flex justify-content-center justify-content-sm-end align-items-center mb-2 mb-sm-0">

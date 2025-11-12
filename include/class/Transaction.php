@@ -702,6 +702,10 @@ class Transaction
 				throw new Exception("{$this->val} - Value < 0", 3);
 			}
 
+            if(!isSafeVal($this->val)) {
+                throw new Exception("Transaction value is not safe number, please split its amount", 3);
+            }
+
 	        // the value must be >=0
 	        if ($this->val <= 0 && in_array($phase, ["genesis","launch","mining","combined","deflation","increasing","decreasing","main"]) && $height > UPDATE_10_ZERO_TX_NOT_ALLOWED) {
 				if($this->type != TX_TYPE_SC_CREATE && $this->type != TX_TYPE_SC_EXEC && $this->type != TX_TYPE_SC_SEND) {
@@ -826,7 +830,7 @@ class Transaction
 	        $id = $this->hash();
 	        // the hash does not match our regenerated hash
 	        if ($thisId != $id) {
-		        throw new Exception("{$this->id} - $id - Invalid hash");
+		        throw new Exception("$thisId - $id - Invalid hash");
 	        }
 
 	        //verify the ecdsa signature
@@ -835,9 +839,9 @@ class Transaction
                     throw new Exception("{$this->id} - Invalid signature - $base");
                 }
             } else {
-	        if (!Account::checkSignature($base, $this->signature, $this->publicKey, $height)) {
-		        throw new Exception("{$this->id} - Invalid signature - $base");
-	        }
+                if (!Account::checkSignature($base, $this->signature, $this->publicKey, $height)) {
+                    throw new Exception("{$this->id} - Invalid signature - $base");
+                }
             }
 
 

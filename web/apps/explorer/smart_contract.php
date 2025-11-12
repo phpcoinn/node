@@ -455,7 +455,12 @@ global $loggedIn;
                                         <span class="fa fa-exclamation-triangle text-danger"></span>
                                         <?php echo $sv_view_err ?>
                                     <?php } else { ?>
-                                        <span><?php echo $sv_view_res ?></span>
+                                        <?php if( is_array($sv_view_res) ) { ?>
+                                            <span><?php echo json_encode($sv_view_res) ?></span>
+                                        <?php } else { ?>
+                                            <span><?php echo $sv_view_res ?></span>
+                                        <?php } ?>
+
                                     <?php } ?>
 
                                 <?php } ?>

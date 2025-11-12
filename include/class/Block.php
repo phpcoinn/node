@@ -56,16 +56,16 @@ class Block
 		global $db;
 		$data = [];
 		$sql="select 1 from blocks b where b.masternode = :masternode limit 1";
-		$data['is_masternode']=$db->single($sql, [":masternode"=>$address]) == 1;
-		$sql="select 1 from blocks b where b.generator = :generator limit 1";
-		$data['is_generator']=$db->single($sql, [":generator"=>$address]) == 1;
-		$sql="select 1 from blocks b where b.miner = :miner limit 1";
-		$data['is_miner']=$db->single($sql, [":miner"=>$address]) == 1;
+        $data['is_masternode']=$db->single($sql, [":masternode"=>$address]) == 1;
+        $sql="select 1 from blocks b where b.generator = :generator limit 1";
+        $data['is_generator']=$db->single($sql, [":generator"=>$address]) == 1;
+        $sql="select 1 from blocks b where b.miner = :miner limit 1";
+        $data['is_miner']=$db->single($sql, [":miner"=>$address]) == 1;
         $sql="select 1 from transactions t where t.dst = :address and t.type = 0 and t.message = 'stake' limit 1";
         $data['is_stake']=$db->single($sql, [":address"=>$address]) == 1;
         $sql="select 1 from smart_contracts s where s.address = :address";
         $data['is_smart_contract']=$db->single($sql, [":address"=>$address]) == 1;
-		return $data;
+        return $data;
 	}
 
 	public function add(&$error = null, $syncing=false)

@@ -30,10 +30,10 @@ class Wallet
         $this->namedAgs = process_cmdline_args($argv);
         $this->checkImport();
 		$this->openWallet();
-		if ((empty($this->arg1) && file_exists($this->wallet))
-			|| @$this->arg1 == "help" || @$this->arg1 == "-h" || @$this->arg1 == "--help") {
-			$this->help();
-		}
+        if ((empty($this->arg1) && file_exists($this->wallet))
+            || @$this->arg1 == "help" || @$this->arg1 == "-h" || @$this->arg1 == "--help") {
+            $this->help();
+        }
 		$this->processCommand();
 	}
 

@@ -2,7 +2,7 @@
 
 require_once __DIR__ . "/common.functions.php";
 
-// simple santization function to accept only alphanumeric characters
+// simple sanitization function to accept only alphanumeric characters
 function san($a, $b = "")
 {
     $a = preg_replace("/[^a-zA-Z0-9".$b."]/", "", $a??"");
@@ -141,6 +141,7 @@ function pem2hex($data)
 function hex2pem($data, $is_private_key = false)
 {
     $data = hex2bin($data);
+    $data = base58_encode($data);
     $data = base64_encode($data);
     if ($is_private_key) {
         return "-----BEGIN EC PRIVATE KEY-----\n".$data."\n-----END EC PRIVATE KEY-----";
@@ -465,4 +466,38 @@ function process_cmdline_args($argv) {
         }
     }
     return $params;
+}
+
+function isSafeVal($value) {
+    // Normalize to string
+    $value = (string)$value;
+
+    // Split into whole and fractional parts
+    if (strpos($value, '.') !== false) {
+        [$whole, $fraction] = explode('.', $value, 2);
+    } else {
+        $whole = $value;
+        $fraction = '';
+    }
+
+    // Remove any leading/trailing zeros from whole part
+    $whole = ltrim($whole, '0');
+    if ($whole === '') $whole = '0';
+
+    // Max safe integer for float in PHP/IEEE-754 is 2^53 = 9007199254740992
+    // That's 15-16 decimal digits total precision
+    $digitsBeforeDecimal = strlen($whole);
+
+    // If whole part has more than 15 digits → unsafe
+    if ($digitsBeforeDecimal > 15) {
+        return false;
+    }
+
+    // Total significant digits before + after decimal should not exceed 15
+    $significant = strlen(rtrim($whole . $fraction, '0'));
+    if ($significant > 15) {
+        return false;
+    }
+
+    return true;
 }
