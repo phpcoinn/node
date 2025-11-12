@@ -127,7 +127,7 @@ function dapps_get_id() {
 }
 
 /**
- * Retreives base url of currently running dapp
+ * Retrieves base url of currently running dapp
  * @param string $url - url to append to dapps base url. If not specified current url is returned
  * @param boolean $full - return complete url with scheme and port
  * @return string
