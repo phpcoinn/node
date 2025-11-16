@@ -2,7 +2,7 @@
 
 This guide outlines the essential structural and utility rules for creating a functional smart contract in the PHPCoin environment.
 
-## ⚙️ 1. Structural Rules
+## ⚙️ Structural Rules
 
 Every PHPCoin smart contract is a PHP class with specific structural requirements. These rules ensure that the contract can be correctly deployed and executed by the blockchain.
 
@@ -12,7 +12,7 @@ Every PHPCoin smart contract is a PHP class with specific structural requirement
 | **Class Name Constant** | A `const SC_CLASS_NAME` must be defined, holding the name of the class. | `const SC_CLASS_NAME = "YourContract";` |
 | **Deployment Method** | The `deploy()` method, annotated with `@SmartContractDeploy`, is executed once upon deployment to set the contract's initial state. | `/** @SmartContractDeploy */ public function deploy($param) { ... }` |
 
-## 💾 2. State Management
+## 💾 State Management
 
 PHPCoin smart contracts manage persistent state through class properties annotated with specific docblock tags. These properties are automatically backed by the blockchain's state database.
 
@@ -32,7 +32,7 @@ Interaction with state variables is designed to be intuitive, using standard PHP
 | **Write (Map)** | `$this->balances[$userAddress] = 100;` | Set a value for a key in a `SmartContractMap`. |
 | **Read (Map)** | `$userBalance = $this->balances[$userAddress];` | Get the value for a key from a `SmartContractMap`. |
 
-## 🏷️ 3. Annotations
+## 🏷️ Annotations
 
 PHPCoin uses docblock annotations to define the type and behavior of smart contract methods and properties. These annotations are essential for the PHPCoin runtime to correctly interpret and execute the contract's code.
 
@@ -44,7 +44,7 @@ PHPCoin uses docblock annotations to define the type and behavior of smart contr
 | **`@SmartContractVar`** | Declares a public property as a persistent, single-value state variable. | `/** @SmartContractVar */ public $owner;` |
 | **`@SmartContractMap`** | Declares a public property of type `SmartContractMap` as a persistent key-value store. | `/** @SmartContractMap */ public SmartContractMap $balances;` |
 
-## 🛡️ 4. Core Transaction Templates
+## 🛡️ Core Transaction Templates
 
 All methods marked with `@SmartContractTransact` should include checks to ensure the integrity and security of the contract. The following templates cover the most common requirements.
 
@@ -56,7 +56,7 @@ All methods marked with `@SmartContractTransact` should include checks to ensure
 | **Data Size Limit** | `if (strlen($input) > MAX_INPUT_SIZE) { $this->error("INPUT_TOO_LONG"); }` | Enforces storage and processing limits on user-provided data. |
 | **Non-Overwrite** | `if ($this->records[$id] !== null) { $this->error("RECORD_EXISTS"); }` | Prevents the accidental or malicious overwriting of existing state. |
 
-## 🔩 5. Built-In Utilities
+## 🔩 Built-In Utilities
 
 The `SmartContractBase` class provides a set of properties and methods for accessing transaction data, controlling execution, and interacting with the blockchain environment.
 
@@ -72,7 +72,7 @@ The `SmartContractBase` class provides a set of properties and methods for acces
 | **Inter-Contract** | `void $this->execSmartContract(string $contract, string $method, array $params)` | Executes a state-changing transaction on another smart contract. |
 | **Outgoing TX** | `Transaction::send(string $to, float $amount)` | Executes an outgoing transaction from the contract's address to another address. |
 
-## 🪙 6. ERC20 Token Templates
+## 🪙 ERC20 Token Templates
 
 The repository includes a set of pre-built ERC20 token templates that you can extend to create your own tokens. These templates are located in the `include/templates/tokens` directory.
 
@@ -83,11 +83,11 @@ The repository includes a set of pre-built ERC20 token templates that you can ex
 | `erc_20_token_mintable.php` | An ERC20 token that allows for the creation of new tokens, increasing the total supply. |
 | `erc_20_token_burnable_mintable.php` | An ERC20 token that is both burnable and mintable. |
 
-## 📦 7. Deployment
+## 📦 Deployment
 
 This section covers the tools and procedures for deploying your smart contracts.
 
-### 7.1. Compiling the Contract
+### Compiling the Contract
 
 The `utils/sc_compile.php` script is used to package your smart contract's source code into a `.phar` file.
 
@@ -101,7 +101,7 @@ php utils/sc_compile.php [contract_address] [source_file.php] [output_file.phar]
 -   `[source_file.php]`: The path to your smart contract's PHP source file.
 -   `[output_file.phar]`: The path where the compiled `.phar` file will be saved.
 
-### 7.2. Deploying the Contract
+### Deploying the Contract
 
 After compiling the contract, you need to create a deployment transaction. This is done by creating a separate PHP script that uses the `SCUtil` class.
 
@@ -128,7 +128,7 @@ $tx_id = SCUtil::sendTx($node, $tx);
 echo "Deployment transaction sent: " . $tx_id . "\n";
 ```
 
-## 🛠️ 8. Command-Line Tools
+## 🛠️ Command-Line Tools
 
 The `utils/` directory contains several PHP scripts for interacting with smart contracts from the command line. The most important of these is `scutil.php`, which provides a set of tools for deploying and managing contracts.
 
@@ -146,11 +146,11 @@ The `scutil.php` script is not intended to be run directly, but rather included 
 | `generateScExecTx` | Generates a transaction to execute a `@SmartContractTransact` method. |
 | `generateScSendTx` | Generates a transaction to send PHPCoin from a smart contract to another address. |
 
-## 🚀 9. Examples
+## 🚀 Examples
 
 This section provides a set of examples, starting from a very basic "Hello, World!" to a more feature-rich application.
 
-### 9.1. Example 1: Hello, World!
+### Example 1: Hello, World!
 
 This contract is the simplest possible smart contract. It has no state and one read-only method that returns a fixed string. It demonstrates the absolute minimum code required for a functional contract.
 
@@ -183,7 +183,7 @@ class HelloWorld extends SmartContractBase
 }
 ```
 
-### 9.2. Example 2: Basic State Control
+### Example 2: Basic State Control
 
 This contract demonstrates how to manage state. It uses a `@SmartContractVar` to store a single `message` and a `@SmartContractMap` to store key-value `records`.
 
@@ -260,7 +260,7 @@ class StateControl extends SmartContractBase
 }
 ```
 
-### 9.3. Example 3: Full Feature App (Advanced Poll)
+### Example 3: Full Feature App (Advanced Poll)
 
 This example builds on the previous concepts to create a more robust polling contract. It introduces owner-only actions, a fee requirement for voting, and a lifecycle (the poll can be opened and closed).
 
@@ -393,7 +393,7 @@ class AdvancedPoll extends SmartContractBase
 }
 ```
 
-### 9.4. Example 4: Wrapped PHPCoin (WPHP)
+### Example 4: Wrapped PHPCoin (WPHP)
 
 This contract creates a token that is pegged 1:1 with PHPCoin. Users can send PHPCoin to the contract to "wrap" it into a token, and burn tokens to "unwrap" them back into PHPCoin. This allows PHPCoin to be used in token-based applications.
 
