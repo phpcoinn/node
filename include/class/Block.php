@@ -388,8 +388,20 @@ class Block
 		_log("Block check ".json_encode($this->toArray()),4);
 
 		try {
+            if ($this->height > 1) {
+                global $checkpoints;
+                require_once ROOT . "/include/checkpoints.php";
+                $min_height = array_keys($checkpoints)[count($checkpoints)-1];
+                if ($this->height > $min_height) {
+                    $b = Block::get($min_height);
+                    if ($b['id'] != $checkpoints[$min_height]) {
+                        throw new Exception("Checkpoint failed at height $min_height. Expected block id ".$checkpoints[$min_height]." but got ".$b['id']);
+                    }
+                }
+            }
 			if ($this->date>time()+30) {
-				throw new Exception("Future block - {$this->date} {$this->publicKey}");
+                // yyyy-mm-dd hh:mm:ss
+				throw new Exception("Future block - ".date("Y-m-d H:i:s", $this->date)." {$this->publicKey}");
 			}
 
 			// generator's public key must be valid

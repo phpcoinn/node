@@ -915,6 +915,7 @@ class NodeSync
 				_log("Compare checkpoint $height - $block_id block_ok=$block_ok", 2);
 				if(!$block_ok) {
 					$invalid_height = $height;
+                    _log("Checkpoint failed at height $height. Expected block id ".$block_id." but got ".$block['id']);
 					break;
 				}
 			}
