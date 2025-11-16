@@ -105,6 +105,15 @@ php utils/sc_compile.php [contract_address] [source_file.php] [output_file.phar]
 
 After compiling the contract, you need to create a deployment transaction. This is done by creating a separate PHP script that uses the `SCUtil` class.
 
+### Deployment Cost
+
+Deploying a smart contract to the PHPCoin network incurs a fixed fee. This fee prevents spam and compensates the network for storing the contract's code.
+
+-   **Mainnet:** 1000 PHPCoin
+-   **Testnet:** 100 PHPCoin
+
+This value is defined in the `getSmartContractCreateFee()` method within the `include/class/Blockchain.php` file.
+
 **Example Deployment Script (`deploy.php`):**
 
 ```php
