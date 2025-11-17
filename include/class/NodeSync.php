@@ -912,7 +912,7 @@ class NodeSync
 			$block = Block::get($height);
 			if(!empty($block)) {
 				$block_ok = $block['id'] == $block_id;
-				_log("Compare checkpoint $height - $block_id block_ok=$block_ok", 2);
+				_log("Checkpoint validation at height=$height. Expected=$block_id, Actual=".$block['id'].", Match=".($block_ok ? 'Yes' : 'NO'), 2);
 				if(!$block_ok) {
 					$invalid_height = $height;
 					break;

@@ -133,7 +133,7 @@ require_once __DIR__ . "/checkpoints.php";
 $block = Block::get(1);
 if($block) {
     if($block['id']!=$checkpoints[1]) {
-        api_err("Invalid chain. Please check config files");
+        api_err("Invalid genesis block. DB block id ".$block['id']." does not match checkpoint id ".$checkpoints[1]);
     }
 }
 
