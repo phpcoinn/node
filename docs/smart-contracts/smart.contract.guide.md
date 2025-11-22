@@ -436,6 +436,8 @@ class WrappedPHP extends ERC20Token
 
         $this->balances[$this->src] = bcadd($this->balances[$this->src], $this->amountToInt($amount));
         $this->totalSupply = bcadd($this->totalSupply, $this->amountToInt($amount));
+
+       /* TODO: create new wphp tokens and send tx ... */
     }
 
     /**
