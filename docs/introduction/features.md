@@ -1,3 +1,7 @@
+[PHPCoin](../../README.md) > [Docs](../README.md) > [Introduction](README.md) > Features
+
+---
+
 # Features
 
 PHPcoin comes with a wide range of features that make it a powerful and flexible cryptocurrency platform. Here are some of its key features:

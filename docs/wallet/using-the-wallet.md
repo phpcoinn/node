@@ -1,3 +1,7 @@
+[PHPCoin](../../README.md) > [Docs](../README.md) > [Wallet](README.md) > Using the Wallet
+
+---
+
 # Using the Wallet
 
 PHPcoin provides two ways to manage your wallet:

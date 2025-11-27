@@ -1,3 +1,7 @@
+[PHPCoin](../../README.md) > [Docs](../README.md) > [Getting Started](README.md) > Installation
+
+---
+
 # Installation
 
 This guide will walk you through the process of installing a PHPcoin node on a Debian-based system (e.g., Ubuntu). The easiest way to install PHPcoin is by using the provided installation script, which automates the entire process.
