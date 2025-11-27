@@ -1,3 +1,8 @@
+[PHPCoin Docs](../) > [Smart Contracts](./) > Smart Contract Builder's Guide
+
+
+---
+
 # 🛠️ PHPCoin Smart Contract Builder's Guide
 
 This guide outlines the essential structural and utility rules for creating a functional smart contract in the PHPCoin environment.

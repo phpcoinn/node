@@ -1,3 +1,8 @@
+[PHPCoin Docs](../) > [Getting Started](./) > Running a Node
+
+
+---
+
 # Running a Node
 
 Once you have installed your PHPcoin node, it will be running as a web application. You can access the web interface by navigating to the URL provided at the end of the installation process.

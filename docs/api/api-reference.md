@@ -1,3 +1,8 @@
+[PHPCoin Docs](../) > [API](./) > API Reference
+
+
+---
+
 # API Reference
 
 The PHPcoin API provides a set of endpoints for interacting with the blockchain. The API is accessible via HTTP and returns data in JSON format.

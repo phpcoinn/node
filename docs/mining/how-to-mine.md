@@ -1,3 +1,8 @@
+[PHPCoin Docs](../) > [Mining](./) > How to Mine
+
+
+---
+
 # How to Mine
 
 PHPcoin uses a Proof-of-Work (PoW) consensus algorithm, which means that new coins are created by solving complex mathematical problems. This process is called mining.
