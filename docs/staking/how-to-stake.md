@@ -1,3 +1,7 @@
+[PHPCoin](../../README.md) > [Docs](../README.md) > [Staking](README.md) > How to Stake
+
+---
+
 # How to Stake
 
 Staking is the process of holding PHPcoin in a wallet to support the operations of the blockchain network. In return for staking, you receive rewards in the form of new PHPcoin.

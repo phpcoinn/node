@@ -1,3 +1,7 @@
+[PHPCoin](../../README.md) > [Docs](../README.md) > [Masternodes](README.md) > Setting up a Masternode
+
+---
+
 # Setting up a Masternode
 
 A masternode is a special type of node that provides additional services to the PHPcoin network. In return for these services, masternode owners receive rewards in the form of PHPcoin.

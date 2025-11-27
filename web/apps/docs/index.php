@@ -15,11 +15,24 @@ class ParsedownExt extends Parsedown {
 }
 
 $docsDir = dirname(dirname(dirname(__DIR__)));
+$baseDir = $docsDir.'/docs/';
+
 if(isset($_GET['link'])) {
     $link = $_GET['link'];
-    $file = $docsDir.'/docs/' . $link;
+    $file = $baseDir . $link;
 } else {
-    $file = $docsDir.'/docs/index.md';
+    $file = $baseDir . 'README.md';
+}
+
+// Security: Prevent path traversal
+$realFile = realpath($file);
+$realBaseDir = realpath($baseDir);
+
+if ($realFile === false || strpos($realFile, $realBaseDir) !== 0) {
+    // on attack, default to main readme
+    $file = $realBaseDir . '/README.md';
+} else {
+    $file = $realFile;
 }
 
 $pd = new ParsedownExt();
