@@ -1,3 +1,8 @@
+[PHPCoin Docs](../) > [Masternodes](./) > Setting up a Masternode
+
+
+---
+
 # Setting up a Masternode
 
 A masternode is a special type of node that provides additional services to the PHPcoin network. In return for these services, masternode owners receive rewards in the form of PHPcoin.
@@ -51,3 +56,27 @@ You can verify that your masternode is running correctly by calling the `/api.ph
 ```
 
 If your masternode is set up correctly, this will return information about your masternode.
+
+---
+
+## Advanced Masternode Setup
+
+### Cold Masternode
+
+A "cold" masternode setup allows you to keep the wallet containing your masternode collateral offline and secure, while the masternode itself runs on a separate server. This is the recommended setup for most users, as it significantly improves security.
+
+The `masternode-create` command shown above is designed for a cold setup. The wallet that runs this command is the "control" wallet, and it can be kept offline after the masternode is created. The masternode itself runs on a separate server, and its wallet does not need to contain any funds.
+
+### Security Best Practices
+
+*   **Firewall:** Use a firewall to restrict access to your masternode server. Only allow incoming connections on the necessary ports (e.g., the P2P port and the web interface port).
+*   **SSH Keys:** Use SSH keys instead of passwords to access your server. This is much more secure than using a password, which can be vulnerable to brute-force attacks.
+*   **Regular Updates:** Keep your server's operating system and all software up to date. This will ensure that you have the latest security patches and bug fixes.
+
+### Monitoring Your Masternode
+
+It is important to monitor your masternode to ensure that it is running correctly and that you are receiving rewards. Here are some ways to monitor your masternode:
+
+*   **API Endpoint:** Use the `/api.php?q=getMasternode` API endpoint to check the status of your masternode.
+*   **Block Explorer:** Use a block explorer to check that your masternode is receiving rewards. You can find your masternode's reward address in the output of the `getMasternode` API call.
+*   **Third-Party Monitoring Services:** There are several third-party services that can monitor your masternode for you and send you an alert if it goes offline.
