@@ -49,7 +49,7 @@ Calculation: Balance * Maturity
 Website: 
 https://phpcoin.net/ 
 
-Bitcalk:
+Bitcointalk:
 https://bitcointalk.org/index.php?topic=5371138.0
 
 Github source: 
