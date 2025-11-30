@@ -13,12 +13,12 @@ require_once './Parsedown.php';
 register_shutdown_function('shutdown_handler');
 
 function shutdown_handler() {
-	print '<p>DEBUG: shutdown_handler @ ' . time() . '</p>';
+	// print '<p>DEBUG: shutdown_handler @ ' . time() . '</p>';
 	$error = error_get_last();
 	if (! empty($error)) {
 		print '<pre>' . print_r($error, true) . '</pre>';
 	}
-	print '<hr /><br><br><br>';
+	// print '<hr /><br><br><br>';
 }
 
 
