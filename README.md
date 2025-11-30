@@ -81,4 +81,4 @@ https://m2.phpcoin.net/
 
 ## Install
 
-Please see the [Installation Guide](./docs/getting-started/installation.md) for detailed instructions.
+Please see the [Install Guide](./docs/getting-started/) for detailed instructions.
