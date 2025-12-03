@@ -43,12 +43,20 @@ class CommonSessionHandler implements SessionHandlerInterface {
         return(true);
     }
 
+    /**
+     * Reads session data from a file.
+     *
+     * @param string $id The session ID.
+     * @return string The session data, or an empty string if the session does not exist or on failure.
+     */
     #[\ReturnTypeWillChange]
-    public function read($id)
+    public function read(string $id): string
     {
-        $sess_file = $this->path."/sess_$id";
-        if(file_exists($sess_file)) $out=@file_get_contents($sess_file);
-        return (string) $out;
+        $safeId = preg_replace('/[^a-zA-Z0-9,-]/', '', $id); // Sanitize the session ID to prevent path traversal attacks.
+        $sessionFilePath = $this->path . '/sess_' . $safeId; // Construct the full path to the session file.
+        $sessionData = file_get_contents($sessionFilePath);  // returns the data as a string or FALSE on failure
+
+        return ($sessionData !== false) ? $sessionData : ''; // Return the data if successful, or '' otherwise.
     }
 
     #[\ReturnTypeWillChange]

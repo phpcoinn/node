@@ -912,7 +912,7 @@ class NodeSync
 			$block = Block::get($height);
 			if(!empty($block)) {
 				$block_ok = $block['id'] == $block_id;
-				_log("Compare checkpoint $height - $block_id block_ok=$block_ok", 2);
+				_log("Checkpoint validation at height=$height. Expected=$block_id, Actual=".$block['id'].", Match=".($block_ok ? 'Yes' : 'NO'), 2);
 				if(!$block_ok) {
 					$invalid_height = $height;
 					break;
@@ -936,13 +936,16 @@ class NodeSync
 	}
 
 	static function checkBlocks() {
-		global $db;
-        $sql="select count(id) as cnt, max(height) as max_height from blocks";
+		global $db, $_config;
+        $sql="select count(id) as cnt, max(height) as max_height, min(height) as min_height from blocks";
         $res = $db->row($sql);
         $count = $res['cnt'];
         $max = $res['max_height'];
-		_log("checkBlocks count=$count max=$max", 3);
-		if($count == $max) {
+        $min = $res['min_height'];
+        _log("checkBlocks count=$count max=$max min=$min pruned=".Config::isPruned(), 3);
+        if(Config::isPruned() && $count == $max - $_config['pruned_height'] + 1) {
+            return true;
+        } else if(!Config::isPruned() && $count == $max) {
 			return true;
 		} else {
 			if(!Config::isSync()) {
