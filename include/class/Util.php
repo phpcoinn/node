@@ -2057,4 +2057,43 @@ class Util
             }
         }
     }
+
+    static function pruneNode() {
+        global $db, $_config;
+        $prune_height=$_config['pruned_height'];
+        $sql='select min(height) as min_height from blocks';
+        $row = $db->row($sql);
+        $min_height=$row['min_height'];
+        if($min_height == $prune_height) {
+            _log("Database is already pruned");
+            exit;
+        }
+        $start = time();
+        _log("Starting pruning database");
+        _log("Creating new table");
+        $sql='drop table if exists transactions1';
+        $db->run($sql);
+        $sql='create table if not exists  transactions1
+        select * from (
+        select * from transactions t where t.type in (2,3,5)
+                                     union all (
+        select null as id, null as block, '.($prune_height-1).' as height, t.src, t.dst, sum(t.val) as val, sum(t.fee) as fee,
+               null as siganture, 100 as type, null as message, null as date, t.public_key, null as data
+        from transactions t where t.type not in (2,3,5)
+        group by t.src, t.dst
+        )) as t1 order by t1.height, t1.id';
+        $db->run($sql);
+        $sql='alter table accounts drop foreign key accounts';
+        $db->run($sql);
+        $sql= 'create index transactions1_src_index on transactions1 (src)';
+        $db->run($sql);
+        $sql= 'create index transactions1_dst_index on transactions1 (dst)';
+        $db->run($sql);
+        _log("Deleting blocks");
+        $sql = 'delete from blocks where height < ?';
+        $db->run($sql, [$prune_height], false);
+        $time = time() - $start;
+        _log("Complete prune time=$time");
+
+    }
 }
