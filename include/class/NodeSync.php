@@ -936,13 +936,16 @@ class NodeSync
 	}
 
 	static function checkBlocks() {
-		global $db;
-        $sql="select count(id) as cnt, max(height) as max_height from blocks";
+		global $db, $_config;
+        $sql="select count(id) as cnt, max(height) as max_height, min(height) as min_height from blocks";
         $res = $db->row($sql);
         $count = $res['cnt'];
         $max = $res['max_height'];
-		_log("checkBlocks count=$count max=$max", 3);
-		if($count == $max) {
+        $min = $res['min_height'];
+        _log("checkBlocks count=$count max=$max min=$min pruned=".Config::isPruned(), 3);
+        if(Config::isPruned() && $count == $max - $_config['pruned_height'] + 1) {
+            return true;
+        } else if(!Config::isPruned() && $count == $max) {
 			return true;
 		} else {
 			if(!Config::isSync()) {

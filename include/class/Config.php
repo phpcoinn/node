@@ -25,5 +25,9 @@ class Config
 		return $res;
 	}
 
+    static function isPruned() {
+        global $_config;
+        return !empty($_config['pruned_height']);
+    }
 
 }
