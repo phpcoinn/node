@@ -975,7 +975,9 @@ class Transaction
 					}
 					$maturity = $height - $last_height;
 					if($maturity < Blockchain::getStakingMaturity($height)) {
-						throw new Exception("Staking winner check failed: Staking maturity not valid ".$maturity);
+                        if(Blockchain::isValidHeight($height)) {
+                            throw new Exception("Staking winner check failed: Staking maturity not valid ".$maturity);
+                        }
 					}
 
 					$balance = Account::getBalanceAtHeight($this->dst, $height);
