@@ -1502,8 +1502,4 @@ class Transaction
         $tx->fee = Blockchain::getSmartContractExecFee();
         return $tx;
     }
-
-    static function table() {
-        return Config::isPruned() ? 'transactions1' : 'transactions';
-    }
 }

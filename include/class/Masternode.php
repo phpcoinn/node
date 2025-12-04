@@ -286,12 +286,11 @@ class Masternode extends Task
 
 	static function getMasternodeHeight($id, $height) {
 		global $db;
-        $table = Transaction::table();
         $sql="select max(height) from (
-            select max(height) as height from $table t where t.type = 2 and t.height <= $height
+            select max(height) as height from transactions t where t.type = 2 and t.height <= $height
             and t.dst = '$id' and (t.message='mncreate' or t.message='')
             union
-            (select max(height) as height from $table t where t.type = 2 and t.height <= $height
+            (select max(height) as height from transactions t where t.type = 2 and t.height <= $height
             and t.message = '$id')) as heights";
         $res = $db->single($sql);
         return $res;
@@ -529,15 +528,14 @@ class Masternode extends Task
 		if(empty($height)) {
 			$height = Block::getHeight();
 		}
-        $table = Config::isPruned() ? 'transactions1' : 'transactions';
 		$sql="select max(t.height) as create_height, count(t.id) as created
-			from $table t
+			from transactions t
 			where t.type = :create and ((t.dst = :id and (t.message='mncreate' or t.message='')) or t.message =:id2) and t.height <= :height";
 		$res = $db->row($sql, [":create"=>TX_TYPE_MN_CREATE, ":id"=>$id, ":id2"=>$id,":height"=>$height]);
 		$created = $res['created'];
 
 		$sql="select max(t.height), count(t.id) as removed
-		from $table t where ((t.src = :id and (t.message='mnremove' or t.message='')) or t.message =:id2) and t.type = :remove and t.height <=:height";
+		from transactions t where ((t.src = :id and (t.message='mnremove' or t.message='')) or t.message =:id2) and t.type = :remove and t.height <=:height";
 		$res = $db->row($sql, [":remove"=>TX_TYPE_MN_REMOVE, ":id"=>$id,  ":id2"=>$id, ":height"=>$height]);
 		$removed = $res['removed'];
 		return ($created>0 && $created != $removed);
@@ -1243,15 +1241,9 @@ class Masternode extends Task
 	static function checkCollateral($masternode, $height) {
 		global $db;
 		$collateral = Block::getMasternodeCollateral($height);
-        if(Config::isPruned()) {
-            $sql="select * from transactions1 t
-            where ((t.dst = :dst and (t.message='mncreate' or t.message='')) or t.message=:dst2) and t.type = :type and t.val =:collateral and t.height <= :height
-            order by t.height desc limit 1";
-        } else {
-            $sql="select * from transactions t use index(transactions_type_index) 
-            where ((t.dst = :dst and (t.message='mncreate' or t.message='')) or t.message=:dst2) and t.type = :type and t.val =:collateral and t.height <= :height
-            order by t.height desc limit 1";
-        }
+        $sql="select * from transactions t use index(transactions_type_index) 
+        where ((t.dst = :dst and (t.message='mncreate' or t.message='')) or t.message=:dst2) and t.type = :type and t.val =:collateral and t.height <= :height
+        order by t.height desc limit 1";
 		$row = $db->row($sql, [":dst"=>$masternode, ":dst2"=>$masternode, ":type"=>TX_TYPE_MN_CREATE, ":collateral"=>$collateral, ":height"=>$height]);
 		return $row;
 	}
