@@ -522,14 +522,13 @@ class Account
 	static function getBalanceAtHeight($address, $height) {
 
         global $db;
-        $table = Config::isPruned() ? 'transactions1' : 'transactions';
         $sql= "select sum(val) from (select sum(t.val) * (-1) as val
-                      from $table t
+                      from transactions t
                       where t.src = :address
                         and t.height < :height
                       union
                       select sum(t.val) as val
-                      from $table t
+                      from transactions t
                       where t.dst = :address2
                         and t.height < :height2) as vals;";
         return $db->single($sql, [":height"=>$height, ":height2"=>$height, ":address"=>$address, ":address2"=>$address]);

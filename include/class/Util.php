@@ -2073,25 +2073,46 @@ class Util
         _log("Creating new table");
         $sql='drop table if exists transactions1';
         $db->run($sql);
-        $sql='create table if not exists  transactions1
-        select * from (
-        select * from transactions t where t.type in (2,3,5)
-                                     union all (
-        select null as id, null as block, '.($prune_height-1).' as height, t.src, t.dst, sum(t.val) as val, sum(t.fee) as fee,
-               null as siganture, 100 as type, null as message, null as date, t.public_key, null as data
-        from transactions t where t.type not in (2,3,5)
-        group by t.src, t.dst
-        )) as t1 order by t1.height, t1.id';
+        $sql='
+        create table if not exists  transactions1
+with t1 as (
+    select * from transactions t where t.height <= '.$prune_height.' and t.type in (2,3,5)
+    union all
+    select *
+            from transactions t
+            where t.height > '.$prune_height.'
+            union all
+            select null          as id,
+                   null          as block,
+                   '.$prune_height.' as height,
+                   t.dst,
+                   sum(t.val)    as val,
+                   sum(t.fee)    as fee,
+                   null          as siganture,
+                   100           as type,
+                   null          as message,
+                   null          as date,
+                   null          as public_key,
+                   t.src,
+                   null          as data
+            from transactions t
+            where t.type not in (2, 3, 5)
+              and t.height <= '.$prune_height.'
+            group by t.src, t.dst
+) select * from t1
+order by t1.height, t1.id;
+        
+        ';
         $db->run($sql);
         $sql='alter table accounts drop foreign key accounts';
         $db->run($sql);
-        $sql= 'create index transactions1_src_index on transactions1 (src)';
-        $db->run($sql);
-        $sql= 'create index transactions1_dst_index on transactions1 (dst)';
+        $sql= 'drop table transactions';
         $db->run($sql);
         _log("Deleting blocks");
         $sql = 'delete from blocks where height < ?';
         $db->run($sql, [$prune_height], false);
+        $sql='rename table transactions1 to transactions';
+        $db->run($sql);
         $time = time() - $start;
         _log("Complete prune time=$time");
 
