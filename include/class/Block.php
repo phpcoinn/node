@@ -953,7 +953,7 @@ class Block
     }
 
 	public function verifyBlock(&$error = false) {
-
+        global $_config;
 		$data = $this->data;
 		$height = $this->height;
 
@@ -983,7 +983,9 @@ class Block
 			$difficulty = $this->difficulty;
 			$calculated_difficulty = Block::difficulty($this->height-1);
 			if($difficulty != $calculated_difficulty) {
-				throw new Exception("Block check: invalid difficulty $difficulty - expected $calculated_difficulty");
+                if(Blockchain::isValidHeight($this->height)) {
+                    throw new Exception("Block check: invalid difficulty $difficulty - expected $calculated_difficulty");
+                }
 			}
 
 			$prev_block = Block::getAtHeight($height - 1);

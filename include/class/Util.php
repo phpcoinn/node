@@ -679,6 +679,7 @@ class Util
 	}
 
 	static function verifyBlocks($argv) {
+        global $_config;
 		$range = @$argv[2];
 		if(empty($range)) {
 			$start=1;
@@ -697,7 +698,9 @@ class Util
 			$start = intval($range);
 			$stop = $start;
 		}
-
+        if(Config::isPruned() && $start < $_config['pruned_height']+100) {
+            $start = $_config['pruned_height']+100;
+        }
 		for($i=$start;$i<=$stop;$i++) {
 			$block = Block::export("",$i);
 			$res = Block::getFromArray($block)->verifyBlock($error);
@@ -2112,6 +2115,9 @@ order by t1.height, t1.id;
         $sql = 'delete from blocks where height < ?';
         $db->run($sql, [$prune_height], false);
         $sql='rename table transactions1 to transactions';
+        $db->run($sql);
+        $sql='create index transactions_type_index
+    on transactions (type)';
         $db->run($sql);
         $time = time() - $start;
         _log("Complete prune time=$time");
