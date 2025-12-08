@@ -168,15 +168,20 @@ class Nodeutil
 
 
 	static function calculateBlocksHash($height) {
-		global $db;
+		global $db, $_config;
 		if(empty($height)) {
 			$height = Block::getHeight();
 		}
+        $start_height = BLOCKCHAIN_CHECKPOINT;
+        if(Config::isPruned()) {
+            $start_height = $_config['pruned_height'];
+        }
 		$rows = $db->run("select id from blocks where height >= :height and height <=:top order by height asc",
-			[":height"=>BLOCKCHAIN_CHECKPOINT, ":top"=>$height]);
+			[":height"=>$start_height, ":top"=>$height]);
 		return [
 			'height'=>$height,
-			'hash'=>md5(json_encode($rows))
+			'hash'=>md5(json_encode($rows)),
+            'pruned' => Config::isPruned()
 		];
 	}
 
