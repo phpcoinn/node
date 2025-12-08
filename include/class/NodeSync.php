@@ -943,7 +943,7 @@ class NodeSync
         $max = $res['max_height'];
         $min = $res['min_height'];
         _log("checkBlocks count=$count max=$max min=$min pruned=".Config::isPruned(), 3);
-        if(Config::isPruned() && $count == $max - $_config['pruned_height']+1) {
+        if(Config::isPruned() && $count == $max - $_config['pruned_height']) {
             return true;
         } else if(!Config::isPruned() && $count == $max) {
 			return true;

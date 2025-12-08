@@ -1743,6 +1743,10 @@ class Util
 			if($calc_acc_cnt <>  $real_acc_cnt || (!empty($argv) && in_array("--force", $argv))) {
 				_log("Accounts rows are different");
 				_log("delete accounts");
+                if(Config::isPruned()) {
+                    _log("Accounts table is invalid - restore blockchain");
+                    return;
+                }
 //				$db->exec("lock tables transactions t write, transactions ts write, blocks b write, accounts write");
 				$sql="delete from accounts";
 				$db->exec($sql);
@@ -1771,8 +1775,37 @@ class Util
 //				$db->exec("unlock tables");
 			}
 
-			_log("Check differences");
-			$sql="select calc.*, a.*
+            _log("Check differences");
+            if(Config::isPruned()) {
+                $sql = "select calc.*, a.*
+                    from (
+                             select ids.id,
+                                    sum(val) as balance,
+                                    max(max_height) as height
+                             from (
+                                      select t.dst as id, max(t.height) as max_height, sum(t.val) as val, min(t.height) as min_height
+                                      from transactions t
+                                      where t.dst is not null
+                                      group by t.dst
+                                      union
+                                      select t.src as id, max(t.height) as max_height, sum((t.val + t.fee)*(-1)) as val, min(t.height) as min_height
+                                      from transactions t
+                                      where t.src is not null
+                                      group by t.src
+                                  ) as ids
+                             group by ids.id
+                         ) as calc
+                             left join accounts a on (calc.id = a.id)
+                    where calc.balance != a.balance";
+                $res = $db->run($sql);
+                $diff_rows = count($res);
+                _log("Found $diff_rows different rows");
+                if ($diff_rows > 0) {
+                    _log("Accounts table is invalid - restore blockchain");
+                    return;
+                }
+            } else {
+                $sql = "select calc.*, a.*
 				from (
 		         select ids.id,
 		                (select case when tp.public_key is null then '' else tp.public_key end from transactions tp where tp.src = ids.id limit 1) as public_key,
@@ -1797,13 +1830,13 @@ class Util
 				   or calc.block <> a.block
 				   or calc.balance <> a.balance
 				   or calc.height <> a.height";
-			$res = $db->run($sql);
-			$diff_rows = count($res);
-			_log("Found $diff_rows different rows");
+                $res = $db->run($sql);
+                $diff_rows = count($res);
+                _log("Found $diff_rows different rows");
 
-			if($diff_rows > 0) {
-				_log("Update accounts table");
-				$sql="update (
+                if ($diff_rows > 0) {
+                    _log("Update accounts table");
+                    $sql = "update (
 			         select ids.id,
 			                (select case when tp.public_key is null then '' else tp.public_key end from transactions tp where tp.src = ids.id limit 1) as public_key,
 			                (select b.id from blocks b where b.height = min(min_height)) as block,
@@ -1828,11 +1861,12 @@ class Util
 			   or calc.block <> a.block
 			   or calc.balance <> a.balance
 			   or calc.height <> a.height";
-				$res=$db->run($sql);
-				_log("Accounts updated res=$res");
-			} else {
-				_log("No need to update accounts");
-			}
+                    $res = $db->run($sql);
+                    _log("Accounts updated res=$res");
+                } else {
+                    _log("No need to update accounts");
+                }
+            }
 
             //check generators without public_key
             $sql= "select gen.generator, a.public_key,
@@ -1848,6 +1882,10 @@ class Util
             $diff_rows = count($res);
             _log("Check generators public keys - found $diff_rows diffs");
             if($diff_rows > 0) {
+                if(Config::isPruned()) {
+                    _log("Accounts table is invalid - restore blockchain");
+                    return;
+                }
                 $sql="update(
                 select gen.generator, a.public_key,
                        (select distinct tp.public_key
@@ -2010,7 +2048,7 @@ class Util
     {
         $res = NodeSync::checkBlocks();
         if (!$res) {
-            _log("Block database is invalid");
+            _log("Block database is invalid - BLOCKCHAIN_INVALID 1");
             Config::setVal("blockchain_invalid", 1);
         }
     }
@@ -2019,6 +2057,7 @@ class Util
         $res = NodeSync::compareCheckPoints();
         if(!$res) {
             _log("Blockchain is invalid - checkpoints are not correct");
+            _log("BLOCKCHAIN_INVALID 2");
             Config::setVal("blockchain_invalid", 1);
         }
     }
@@ -2092,7 +2131,7 @@ with t1 as (
                    sum(t.val)    as val,
                    sum(t.fee)    as fee,
                    null          as siganture,
-                   100           as type,
+                   t.type           as type,
                    null          as message,
                    null          as date,
                    null          as public_key,
@@ -2101,7 +2140,7 @@ with t1 as (
             from transactions t
             where t.type not in (2, 3, 5)
               and t.height <= '.$prune_height.'
-            group by t.src, t.dst
+            group by t.type, t.src, t.dst
 ) select * from t1
 order by t1.height, t1.id;
         
@@ -2112,13 +2151,24 @@ order by t1.height, t1.id;
         $sql= 'drop table transactions';
         $db->run($sql);
         _log("Deleting blocks");
-        $sql = 'delete from blocks where height < ?';
+        $sql = 'delete from blocks where height <= ?';
         $db->run($sql, [$prune_height], false);
         $sql='rename table transactions1 to transactions';
         $db->run($sql);
         $sql='create index transactions_type_index
     on transactions (type)';
         $db->run($sql);
+
+        $sql='create index transactions_block_index on transactions (block)';
+        $db->run($sql);
+
+        $sql='create index transactions_id_index on transactions (id)';
+        $db->run($sql);
+
+        $sql='create index transactions_src_dst_height_index on transactions (src, dst, height)';
+        $db->run($sql);
+        Config::setVal("blockchain_invalid", 0);
+
         $time = time() - $start;
         _log("Complete prune time=$time");
 
