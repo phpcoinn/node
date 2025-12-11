@@ -193,14 +193,18 @@ class Util
 	 *
 	 */
 	static function recheckBlocks() {
-		global $db;
+		global $db, $_config;
 		$blocks = [];
 		$r = $db->run("SELECT * FROM blocks ORDER by height");
 		foreach ($r as $x) {
 			$blocks[$x['height']] = $x;
 			$max_height = $x['height'];
 		}
-		for ($i = 2; $i <= $max_height; $i++) {
+        $start = 2;
+        if(Config::isPruned()) {
+            $start = $_config['pruned_height'] + 2;
+        }
+		for ($i = $start; $i <= $max_height; $i++) {
 			self::log("Checking block $i / $max_height") ;
 			$data = $blocks[$i];
 
@@ -533,6 +537,7 @@ class Util
 		$res=Nodeutil::calculateBlocksHash($height);
 		echo "Height:\t\t".$res['height']."\n";
 		echo "Hash:\t\t".$res['hash']."\n\n";
+        if($res['pruned']) echo "Pruned: ".$res['pruned']."\n";
 	}
 
 	static function version() {

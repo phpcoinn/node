@@ -1105,7 +1105,7 @@ class Masternode extends Task
 			}
 
 			$win_height = Masternode::getLastWinHeight($this->id, $height);
-			if($win_height != $this->win_height) {
+			if($win_height != $this->win_height && !Config::isPruned()) {
 				throw new Exception("Invalid masternode {$this->id} {$this->ip} win_height saved={$this->win_height} calculated=$win_height");
 			}
 
