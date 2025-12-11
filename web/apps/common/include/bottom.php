@@ -9,7 +9,7 @@ $updateAvb = $maxPeerBuildNumber > $currentVersion;
 <footer class="footer">
     <div class="container-fluid">
         <div class="row">
-            <div class="col-sm-6 text-center text-md-start mb-2 mb-sm-0">
+            <div class="col-sm-6 text-center text-md-start mb-2 mb-sm-0 d-flex gap-2 align-items-center">
 	            <?php echo COIN_NAME ?> - <?php if(defined("NETWORK")) echo strtoupper(NETWORK) ?> (<?php echo CHAIN_ID ?>) - <?php echo VERSION ?><?php if(defined("BUILD_VERSION")) echo "." . BUILD_VERSION ?>
                 <?php
                 if(!empty($gitRev)) { ?>
@@ -17,6 +17,9 @@ $updateAvb = $maxPeerBuildNumber > $currentVersion;
                 <?php } ?>
                 <?php if ($updateAvb) { ?>
                     <span class="badge rounded-pill bg-success">Update available!</span>
+                <?php } ?>
+                <?php if(Config::isPruned()) { ?>
+                    <span class="badge rounded-pill bg-warning text-black">DB Pruned</span>
                 <?php } ?>
             </div>
             <div class="col-sm-6">
