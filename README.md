@@ -1,5 +1,9 @@
 # The PHPCoin (PHP) cryptocurrency node.
 
+For detailed information on installation, usage, and development, please see the [PHPCoin Documentation](./docs/).
+
+--
+
 Name: PHPCoin
 
 Symbol: PHP
@@ -81,8 +85,4 @@ https://m2.phpcoin.net/
 
 ## Install
 
-Check [instructions](https://github.com/phpcoinn/node/wiki/Node-installation)
-
-
-
-
+Please see the [Install Guide](./docs/getting-started/) for detailed instructions.
