@@ -2107,6 +2107,14 @@ class Util
 
     static function pruneNode() {
         global $db, $_config;
+        if(!isset($_config['pruned_height'])) {
+            _log("Prune height config is not set");
+            exit;
+        }
+        if(empty($_config['pruned_height'])) {
+            _log("Prune height config is empty");
+            exit;
+        }
         $prune_height=$_config['pruned_height'];
         $sql='select min(height) as min_height from blocks';
         $row = $db->row($sql);
