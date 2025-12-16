@@ -2115,7 +2115,11 @@ class Util
             _log("Prune height config is empty");
             exit;
         }
-        $prune_height=$_config['pruned_height'];
+        $prune_height = intval($_config['pruned_height']);
+        if($prune_height <= 0) {
+            _log("Invalid prune height: $prune_height");
+            exit;
+        }
         $sql='select min(height) as min_height from blocks';
         $row = $db->row($sql);
         $min_height=$row['min_height'];
@@ -2124,26 +2128,51 @@ class Util
             exit;
         }
         $start = time();
-        _log("Starting pruning database");
-        _log("Creating new table");
-        $sql='drop table if exists transactions1';
-        $db->run($sql);
-        $sql='
+        _log("Starting pruning database at height $prune_height");
+        
+        // Lock tables to prevent concurrent access during this destructive operation
+        // IMPORTANT: DDL operations (CREATE TABLE, DROP TABLE, RENAME TABLE) automatically 
+        // release table locks in MySQL/MariaDB. The locks here provide protection BEFORE 
+        // we start DDL operations, preventing other processes from beginning operations on 
+        // these tables. Once DDL starts, locks are released, but we're already committed 
+        // to the operation. This should be run during maintenance windows when the node 
+        // is not actively processing blocks/transactions.
+        _log("Locking tables");
+        $db->lockTables();
+        
+        try {
+            // Start database transaction
+            // Note: DDL operations (CREATE TABLE, DROP TABLE, RENAME TABLE, CREATE INDEX) 
+            // auto-commit in MySQL/MariaDB and release table locks. The transaction here 
+            // provides better error handling and allows rollback of DML operations (DELETE).
+            // DDL operations cannot be rolled back.
+            $db->beginTransaction();
+            
+            // Disable foreign key checks temporarily
+            $db->fkCheck(false);
+            
+            _log("Creating new table");
+            $sql='drop table if exists transactions1';
+            $db->run($sql);
+            
+            // Use intval to ensure safe integer value (CREATE TABLE doesn't support parameters)
+            $prune_height_safe = intval($prune_height);
+            $sql='
         create table if not exists  transactions1
 with t1 as (
-    select * from transactions t where t.height <= '.$prune_height.' and t.type in (2,3,5)
+    select * from transactions t where t.height <= '.$prune_height_safe.' and t.type in (2,3,5)
     union all
     select *
             from transactions t
-            where t.height > '.$prune_height.'
+            where t.height > '.$prune_height_safe.'
             union all
             select null          as id,
                    null          as block,
-                   '.$prune_height.' as height,
+                   '.$prune_height_safe.' as height,
                    t.dst,
                    sum(t.val)    as val,
                    sum(t.fee)    as fee,
-                   null          as siganture,
+                   null          as signature,
                    t.type           as type,
                    null          as message,
                    null          as date,
@@ -2152,38 +2181,96 @@ with t1 as (
                    null          as data
             from transactions t
             where t.type not in (2, 3, 5)
-              and t.height <= '.$prune_height.'
+              and t.height <= '.$prune_height_safe.'
             group by t.type, t.src, t.dst
 ) select * from t1
 order by t1.height, t1.id;
         
         ';
-        $db->run($sql);
-        $sql='alter table accounts drop foreign key accounts';
-        $db->run($sql);
-        $sql= 'drop table transactions';
-        $db->run($sql);
-        _log("Deleting blocks");
-        $sql = 'delete from blocks where height <= ?';
-        $db->run($sql, [$prune_height], false);
-        $sql='rename table transactions1 to transactions';
-        $db->run($sql);
-        $sql='create index transactions_type_index
-    on transactions (type)';
-        $db->run($sql);
+            $db->run($sql);
+            
+            // Drop foreign key constraint if it exists
+            _log("Dropping foreign key constraint");
+            try {
+                $sql='alter table accounts drop foreign key accounts';
+                $db->run($sql);
+            } catch (Exception $e) {
+                _log("Warning: Could not drop foreign key constraint: ".$e->getMessage());
+                // Continue anyway as it might not exist
+            }
+            
+            _log("Dropping old transactions table");
+            $sql= 'drop table transactions';
+            $db->run($sql);
+            
+            _log("Deleting blocks");
+            $sql = 'delete from blocks where height <= ?';
+            $db->run($sql, [$prune_height], false);
+            
+            _log("Renaming transactions1 to transactions");
+            $sql='rename table transactions1 to transactions';
+            $db->run($sql);
+            
+            // Recreate all original indexes
+            _log("Recreating indexes");
+            $indexes = [
+                'create index dst on transactions (dst)',
+                'create index transactions_src_index on transactions (src)',
+                'create index height on transactions (height)',
+                'create index message on transactions (message)',
+                'create index public_key on transactions (public_key)',
+                'create index transactions_src_dst_val_fee_index on transactions (src, dst, val, fee)',
+                'create index transactions_type_index on transactions (type)',
+                'create index idx_src_height on transactions (src, height, val)',
+                'create index idx_dst_height on transactions (dst, height, val)',
+                'create index transactions_block_index on transactions (block)',
+                'create index transactions_id_index on transactions (id)',
+                'create index transactions_src_dst_height_index on transactions (src, dst, height)'
+            ];
+            
+            foreach($indexes as $index_sql) {
+                try {
+                    $db->run($index_sql);
+                } catch (Exception $e) {
+                    _log("Warning: Could not create index: ".$e->getMessage());
+                }
+            }
+            
+            // Re-enable foreign key checks
+            $db->fkCheck(true);
+            
+            // Commit transaction if still active (DDL operations auto-commit, so this may not be needed)
+            // The DELETE operation would benefit from transaction, but DDL operations have already committed
+            if($db->inTransaction()) {
+                $db->commit();
+            }
+            
+            Config::setVal("blockchain_invalid", 0);
 
-        $sql='create index transactions_block_index on transactions (block)';
-        $db->run($sql);
-
-        $sql='create index transactions_id_index on transactions (id)';
-        $db->run($sql);
-
-        $sql='create index transactions_src_dst_height_index on transactions (src, dst, height)';
-        $db->run($sql);
-        Config::setVal("blockchain_invalid", 0);
-
-        $time = time() - $start;
-        _log("Complete prune time=$time");
+            $time = time() - $start;
+            _log("Complete prune time=$time seconds");
+            
+            // Unlock tables after successful completion
+            _log("Unlocking tables");
+            $db->unlockTables();
+            
+        } catch (Exception $e) {
+            _log("Error during pruning: ".$e->getMessage());
+            
+            // Rollback transaction if we're still in one
+            if($db->inTransaction()) {
+                _log("Rolling back transaction");
+                $db->rollBack();
+            }
+            
+            $db->fkCheck(true); // Re-enable FK checks even on error
+            
+            // Always unlock tables, even on error
+            _log("Unlocking tables after error");
+            $db->unlockTables();
+            
+            throw $e;
+        }
 
     }
 }
