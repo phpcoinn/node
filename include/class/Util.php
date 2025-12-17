@@ -2129,7 +2129,8 @@ class Util
         }
         $start = time();
         _log("Starting pruning database at height $prune_height");
-        
+        Config::setSync(1);
+
         // Lock tables to prevent concurrent access during this destructive operation
         // IMPORTANT: DDL operations (CREATE TABLE, DROP TABLE, RENAME TABLE) automatically 
         // release table locks in MySQL/MariaDB. The locks here provide protection BEFORE 
@@ -2246,7 +2247,7 @@ order by t1.height, t1.id;
             }
             
             Config::setVal("blockchain_invalid", 0);
-
+            Config::setSync(0);
             $time = time() - $start;
             _log("Complete prune time=$time seconds");
             
