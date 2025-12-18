@@ -2120,6 +2120,7 @@ class Util
             _log("Invalid prune height: $prune_height");
             exit;
         }
+		touch(ROOT."/maintenance");
         $sql='select min(height) as min_height from blocks';
         $row = $db->row($sql);
         $min_height=$row['min_height'];
@@ -2254,7 +2255,7 @@ order by t1.height, t1.id;
             // Unlock tables after successful completion
             _log("Unlocking tables");
             $db->unlockTables();
-            
+            unlink(ROOT."/maintenance");
         } catch (Exception $e) {
             _log("Error during pruning: ".$e->getMessage());
             
@@ -2269,7 +2270,7 @@ order by t1.height, t1.id;
             // Always unlock tables, even on error
             _log("Unlocking tables after error");
             $db->unlockTables();
-            
+            unlink(ROOT."/maintenance");
             throw $e;
         }
 
