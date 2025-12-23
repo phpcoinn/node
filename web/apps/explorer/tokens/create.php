@@ -15,9 +15,10 @@ if(isset($_GET['action'])) {
     $address = $data['address'];
     $ext = $data['ext'];
     if($action == "compileTokenSmartContract") {
-        $compile_dir = ROOT."/tmp/compile";
-        @mkdir($compile_dir);
-        chmod($compile_dir, 0777);
+        $compile_id = uniqid();
+        $compile_dir = ROOT."/tmp/compile/";
+        $compile_dir_source = $compile_dir . "/" . $compile_id;
+        @mkdir($compile_dir_source,0777, true);
         $template_dir = ROOT . "/include/templates/tokens";
         $mintable = $ext['mintable'];
         $burnable = $ext['burnable'];
@@ -30,11 +31,19 @@ if(isset($_GET['action'])) {
         } else {
             $index_file = "erc_20_token_burnable_mintable.php";
         }
-        $compile_id = uniqid();
-//        $token_file = $compile_dir."/token_$compile_id.php";
-//        copy($template_file, $token_file);
+        $files = array_diff(scandir($template_dir), ['.', '..']);
+        foreach ($files as $file) {
+            copy($template_dir."/".$file, $compile_dir_source. "/" . $file);
+        }
+        rename($compile_dir_source . "/" . $index_file, $compile_dir_source . "/index.php");
         $phar_file = $compile_dir . "/token_$compile_id.phar";
-        $res = SmartContract::compile($address, $template_dir, $phar_file, $err, $index_file);
+        $res = SmartContract::compile($address, $compile_dir_source, $phar_file, $err);
+        $files = array_diff(scandir($compile_dir_source), ['.', '..']);
+        foreach ($files as $file) {
+            $path = $compile_dir_source . '/' . $file;
+            unlink($path);
+        }
+        rmdir($compile_dir_source);
         if($res && file_exists($phar_file)) {
             api_echo($compile_id);
         } else {
@@ -53,7 +62,7 @@ if(isset($_GET['action'])) {
             api_err("Compiled file not found");
         }
         $code=base64_encode(file_get_contents($phar_file));
-        $interface = SmartContractEngine::verifyCode($code, $error);
+        $interface = Compiler::readInterface($phar_file);
         if(!$interface) {
             api_err("Error verifying token code");
         }
@@ -129,7 +138,7 @@ if(isset($_GET['action'])) {
         _log("imageB64Data size=".strlen($imageB64Data));
         $signatureBase = base64_encode(json_encode($scData));
         _log("signatureBase size=".strlen($signatureBase));
-        if(!empty($imageB64Data) && strlen($signatureBase)>65000) {
+        if(!empty($imageB64Data) && strlen($signatureBase)>1000*1024) {
             api_err("Please check size of image and reduce it");
         }
         api_echo([

@@ -1262,6 +1262,20 @@ class Transaction
 				throw new Exception("Invalid Date");
 			}
 
+            // Stricter date validation ONLY for smart contract transactions
+            // This limits manipulation window from 49 days to ±5 minutes for SC transactions
+            if (in_array($this->type, [TX_TYPE_SC_CREATE, TX_TYPE_SC_EXEC, TX_TYPE_SC_SEND])) {
+                $max_past = 300;   // 5 minutes in past
+                $max_future = 300; // 5 minutes in future
+                
+                if ($this->date < time() - $max_past) {
+                    throw new Exception("Smart contract transaction date is too old (max 5 minutes in past)");
+                }
+                if ($this->date > time() + $max_future) {
+                    throw new Exception("Smart contract transaction date is too far in future (max 5 minutes)");
+                }
+            }
+
             $src = Account::getAddress($this->publicKey);
             _log("addToMemPool $src");
             if(Blacklist::checkAddress($src)) {

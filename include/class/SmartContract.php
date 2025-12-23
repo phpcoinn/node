@@ -144,10 +144,13 @@ class SmartContract
         if($height < UPDATE_16_SC_TXS_SORT) {
             ksort($transactions);
         } else {
+            // Sort by date with hash as tie-breaker for deterministic ordering
+            // When dates are equal (same second), hash determines order (cannot be manipulated)
             usort($transactions, function($a, $b) {
                 $date1=$a->date;
                 $date2=$b->date;
                 if($date1 == $date2) {
+                    // Hash tie-breaker ensures deterministic ordering when dates are equal
                     return strcmp($a->id, $b->id);
                 }
                 return $date1 - $date2;
@@ -251,20 +254,19 @@ class SmartContract
 		}, $error);
 	}
 
-	static function compile($address, $file, $phar_file, &$error = null, $index_file=null)
+	static function compile($address, $file, $phar_file, &$error = null)
 	{
-		return try_catch(function () use ($file, $phar_file, $address, $index_file) {
+		return try_catch(function () use ($file, $phar_file, $address) {
 			if (!file_exists($file)) {
 				throw new Exception("File or folder for deploy $file does not exists");
 			}
 
-            $debug_str="-dxdebug.start_with_request=1";
             $debug_str="";
-			$cmd = "php $debug_str --define phar.readonly=0 ".ROOT."/utils/sc_compile.php $address $file $phar_file ".
-                ($index_file ? " --index=$index_file " : "")." 2>/dev/null";
+            $debug_str="-dxdebug.start_with_request=1";
+			$cmd = "php $debug_str --define phar.readonly=0 ".ROOT."/utils/sc_compile.php $address $file $phar_file  2>/dev/null";
 			$output = shell_exec($cmd);
 
-			if(file_exists($output)) {
+			if(@file_exists($output)) {
 				return true;
 			} else {
 				throw new Exception("Error compiling smart contract: $output");

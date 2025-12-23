@@ -396,58 +396,38 @@ class Dapps extends Task
             session_write_close();
         }
 
-        $cmdData = json_encode([
+        $_SERVER['SESSION_ID']=$session_id;
+        $_SERVER['DAPPS_ID']=$dapps_id;
+        $_SERVER['DAPPS_LOCAL']=$dapps_local;
+
+        $cmdData = [
             'GET_DATA' => $get_data,
             'POST_DATA' => $post_data,
             'INPUT_DATA' => $input_data,
             'SESSION_DATA' => $session_data,
             'COOKIE_DATA' => $cookie_data,
-        ]);
-
-        $descriptors = [
-            0 => ['pipe', 'r'], // stdin
-            1 => ['pipe', 'w'], // stdout
-            2 => ['pipe', 'w'], // stderr
+            'SERVER' =>$_SERVER,
         ];
 
-        $env = $_SERVER;
-        $env['SESSION_ID']=$session_id;
-        $env['DAPPS_ID']=$dapps_id;
-        $env['DAPPS_LOCAL']=$dapps_local;
+        $output = Sandbox::runDapp($file, $cmdData, $allowed_files, true);
 
-        $process = proc_open($cmd, $descriptors, $pipes, null, $env);
-        $output = "";
-        if (is_resource($process)) {
-            fwrite($pipes[0], $cmdData);
-            fclose($pipes[0]);
-
-            $output = stream_get_contents($pipes[1]);
-            fclose($pipes[1]);
-
-            $errors = stream_get_contents($pipes[2]);
-            fclose($pipes[2]);
-
-            $return_value = proc_close($process);
-        }
-//		_log("Dapps: Parsing output ". json_encode($output), 5);
-
-		ob_end_clean();
-		ob_start();
-		header("X-Dapps-Id: $dapps_id");
+        ob_end_clean();
+        ob_start();
+        header("X-Dapps-Id: $dapps_id");
 
         $out = trim($output);
-		_log("Dapps: Parsing output $out", 5);
+        _log("Dapps: Parsing output $out", 5);
 
-		header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Origin: *");
         $out = str_replace("PHP Warning:  JIT is incompatible with third party extensions that override zend_execute_ex(). JIT disabled. in Unknown on line 0\n", "", $out);
 
-		if(strpos($out, "action:")===0) {
-			self::processAction($out, $dapps_id);
-		}
+        if(strpos($out, "action:")===0) {
+            self::processAction($out, $dapps_id);
+        }
 
-		_log("Dapps: Writing out", 5);
-		echo $out;
-		exit;
+        _log("Dapps: Writing out", 5);
+        echo $out;
+        exit;
 
 	}
 

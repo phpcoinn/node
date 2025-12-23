@@ -7,11 +7,10 @@ class SmartContractEngine
 	public static $debug_logs = [];
 	public static $smartContracts = [];
 
-    public static $sourcesMap = [];
-    public static $debug = false;
+    public static $debug = true;
 
 
-	private static function getRunFolder() {
+	public static function getRunFolder() {
 		return ROOT . "/tmp/sc";
 	}
 
@@ -97,31 +96,43 @@ class SmartContractEngine
                 $code = $smartContract['code'];
             }
 
+
             $data = json_decode(base64_decode($code), true);
             $code = base64_decode(@$data['code']);
             if(empty($code)) {
                 throw new Exception("Invalid code for smart contract process");
             }
+            $virtual = SmartContractEngine::$virtual;
+            $debug = SmartContractEngine::$debug;
 
-            $sc_exec_file = SmartContractEngine::buildRunCode($sc_address, $code);
+            $phar_path = self::getRunFolder()."/$sc_address.phar";
+            if(!file_exists($phar_path) || DEVELOPMENT) {
+                $phar_path = self::buildPharFile($sc_address, $code);
+            }
+
+//            $sc_exec_file = SmartContractEngine::buildRunCode($sc_address, $code);
             $cmd_args = [
                 'type'=>'process',
                 'transactions' => $transactions,
                 'height'=>$height,
                 "test"=>$test,
-                "virtual"=>self::$virtual,
+                "virtual"=>$virtual,
+                "dbConfig"=>self::getDbConfig(),
 			];
 
-			$cmd_args = base64_encode(json_encode($cmd_args));
+            $result = Sandbox::exec($phar_path, $cmd_args, $sc_address, $virtual, $debug);
 
-			$cmd = "$sc_exec_file $cmd_args";
-
-            $res = self::isolateCmd($cmd);
-            $data = self::processOutput($res);
+            $data = self::processOutput($result);
             $state_updates = $data['state_updates'];
 
             if(self::$virtual) {
                 self::$debug_logs = $data['debug_logs'];
+            }
+
+            if(isset($data['logs'])) {
+                foreach ($data['logs'] as $log) {
+                    _log($log);
+                }
             }
 
             return $data['hash'];
@@ -133,115 +144,39 @@ class SmartContractEngine
 	static function view($sc_address, $method, $params=[], &$error=null) {
 		return try_catch(function () use ($sc_address, $method, $params) {
 
-			$sc_exec_file = SmartContractEngine::buildRunCode($sc_address);
-
-			if(!empty($params) && !is_array($params)) {
-				$params = [$params];
-			}
-
+            $smartContract = SmartContractEngine::verifySmartContract($sc_address);
+            $code = $smartContract['code'];
+            $data = json_decode(base64_decode($code), true);
+            $code = base64_decode(@$data['code']);
+            $phar_path = self::getRunFolder()."/$sc_address.phar";
+            if(!file_exists($phar_path) || DEVELOPMENT) {
+                $phar_path = self::buildPharFile($sc_address, $code);
+            }
             $height =  self::$virtual ? 0 : Block::getHeight();
-
-			$cmd_args = [
-				'type'=>'view',
-				'method' => $method,
-				'params' => $params,
+            $debug = SmartContractEngine::$debug;
+            $virtual = SmartContractEngine::$virtual;
+            $cmd_args = [
+                'type'=>'view',
+                'method' => $method,
+                'params' => $params,
                 'height'=>$height,
-                "virtual"=>self::$virtual
-			];
-
-			$cmd_args = base64_encode(json_encode($cmd_args));
-
-			$cmd = "$sc_exec_file $cmd_args";
-
-			$res = self::isolateCmd($cmd);
-			$out = self::processOutput($res);
-			$response = $out['response'];
-			return $response;
+                "virtual"=>$virtual,
+                "dbConfig"=>self::getDbConfig(),
+            ];
+            $result = Sandbox::exec($phar_path, $cmd_args, $sc_address, $virtual, $debug);
+            $data = self::processOutput($result);
+            return $data['response'];
 
 		}, $error);
 	}
 
-	static function isolateCmd($cmd) {
-        $debug=false;
-
-        $allowed_files = [
-            ROOT . "/chain_id",
-            ROOT . "/include/sc.inc.php",
-            ROOT . "/include/db.inc.php",
-            ROOT . "/include/common.functions.php",
-            ROOT . "/include/class/sc"
-        ];
-
-        if(SmartContractEngine::$debug) {
-            foreach (SmartContractEngine::$sourcesMap as $source_file) {
-                if(!empty($source_file) && file_exists($source_file)) {
-                    $allowed_files[]= $source_file;
-                }
-            }
-        }
-
-        if(file_exists(ROOT."/chain_id")) {
-            $chain_id = trim(file_get_contents(ROOT."/chain_id"));
-            $allowed_files[]=ROOT . "/include/coinspec.".$chain_id.".inc.php";
-        }
-
-        $allowed_files_list = implode(":", $allowed_files);
-
-        global $_config;
-        $config=[
-            "db_connect"=>@$_config['db_connect'],
-            "db_user"=>@$_config['db_user'],
-            "db_pass"=>@$_config['db_pass'],
-        ];
-
-        $config=base64_encode(json_encode($config));
-        $error_reporting=E_ALL^E_NOTICE;
-
-        $disable_functions=get_sc_disable_functions();
-
-        $debug_str="";
-        $env="";
-        if($debug) {
-            $debug_str="-dxdebug.start_with_request=1";
-            $disable_functions = str_replace("getenv,", '', $disable_functions);
-            $env="PHP_IDE_CONFIG=\"serverName=local\"";
-        }
-
-		$exec_cmd = "CONFIG=$config $env php $debug_str -d disable_functions=$disable_functions ";
-		$exec_cmd.= " -d memory_limit=".SC_MEMORY_LIMIT." -d max_execution_time=".SC_MAX_EXEC_TIME." -d error_reporting=$error_reporting";
-		$exec_cmd.= " -d open_basedir=".self::getRunFolder().":".$allowed_files_list;
-		$exec_cmd.= " -f $cmd ";
-
-        $proc = proc_open($exec_cmd,[
-            0 => ['pipe','r'],
-            1 => ['pipe','w'],
-            2 => ['pipe','w'],
-        ],$pipes);
-        $stdout = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-        $stderr = stream_get_contents($pipes[2]);
-        fclose($pipes[2]);
-        proc_close($proc);
-        $res= [
-            "output"=>$stdout,
-            "errors"=>$stderr
-        ];
-        return $res;
-	}
-
-	static function buildRunCode($sc_address, $code = null, $test=false) {
-
-        if($code == null) {
-            $smartContract = SmartContractEngine::verifySmartContract($sc_address, $test);
-            $code = $smartContract['code'];
-            $data = json_decode(base64_decode($code), true);
-            $code = base64_decode($data['code']);
-        }
-
-		return self::buildRunFile($sc_address, $code);
-	}
-
-    static function buildRunFile($sc_address, $code) {
+    /**
+     * @param $sc_address
+     * @param $code string raw phar file code
+     * @return string
+     * @throws Exception
+     */
+    static function buildPharFile($sc_address, $code) {
         $sc_dir = self::getRunFolder();
         if(!file_exists($sc_dir)) {
             $res = @mkdir($sc_dir);
@@ -249,67 +184,18 @@ class SmartContractEngine
                 throw new Exception("Unable to create smart contracts run dir");
             }
         }
-
         $phar_file = $sc_dir . "/$sc_address.phar";
-        if(!file_exists($phar_file) || self::$virtual) {
+        if(!file_exists($phar_file) || self::$virtual || DEVELOPMENT) {
             $res = file_put_contents($phar_file, $code);
             if(!$res) {
-                throw new Exception("Enable to write phar file");
+                throw new Exception("Enable to write phar $sc_address file");
             }
             $res = @chmod($phar_file, 0777);
-            if(!$res) {
-                throw new Exception("Enable to set permissions to phar file");
-            }
+//            if(!$res) {
+//                throw new Exception("Enable to set permissions to phar file");
+//            }
         }
-
-        $sc_run_file = $sc_dir. "/{$sc_address}_run.php";
-        if(file_exists($sc_run_file)) {
-            return $sc_run_file;
-        }
-
-        $require_file = "phar://$phar_file";
-        if(SmartContractEngine::$debug) {
-            $source_file = SmartContractEngine::$sourcesMap[$sc_address];
-            if(!empty($source_file) && file_exists($source_file)) {
-                if(is_dir($source_file)) {
-                    $require_file = $source_file . "/index.php";
-                } else {
-                    $require_file = $source_file;
-                }
-            }
-        }
-
-        $run_code = "<?php
-
-        if(function_exists('xdebug_disable')) {
-            xdebug_disable();
-        }
-		
-		require_once dirname(dirname(__DIR__)) . '/include/sc.inc.php';
-		require_once \"$require_file\";
-		
-		ob_start();
-
-		\$smartContractWrapper = new SmartContractWrapper(\"$sc_address\");
-		\$smartContractWrapper->run();
-		
-		";
-
-        $sc_run_file = $sc_dir. "/{$sc_address}_run.php";
-        $res = file_put_contents($sc_run_file, $run_code);
-        if(DEVELOPMENT) {
-            chmod($sc_run_file, 0777);
-            touch($sc_run_file);
-            touch(dirname($sc_dir));
-            clearstatcache($sc_run_file);;
-            shell_exec("touch ".dirname($sc_dir));
-            sleep(5);
-        }
-        if(!$res) {
-            throw new Exception("Enable to write run file");
-        }
-
-        return $sc_run_file;
+        return $phar_file;
     }
 
 	static function loadVarState($sc_address, $property, $key, $map) {
@@ -317,7 +203,7 @@ class SmartContractEngine
 
 		if(self::$virtual) {
 			$state = [];
-			$state_file = self::getRunFolder() . "/{$sc_address}.state.json";
+			$state_file = self::getRunFolder() . "/{$sc_address}.json";
 			if(file_exists($state_file)) {
 				$state = file_get_contents($state_file);
 				$state = json_decode($state, true);
@@ -330,7 +216,7 @@ class SmartContractEngine
 				    return $state[$property][$key];
                 }
 			} else {
-				return $state[$property];
+				return @$state[$property];
 			}
 
 		} else {
@@ -366,53 +252,36 @@ class SmartContractEngine
 
 	}
 
+    /**
+     * @param $code string base64 encoded phar code
+     * @param $error
+     * @param $address
+     * @return false|mixed
+     * @throws Exception
+     */
 	static function verifyCode($code, &$error = null, $address=null) {
 		return try_catch(function () use ($error, $code, $address) {
 
-			$code = base64_decode($code);
-
-			$name = empty($address) ? hash("sha256", $code) : $address;
-
-            $sc_verify_file = self::buildRunFile($name, $code);
-
-            $cmd_args = [
-                'type'=>'verify',
-                "virtual"=>self::$virtual
-            ];
-
-            $cmd_args = base64_encode(json_encode($cmd_args));
-
-			$cmd = "$sc_verify_file $cmd_args";
-            $res = self::isolateCmd($cmd);
-			$interface = self::processOutput($res);
-
-            if(!DEVELOPMENT) {
-                unlink($sc_verify_file);
-            }
-
-			return $interface;
+            $code = base64_decode($code);
+            $phar_file = SmartContractEngine::buildPharFile($address, $code);
+            $interface = Compiler::readInterface($phar_file);
+            return $interface;
 
 		}, $error);
 	}
 
 	static function processOutput($res) {
-        $output=$res['output'];
-        $errors=$res['errors'];
-		$output_decoded = json_decode($output , true);
-
-        if(!is_array($errors)) {
-            $errors = [$errors];
+        if(isset($res['status']) && $res['status']=='ok') {
+            return $res['data'];
         }
 
-		if(!is_array($output_decoded)) {
-			throw new Exception("Smart contract failed: $output errors=".@implode(PHP_EOL, $errors));
-		} else {
-			if($output_decoded['status']=='error') {
-				throw new Exception("Smart contract failed: ".$output_decoded['error']. " errors=".@implode(PHP_EOL, $errors) .
-                " trace=".$output_decoded['trace']);
-			}
-		}
-		return $output_decoded['data'];
+        if(isset($res['error']) && $res['error']=='sandbox_error' ) {
+            throw new Exception("Smart contract Sandbox error: ".$res['details']);
+        }
+
+        throw new Exception("Smart contract failed: ".$res['error'] . ': ' . $res['message'] .
+            " trace=".$res['trace']);
+
 	}
 
 	static function getInterface($sc_address, &$error = null) {
@@ -430,16 +299,14 @@ class SmartContractEngine
 
     public static function getState($sc_address) {
         if(self::$virtual) {
-            $state_file = ROOT . '/tmp/sc/'.$sc_address.'.state.json';
-            $state = @json_decode(@file_get_contents($state_file), true);
-            return $state;
+            return StatePersistence::loadState($sc_address);
         }
         return SmartContract::getState($sc_address);
     }
 
     public static function cleanVirtualState($sc_address) {
         if(self::$virtual) {
-            $state_file = ROOT . '/tmp/sc/'.$sc_address.'.state.json';
+            $state_file = ROOT . '/tmp/sc/'.$sc_address.'.json';
             @unlink($state_file);
         }
     }
@@ -454,6 +321,17 @@ class SmartContractEngine
             return strlen(trim($item))>0;
         });
         return $arr;
+    }
+
+
+    private static function getDbConfig()
+    {
+        global $_config;
+        return[
+            'db_connect' => $_config['db_connect'],
+            'db_user' => $_config['db_user'],
+            'db_pass' => $_config['db_pass'],
+        ];
     }
 
 }

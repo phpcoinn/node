@@ -174,7 +174,11 @@ class Block
                     $schash = $this->processSmartContractTxs($this->height);
                     _log("SCHASH: block=" . $this->schash . " calc=" . $schash, 5);
                     if ($schash === false) {
-                        throw new Exception("Parse block failed " . $this->height . " Missing schash");
+                        if(in_array($this->id, ['B9DzmeoTRWtqMbbjfbANgmKNiNTbhhyxubGypLDUmCXR'])) {
+                            _log("Ignore Missing schash id=".$this->id);
+                        } else {
+                            throw new Exception("Parse block failed " . $this->height . " Missing schash id=".$this->id);
+                        }
                     }
                     if (!empty($this->schash) && $this->schash != $schash) {
                         if (in_array($this->height, IGNORE_SC_HASH_HEIGHT)) {
@@ -240,6 +244,9 @@ class Block
             return null;
         }
         $process_schash = SmartContract::process($smart_contracts, $height, $test,  $err, $state_updates);
+        if(empty($process_schash)){
+            return false;
+        }
         if($height >= UPDATE_15_EXTENDED_SC_HASH_V2) {
             $res = Nodeutil::calculateSmartContractsHashV2($height);
             $current_state_hash = $res['hash'];

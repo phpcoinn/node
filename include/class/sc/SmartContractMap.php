@@ -9,6 +9,7 @@ class SmartContractMap implements ArrayAccess, Countable
     protected $height;
     protected $address;
 
+
     function __construct($address, $name, $height) {
         $this->name = $name;
         $this->height = $height;
@@ -19,7 +20,7 @@ class SmartContractMap implements ArrayAccess, Countable
     #[\ReturnTypeWillChange]
     public function offsetExists($offset)
     {
-        return SmartContractBase::existsStateVar($this->address, $this->height, $this->name, $offset);
+        return SmartContractState::existsStateVar($this->address, $this->height, $this->name, $offset);
     }
 
     #[\ReturnTypeWillChange]
@@ -28,52 +29,52 @@ class SmartContractMap implements ArrayAccess, Countable
         if($offset ===  null || strlen($offset)==0) {
             return $this->count();
         }
-        return SmartContractBase::getStateVar($this->address, $this->height, $this->name, $offset);
+        return SmartContractState::getStateVar($this->address, $this->height, $this->name, $offset);
     }
 
     #[\ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
-        if(strlen($offset)==0) {
+        if($offset==null || strlen($offset)==0) {
             $offset = $this->count();
         }
-        SmartContractBase::setStateVar($this->address, $this->height, $this->name, $value, $offset);
+        SmartContractState::setStateVar($this->address, $this->height, $this->name, $value, $offset);
     }
 
     #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
-        if(strlen($offset)==0) {
+        if($offset=== null || strlen($offset)==0) {
             return;
         }
         if($this->offsetExists($offset)) {
-            SmartContractBase::setStateVar($this->address, $this->height, $this->name, null, $offset);
+            SmartContractState::setStateVar($this->address, $this->height, $this->name, null, $offset);
         }
     }
 
     #[\ReturnTypeWillChange]
     public function count()
     {
-        return SmartContractBase::countStateVar($this->address, $this->height, $this->name);
+        return SmartContractState::countStateVar($this->address, $this->height, $this->name);
     }
 
     public function keys() {
-        return SmartContractBase::stateVarKeys($this->address, $this->height, $this->name);
+        return SmartContractState::stateVarKeys($this->address, $this->height, $this->name);
     }
 
     public function all() {
-        return SmartContractBase::stateAll($this->address, $this->height, $this->name);
+        return SmartContractState::stateAll($this->address, $this->height, $this->name);
     }
 
     public function clear($key=null) {
         if($this->height >= UPDATE_15_EXTENDED_SC_HASH_V2) {
             throw new Exception("Call to deleted function");
         }
-        return SmartContractBase::stateClear($this->address, $this->name, $key);
+        return SmartContractState::stateClear($this->address, $this->name, $key);
     }
 
     public function inc($key) {
-        if(strlen($key)==0) {
+        if($key===null || strlen($key)==0) {
             return;
         }
         if (isset($this[$key])) {
@@ -86,7 +87,7 @@ class SmartContractMap implements ArrayAccess, Countable
     }
 
     public function add($key, $n) {
-        if(strlen($key)==0) {
+        if($key===null || strlen($key)==0) {
             return;
         }
         if (isset($this[$key])) {
@@ -99,6 +100,7 @@ class SmartContractMap implements ArrayAccess, Countable
     }
 
     public function query($sql, $params) {
-        return SmartContractBase::query($this->address, $sql, $params);
+        return SmartContractState::query($this->address, $sql, $params);
     }
+
 }
