@@ -1,3 +1,9 @@
+[PHPCoin Docs](../) > [Getting Started](./) > Pruned Node Feature
+
+
+---
+
+
 # PHP Coin – Pruned Node Feature
 
 ## Overview

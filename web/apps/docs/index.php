@@ -15,7 +15,7 @@ register_shutdown_function('shutdown_handler');
 function shutdown_handler() {
 	// print '<p>DEBUG: shutdown_handler @ ' . time() . '</p>';
 	$error = error_get_last();
-	if (! empty($error)) {
+	if (! empty($error) && DEVELOPMENT) {
 		print '<pre>' . print_r($error, true) . '</pre>';
 	}
 	// print '<hr /><br><br><br>';
@@ -147,14 +147,12 @@ require_once __DIR__. '/../common/include/top.php';
 
 <?php echo $pd->text($text); ?>
 
-<div class="container-fluid">
-    <hr>
-    <div class="row">
-        <div class="col-sm-6">
-            PHPCoin Docs Viewer v<?php echo PHPCOIN_DOCS_VIEWER_VERSION ?>
-        </div>
-    </div>
-</div>
+
+<hr>
+<p>
+    PHPCoin Docs Viewer v<?php echo PHPCOIN_DOCS_VIEWER_VERSION ?>
+</p>
+
 
 
 <?php
