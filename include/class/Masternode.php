@@ -881,7 +881,7 @@ class Masternode extends Task
 				}
 				$mnPublicKey = Account::publicKey($block->masternode);
 				if(!$mnPublicKey) {
-					throw new Exception("Not found public key for msternode");
+					throw new Exception("Not found public key for msternode ".$block->masternode);
 				}
 				$masternode = Masternode::get($mnPublicKey);
 				if(!$masternode) {

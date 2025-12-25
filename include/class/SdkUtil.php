@@ -40,10 +40,10 @@ class SdkUtil
         }
     }
 
-    static function createAndSendTx($node, $private_key, $dst, $val, $type, $msg=null, $chain_id = CHAIN_ID)
+    static function createAndSendTx($node, $private_key, $dst, $val, $type, $msg=null, $chain_id = CHAIN_ID, &$err = null)
     {
         $tx = self::createAndSignTx($private_key, $dst, $val, $type, $msg, $chain_id);
-        $res = self::api_post($node."/api.php?q=sendTransaction" , ["tx"=>base64_encode(json_encode($tx->toArray()))]);
+        $res = self::api_post($node."/api.php?q=sendTransaction" , ["tx"=>base64_encode(json_encode($tx->toArray()))], $err);
         return $res;
     }
 

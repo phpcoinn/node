@@ -439,7 +439,7 @@ class Dapps extends Task
 		_log("Dapps: Parsing output $out", 5);
 
 		header("Access-Control-Allow-Origin: *");
-
+        $out = str_replace("PHP Warning:  JIT is incompatible with third party extensions that override zend_execute_ex(). JIT disabled. in Unknown on line 0\n", "", $out);
 
 		if(strpos($out, "action:")===0) {
 			self::processAction($out, $dapps_id);

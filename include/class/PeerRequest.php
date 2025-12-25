@@ -672,6 +672,10 @@ class PeerRequest
 			api_err("invalid-peer");
 		}
 
+        if (Config::isSync()) {
+            api_err("submitBlock: sync");
+        }
+
 		$current = Block::current();
 
 		$diff = $current['height']-$data['height'];
