@@ -91,7 +91,7 @@ if(!function_exists('_log')) {
 	function _log($log)
 	{
 		$log_file = ROOT . "/tmp/dapps/dapps.log";
-		$log = $log . PHP_EOL;
+		$log = date("Y-m-d H:i:s") . " [".$_SERVER['REMOTE_ADDR']."]" . " " . $log . PHP_EOL;
 		file_put_contents($log_file, $log, FILE_APPEND);
 	}
 }

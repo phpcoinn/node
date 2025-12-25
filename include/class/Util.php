@@ -2053,7 +2053,7 @@ class Util
     {
         $res = NodeSync::checkBlocks();
         if (!$res) {
-            _log("Block database is invalid - BLOCKCHAIN_INVALID 1");
+            _log("Block database is invalid");
             Config::setVal("blockchain_invalid", 1);
         }
     }
@@ -2062,7 +2062,6 @@ class Util
         $res = NodeSync::compareCheckPoints();
         if(!$res) {
             _log("Blockchain is invalid - checkpoints are not correct");
-            _log("BLOCKCHAIN_INVALID 2");
             Config::setVal("blockchain_invalid", 1);
         }
     }

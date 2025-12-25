@@ -229,17 +229,10 @@ $redirect=$_SERVER['REQUEST_URI'];
                                     <i class="fas fa-faucet me-2"></i><span data-key="t-dashboards">Faucet</span>
                                 </a>
                             </li>
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-pages" role="button">
-                                    <i class="fas fa-network-wired me-2"></i><span data-key="t-peers">Peers</span> <div class="arrow-down"></div>
-                                </a>
-                                <div class="dropdown-menu" aria-labelledby="topnav-pages" id="peers-menu">
-                                    <?php foreach($menuPeers as $peer) { ?>
-                                        <a href="<?php echo $peer['hostname'] . $_SERVER['REQUEST_URI'] ?>" class="dropdown-item <?php if ($peer['ip'] == $_SERVER['SERVER_ADDR']) { ?>active<?php } ?>" data-key="t-calendar"><?php echo $peer['hostname'] ?></a>
-                                    <?php } ?>
-                                </div>
-                            </li>
+                                <li class="nav-item d-flex align-items-center">
+                                    <a href="https://buy.phpcoin.net/?utm_source=explorer&utm_medium=community&utm_campaign=direct_buy" target="_blank"
+                                       class="btn btn-primary">Buy PHPCoin</a>
+                                </li>
                         </ul>
                         <ul class="navbar-nav d-flex">
                             <?php if($logged) {
