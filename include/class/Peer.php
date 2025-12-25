@@ -274,7 +274,8 @@ class Peer
 			"block"=>$current['id'],
 			"hostname"=>$_config['hostname'],
 			"dapps_id"=>$dapps_data['dapps_id'],
-			"dapps_hash"=>$dapps_data['dapps_hash']
+			"dapps_hash"=>$dapps_data['dapps_hash'],
+            "pruned_height"=>@$_config['pruned_height'],
 		];
 	}
 
