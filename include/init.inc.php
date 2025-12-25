@@ -41,6 +41,10 @@ if(PHP_VERSION_ID < 80000) {
     die("Invalid php version! Please upgrade your node");
 }
 
+if(file_exists(ROOT."/maintenance")){
+	die("Node is under maintenance");
+}
+
 $config_file = ROOT.'/config/config.inc.php';
 
 require_once ROOT.'/config/config.default.php';
