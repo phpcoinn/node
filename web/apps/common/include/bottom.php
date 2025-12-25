@@ -20,6 +20,9 @@ $updateAvb = $maxPeerBuildNumber > $currentVersion;
                 <?php } ?>
                 |
                 Trade on <a href="https://klingex.io/trade/PHP-USDT?ref=3436CA42" target="_blank">KlingEx</a>
+                |
+                <a href="https://buy.phpcoin.net/?utm_source=explorer&utm_medium=community&utm_campaign=direct_buy" target="_blank"
+                   class="">Direct buy</a>
             </div>
             <div class="col-sm-6">
                 <div class="text-center text-md-end d-flex justify-content-center justify-content-sm-end align-items-center mb-2 mb-sm-0">
