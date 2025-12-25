@@ -32,7 +32,21 @@ class Api
 	 *
 	 * @apiParam {string} public_key The public key
 	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {string} data Contains the address
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {string} data Error message
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
 	 */
 	static function getAddress($data) {
 		$public_key = $data['public_key'];
@@ -50,7 +64,21 @@ class Api
 	 *
 	 * @apiParam {string} data Input string
 	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {string} data Output string
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {string} data Error message
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
 	 */
 	static function base58($data) {
 		api_echo(base58_encode($data['data']));
@@ -60,12 +88,26 @@ class Api
 	 * @api {get} /api.php?q=getBalance  getBalance
 	 * @apiName getBalance
 	 * @apiGroup API
-	 * @apiDescription Returns the balance of a specific address or public key.
+	 * @apiDescription Returns the balance of a specific address or public key. At least one of public_key or address must be provided.
 	 *
 	 * @apiParam {string} [public_key] Public key
 	 * @apiParam {string} [address] Address
 	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {string} data The PHP balance
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {string} data Error message
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
 	 */
 	static function getBalance($data) {
 		$public_key = @$data['public_key'];
@@ -93,9 +135,23 @@ class Api
      * @apiGroup API
      * @apiDescription Returns the balances of multiple addresses
      *
-     * @apiParam {string} [addresses] List of addresses (json encoded)
+     * @apiParam {string} addresses List of addresses (json encoded)
      *
-     * @apiSuccess {string} data The balances for each address
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data The balances for each address
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
     static function getBalances($data) {
         $addresses = $data['addresses'];
@@ -114,12 +170,26 @@ class Api
 	 * @api {get} /api.php?q=getPendingBalance  getPendingBalance
 	 * @apiName getPendingBalance
 	 * @apiGroup API
-	 * @apiDescription Returns the pending balance, which includes pending transactions, of a specific address or public key.
+	 * @apiDescription Returns the pending balance, which includes pending transactions, of a specific address or public key. At least one of public_key or address must be provided.
 	 *
 	 * @apiParam {string} [public_key] Public key
 	 * @apiParam {string} [address] Address
 	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {string} data The PHP balance
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {string} data Error message
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
 	 */
 	static function getPendingBalance($data) {
 		$address = $data['address'];
@@ -144,12 +214,26 @@ class Api
 	 * @api {get} /api.php?q=getMempoolBalance  getMempoolBalance
 	 * @apiName getMempoolBalance
 	 * @apiGroup API
-	 * @apiDescription Returns only balance in mempool of a specific address or public key.
+	 * @apiDescription Returns only balance in mempool of a specific address or public key. At least one of public_key or address must be provided.
 	 *
 	 * @apiParam {string} [public_key] Public key
 	 * @apiParam {string} [address] Address
 	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {string} data The PHP balance in mempool
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {string} data Error message
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
 	 */
 	static function getMempoolBalance($data) {
 		$address = $data['address'];
@@ -167,7 +251,7 @@ class Api
 	 * @api {get} /api.php?q=getTransactions  getTransactions
 	 * @apiName getTransactions
 	 * @apiGroup API
-	 * @apiDescription Returns the latest transactions of an address.
+	 * @apiDescription Returns the latest transactions of an address. At least one of public_key or address must be provided.
 	 *
 	 * @apiParam {string} [public_key] Public key
 	 * @apiParam {string} [address] Address
@@ -178,21 +262,36 @@ class Api
 	 * @apiParam {numeric} filter.type Filter transactions by type
 	 * @apiParam {string} filter.dir Filter transactions by direction: send or receive
 	 *
-	 * @apiSuccess {string} block  Block ID
-	 * @apiSuccess {numeric} confirmation Number of confirmations
-	 * @apiSuccess {numeric} date  Transaction's date in UNIX TIMESTAMP format
-	 * @apiSuccess {string} dst  Transaction destination
-	 * @apiSuccess {numeric} fee  The transaction's fee
-	 * @apiSuccess {numeric} height  Block height
-	 * @apiSuccess {string} id  Transaction ID/HASH
-	 * @apiSuccess {string} message  Transaction's message
-	 * @apiSuccess {string} public_key  Account's public_key
-	 * @apiSuccess {string} sign Sign of transaction related to address
-	 * @apiSuccess {string} signature  Transaction's signature
-	 * @apiSuccess {string} src  Sender's address
-	 * @apiSuccess {numeric} type Transaction type
-	 * @apiSuccess {string} type_label Transaction label
-	 * @apiSuccess {numeric} val Transaction value
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
+	 * @apiSuccess {array} data Array of transaction objects
+	 * @apiSuccess {string} data[].block  Block ID
+	 * @apiSuccess {numeric} data[].confirmation Number of confirmations
+	 * @apiSuccess {numeric} data[].date  Transaction's date in UNIX TIMESTAMP format
+	 * @apiSuccess {string} data[].dst  Transaction destination
+	 * @apiSuccess {numeric} data[].fee  The transaction's fee
+	 * @apiSuccess {numeric} data[].height  Block height
+	 * @apiSuccess {string} data[].id  Transaction ID/HASH
+	 * @apiSuccess {string} data[].message  Transaction's message
+	 * @apiSuccess {string} data[].public_key  Account's public_key
+	 * @apiSuccess {string} data[].sign Sign of transaction related to address
+	 * @apiSuccess {string} data[].signature  Transaction's signature
+	 * @apiSuccess {string} data[].src  Sender's address
+	 * @apiSuccess {numeric} data[].type Transaction type
+	 * @apiSuccess {string} data[].type_label Transaction label
+	 * @apiSuccess {numeric} data[].val Transaction value
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {string} data Error message
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
 	 */
 	static function getTransactions($data) {
 		$address = san($data['address']);
@@ -226,19 +325,34 @@ class Api
 	 *
 	 * @apiParam {string} transaction Transaction ID
 	 *
-	 * @apiSuccess {string} block  Block ID
-	 * @apiSuccess {numeric} height  Block height
-	 * @apiSuccess {string} id  Transaction ID/HASH
-	 * @apiSuccess {string} dst  Transaction destination
-	 * @apiSuccess {numeric} val Transaction value
-	 * @apiSuccess {numeric} fee  The transaction's fee
-	 * @apiSuccess {string} signature  Transaction's signature
-	 * @apiSuccess {string} message  Transaction's message
-	 * @apiSuccess {string} type  Transaction type
-	 * @apiSuccess {numeric} date  Transaction's date in UNIX TIMESTAMP format
-	 * @apiSuccess {string} public_key  Account's public_key
-	 * @apiSuccess {numeric} confirmation Number of confirmations
-	 * @apiSuccess {string} type_label  Transaction type label
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
+	 * @apiSuccess {object} data Transaction object
+	 * @apiSuccess {string} data.block  Block ID
+	 * @apiSuccess {numeric} data.height  Block height
+	 * @apiSuccess {string} data.id  Transaction ID/HASH
+	 * @apiSuccess {string} data.dst  Transaction destination
+	 * @apiSuccess {numeric} data.val Transaction value
+	 * @apiSuccess {numeric} data.fee  The transaction's fee
+	 * @apiSuccess {string} data.signature  Transaction's signature
+	 * @apiSuccess {string} data.message  Transaction's message
+	 * @apiSuccess {string} data.type  Transaction type
+	 * @apiSuccess {numeric} data.date  Transaction's date in UNIX TIMESTAMP format
+	 * @apiSuccess {string} data.public_key  Account's public_key
+	 * @apiSuccess {numeric} data.confirmation Number of confirmations
+	 * @apiSuccess {string} data.type_label  Transaction type label
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {string} data Error message
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
 	 */
 	static function getTransaction($data) {
 		$id = san($data['transaction']);
@@ -260,7 +374,21 @@ class Api
 	 *
 	 * @apiParam {string} address Address
 	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {string} data The public key
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {string} data Error message
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
 	 */
 	static function getPublicKey($data) {
 		$address = san($data['address']);
@@ -284,9 +412,16 @@ class Api
 	 * @apiGroup API
 	 * @apiDescription Generates a new account.
 	 *
-	 * @apiSuccess {string} address Account address
-	 * @apiSuccess {string} public_key Public key
-	 * @apiSuccess {string} private_key Private key
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
+	 * @apiSuccess {object} data Account object
+	 * @apiSuccess {string} data.address Account address
+	 * @apiSuccess {string} data.public_key Public key
+	 * @apiSuccess {string} data.private_key Private key
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
 	 */
 	static function generateAccount($data) {
 		$res = Account::generateAcccount();
@@ -299,17 +434,24 @@ class Api
 	 * @apiGroup API
 	 * @apiDescription Returns the current block.
 	 *
-	 * @apiSuccess {string} id Block id
-	 * @apiSuccess {string} generator Block Generator
-	 * @apiSuccess {numeric} height Height
-	 * @apiSuccess {numeric} date Block's date in UNIX TIMESTAMP format
-	 * @apiSuccess {string} nonce Mining nonce
-	 * @apiSuccess {string} signature Signature signed by the generator
-	 * @apiSuccess {numeric} difficulty The base target / difficulty
-	 * @apiSuccess {numeric} transactions Number of transactions in block
-	 * @apiSuccess {string} version Block version
-	 * @apiSuccess {string} argon Mining argon hash
-	 * @apiSuccess {string} miner Miner who found block
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
+	 * @apiSuccess {object} data Block object
+	 * @apiSuccess {string} data.id Block id
+	 * @apiSuccess {string} data.generator Block Generator
+	 * @apiSuccess {numeric} data.height Height
+	 * @apiSuccess {numeric} data.date Block's date in UNIX TIMESTAMP format
+	 * @apiSuccess {string} data.nonce Mining nonce
+	 * @apiSuccess {string} data.signature Signature signed by the generator
+	 * @apiSuccess {numeric} data.difficulty The base target / difficulty
+	 * @apiSuccess {numeric} data.transactions Number of transactions in block
+	 * @apiSuccess {string} data.version Block version
+	 * @apiSuccess {string} data.argon Mining argon hash
+	 * @apiSuccess {string} data.miner Miner who found block
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
 	 */
 	static function currentBlock($data) {
 		$current = Block::current();
@@ -324,18 +466,33 @@ class Api
 	 *
 	 * @apiParam {numeric} height Block Height
 	 *
-	 * @apiSuccess {string} id Block id
-	 * @apiSuccess {string} generator Block Generator
-	 * @apiSuccess {numeric} height Height
-	 * @apiSuccess {numeric} date Block's date in UNIX TIMESTAMP format
-	 * @apiSuccess {string} nonce Mining nonce
-	 * @apiSuccess {string} signature Signature signed by the generator
-	 * @apiSuccess {numeric} difficulty The base target / difficulty
-	 * @apiSuccess {numeric} transactions Number of transactions in block
-	 * @apiSuccess {string} version Block version
-	 * @apiSuccess {string} argon Mining argon hash
-	 * @apiSuccess {string} miner Miner who found block
-	 * @apiSuccess {array} data List of transactions in block
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
+	 * @apiSuccess {object} data Block object
+	 * @apiSuccess {string} data.id Block id
+	 * @apiSuccess {string} data.generator Block Generator
+	 * @apiSuccess {numeric} data.height Height
+	 * @apiSuccess {numeric} data.date Block's date in UNIX TIMESTAMP format
+	 * @apiSuccess {string} data.nonce Mining nonce
+	 * @apiSuccess {string} data.signature Signature signed by the generator
+	 * @apiSuccess {numeric} data.difficulty The base target / difficulty
+	 * @apiSuccess {numeric} data.transactions Number of transactions in block
+	 * @apiSuccess {string} data.version Block version
+	 * @apiSuccess {string} data.argon Mining argon hash
+	 * @apiSuccess {string} data.miner Miner who found block
+	 * @apiSuccess {array} data.data List of transactions in block
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {string} data Error message
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
 	 */
 	static function getBlock($data) {
 		$height = san($data['height']);
@@ -351,25 +508,40 @@ class Api
 	 * @api {get} /api.php?q=getBlockTransactions  getBlockTransactions
 	 * @apiName getBlockTransactions
 	 * @apiGroup API
-	 * @apiDescription Returns the transactions of a specific block.
+	 * @apiDescription Returns the transactions of a specific block. At least one of height or block must be provided.
 	 *
 	 * @apiParam {numeric} [height] Block Height
 	 * @apiParam {string} [block] Block id
 	 *
-	 * @apiSuccess {string} block  Block ID
-	 * @apiSuccess {numeric} confirmations Number of confirmations
-	 * @apiSuccess {numeric} date  Transaction's date in UNIX TIMESTAMP format
-	 * @apiSuccess {string} dst  Transaction destination
-	 * @apiSuccess {numeric} fee  The transaction's fee
-	 * @apiSuccess {numeric} height  Block height
-	 * @apiSuccess {string} id  Transaction ID/HASH
-	 * @apiSuccess {string} message  Transaction's message
-	 * @apiSuccess {string} public_key  Account's public_key
-	 * @apiSuccess {string} signature  Transaction's signature
-	 * @apiSuccess {string} src  Sender's address
-	 * @apiSuccess {numeric} type Transaction type
-	 * @apiSuccess {string} type_label Transaction type label
-	 * @apiSuccess {numeric} val Transaction value
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
+	 * @apiSuccess {array} data Array of transaction objects
+	 * @apiSuccess {string} data[].block  Block ID
+	 * @apiSuccess {numeric} data[].confirmations Number of confirmations
+	 * @apiSuccess {numeric} data[].date  Transaction's date in UNIX TIMESTAMP format
+	 * @apiSuccess {string} data[].dst  Transaction destination
+	 * @apiSuccess {numeric} data[].fee  The transaction's fee
+	 * @apiSuccess {numeric} data[].height  Block height
+	 * @apiSuccess {string} data[].id  Transaction ID/HASH
+	 * @apiSuccess {string} data[].message  Transaction's message
+	 * @apiSuccess {string} data[].public_key  Account's public_key
+	 * @apiSuccess {string} data[].signature  Transaction's signature
+	 * @apiSuccess {string} data[].src  Sender's address
+	 * @apiSuccess {numeric} data[].type Transaction type
+	 * @apiSuccess {string} data[].type_label Transaction type label
+	 * @apiSuccess {numeric} data[].val Transaction value
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {string} data Error message
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
 	 */
 	static function getBlockTransactions($data) {
 		$height = san($data['height']);
@@ -390,8 +562,13 @@ class Api
 	 * @apiGroup API
 	 * @apiDescription Returns the node's version.
 	 *
-	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {string} data  Version
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
 	 */
 	static function version($data) {
 		api_echo(VERSION);
@@ -412,7 +589,21 @@ class Api
 	 * @apiParam {string} [message] A message to be included with the transaction. Maximum 128 chars.
 	 * @apiParam {numeric} [type] The type of the transaction. 1 to send coins.
 	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {string} data  Transaction id
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {string} data Error message
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
 	 */
 	static function send($data) {
 		global $_config;
@@ -451,7 +642,13 @@ class Api
 	 * @apiGroup API
 	 * @apiDescription Returns the number of transactions in mempool.
 	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {numeric} data  Number of mempool transactions
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
 	 */
 	static function mempoolSize($data) {
 		$res = Mempool::getSize();
@@ -464,12 +661,17 @@ class Api
 	 * @apiGroup API
 	 * @apiDescription Checks a signature against a public key
 	 *
-	 * @apiParam {string} [public_key] Public key
-	 * @apiParam {string} [signature] signature
-	 * @apiParam {string} [data] signed data
+	 * @apiParam {string} public_key Public key
+	 * @apiParam {string} signature Signature
+	 * @apiParam {string} data Signed data
 	 *
-	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {boolean} data true or false
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
 	 */
 	static function checkSignature($data) {
 		$public_key=san($data['public_key']);
@@ -484,10 +686,16 @@ class Api
 	 * @apiGroup       API
 	 * @apiDescription Returns details about the node's sync process.
 	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {object}  data A collection of data about the sync process.
 	 * @apiSuccess {boolean} data.sync_running Whether the sync process is currently running.
 	 * @apiSuccess {number}  data.last_sync The timestamp for the last time the sync process was run.
 	 * @apiSuccess {boolean} data.sync Whether the sync process is currently synchronising.
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
 	 */
 	static function sync($data) {
 		global $db;
@@ -503,6 +711,11 @@ class Api
 	 * @apiGroup       API
 	 * @apiDescription Returns details about the node.
 	 *
+	 * @apiParam {boolean} [basic] Return basic info only
+	 * @apiParam {boolean} [nocache] Skip cache
+	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {object}  data A collection of data about the node.
 	 * @apiSuccess {string} data.hostname The hostname of the node.
 	 * @apiSuccess {string} data.version The current version of the node.
@@ -525,6 +738,10 @@ class Api
 	 * @apiSuccess {string} data.hashRate10 Hash rate for last 10 blocks
 	 * @apiSuccess {string} data.hashRate100 Hash rate for last 100 blocks
 	 * @apiSuccess {string} data.lastBlockTime Date of last block
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
 	 */
 	static function nodeInfo($data) {
         $basic = isset($data['basic']);
@@ -541,7 +758,21 @@ class Api
 	 * @apiParam {string} address Address
 	 * @apiParam {string} [public_key] Public key
 	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
 	 * @apiSuccess {boolean} data True if the address is valid, false otherwise.
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {boolean} data false (when address is invalid)
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
 	 */
 	static function checkAddress($data) {
 		$address = $data['address'];
@@ -564,17 +795,24 @@ class Api
 	 * @apiGroup       API
 	 * @apiDescription Return all peers from node
 	 *
-	 * @apiSuccess {numeric} id Id of peer in internal database (not relevant)
-	 * @apiSuccess {string} hostname Peer hostname
-	 * @apiSuccess {numeric} blacklisted UNIX timestamp until peer is blacklisted
-	 * @apiSuccess {numeric} ping UNIX timestamp when peer was last pinged
-	 * @apiSuccess {numeric} fails Number of failed connections to peer
-	 * @apiSuccess {numeric} stuckfail Number of failed stuck connections to peer
-	 * @apiSuccess {numeric} height Blockchain height of peer
-	 * @apiSuccess {string} appshash Hash of peer apps
-	 * @apiSuccess {numeric} score Peer node score
-	 * @apiSuccess {string} blacklist_reason Reason why peer is blacklisted
-	 * @apiSuccess {string} version Version of peer node
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
+	 * @apiSuccess {array} data Array of peer objects
+	 * @apiSuccess {numeric} data[].id Id of peer in internal database (not relevant)
+	 * @apiSuccess {string} data[].hostname Peer hostname
+	 * @apiSuccess {numeric} data[].blacklisted UNIX timestamp until peer is blacklisted
+	 * @apiSuccess {numeric} data[].ping UNIX timestamp when peer was last pinged
+	 * @apiSuccess {numeric} data[].fails Number of failed connections to peer
+	 * @apiSuccess {numeric} data[].stuckfail Number of failed stuck connections to peer
+	 * @apiSuccess {numeric} data[].height Blockchain height of peer
+	 * @apiSuccess {string} data[].appshash Hash of peer apps
+	 * @apiSuccess {numeric} data[].score Peer node score
+	 * @apiSuccess {string} data[].blacklist_reason Reason why peer is blacklisted
+	 * @apiSuccess {string} data[].version Version of peer node
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
 	 */
 	static function getPeers($data) {
 		$peers = Peer::getAll();
@@ -587,14 +825,21 @@ class Api
      * @apiGroup       API
      * @apiDescription Return all masternodes from node
      *
-     * @apiSuccess {string} [public_key] Public key of masternode
-     * @apiSuccess {numeric} [height] Height at which masternode is created
-     * @apiSuccess {string} [ip] IP address of masternode
-	 * @apiSuccess {numeric} [win_height] Last height when masternode received reward
-     * @apiSuccess {string} [signature] current masternode signature
-     * @apiSuccess {string} [id] Address of masternode
-     * @apiSuccess {numeric} [collateral] Locked collateral in masternode
-     * @apiSuccess {numeric} [verified] 1 if masternode is verified for current height
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {array} data Array of masternode objects
+     * @apiSuccess {string} data[].public_key Public key of masternode
+     * @apiSuccess {numeric} data[].height Height at which masternode is created
+     * @apiSuccess {string} data[].ip IP address of masternode
+	 * @apiSuccess {numeric} data[].win_height Last height when masternode received reward
+     * @apiSuccess {string} data[].signature current masternode signature
+     * @apiSuccess {string} data[].id Address of masternode
+     * @apiSuccess {numeric} data[].collateral Locked collateral in masternode
+     * @apiSuccess {numeric} data[].verified 1 if masternode is verified for current height
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      */
 	static function getMasternodes($data) {
 		api_echo(Masternode::getAll());
@@ -608,11 +853,25 @@ class Api
      *
      * @apiParam {string} address Address
      *
-     * @apiSuccess {numeric} [collateral] Locked collateral of masternode
-     * @apiSuccess {numeric} [reward_address] Address which receives masternode rewards (if cold masternode)
-     * @apiSuccess {string} [masternode_address] Address of masternode
-     * @apiSuccess {numeric} [masternode_balance] Balance of masternode (hot or cold)
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {array} data Array of masternode objects
+     * @apiSuccess {numeric} data[].collateral Locked collateral of masternode
+     * @apiSuccess {string} data[].reward_address Address which receives masternode rewards (if cold masternode)
+     * @apiSuccess {string} data[].masternode_address Address of masternode
+     * @apiSuccess {numeric} data[].masternode_balance Balance of masternode (hot or cold)
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
 	static function getMasternodesForAddress($data) {
 		$address = $data['address'];
@@ -631,14 +890,29 @@ class Api
      *
      * @apiParam {string} address Address
      *
-     * @apiSuccess {string} [public_key] Public key of masternode
-     * @apiSuccess {numeric} [height] Height at which masternode is created
-     * @apiSuccess {string} [ip] IP address of masternode
-	 * @apiSuccess {numeric} [win_height] Last height when masternode received reward
-     * @apiSuccess {string} [signature] current masternode signature
-     * @apiSuccess {string} [id] Address of masternode
-     * @apiSuccess {numeric} [collateral] Locked collateral in masternode
-     * @apiSuccess {numeric} [verified] 1 if masternode is verified for current height
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data Masternode object
+     * @apiSuccess {string} data.public_key Public key of masternode
+     * @apiSuccess {numeric} data.height Height at which masternode is created
+     * @apiSuccess {string} data.ip IP address of masternode
+	 * @apiSuccess {numeric} data.win_height Last height when masternode received reward
+     * @apiSuccess {string} data.signature current masternode signature
+     * @apiSuccess {string} data.id Address of masternode
+     * @apiSuccess {numeric} data.collateral Locked collateral in masternode
+     * @apiSuccess {numeric} data.verified 1 if masternode is verified for current height
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
 	static function getMasternode($data) {
 		$address = $data['address'];
@@ -656,7 +930,15 @@ class Api
      * @apiGroup       API
      * @apiDescription Get current transaction fee
      *
-     * @apiSuccess {numeric} Current transaction fee
+     * @apiParam {numeric} [height] Height for which to retrieve fee. If empty, last fee is returned
+     *
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {string} data Current transaction fee
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      */
 	static function getFee($data) {
 		$fee = Blockchain::getFee($data['height']);
@@ -669,10 +951,15 @@ class Api
      * @apiGroup       API
      * @apiDescription Get smart contract create fee
      *
-     * @apiParam {number} height Height for which to retrieve fee.
-     * If empty last fee is returned
+     * @apiParam {number} [height] Height for which to retrieve fee. If empty last fee is returned
      *
-     * @apiSuccess {numeric} Smart contract creation fee
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {numeric} data Smart contract creation fee
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      */
     static function getSmartContractCreateFee($data) {
         $fee = Blockchain::getSmartContractCreateFee($data['height']);
@@ -685,10 +972,15 @@ class Api
      * @apiGroup       API
      * @apiDescription Get smart contract execution fee
      *
-     * @apiParam {number} height Height for which to retrieve fee.
-     * If empty last fee is returned
+     * @apiParam {number} [height] Height for which to retrieve fee. If empty last fee is returned
      *
-     * @apiSuccess {numeric} Smart contract execution fee
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {numeric} data Smart contract execution fee
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      */
     static function getSmartContractExecFee($data) {
         $fee = Blockchain::getSmartContractExecFee($data['height']);
@@ -703,7 +995,13 @@ class Api
      *
      * @apiParam {string} address Address of Smart Contract
      *
-     * @apiSuccess {numeric} Current transaction fee
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data Smart Contract object
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      */
 	static function getSmartContract($data) {
 		$sc_address = $data['address'];
@@ -721,7 +1019,21 @@ class Api
      * @apiParam {string} property Name of the property to read
      * @apiParam {string} [key] Key of property (if is map)
      *
-     * @apiSuccess {string} Value of property
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {string} data Value of property
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
 	static function getSmartContractProperty($data) {
 		$sc_address = $data['address'];
@@ -740,12 +1052,18 @@ class Api
      * @api            {get} /api.php?q=getSmartContractInterface  getSmartContractInterface
      * @apiName        getSmartContractInterface
      * @apiGroup       SC
-     * @apiDescription Get Smart Contract Interface definition from deployed contract or from code
+     * @apiDescription Get Smart Contract Interface definition. Requires either address (for deployed contract) or code (for compiled contract).
      *
-     * @apiParam {string} address Address of Smart Contract
-     * @apiParam {string} code Compiled code of Smart Contract
+     * @apiParam {string} [address] Address of Smart Contract
+     * @apiParam {string} [code] Compiled code of Smart Contract
      *
-     * @apiSuccess {json} Interface of Smart Contract
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data Interface of Smart Contract
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      */
 	static function getSmartContractInterface($data) {
 		$sc_address = @$data['address'];
@@ -768,7 +1086,13 @@ class Api
      * @apiParam {string} method View method name in Smart Contract
      * @apiParam {string} [params] Parameters for method (json string base64 encoded)
      *
-     * @apiSuccess {string} Response from execution of method
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {string} data Response from execution of method
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      */
 	static function getSmartContractView($data) {
 		$sc_address = $data['address'];
@@ -791,9 +1115,23 @@ class Api
      * @apiParam {string} signature Generated signature
      * @apiParam {string} nonce Message to sign
      *
-     * @apiSuccess {string} [address] Address of account
-     * @apiSuccess {string} [public_key] Public key of account
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data Account object
+     * @apiSuccess {string} data.address Address of account
+     * @apiSuccess {string} data.public_key Public key of account
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
 	static function authenticate($data) {
 		$public_key = $data['public_key'];
@@ -823,14 +1161,28 @@ class Api
 	}
 
     /**
-     * @api {get} /api.php?q=sendTransaction  sendTransaction
+     * @api {post} /api.php?q=sendTransaction  sendTransaction
      * @apiName sendTransaction
      * @apiGroup API
      * @apiDescription Sends a transaction as JSON via POST.
      *
      * @apiParam {string} tx Created transaction data (base64 encoded JSON)
      *
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
      * @apiSuccess {string} data  Transaction id
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
 	static function sendTransaction($data) {
 		$transactionData = $data['tx'];
@@ -846,12 +1198,36 @@ class Api
 	}
 
     /**
-     * @api {get} /api.php?q=sendTransactionJson  sendTransactionJson
+     * @api {post} /api.php?q=sendTransactionJson  sendTransactionJson
      * @apiName sendTransactionJson
      * @apiGroup API
-     * @apiDescription Sends a transaction via JSON via application/json.
+     * @apiDescription Sends a transaction via JSON via application/json. Transaction data should be sent in the request body as JSON.
      *
+     * @apiBody {string} public_key Sender's public key
+     * @apiBody {string} dst Destination address
+     * @apiBody {numeric} val Transaction value
+     * @apiBody {numeric} fee Transaction fee
+     * @apiBody {string} signature Transaction signature
+     * @apiBody {numeric} date Transaction date (UNIX timestamp)
+     * @apiBody {string} [message] Transaction message
+     * @apiBody {numeric} [type] Transaction type
+     * @apiBody {object} [data] Additional transaction data
+     *
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
      * @apiSuccess {string} data  Transaction id
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
     static function sendTransactionJson($data) {
         $transaction = Transaction::getFromArray($data);
@@ -1021,9 +1397,15 @@ class Api
      * @apiGroup API
      * @apiDescription Get masternode collateral for specified height
      *
-     * @apiParam {numeric} height Height to check
+     * @apiParam {numeric} [height] Height to check. If empty, current height is used
      *
-     * @apiSuccess {numeric} Collateral value
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {numeric} data Collateral value
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      */
 	static function getCollateral($data) {
 		if(isset($data['height'])) {
@@ -1042,14 +1424,29 @@ class Api
      *
      * @apiParam {string} address Address to check
      *
-     * @apiSuccess {string} type Type of address: masternode_reward,no_masternode,cold_masternode,unknown
-     * @apiSuccess {string} [id] Masternode address
-     * @apiSuccess {numeric} [height] Height at which masternode is created
-     * @apiSuccess {string} [src] Create masternode source
-     * @apiSuccess {string} [dst] Create masternode destination
-     * @apiSuccess {string} [message] Create masternode message
-     * @apiSuccess {numeric} [collateral] Create masternode collateral
-     * @apiSuccess {string} [block] Create masternode block
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data Address information object
+     * @apiSuccess {string} data.type Type of address: masternode_reward,no_masternode,cold_masternode,unknown
+     * @apiSuccess {string} data.id Masternode address
+     * @apiSuccess {numeric} data.height Height at which masternode is created
+     * @apiSuccess {string} data.src Create masternode source
+     * @apiSuccess {string} data.dst Create masternode destination
+     * @apiSuccess {string} data.message Create masternode message
+     * @apiSuccess {numeric} data.collateral Create masternode collateral
+     * @apiSuccess {string} data.block Create masternode block
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
     static function getAddressInfo($data){
         $address = $data['address'];
@@ -1068,14 +1465,29 @@ class Api
      *
      * @apiParam {string} address Wallet address from which is masternode removed (hot or reward address)
      * @apiParam {string} payout_address Destination address where locked collateral will be transferred
+     * @apiParam {string} [mn_address] Masternode address (required if reward address has multiple masternodes)
      *
-     * @apiSuccess {json} Transaction data
-     * @apiSuccess {numeric} [val] Transaction value
-     * @apiSuccess {numeric} [fee] Transaction fee
-     * @apiSuccess {string} [dst] Transaction destination address
-     * @apiSuccess {string} [src] Transaction source address
-     * @apiSuccess {string} [msg] Transaction message
-     * @apiSuccess {numeric} [type] Transaction type
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data Transaction data
+     * @apiSuccess {numeric} data.val Transaction value
+     * @apiSuccess {numeric} data.fee Transaction fee
+     * @apiSuccess {string} data.dst Transaction destination address
+     * @apiSuccess {string} data.src Transaction source address
+     * @apiSuccess {string} data.msg Transaction message
+     * @apiSuccess {numeric} data.type Transaction type
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
     static function generateMasternodeRemoveTx($data) {
         $address=$data['address'];
@@ -1153,13 +1565,27 @@ class Api
      * @apiParam {string} mn_address Address of masternode
      * @apiParam {string} [reward_address] Address of reward in case of cold masternode
      *
-     * @apiSuccess {json} Transaction data
-     * @apiSuccess {numeric} [val] Transaction value
-     * @apiSuccess {numeric} [fee] Transaction fee
-     * @apiSuccess {string} [dst] Transaction destination address
-     * @apiSuccess {string} [src] Transaction source address
-     * @apiSuccess {string} [msg] Transaction message
-     * @apiSuccess {numeric} [type] Transaction type
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data Transaction data
+     * @apiSuccess {numeric} data.val Transaction value
+     * @apiSuccess {numeric} data.fee Transaction fee
+     * @apiSuccess {string} data.dst Transaction destination address
+     * @apiSuccess {string} data.src Transaction source address
+     * @apiSuccess {string} data.msg Transaction message
+     * @apiSuccess {numeric} data.type Transaction type
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
     static function generateMasternodeCreateTx($data) {
         $address=$data['address'];
@@ -1208,7 +1634,21 @@ class Api
      *
      * @apiParam {string} address Address to check
      *
-     * @apiSuccess {json} List of Smart Contracts
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {array} data List of Smart Contracts
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
     static function getDeployedSmartContracts($data) {
         $address = $data['address'];
@@ -1230,8 +1670,23 @@ class Api
      * @apiBody {array} [params] List of deploy parameters
      * @apiBody {array} [metadata] Additional metadata parameters
      *
-     * @apiSuccess {string} signature_base Transaction signature base
-     * @apiSuccess {json} tx Transaction data
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data Transaction data
+     * @apiSuccess {string} data.signature_base Transaction signature base
+     * @apiSuccess {object} data.tx Transaction data
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
     static function generateSmartContractDeployTx($data) {
         $public_key = @$data['public_key'];
@@ -1281,12 +1736,27 @@ class Api
      *
      * @apiBody {string} public_key Public key of source wallet
      * @apiBody {string} sc_address Address of Smart Contract
-     * @apiBody {numeric} [amount] Deploy amount
-     * @apiBody {string} [method] Name of method to call
-     * @apiBody {array} [params] List of deploy parameters
+     * @apiBody {numeric} [amount] Execution amount
+     * @apiBody {string} method Name of method to call
+     * @apiBody {array} [params] List of execution parameters
      *
-     * @apiSuccess {string} signature_base Transaction signature base
-     * @apiSuccess {json} tx Transaction data
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data Transaction data
+     * @apiSuccess {string} data.signature_base Transaction signature base
+     * @apiSuccess {object} data.tx Transaction data
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
     static function generateSmartContractExecTx($data) {
         $public_key = @$data['public_key'];
@@ -1324,13 +1794,28 @@ class Api
      * @apiDescription Get data for send Smart Contract transaction
      *
      * @apiBody {string} public_key Public key of source wallet
-     * @apiBody {string} sc_address Address of Smart Contract
+     * @apiBody {string} address Address of Smart Contract
      * @apiBody {string} method Name of method to call
-     * @apiBody {numeric} [amount] Deploy amount
-     * @apiBody {array} [params] List of deploy parameters
+     * @apiBody {numeric} [amount] Send amount
+     * @apiBody {array} [params] List of method parameters
      *
-     * @apiSuccess {string} signature_base Transaction signature base
-     * @apiSuccess {json} tx Transaction data
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data Transaction data
+     * @apiSuccess {string} data.signature_base Transaction signature base
+     * @apiSuccess {object} data.tx Transaction data
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
     static function generateSmartContractSendTx($data) {
         $public_key = @$data['public_key'];
@@ -1369,9 +1854,16 @@ class Api
      *
      * @apiParam {numeric} [height] Height at which is calculated state
      *
-     * @apiSuccess {numeric} [height] Height at which is calculated state
-     * @apiSuccess {numeric} [count] Number of states
-     * @apiSuccess {numeric} [hash] Calculated hash
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data State hash information
+     * @apiSuccess {numeric} data.height Height at which is calculated state
+     * @apiSuccess {numeric} data.count Number of states
+     * @apiSuccess {string} data.hash Calculated hash
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      */
     static function getScStateHash($data) {
         $height = @$data['height'];
@@ -1383,12 +1875,18 @@ class Api
      * @api            {get} /api.php?q=getScState  getScState
      * @apiName        getScState
      * @apiGroup       SC
-     * @apiDescription Retreives node Smart Contract state between specified heights
+     * @apiDescription Retrieves node Smart Contract state between specified heights
      *
      * @apiParam {numeric} [from_height=0] Start height
      * @apiParam {numeric} [to_height=PHP_INT_MAX] End height
      *
-     * @apiSuccess {array} List of states
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {array} data List of states
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      */
     static function getScState($data) {
         global $db;
@@ -1410,7 +1908,13 @@ class Api
      * @apiParam {string} token Address of token
      * @apiParam {string} address Address to check
      *
-     * @apiSuccess {numeric} Token balance
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {string} data Token balance (formatted)
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
      */
     static function getTokenBalance($data) {
         global $db;
@@ -1426,6 +1930,32 @@ class Api
         api_echo($balance);
     }
 
+    /**
+     * @api            {get} /api.php?q=findTransactions  findTransactions
+     * @apiName        findTransactions
+     * @apiGroup       API
+     * @apiDescription Search for transactions using various filters. Searches in transactions table by default, or mempool if mempool parameter is set.
+     *
+     * @apiParam {boolean} [mempool] If true, search in mempool instead of transactions table
+     * @apiParam {string} [src] Filter by source address
+     * @apiParam {string} [dst] Filter by destination address
+     * @apiParam {numeric} [type] Filter by transaction type
+     * @apiParam {string} [message] Filter by transaction message
+     * @apiParam {string} [id] Filter by transaction ID
+     * @apiParam {string} [block] Filter by block ID
+     * @apiParam {numeric} [height] Filter by block height
+     * @apiParam {numeric} [fromHeight] Filter by minimum block height
+     * @apiParam {numeric} [limit=100] Maximum number of results (max 100)
+     * @apiParam {numeric} [offset=0] Offset for pagination
+     *
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {array} data Array of transaction objects
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     */
     static function findTransactions($data) {
         $table = (!empty($data['mempool'])) ? "mempool" : "transactions";
         $sql="select * from $table t where 1=1 ";
@@ -1496,9 +2026,23 @@ class Api
      * @apiParam {string} [message] Message for transaction
      * @apiParam {numeric} [fee] Transaction fee
      *
-     * @apiSuccess Transaction data as JSON
-     * @apiSuccess {string} signature_base Generated signature base
-     * @apiSuccess {json} tx Transaction as JSON object
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data Transaction data as JSON
+     * @apiSuccess {string} data.signature_base Generated signature base
+     * @apiSuccess {object} data.tx Transaction as JSON object
+     * @apiSuccess {string} coin Coin name
+     * @apiSuccess {string} version Node version
+     * @apiSuccess {string} network Network name
+     * @apiSuccess {string} chain_id Chain ID
+     *
+     * @apiError {object} Error response wrapper object
+     * @apiError {string} status Status: "error" for errors
+     * @apiError {string} data Error message
+     * @apiError {string} coin Coin name
+     * @apiError {string} version Node version
+     * @apiError {string} network Network name
+     * @apiError {string} chain_id Chain ID
      */
     static function generateSendTransaction($data) {
         $publicKey = @$data['public_key'];
