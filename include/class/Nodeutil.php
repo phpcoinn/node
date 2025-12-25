@@ -525,7 +525,8 @@ class Nodeutil
                 'miner'        => $miner,
                 'masternode'   => $masternode,
                 'lastBlockTime'=>$current['date'],
-                'php_version' => PHP_VERSION
+                'php_version' => PHP_VERSION,
+                'pruned_height' => $_config['pruned_height'],
             ];
         }
 
