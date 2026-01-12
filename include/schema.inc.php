@@ -4,7 +4,7 @@ global $_config, $db;
 // database will be only initialized on installation / restore
 $dbversion = intval(@$_config['dbversion']);
 
-_log("Check db schema current_version=$dbversion check_version=".DB_SCHEMA_VERSION);
+_log("Check db schema current_version=$dbversion check_version=".DB_SCHEMA_VERSION, 2);
 
 if ($dbversion < DB_SCHEMA_VERSION) {
 
