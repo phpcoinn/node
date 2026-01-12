@@ -1,9 +1,60 @@
 <?php
 global $_config, $db;
 // when db schema modifications are done, this function is run.
+// database will be only initialized on installation / restore
 $dbversion = intval(@$_config['dbversion']);
 
+_log("Check db schema current_version=$dbversion check_version=".DB_SCHEMA_VERSION);
 
+if ($dbversion < DB_SCHEMA_VERSION) {
+
+    _log("DB schema check start");
+
+    $pruned = Config::isPruned();
+    $schema_file = ROOT . "/include/schema/".NETWORK.($pruned ? "-pruned":"").".sql";
+    if(!file_exists($schema_file)) {
+        _log("Schema file not found: ".$schema_file);
+        return;
+    }
+
+    _log("Checking schema file: ".$schema_file);
+
+    touch(ROOT."/maintenance");
+    $lock_dir = ROOT . "/tmp/db-migrate";
+    if (mkdir($lock_dir, 0700, true)) {
+
+        $config_file = tempnam(sys_get_temp_dir(), "db_updater") . ".json";
+        $db_updater_config = [
+            'database' => [
+                'dsn' => $_config['db_connect'],
+                'username' => $_config['db_user'],
+                'password' => $_config['db_pass'],
+            ],
+        ];
+        file_put_contents($config_file, json_encode($db_updater_config, JSON_PRETTY_PRINT));
+        $cmd="php " .ROOT . "/utils/db_updater.phar ".escapeshellarg($schema_file)." --json --config=".escapeshellarg($config_file);
+        _log("DB updater started ...");
+        $res = shell_exec($cmd);
+        _log("DB updater finished ...");
+        $res = json_decode($res, true);
+        if($res['success'] === true) {
+            _log("DB updater: ",$res['message']);
+            unlink(ROOT."/maintenance");
+            Config::setVal('dbversion', DB_SCHEMA_VERSION);
+        } else {
+            _log("Error executing db update: " . $res['error']);
+        }
+        unlink($config_file);
+        @rmdir($lock_dir);
+    }
+
+    _log("DB schema check complete");
+}
+
+
+return;
+
+// Keep old for reference
 function migrate_with_lock(&$dbversion, $callback) {
     $lock_dir = ROOT . "/tmp/db-migrate-".($dbversion+1);
     if (mkdir($lock_dir, 0700, true)) {
