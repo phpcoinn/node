@@ -905,4 +905,67 @@ class Nodeutil
         }
 
     }
+
+    static function checkDBSchema($dry_run = true) {
+        global $_config;
+        _log("DB schema check start");
+
+        $pruned = Config::isPruned();
+        $schema_file = ROOT . "/include/schema/".NETWORK.($pruned ? "-pruned":"").".sql";
+        if(!file_exists($schema_file)) {
+            _log("Schema file not found: ".$schema_file);
+            return;
+        }
+
+        _log("Checking schema file: ".$schema_file);
+
+        $lock_dir = ROOT . "/tmp/db-migrate";
+        if (mkdir($lock_dir, 0700, true)) {
+
+            $config_file = tempnam(sys_get_temp_dir(), "db_updater") . ".json";
+            $db_updater_config = [
+                'database' => [
+                    'dsn' => $_config['db_connect'],
+                    'username' => $_config['db_user'],
+                    'password' => $_config['db_pass'],
+                ],
+            ];
+            file_put_contents($config_file, json_encode($db_updater_config, JSON_PRETTY_PRINT));
+            $cmd="php " .ROOT . "/utils/db_updater.phar ".escapeshellarg($schema_file)." --json --config=".escapeshellarg($config_file)." ".
+                ($dry_run ? "--dry-run" : "");
+            _log($cmd,4);
+            _log("DB updater started ...");
+            $res = shell_exec($cmd);
+            _log("DB updater finished ...");
+            $res = json_decode($res, true);
+            $error = false;
+            if($res['success'] === true) {
+                _log("DB updater: " . $res['message']);
+            } else if ($res['status']=="dry_run") {
+                _log("DB updater: " . print_r($res));
+                _log("Check migration file", 2);
+            } else {
+                $error = true;
+                _log("Error executing db update: " . $res['error']);
+            }
+            if(!$error) {
+                $migration_file = ROOT . "/include/schema/migrations/".DB_SCHEMA_VERSION.".php";
+                if(file_exists($migration_file)) {
+                    if(!$dry_run) {
+                        _log("DB updater: Executing migration");
+                        require_once($migration_file);
+                    }
+                }
+                if(!$dry_run) {
+                    Config::setVal('dbversion', DB_SCHEMA_VERSION);
+                }
+            }
+            unlink($config_file);
+            @rmdir($lock_dir);
+        } else {
+            _log("Can not lock dir $lock_dir");
+        }
+
+        _log("DB schema check complete");
+    }
 }

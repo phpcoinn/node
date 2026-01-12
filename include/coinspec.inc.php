@@ -99,3 +99,5 @@ const IGNORE_SC_HASH_HEIGHT = [];
 const BLACKLISTED_SMART_CONTRACTS = [];
 
 const DEV_REWARD_ADDRESS = "PdEvtfZwNsbddKLCZQcjTgjpdcznS1w3pG";
+
+const DB_SCHEMA_VERSION = 100;

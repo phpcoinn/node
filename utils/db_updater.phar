@@ -1,0 +1,2152 @@
+#!/usr/bin/env php
+<?php
+Phar::mapPhar('db_updater.phar');
+
+// Register autoloader for PHAR context
+spl_autoload_register(function ($class) {
+    $prefix = 'DbUpdater\\';
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) {
+        return;
+    }
+    $relative_class = substr($class, $len);
+    $file = 'phar://db_updater.phar/src/' . str_replace('\\', '/', $relative_class) . '.php';
+    if (file_exists($file)) {
+        require $file;
+    }
+});
+
+// Parse command line arguments
+$ddlFile = null;
+$dryRun = false;
+$jsonOutput = false;
+$configFile = null;
+
+foreach ($argv as $arg) {
+    if ($arg === '--dry-run') {
+        $dryRun = true;
+    } elseif ($arg === '--json') {
+        $jsonOutput = true;
+    } elseif (strpos($arg, '--config=') === 0) {
+        $configFile = substr($arg, 9);
+    } elseif ($arg !== $argv[0] && $ddlFile === null) {
+        $ddlFile = $arg;
+    }
+}
+
+// Auto-detect config file if not specified
+if ($configFile === null) {
+    if (file_exists('config.json')) {
+        $configFile = 'config.json';
+    } elseif (file_exists('config.php')) {
+        $configFile = 'config.php';
+    } else {
+        $configFile = 'config.php'; // Default fallback
+    }
+}
+
+// Validate arguments
+if ($ddlFile === null) {
+    echo "Usage: php db_updater.phar <ddl_file> [--dry-run] [--json] [--config=<config_file>]\n";
+    echo "\n";
+    echo "Options:\n";
+    echo "  --dry-run          Preview changes without applying them\n";
+    echo "  --json             Output results in JSON format (for parsing execution results)\n";
+    echo "  --config=<file>    Path to configuration file (default: config.php or config.json)\n";
+    exit(1);
+}
+
+// Load configuration
+if (!file_exists($configFile)) {
+    echo "Error: Configuration file not found: {$configFile}\n";
+    echo "Please copy config.example.php to config.php (or config.example.json to config.json) and update with your database credentials.\n";
+    exit(1);
+}
+
+$config = null;
+$extension = strtolower(pathinfo($configFile, PATHINFO_EXTENSION));
+
+if ($extension === 'json') {
+    // Load JSON configuration
+    $jsonContent = file_get_contents($configFile);
+    $config = json_decode($jsonContent, true);
+    
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        echo "Error: Invalid JSON in configuration file: {$configFile}\n";
+        echo "JSON error: " . json_last_error_msg() . "\n";
+        exit(1);
+    }
+} else {
+    // Load PHP configuration (default)
+    $config = require $configFile;
+}
+
+if (!is_array($config)) {
+    echo "Error: Configuration file must return an array (PHP) or be a valid JSON object.\n";
+    exit(1);
+}
+
+use DbUpdater\DatabaseHandler;
+use DbUpdater\Logger;
+use DbUpdater\SchemaExtractor;
+use DbUpdater\SchemaParser;
+use DbUpdater\SchemaComparator;
+use DbUpdater\SqlGenerator;
+use DbUpdater\DdlGenerator;
+
+class DbUpdater
+{
+    private $config;
+    private $logger;
+    private $db;
+    private $dryRun;
+    private $jsonOutput;
+
+    public function __construct(array $config, bool $dryRun = false, bool $jsonOutput = false)
+    {
+        $this->config = $config;
+        $this->dryRun = $dryRun;
+        $this->jsonOutput = $jsonOutput;
+        // Disable file logging in JSON mode
+        $loggingConfig = $config['logging'] ?? [];
+        if ($jsonOutput) {
+            $loggingConfig['enabled'] = false;
+        }
+        $this->logger = new Logger($loggingConfig);
+    }
+
+    public function run(string $ddlFile): void
+    {
+        try {
+            $this->logger->info("Starting database update process");
+            
+            if ($this->dryRun) {
+                $this->logger->info("DRY-RUN MODE: No changes will be applied");
+            }
+
+            // Initialize database connection
+            $this->db = new DatabaseHandler($this->config['database'], $this->logger);
+
+            // Extract current schema from database
+            $extractor = new SchemaExtractor($this->db, $this->logger);
+            $currentSchema = $extractor->extractSchema();
+
+            // Generate DDL from current database schema
+            $ddlGenerator = new DdlGenerator($this->logger);
+            $currentDdl = $ddlGenerator->generateDdl($currentSchema);
+            $normalizedCurrentDdl = $ddlGenerator->normalizeDdl($currentDdl);
+
+            // Read and normalize desired DDL file
+            $desiredDdlContent = file_get_contents($ddlFile);
+            $normalizedDesiredDdl = $ddlGenerator->normalizeDdl($desiredDdlContent);
+
+            // Quick check: if normalized DDLs match, no changes needed
+            if ($normalizedCurrentDdl === $normalizedDesiredDdl) {
+                if ($this->jsonOutput) {
+                    echo json_encode([
+                        'status' => 'success',
+                        'success' => true,
+                        'message' => 'Database schema matches desired state. No changes needed.',
+                        'statements_executed' => 0
+                    ], JSON_PRETTY_PRINT) . "\n";
+                    return;
+                }
+                $this->logger->info("Database schema matches desired state. No changes needed.");
+                return;
+            }
+
+            // DDLs differ, so parse and compare structures to find specific differences
+            $this->logger->info("Schema differences detected. Analyzing changes...");
+            
+            // Parse desired schema from DDL file
+            $parser = new SchemaParser($this->logger);
+            $desiredSchema = $parser->parseDdlFile($ddlFile);
+
+            // Compare schemas to find specific differences
+            // Get ignore configuration
+            $ignoreColumns = $this->config['ignore_columns'] ?? [];
+            $ignoreTables = $this->config['ignore_tables'] ?? [];
+            $ignoreViews = $this->config['ignore_views'] ?? [];
+            $comparator = new SchemaComparator($this->logger, $ignoreColumns, $ignoreTables, $ignoreViews);
+            $differences = $comparator->compare($currentSchema, $desiredSchema);
+
+            // Generate SQL statements
+            $sqlGenerator = new SqlGenerator($this->logger, $desiredSchema);
+            $sqlStatements = $sqlGenerator->generateSql($differences);
+
+            if (empty($sqlStatements)) {
+                if ($this->jsonOutput) {
+                    echo json_encode([
+                        'status' => 'success',
+                        'success' => true,
+                        'message' => 'Database schema is already up to date. No changes needed.',
+                        'statements_executed' => 0
+                    ], JSON_PRETTY_PRINT) . "\n";
+                    return;
+                }
+                $this->logger->info("Database schema is already up to date. No changes needed.");
+                return;
+            }
+
+            // Display SQL statements
+            if (!$this->jsonOutput) {
+                $this->logger->info("Generated " . count($sqlStatements) . " SQL statement(s) to apply:");
+                echo "\n" . str_repeat("=", 80) . "\n";
+                echo "SQL STATEMENTS TO APPLY:\n";
+                echo str_repeat("=", 80) . "\n\n";
+
+                foreach ($sqlStatements as $index => $sql) {
+                    echo ($index + 1) . ". " . $sql . "\n\n";
+                }
+
+                echo str_repeat("=", 80) . "\n\n";
+            }
+
+            // Apply changes if not in dry-run mode
+            if ($this->dryRun) {
+                if ($this->jsonOutput) {
+                    echo json_encode([
+                        'status' => 'dry_run',
+                        'success' => null,
+                        'message' => 'Dry-run mode: SQL statements would be executed',
+                        'statements_count' => count($sqlStatements),
+                        'sql_statements' => $sqlStatements
+                    ], JSON_PRETTY_PRINT) . "\n";
+                    return;
+                }
+                $this->logger->info("Dry-run mode: Skipping execution of SQL statements");
+                return;
+            }
+
+            // Confirm before applying (skip in non-interactive mode or JSON output)
+            if (!$this->jsonOutput && function_exists('posix_isatty') && posix_isatty(STDIN)) {
+                echo "Do you want to apply these changes? (yes/no): ";
+                $handle = fopen("php://stdin", "r");
+                $line = trim(fgets($handle));
+                fclose($handle);
+
+                if (strtolower($line) !== 'yes' && strtolower($line) !== 'y') {
+                    $this->logger->info("Operation cancelled by user");
+                    return;
+                }
+            } elseif (!$this->jsonOutput) {
+                $this->logger->warning("Non-interactive mode: Proceeding with changes automatically");
+            }
+
+            // Execute SQL statements
+            if (!$this->jsonOutput) {
+                $this->logger->info("Applying changes to database...");
+            }
+            
+            $executedCount = 0;
+            foreach ($sqlStatements as $sql) {
+                try {
+                    $this->db->execute($sql);
+                    $executedCount++;
+                } catch (\Exception $e) {
+                    if ($this->jsonOutput) {
+                        echo json_encode([
+                            'status' => 'error',
+                            'success' => false,
+                            'message' => 'Failed to execute SQL statement',
+                            'error' => $e->getMessage(),
+                            'failed_statement' => $sql,
+                            'statements_executed' => $executedCount,
+                            'statements_total' => count($sqlStatements)
+                        ], JSON_PRETTY_PRINT) . "\n";
+                        exit(1);
+                    }
+                    $this->logger->error("Failed to execute SQL: " . $e->getMessage());
+                    $this->logger->error("SQL was: " . $sql);
+                    throw $e;
+                }
+            }
+
+            if ($this->jsonOutput) {
+                echo json_encode([
+                    'status' => 'success',
+                    'success' => true,
+                    'message' => 'Database update completed successfully',
+                    'statements_executed' => $executedCount
+                ], JSON_PRETTY_PRINT) . "\n";
+                return;
+            }
+
+            $this->logger->info("Database update completed successfully!");
+
+        } catch (\Exception $e) {
+            if ($this->jsonOutput) {
+                echo json_encode([
+                    'status' => 'error',
+                    'success' => false,
+                    'message' => 'An error occurred during schema comparison or execution',
+                    'error' => $e->getMessage()
+                ], JSON_PRETTY_PRINT) . "\n";
+                exit(1);
+            }
+            $this->logger->error("Error: " . $e->getMessage());
+            $this->logger->error("Stack trace: " . $e->getTraceAsString());
+            exit(1);
+        }
+    }
+
+}
+
+// Run the updater
+$updater = new DbUpdater($config, $dryRun, $jsonOutput);
+$updater->run($ddlFile);
+
+__HALT_COMPILER(); ?>
+é                    src/Logger.php∏  q‰gi∏  Í9∞Ë¥         src/SchemaComparator.php:  q‰gi:  ∫‡Ÿ¥         src/DdlGenerator.php  q‰gi  ’bç¥         src/SchemaParser.php…S  q‰gi…S  ï§EÙ¥         src/SchemaExtractor.php‹   q‰gi‹   ÙÓèS¥         src/DatabaseHandler.phph  q‰gih  .æqÇ¥         src/SqlGenerator.phpl'  q‰gil'  Ó á¥         autoload.phpx  q‰gix  ë±j¥      <?php
+
+namespace DbUpdater;
+
+class Logger
+{
+    private $enabled;
+    private $logFile;
+    private $level;
+    private $levels = ['DEBUG' => 0, 'INFO' => 1, 'WARNING' => 2, 'ERROR' => 3];
+
+    public function __construct(array $config = [])
+    {
+        $this->enabled = $config['enabled'] ?? true;
+        $this->logFile = $config['file'] ?? 'db_updater.log';
+        $this->level = $this->levels[strtoupper($config['level'] ?? 'INFO')] ?? 1;
+    }
+
+    public function debug(string $message, array $context = []): void
+    {
+        $this->log('DEBUG', $message, $context);
+    }
+
+    public function info(string $message, array $context = []): void
+    {
+        $this->log('INFO', $message, $context);
+    }
+
+    public function warning(string $message, array $context = []): void
+    {
+        $this->log('WARNING', $message, $context);
+    }
+
+    public function error(string $message, array $context = []): void
+    {
+        $this->log('ERROR', $message, $context);
+    }
+
+    private function log(string $level, string $message, array $context = []): void
+    {
+        if (!$this->enabled) {
+            return;
+        }
+
+        $levelValue = $this->levels[$level] ?? 1;
+        if ($levelValue < $this->level) {
+            return;
+        }
+
+        $timestamp = date('Y-m-d H:i:s');
+        $contextStr = !empty($context) ? ' ' . json_encode($context) : '';
+        $logMessage = "[{$timestamp}] [{$level}] {$message}{$contextStr}" . PHP_EOL;
+
+        // Write to file
+        file_put_contents($this->logFile, $logMessage, FILE_APPEND);
+
+        // Also output to console
+        echo $logMessage;
+    }
+
+    public function logSql(string $sql): void
+    {
+        $this->info("SQL: {$sql}");
+    }
+}
+
+<?php
+
+namespace DbUpdater;
+
+class SchemaComparator
+{
+    private $logger;
+    private $ignoreColumns;
+    private $ignoreTables;
+    private $ignoreViews;
+
+    public function __construct(Logger $logger, array $ignoreColumns = [], array $ignoreTables = [], array $ignoreViews = [])
+    {
+        $this->logger = $logger;
+        $this->ignoreColumns = $ignoreColumns;
+        $this->ignoreTables = $ignoreTables;
+        $this->ignoreViews = $ignoreViews;
+    }
+    
+    /**
+     * Check if a table should be ignored during comparison
+     */
+    private function shouldIgnoreTable(string $tableName): bool
+    {
+        return in_array($tableName, $this->ignoreTables, true);
+    }
+    
+    /**
+     * Check if a view should be ignored during comparison
+     */
+    private function shouldIgnoreView(string $viewName): bool
+    {
+        return in_array($viewName, $this->ignoreViews, true);
+    }
+    
+    /**
+     * Check if a column should be ignored during comparison
+     */
+    private function shouldIgnoreColumn(string $tableName, string $columnName): bool
+    {
+        // Check for table.column format
+        $fullName = "{$tableName}.{$columnName}";
+        if (in_array($fullName, $this->ignoreColumns)) {
+            return true;
+        }
+        
+        // Check for column name only (applies to all tables)
+        if (in_array($columnName, $this->ignoreColumns)) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    public function compare(array $currentSchema, array $desiredSchema): array
+    {
+        $this->logger->info("Comparing current schema with desired schema");
+        
+        $differences = [
+            'tables_to_create' => [],
+            'tables_to_alter' => [],
+            'tables_to_drop' => [],
+            'views_to_create' => [],
+            'views_to_modify' => [],
+            'views_to_drop' => [],
+        ];
+
+        $currentTables = array_keys($currentSchema['tables'] ?? []);
+        $desiredTables = array_keys($desiredSchema['tables'] ?? []);
+
+        // Find tables to create
+        foreach ($desiredTables as $tableName) {
+            // Skip ignored tables
+            if ($this->shouldIgnoreTable($tableName)) {
+                $this->logger->debug("Ignoring table {$tableName} during comparison");
+                continue;
+            }
+            
+            if (!in_array($tableName, $currentTables)) {
+                $differences['tables_to_create'][] = $tableName;
+            }
+        }
+
+        // Find tables to drop (optional - might want to skip this)
+        // foreach ($currentTables as $tableName) {
+        //     if (!in_array($tableName, $desiredTables)) {
+        //         $differences['tables_to_drop'][] = $tableName;
+        //     }
+        // }
+
+        // Compare existing tables
+        foreach ($desiredTables as $tableName) {
+            // Skip ignored tables
+            if ($this->shouldIgnoreTable($tableName)) {
+                $this->logger->debug("Ignoring table {$tableName} during comparison");
+                continue;
+            }
+            
+            if (in_array($tableName, $currentTables)) {
+                $tableDiff = $this->compareTable(
+                    $currentSchema['tables'][$tableName],
+                    $desiredSchema['tables'][$tableName],
+                    $tableName
+                );
+                
+                if (!empty($tableDiff)) {
+                    $differences['tables_to_alter'][$tableName] = $tableDiff;
+                }
+            }
+        }
+
+        // Compare views
+        $currentViews = $currentSchema['views'] ?? [];
+        $desiredViews = $desiredSchema['views'] ?? [];
+        
+        $currentViewNames = array_keys($currentViews);
+        $desiredViewNames = array_keys($desiredViews);
+        
+        // Find views to create
+        foreach ($desiredViewNames as $viewName) {
+            // Skip ignored views
+            if ($this->shouldIgnoreView($viewName)) {
+                $this->logger->debug("Ignoring view {$viewName} during comparison");
+                continue;
+            }
+            
+            if (!in_array($viewName, $currentViewNames)) {
+                $differences['views_to_create'][] = $viewName;
+            } else {
+                // Compare view definitions
+                $currentDef = $currentViews[$viewName]['definition'] ?? '';
+                $desiredDef = $desiredViews[$viewName]['definition'] ?? '';
+                
+                // Normalize for comparison (case-insensitive, whitespace normalization)
+                $currentDefNormalized = $this->normalizeViewDefinition($currentDef);
+                $desiredDefNormalized = $this->normalizeViewDefinition($desiredDef);
+                
+                if ($currentDefNormalized !== $desiredDefNormalized) {
+                    $differences['views_to_modify'][] = $viewName;
+                }
+            }
+        }
+        
+        // Find views to drop (optional - commented out by default for safety)
+        // foreach ($currentViewNames as $viewName) {
+        //     if (!in_array($viewName, $desiredViewNames)) {
+        //         $differences['views_to_drop'][] = $viewName;
+        //     }
+        // }
+        
+        $this->logger->info("Found " . count($differences['tables_to_create']) . " tables to create");
+        $this->logger->info("Found " . count($differences['tables_to_alter']) . " tables to alter");
+        $this->logger->info("Found " . count($differences['views_to_create']) . " views to create");
+        $this->logger->info("Found " . count($differences['views_to_modify']) . " views to modify");
+        
+        return $differences;
+    }
+    
+    /**
+     * Normalize view definition for comparison
+     */
+    private function normalizeViewDefinition(string $definition): string
+    {
+        // Convert to lowercase
+        $definition = strtolower($definition);
+        // Normalize whitespace
+        $definition = preg_replace('/\s+/', ' ', $definition);
+        // Remove database name prefixes (e.g., `database`.`table` becomes `table`)
+        // This handles cases where MySQL stores views with database prefixes
+        $definition = preg_replace('/`[^`]+`\.`/i', '`', $definition);
+        // Trim
+        $definition = trim($definition);
+        // Remove trailing semicolons
+        $definition = rtrim($definition, ';');
+        return $definition;
+    }
+
+    private function compareTable(array $current, array $desired, string $tableName): array
+    {
+        $diff = [
+            'columns_to_add' => [],
+            'columns_to_modify' => [],
+            'columns_to_drop' => [],
+            'indexes_to_add' => [],
+            'indexes_to_drop' => [],
+            'foreign_keys_to_add' => [],
+            'foreign_keys_to_drop' => [],
+            'table_options' => [],
+        ];
+
+        // Compare columns
+        $currentColumns = $current['columns'] ?? [];
+        $desiredColumns = $desired['columns'] ?? [];
+
+        foreach ($desiredColumns as $columnName => $desiredColumn) {
+            // Skip ignored columns
+            if ($this->shouldIgnoreColumn($tableName, $columnName)) {
+                $this->logger->debug("Ignoring column {$tableName}.{$columnName} during comparison");
+                continue;
+            }
+            
+            if (!isset($currentColumns[$columnName])) {
+                $diff['columns_to_add'][$columnName] = $desiredColumn;
+            } else {
+                $columnDiff = $this->compareColumn($currentColumns[$columnName], $desiredColumn);
+                if (!empty($columnDiff)) {
+                    $diff['columns_to_modify'][$columnName] = [
+                        'current' => $currentColumns[$columnName],
+                        'desired' => $desiredColumn,
+                        'changes' => $columnDiff,
+                    ];
+                }
+            }
+        }
+
+        // Find columns to drop (optional - might want to skip this for safety)
+        // Note: This is commented out by default to prevent accidental data loss
+        // Uncomment if you want the tool to detect and optionally drop extra columns
+        foreach ($currentColumns as $columnName => $currentColumn) {
+            // Skip ignored columns
+            if ($this->shouldIgnoreColumn($tableName, $columnName)) {
+                continue;
+            }
+            
+            if (!isset($desiredColumns[$columnName])) {
+                $diff['columns_to_drop'][] = $columnName;
+            }
+        }
+
+        // Compare indexes
+        $currentIndexes = $current['indexes'] ?? [];
+        $desiredIndexes = $desired['indexes'] ?? [];
+
+        foreach ($desiredIndexes as $indexName => $desiredIndex) {
+            if (!isset($currentIndexes[$indexName])) {
+                $diff['indexes_to_add'][$indexName] = $desiredIndex;
+            } else {
+                $indexDiff = $this->compareIndex($currentIndexes[$indexName], $desiredIndex);
+                if (!empty($indexDiff)) {
+                    // If index changed, drop and recreate
+                    $diff['indexes_to_drop'][] = $indexName;
+                    $diff['indexes_to_add'][$indexName] = $desiredIndex;
+                }
+            }
+        }
+
+        // Find indexes to drop (optional)
+        // foreach ($currentIndexes as $indexName => $currentIndex) {
+        //     if (!isset($desiredIndexes[$indexName])) {
+        //         $diff['indexes_to_drop'][] = $indexName;
+        //     }
+        // }
+
+        // Compare foreign keys
+        $currentForeignKeys = $current['foreign_keys'] ?? [];
+        $desiredForeignKeys = $desired['foreign_keys'] ?? [];
+
+        foreach ($desiredForeignKeys as $fkName => $desiredFk) {
+            if (!isset($currentForeignKeys[$fkName])) {
+                $diff['foreign_keys_to_add'][$fkName] = $desiredFk;
+            } else {
+                $fkDiff = $this->compareForeignKey($currentForeignKeys[$fkName], $desiredFk);
+                if (!empty($fkDiff)) {
+                    // If FK changed, drop and recreate
+                    $diff['foreign_keys_to_drop'][] = $fkName;
+                    $diff['foreign_keys_to_add'][$fkName] = $desiredFk;
+                }
+            }
+        }
+
+        // Compare table options
+        $currentOptions = $current['table_options'] ?? [];
+        $desiredOptions = $desired['table_options'] ?? [];
+        
+        $optionsDiff = $this->compareTableOptions($currentOptions, $desiredOptions);
+        if (!empty($optionsDiff)) {
+            $diff['table_options'] = $optionsDiff;
+        }
+
+        // Remove empty arrays
+        return array_filter($diff, function($value) {
+            return !empty($value);
+        });
+    }
+
+    private function compareColumn(array $current, array $desired): array
+    {
+        $changes = [];
+
+        // Normalize types for comparison
+        $currentType = $this->normalizeType($current['type'] ?? '');
+        $desiredType = $this->normalizeType($desired['type'] ?? '');
+
+        if ($currentType !== $desiredType) {
+            $changes['type'] = true;
+        }
+
+        if (($current['nullable'] ?? true) !== ($desired['nullable'] ?? true)) {
+            $changes['nullable'] = true;
+        }
+
+        $currentDefault = $current['default'] ?? null;
+        $desiredDefault = $desired['default'] ?? null;
+        
+        // Normalize default values
+        if ($this->normalizeDefault($currentDefault) !== $this->normalizeDefault($desiredDefault)) {
+            $changes['default'] = true;
+        }
+
+        if (($current['extra'] ?? '') !== ($desired['extra'] ?? '')) {
+            $changes['extra'] = true;
+        }
+
+        return $changes;
+    }
+
+    private function compareIndex(array $current, array $desired): array
+    {
+        $changes = [];
+
+        $currentColumns = $current['columns'] ?? [];
+        $desiredColumns = $desired['columns'] ?? [];
+
+        if ($currentColumns !== $desiredColumns) {
+            $changes['columns'] = true;
+        }
+
+        if (($current['unique'] ?? false) !== ($desired['unique'] ?? false)) {
+            $changes['unique'] = true;
+        }
+
+        return $changes;
+    }
+
+    private function compareForeignKey(array $current, array $desired): array
+    {
+        $changes = [];
+
+        $currentColumns = $current['columns'] ?? [];
+        $desiredColumns = $desired['columns'] ?? [];
+
+        if ($currentColumns !== $desiredColumns) {
+            $changes['columns'] = true;
+        }
+
+        if (($current['referenced_table'] ?? '') !== ($desired['referenced_table'] ?? '')) {
+            $changes['referenced_table'] = true;
+        }
+
+        $currentRefColumns = $current['referenced_columns'] ?? [];
+        $desiredRefColumns = $desired['referenced_columns'] ?? [];
+
+        if ($currentRefColumns !== $desiredRefColumns) {
+            $changes['referenced_columns'] = true;
+        }
+
+        if (($current['on_update'] ?? 'RESTRICT') !== ($desired['on_update'] ?? 'RESTRICT')) {
+            $changes['on_update'] = true;
+        }
+
+        if (($current['on_delete'] ?? 'RESTRICT') !== ($desired['on_delete'] ?? 'RESTRICT')) {
+            $changes['on_delete'] = true;
+        }
+
+        return $changes;
+    }
+
+    private function compareTableOptions(array $current, array $desired): array
+    {
+        $changes = [];
+
+        if (($current['engine'] ?? '') !== ($desired['engine'] ?? '')) {
+            $changes['engine'] = $desired['engine'];
+        }
+
+        if (($current['collation'] ?? '') !== ($desired['collation'] ?? '')) {
+            $changes['collation'] = $desired['collation'];
+        }
+
+        return $changes;
+    }
+
+    private function normalizeType(string $type): string
+    {
+        // Normalize type for comparison (remove case differences, normalize spacing)
+        $type = strtoupper(trim($type));
+        // Remove extra spaces
+        $type = preg_replace('/\s+/', ' ', $type);
+        return $type;
+    }
+
+    private function normalizeDefault($default)
+    {
+        if ($default === null || $default === 'NULL') {
+            return null;
+        }
+        
+        $default = (string)$default;
+        
+        // Handle empty string defaults - MySQL stores them as '' (with quotes) in INFORMATION_SCHEMA
+        // but they should be normalized to empty string
+        if ($default === "''" || $default === '\'\'' || $default === '') {
+            return '';
+        }
+        
+        // Remove surrounding quotes if present (for string defaults)
+        if ((substr($default, 0, 1) === "'" && substr($default, -1) === "'") ||
+            (substr($default, 0, 1) === '"' && substr($default, -1) === '"')) {
+            $default = substr($default, 1, -1);
+            // Unescape quotes
+            $default = str_replace("\\'", "'", $default);
+            $default = str_replace('\\"', '"', $default);
+        }
+        
+        return $default;
+    }
+}
+
+<?php
+
+namespace DbUpdater;
+
+class DdlGenerator
+{
+    private $logger;
+
+    public function __construct(Logger $logger)
+    {
+        $this->logger = $logger;
+    }
+
+    /**
+     * Generate DDL statements from a schema array
+     */
+    public function generateDdl(array $schema): string
+    {
+        $ddl = "";
+        $tables = $schema['tables'] ?? [];
+        
+        foreach ($tables as $tableName => $table) {
+            $ddl .= $this->generateCreateTable($tableName, $table) . "\n";
+        }
+
+        return $ddl;
+    }
+
+    private function generateCreateTable(string $tableName, array $table): string
+    {
+        $sql = "CREATE TABLE `{$tableName}` (\n";
+
+        $parts = [];
+
+        // Add columns
+        foreach ($table['columns'] ?? [] as $columnName => $column) {
+            $parts[] = "  " . $this->generateColumnDefinition($column);
+        }
+
+        // Add primary key if exists
+        foreach ($table['indexes'] ?? [] as $indexName => $index) {
+            if ($index['unique'] && strtoupper($indexName) === 'PRIMARY') {
+                $columns = implode('`, `', $index['columns']);
+                $parts[] = "  PRIMARY KEY (`{$columns}`)";
+            }
+        }
+
+        // Add other indexes
+        foreach ($table['indexes'] ?? [] as $indexName => $index) {
+            if (strtoupper($indexName) !== 'PRIMARY') {
+                $columns = implode('`, `', $index['columns']);
+                $indexType = $index['unique'] ? 'UNIQUE KEY' : 'KEY';
+                $parts[] = "  {$indexType} `{$indexName}` (`{$columns}`)";
+            }
+        }
+
+        // Add foreign keys
+        foreach ($table['foreign_keys'] ?? [] as $fkName => $fk) {
+            $columns = implode('`, `', $fk['columns']);
+            $refColumns = implode('`, `', $fk['referenced_columns']);
+            $parts[] = "  CONSTRAINT `{$fkName}` FOREIGN KEY (`{$columns}`) REFERENCES `{$fk['referenced_table']}` (`{$refColumns}`) ON UPDATE {$fk['on_update']} ON DELETE {$fk['on_delete']}";
+        }
+
+        $sql .= implode(",\n", $parts);
+        $sql .= "\n)";
+
+        // Add table options
+        $options = $table['table_options'] ?? [];
+        $optionParts = [];
+        
+        if (!empty($options['engine'])) {
+            $optionParts[] = "ENGINE={$options['engine']}";
+        }
+        
+        if (!empty($options['collation'])) {
+            $optionParts[] = "COLLATE={$options['collation']}";
+        }
+        
+        if (!empty($options['comment'])) {
+            $optionParts[] = "COMMENT='" . addslashes($options['comment']) . "'";
+        }
+
+        if (!empty($optionParts)) {
+            $sql .= " " . implode(" ", $optionParts);
+        }
+
+        $sql .= ";";
+
+        return $sql;
+    }
+
+    private function generateColumnDefinition(array $column): string
+    {
+        $def = "`{$column['name']}` {$column['type']}";
+
+        if (!($column['nullable'] ?? true)) {
+            $def .= " NOT NULL";
+        }
+
+        if (isset($column['default']) && $column['default'] !== null) {
+            $default = $column['default'];
+            // Quote string defaults
+            if (is_string($default) && !preg_match('/^[\d\.]+$/', $default) && strtoupper($default) !== 'NULL') {
+                $default = "'" . addslashes($default) . "'";
+            }
+            $def .= " DEFAULT {$default}";
+        }
+
+        if (!empty($column['extra'])) {
+            $def .= " " . strtoupper($column['extra']);
+        }
+
+        if (!empty($column['charset'])) {
+            $def .= " CHARACTER SET {$column['charset']}";
+        }
+
+        if (!empty($column['collation'])) {
+            $def .= " COLLATE {$column['collation']}";
+        }
+
+        if (!empty($column['comment'])) {
+            $def .= " COMMENT '" . addslashes($column['comment']) . "'";
+        }
+
+        return $def;
+    }
+
+    /**
+     * Normalize DDL string for comparison (remove whitespace, comments, etc.)
+     */
+    public function normalizeDdl(string $ddl): string
+    {
+        // Remove comments
+        $ddl = preg_replace('/--.*$/m', '', $ddl);
+        $ddl = preg_replace('/\/\*[^*]*\*+(?:[^*\/][^*]*\*+)*\//s', '', $ddl);
+        
+        // Remove SET statements
+        $ddl = preg_replace('/SET\s+[^;]+;/i', '', $ddl);
+        
+        // Remove DROP TABLE statements
+        $ddl = preg_replace('/DROP\s+TABLE\s+IF\s+EXISTS\s+[^;]+;/i', '', $ddl);
+        
+        // Normalize whitespace
+        $ddl = preg_replace('/\s+/', ' ', $ddl);
+        $ddl = preg_replace('/\s*\(\s*/', '(', $ddl);
+        $ddl = preg_replace('/\s*\)\s*/', ')', $ddl);
+        $ddl = preg_replace('/\s*,\s*/', ',', $ddl);
+        $ddl = preg_replace('/\s*;\s*/', ';', $ddl);
+        
+        // Convert to lowercase for case-insensitive comparison
+        $ddl = strtolower($ddl);
+        
+        // Trim
+        $ddl = trim($ddl);
+        
+        return $ddl;
+    }
+}
+
+<?php
+
+namespace DbUpdater;
+
+class SchemaParser
+{
+    private $logger;
+
+    public function __construct(Logger $logger)
+    {
+        $this->logger = $logger;
+    }
+
+    public function parseDdlFile(string $ddlFile): array
+    {
+        if (!file_exists($ddlFile)) {
+            throw new \RuntimeException("DDL file not found: {$ddlFile}");
+        }
+
+        $this->logger->info("Parsing DDL file: {$ddlFile}");
+        $content = file_get_contents($ddlFile);
+        
+        return $this->parseDdl($content);
+    }
+
+    public function parseDdl(string $ddl): array
+    {
+        $schema = [
+            'tables' => [],
+            'views' => [],
+        ];
+
+        // Remove comments
+        // Remove single-line comments (-- comments)
+        $ddl = preg_replace('/--.*$/m', '', $ddl);
+        
+        // Extract views BEFORE removing comments (views are wrapped in MySQL conditional comments)
+        $views = $this->parseViews($ddl);
+        $schema['views'] = $views;
+        
+        // Remove multi-line comments including MySQL conditional comments (/*! ... */)
+        // This pattern handles /* */ and /*! ... */ style comments
+        $ddl = preg_replace('/\/\*[^*]*\*+(?:[^*\/][^*]*\*+)*\//s', '', $ddl);
+        // Remove SET statements (they're not needed for schema comparison)
+        // But be careful not to match "CHARACTER SET" or "SET" in column definitions
+        // Only match SET statements that are standalone (at start of line or after semicolon)
+        $ddl = preg_replace('/(?:^|;)\s*SET\s+[^;]+;/im', '', $ddl);
+        // Remove DROP TABLE statements (they're not needed for schema comparison)
+        $ddl = preg_replace('/DROP\s+TABLE\s+IF\s+EXISTS\s+[^;]+;/i', '', $ddl);
+
+        // Extract CREATE TABLE statements
+        // Manually extract table bodies to handle nested parentheses correctly
+        $tables = [];
+        $offset = 0;
+        while (($pos = stripos($ddl, 'CREATE TABLE', $offset)) !== false) {
+            // Find table name
+            if (preg_match('/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?(\w+)`?\s*\(/is', substr($ddl, $pos), $nameMatch, PREG_OFFSET_CAPTURE)) {
+                $tableName = trim($nameMatch[1][0]);
+                // Find the opening parenthesis - it's at the end of the matched string
+                $bodyStart = $pos + $nameMatch[0][1] + strlen($nameMatch[0][0]) - 1; // Position of opening (
+                
+                // Verify we're at the opening parenthesis
+                if ($bodyStart >= strlen($ddl) || $ddl[$bodyStart] !== '(') {
+                    // Fallback: search for opening parenthesis after table name
+                    $bodyStart = strpos($ddl, '(', $pos);
+                    if ($bodyStart === false) {
+                        $offset = $pos + 1;
+                        continue;
+                    }
+                }
+                
+                // Find matching closing parenthesis by tracking depth
+                // Start at depth=1 because we're already inside the opening parenthesis
+                $depth = 1;
+                $bodyEnd = $bodyStart;
+                $inQuotes = false;
+                $quoteChar = '';
+                for ($i = $bodyStart + 1; $i < strlen($ddl); $i++) {
+                    $char = $ddl[$i];
+                    $prev = $i > 0 ? $ddl[$i - 1] : '';
+                    
+                    // Handle quoted strings
+                    if (!$inQuotes && ($char === '"' || $char === "'")) {
+                        $inQuotes = true;
+                        $quoteChar = $char;
+                    } elseif ($inQuotes && $char === $quoteChar && $prev !== '\\') {
+                        $inQuotes = false;
+                    }
+                    
+                    if (!$inQuotes) {
+                        if ($char === '(') {
+                            $depth++;
+                        } elseif ($char === ')') {
+                            $depth--;
+                            if ($depth === 0) {
+                                $bodyEnd = $i;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // Extract table body and options
+                $tableBody = substr($ddl, $bodyStart + 1, $bodyEnd - $bodyStart - 1);
+                $afterBody = substr($ddl, $bodyEnd + 1);
+                if (preg_match('/\s*([^;]*?);/s', $afterBody, $optionsMatch)) {
+                    $tableOptions = trim($optionsMatch[1]);
+                    // Debug: log table body for smart_contracts
+                    if ($tableName === 'smart_contracts') {
+                        if (strpos($tableBody, 'metadata') === false) {
+                            $this->logger->warning("smart_contracts table body does not contain 'metadata' column. Body length: " . strlen($tableBody));
+                            $this->logger->warning("Last 200 chars of body: " . substr($tableBody, -200));
+                        } else {
+                            $this->logger->debug("smart_contracts table body contains 'metadata'. Body length: " . strlen($tableBody));
+                        }
+                    }
+                    $tables[] = [
+                        'name' => $tableName,
+                        'body' => $tableBody,
+                        'options' => $tableOptions,
+                    ];
+                    $offset = $bodyEnd + strlen($optionsMatch[0]);
+                } else {
+                    $offset = $pos + 1;
+                }
+            } else {
+                $offset = $pos + 1;
+            }
+        }
+        
+        // Process extracted tables
+        foreach ($tables as $table) {
+            $tableName = $table['name'];
+            $tableBody = trim($table['body']);
+            $tableOptions = trim($table['options']);
+        
+            $schema['tables'][$tableName] = [
+                'columns' => $this->parseColumns($tableBody),
+                'indexes' => $this->parseIndexes($tableBody),
+                'foreign_keys' => $this->parseForeignKeys($tableBody),
+                'table_options' => $this->parseTableOptions($tableOptions),
+            ];
+        }
+
+        $this->logger->info("Parsed " . count($schema['tables']) . " tables from DDL");
+        $this->logger->info("Parsed " . count($schema['views']) . " views from DDL");
+        return $schema;
+    }
+    
+    /**
+     * Parse CREATE VIEW statements from DDL
+     * Handles MySQL conditional comments like / *!50001 CREATE VIEW ... * /
+     * mysqldump creates views in multiple parts - we need to find the actual definition
+     */
+    private function parseViews(string $ddl): array
+    {
+        $views = [];
+        
+        // Pattern to match MySQL conditional comments containing CREATE VIEW
+        // mysqldump splits CREATE VIEW across multiple comments:
+        // /*!50001 CREATE ALGORITHM=UNDEFINED */
+        // /*!50013 DEFINER=... SQL SECURITY DEFINER */
+        // /*!50001 VIEW `name` AS select ... */
+        // We need to match the last one which contains the actual definition
+        
+        // First, find all view definitions (the ones with actual SELECT statements, not placeholders)
+        // Look for patterns that don't start with "SELECT 1 AS" (which are placeholders)
+        $pattern = '/\/\*!50001\s+VIEW\s+`?(\w+)`?\s+AS\s+(.+?)\s*\*\//is';
+        
+        if (preg_match_all($pattern, $ddl, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $viewName = trim($match[1]);
+                $viewDefinition = trim($match[2]);
+                
+                // Skip placeholder definitions (mysqldump creates these for temporary structure)
+                if (preg_match('/^\s*SELECT\s+1\s+AS/i', $viewDefinition)) {
+                    continue;
+                }
+                
+                // Normalize the view definition (remove extra whitespace)
+                $viewDefinition = preg_replace('/\s+/', ' ', $viewDefinition);
+                $viewDefinition = trim($viewDefinition);
+                
+                $views[$viewName] = [
+                    'name' => $viewName,
+                    'definition' => $viewDefinition,
+                ];
+            }
+        }
+        
+        // Also check for regular CREATE VIEW statements (not in conditional comments)
+        $pattern2 = '/CREATE\s+(?:OR\s+REPLACE\s+)?(?:ALGORITHM=\w+\s+)?(?:DEFINER=[^\s]+\s+)?(?:SQL\s+SECURITY\s+\w+\s+)?VIEW\s+`?(\w+)`?\s+AS\s+(.+?)(?=;|\s*$)/is';
+        
+        if (preg_match_all($pattern2, $ddl, $matches2, PREG_SET_ORDER)) {
+            foreach ($matches2 as $match) {
+                $viewName = trim($match[1]);
+                $viewDefinition = trim($match[2]);
+                
+                // Skip placeholder definitions
+                if (preg_match('/^\s*SELECT\s+1\s+AS/i', $viewDefinition)) {
+                    continue;
+                }
+                
+                // Skip if already parsed from conditional comments
+                if (isset($views[$viewName])) {
+                    continue;
+                }
+                
+                // Normalize the view definition
+                $viewDefinition = preg_replace('/\s+/', ' ', $viewDefinition);
+                $viewDefinition = trim($viewDefinition);
+                
+                $views[$viewName] = [
+                    'name' => $viewName,
+                    'definition' => $viewDefinition,
+                ];
+            }
+        }
+        
+        return $views;
+    }
+
+    private function parseColumns(string $tableBody): array
+    {
+        $columns = [];
+        
+        // Extract column definitions (everything before first constraint)
+        // This regex matches column definitions that end with comma or end of string
+        $pattern = '/`?(\w+)`?\s+([^,]+?)(?=\s*,\s*(?:PRIMARY|KEY|UNIQUE|FOREIGN|CONSTRAINT|CHECK|INDEX|`?\w+`?\s+[^,]+)|$)/i';
+        
+        // Better approach: split by commas and parse each part
+        $parts = $this->splitTableBody($tableBody);
+        
+        foreach ($parts as $part) {
+            $part = trim($part);
+            
+            // Skip if it's a constraint/key definition
+            if (preg_match('/^\s*(PRIMARY\s+KEY|KEY|INDEX|UNIQUE|FOREIGN\s+KEY|CONSTRAINT|CHECK)\s+/i', $part)) {
+                continue;
+            }
+            
+            // Parse column definition
+            if (preg_match('/^`?(\w+)`?\s+(.+)$/i', $part, $matches)) {
+                $columnName = $matches[1];
+                $columnDef = trim($matches[2]);
+                
+                // Debug: check if definition contains parentheses
+                if (strpos($columnDef, '(') !== false && strpos($columnDef, ')') !== false) {
+                    $this->logger->debug("Parsing column {$columnName} with definition: {$columnDef}");
+                }
+                
+                $columns[$columnName] = $this->parseColumnDefinition($columnName, $columnDef);
+            }
+        }
+        
+        return $columns;
+    }
+
+    private function parseColumnDefinition(string $name, string $definition): array
+    {
+        $column = [
+            'name' => $name,
+            'type' => '',
+            'nullable' => true,
+            'default' => null,
+            'extra' => '',
+            'comment' => '',
+            'charset' => null,
+            'collation' => null,
+            'check' => null,
+        ];
+
+        // Extract type - match data type with optional parameters like varchar(128), int(11), decimal(20,8)
+        // Handle types like: varchar(128), int(11), decimal(20,8), text, timestamp, etc.
+        // The type can have parentheses with parameters, e.g., varchar(128), decimal(20,8)
+        $definition = trim($definition);
+        
+        // Match type with optional parentheses: varchar(128), int(11), decimal(20,8), etc.
+        // Try to match with parentheses first (more specific), then fallback to without
+        // Pattern: match "type(params)" where params can contain commas for types like decimal(20,8)
+        // Match type with parentheses first (more specific)
+        // Debug: log definition for problematic columns
+        $originalDef = $definition;
+        
+        if (preg_match('/^([A-Za-z]+)\s*\(\s*([^)]+)\s*\)/i', $definition, $typeMatch)) {
+            // Type with parameters - reconstruct as "type(params)"
+            $column['type'] = strtolower(trim($typeMatch[1])) . '(' . trim($typeMatch[2]) . ')';
+        } elseif (preg_match('/^([A-Za-z]+)/i', $definition, $typeMatch)) {
+            $column['type'] = strtolower(trim($typeMatch[1])); // Type without parameters
+            // If definition has parentheses but regex didn't match, log it
+            if (strpos($originalDef, '(') !== false && strpos($originalDef, ')') !== false) {
+                $this->logger->warning("Type extraction may have failed for: {$originalDef}");
+            }
+        }
+        
+        // Debug: log if type extraction failed
+        if (empty($column['type'])) {
+            $this->logger->warning("Failed to extract type from definition: {$definition}");
+        }
+
+        // Check for NOT NULL
+        if (preg_match('/\bNOT\s+NULL\b/i', $definition)) {
+            $column['nullable'] = false;
+        }
+
+        // Extract DEFAULT
+        // Match DEFAULT followed by: NULL, quoted strings, numbers, or unquoted identifiers
+        if (preg_match('/\bDEFAULT\s+(NULL|(?:[\'"]).*?(?:[\'"])|[\w\-\.]+|\d+)/i', $definition, $defaultMatch)) {
+            $default = trim($defaultMatch[1], '"\'');
+            // Convert NULL (case-insensitive) to null
+            if (strtoupper($default) === 'NULL') {
+                $column['default'] = null;
+            } else {
+                $column['default'] = $default;
+            }
+        }
+
+        // Extract AUTO_INCREMENT
+        if (preg_match('/\bAUTO_INCREMENT\b/i', $definition)) {
+            $column['extra'] = 'auto_increment';
+        }
+
+        // Extract COMMENT
+        if (preg_match("/\bCOMMENT\s+['\"](.*?)['\"]/i", $definition, $commentMatch)) {
+            $column['comment'] = $commentMatch[1];
+        }
+
+        // Extract CHARACTER SET
+        if (preg_match("/\bCHARACTER\s+SET\s+(\w+)/i", $definition, $charsetMatch)) {
+            $column['charset'] = $charsetMatch[1];
+        }
+
+        // Extract COLLATE
+        if (preg_match("/\bCOLLATE\s+(\w+)/i", $definition, $collateMatch)) {
+            $column['collation'] = $collateMatch[1];
+        }
+
+        // Extract CHECK constraint
+        // Match CHECK (expression) - can contain nested parentheses
+        if (preg_match('/\bCHECK\s*\(([^()]*(?:\([^()]*\)[^()]*)*)\)/i', $definition, $checkMatch)) {
+            $column['check'] = $checkMatch[1]; // Store the expression without CHECK keyword
+        }
+
+        return $column;
+    }
+
+    private function parseIndexes(string $tableBody): array
+    {
+        $indexes = [];
+        $parts = $this->splitTableBody($tableBody);
+
+        foreach ($parts as $part) {
+            $part = trim($part);
+            
+            // PRIMARY KEY
+            if (preg_match('/^\s*PRIMARY\s+KEY\s*\((.+?)\)/i', $part, $matches)) {
+                $columns = $this->parseColumnList($matches[1]);
+                $indexes['PRIMARY'] = [
+                    'name' => 'PRIMARY',
+                    'columns' => $columns,
+                    'unique' => true,
+                    'type' => 'BTREE',
+                    'comment' => '',
+                ];
+            }
+            // UNIQUE KEY/INDEX
+            elseif (preg_match('/^\s*UNIQUE\s+(?:KEY|INDEX)\s+(?:`?(\w+)`?\s+)?\((.+?)\)/i', $part, $matches)) {
+                $name = $matches[1] ?? '';
+                $columns = $this->parseColumnList($matches[2]);
+                if (empty($name) && count($columns) === 1) {
+                    $name = $columns[0];
+                }
+                $indexes[$name] = [
+                    'name' => $name,
+                    'columns' => $columns,
+                    'unique' => true,
+                    'type' => 'BTREE',
+                    'comment' => '',
+                ];
+            }
+            // KEY/INDEX
+            elseif (preg_match('/^\s*(?:KEY|INDEX)\s+(?:`?(\w+)`?\s+)?\((.+?)\)/i', $part, $matches)) {
+                $name = $matches[1] ?? '';
+                $columns = $this->parseColumnList($matches[2]);
+                if (empty($name) && count($columns) === 1) {
+                    $name = $columns[0];
+                }
+                $indexes[$name] = [
+                    'name' => $name,
+                    'columns' => $columns,
+                    'unique' => false,
+                    'type' => 'BTREE',
+                    'comment' => '',
+                ];
+            }
+        }
+
+        return $indexes;
+    }
+
+    private function parseForeignKeys(string $tableBody): array
+    {
+        $foreignKeys = [];
+        $parts = $this->splitTableBody($tableBody);
+
+        foreach ($parts as $part) {
+            $part = trim($part);
+            
+            // Match FOREIGN KEY with optional CONSTRAINT name, and both ON UPDATE and ON DELETE clauses
+            // Pattern matches: CONSTRAINT name? FOREIGN KEY (columns) REFERENCES table (columns) [ON DELETE action] [ON UPDATE action]
+            if (preg_match('/^\s*(?:CONSTRAINT\s+`?(\w+)`?\s+)?FOREIGN\s+KEY\s*\((.+?)\)\s+REFERENCES\s+`?(\w+)`?\s*\((.+?)\)/i', $part, $matches)) {
+                $name = $matches[1] ?? '';
+                $columns = $this->parseColumnList($matches[2]);
+                $referencedTable = $matches[3];
+                $referencedColumns = $this->parseColumnList($matches[4]);
+                
+                if (empty($name)) {
+                    $name = 'fk_' . implode('_', $columns) . '_' . $referencedTable;
+                }
+
+                $foreignKeys[$name] = [
+                    'name' => $name,
+                    'columns' => $columns,
+                    'referenced_table' => $referencedTable,
+                    'referenced_columns' => $referencedColumns,
+                    'on_update' => 'RESTRICT', // Default
+                    'on_delete' => 'RESTRICT', // Default
+                ];
+
+                // Parse ON DELETE clause
+                if (preg_match('/\bON\s+DELETE\s+(RESTRICT|CASCADE|SET\s+NULL|NO\s+ACTION)\b/i', $part, $deleteMatch)) {
+                    $foreignKeys[$name]['on_delete'] = strtoupper($deleteMatch[1]);
+                }
+
+                // Parse ON UPDATE clause
+                if (preg_match('/\bON\s+UPDATE\s+(RESTRICT|CASCADE|SET\s+NULL|NO\s+ACTION)\b/i', $part, $updateMatch)) {
+                    $foreignKeys[$name]['on_update'] = strtoupper($updateMatch[1]);
+                }
+            }
+        }
+
+        return $foreignKeys;
+    }
+
+    private function parseTableOptions(string $options): array
+    {
+        $tableOptions = [
+            'engine' => 'InnoDB',
+            'collation' => null,
+            'comment' => '',
+            'auto_increment' => null,
+        ];
+
+        // Extract ENGINE
+        if (preg_match('/\bENGINE\s*=\s*(\w+)/i', $options, $matches)) {
+            $tableOptions['engine'] = $matches[1];
+        }
+
+        // Extract DEFAULT CHARSET/CHARACTER SET
+        if (preg_match('/\b(?:DEFAULT\s+)?(?:CHARSET|CHARACTER\s+SET)\s*=\s*(\w+)/i', $options, $matches)) {
+            // Charset is stored but we'll use collation primarily
+        }
+
+        // Extract COLLATE
+        if (preg_match('/\bCOLLATE\s*=\s*(\w+)/i', $options, $matches)) {
+            $tableOptions['collation'] = $matches[1];
+        }
+
+        // Extract COMMENT
+        if (preg_match("/\bCOMMENT\s*=\s*['\"](.*?)['\"]/i", $options, $matches)) {
+            $tableOptions['comment'] = $matches[1];
+        }
+
+        // Extract AUTO_INCREMENT
+        if (preg_match('/\bAUTO_INCREMENT\s*=\s*(\d+)/i', $options, $matches)) {
+            $tableOptions['auto_increment'] = (int)$matches[1];
+        }
+
+        return $tableOptions;
+    }
+
+    private function splitTableBody(string $body): array
+    {
+        $parts = [];
+        $current = '';
+        $depth = 0;
+        $inQuotes = false;
+        $quoteChar = '';
+
+        for ($i = 0; $i < strlen($body); $i++) {
+            $char = $body[$i];
+            $prev = $i > 0 ? $body[$i - 1] : '';
+
+            if (!$inQuotes && ($char === '"' || $char === "'")) {
+                $inQuotes = true;
+                $quoteChar = $char;
+            } elseif ($inQuotes && $char === $quoteChar && $prev !== '\\') {
+                $inQuotes = false;
+            }
+
+            if (!$inQuotes) {
+                if ($char === '(') {
+                    $depth++;
+                } elseif ($char === ')') {
+                    $depth--;
+                } elseif ($char === ',' && $depth === 0) {
+                    $parts[] = trim($current);
+                    $current = '';
+                    continue;
+                }
+            }
+
+            $current .= $char;
+        }
+
+        if (!empty(trim($current))) {
+            $parts[] = trim($current);
+        }
+
+        return $parts;
+    }
+
+    private function parseColumnList(string $list): array
+    {
+        $columns = [];
+        $parts = preg_split('/\s*,\s*/', trim($list));
+        
+        foreach ($parts as $part) {
+            $part = trim($part, '` ');
+            if (!empty($part)) {
+                $columns[] = $part;
+            }
+        }
+        
+        return $columns;
+    }
+}
+
+<?php
+
+namespace DbUpdater;
+
+class SchemaExtractor
+{
+    private $db;
+    private $logger;
+    private $databaseName;
+
+    public function __construct(DatabaseHandler $db, Logger $logger)
+    {
+        $this->db = $db;
+        $this->logger = $logger;
+        $this->databaseName = $db->getDatabaseName();
+    }
+
+    public function extractSchema(): array
+    {
+        $this->logger->info("Extracting current database schema");
+        
+        $schema = [
+            'tables' => [],
+            'views' => [],
+        ];
+
+        $tables = $this->getTables();
+        
+        foreach ($tables as $tableName) {
+            $schema['tables'][$tableName] = [
+                'columns' => $this->getColumns($tableName),
+                'indexes' => $this->getIndexes($tableName),
+                'foreign_keys' => $this->getForeignKeys($tableName),
+                'table_options' => $this->getTableOptions($tableName),
+            ];
+        }
+        
+        // Extract views
+        $views = $this->getViews();
+        foreach ($views as $viewName => $viewData) {
+            $schema['views'][$viewName] = $viewData;
+        }
+
+        $this->logger->info("Extracted schema for " . count($tables) . " tables");
+        $this->logger->info("Extracted schema for " . count($views) . " views");
+        return $schema;
+    }
+
+    private function getTables(): array
+    {
+        $sql = "SELECT TABLE_NAME 
+                FROM INFORMATION_SCHEMA.TABLES 
+                WHERE TABLE_SCHEMA = :dbname 
+                AND TABLE_TYPE = 'BASE TABLE'
+                ORDER BY TABLE_NAME";
+        
+        $pdo = $this->db->getPdo();
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(['dbname' => $this->databaseName]);
+        
+        return array_column($stmt->fetchAll(), 'TABLE_NAME');
+    }
+
+    private function getColumns(string $tableName): array
+    {
+        $sql = "SELECT 
+                    COLUMN_NAME,
+                    COLUMN_TYPE,
+                    DATA_TYPE,
+                    IS_NULLABLE,
+                    COLUMN_DEFAULT,
+                    EXTRA,
+                    COLUMN_KEY,
+                    COLUMN_COMMENT,
+                    CHARACTER_SET_NAME,
+                    COLLATION_NAME
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = :dbname 
+                AND TABLE_NAME = :table
+                ORDER BY ORDINAL_POSITION";
+        
+        $pdo = $this->db->getPdo();
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'dbname' => $this->databaseName,
+            'table' => $tableName,
+        ]);
+        
+        $columns = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $columns[$row['COLUMN_NAME']] = [
+                'name' => $row['COLUMN_NAME'],
+                'type' => $row['COLUMN_TYPE'],
+                'data_type' => $row['DATA_TYPE'],
+                'nullable' => $row['IS_NULLABLE'] === 'YES',
+                'default' => $row['COLUMN_DEFAULT'],
+                'extra' => $row['EXTRA'],
+                'key' => $row['COLUMN_KEY'],
+                'comment' => $row['COLUMN_COMMENT'],
+                'charset' => $row['CHARACTER_SET_NAME'],
+                'collation' => $row['COLLATION_NAME'],
+            ];
+        }
+        
+        return $columns;
+    }
+
+    private function getIndexes(string $tableName): array
+    {
+        $sql = "SELECT 
+                    INDEX_NAME,
+                    COLUMN_NAME,
+                    SEQ_IN_INDEX,
+                    NON_UNIQUE,
+                    INDEX_TYPE,
+                    INDEX_COMMENT
+                FROM INFORMATION_SCHEMA.STATISTICS
+                WHERE TABLE_SCHEMA = :dbname 
+                AND TABLE_NAME = :table
+                ORDER BY INDEX_NAME, SEQ_IN_INDEX";
+        
+        $pdo = $this->db->getPdo();
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'dbname' => $this->databaseName,
+            'table' => $tableName,
+        ]);
+        
+        $indexes = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $indexName = $row['INDEX_NAME'];
+            
+            if (!isset($indexes[$indexName])) {
+                $indexes[$indexName] = [
+                    'name' => $indexName,
+                    'columns' => [],
+                    'unique' => $row['NON_UNIQUE'] == 0,
+                    'type' => $row['INDEX_TYPE'],
+                    'comment' => $row['INDEX_COMMENT'],
+                ];
+            }
+            
+            $indexes[$indexName]['columns'][] = $row['COLUMN_NAME'];
+        }
+        
+        return $indexes;
+    }
+
+    private function getForeignKeys(string $tableName): array
+    {
+        $sql = "SELECT 
+                    k.CONSTRAINT_NAME,
+                    k.COLUMN_NAME,
+                    k.REFERENCED_TABLE_NAME,
+                    k.REFERENCED_COLUMN_NAME,
+                    r.UPDATE_RULE,
+                    r.DELETE_RULE
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE k
+                JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS r 
+                    ON k.CONSTRAINT_NAME = r.CONSTRAINT_NAME 
+                    AND k.TABLE_SCHEMA = r.CONSTRAINT_SCHEMA
+                WHERE k.TABLE_SCHEMA = :dbname 
+                AND k.TABLE_NAME = :table
+                AND k.REFERENCED_TABLE_NAME IS NOT NULL
+                ORDER BY k.CONSTRAINT_NAME, k.ORDINAL_POSITION";
+        
+        $pdo = $this->db->getPdo();
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'dbname' => $this->databaseName,
+            'table' => $tableName,
+        ]);
+        
+        $foreignKeys = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $constraintName = $row['CONSTRAINT_NAME'];
+            
+            if (!isset($foreignKeys[$constraintName])) {
+                $foreignKeys[$constraintName] = [
+                    'name' => $constraintName,
+                    'columns' => [],
+                    'referenced_table' => $row['REFERENCED_TABLE_NAME'],
+                    'referenced_columns' => [],
+                    'on_update' => $row['UPDATE_RULE'],
+                    'on_delete' => $row['DELETE_RULE'],
+                ];
+            }
+            
+            $foreignKeys[$constraintName]['columns'][] = $row['COLUMN_NAME'];
+            $foreignKeys[$constraintName]['referenced_columns'][] = $row['REFERENCED_COLUMN_NAME'];
+        }
+        
+        return $foreignKeys;
+    }
+
+    private function getTableOptions(string $tableName): array
+    {
+        $sql = "SELECT 
+                    ENGINE,
+                    TABLE_COLLATION,
+                    TABLE_COMMENT,
+                    AUTO_INCREMENT
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_SCHEMA = :dbname 
+                AND TABLE_NAME = :table";
+        
+        $pdo = $this->db->getPdo();
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'dbname' => $this->databaseName,
+            'table' => $tableName,
+        ]);
+        
+        $row = $stmt->fetch();
+        if (!$row) {
+            return [];
+        }
+        
+        return [
+            'engine' => $row['ENGINE'],
+            'collation' => $row['TABLE_COLLATION'],
+            'comment' => $row['TABLE_COMMENT'],
+            'auto_increment' => $row['AUTO_INCREMENT'],
+        ];
+    }
+    
+    /**
+     * Extract views from INFORMATION_SCHEMA.VIEWS
+     */
+    private function getViews(): array
+    {
+        $sql = "SELECT 
+                    TABLE_NAME,
+                    VIEW_DEFINITION
+                FROM INFORMATION_SCHEMA.VIEWS 
+                WHERE TABLE_SCHEMA = :dbname 
+                ORDER BY TABLE_NAME";
+        
+        $pdo = $this->db->getPdo();
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(['dbname' => $this->databaseName]);
+        
+        $views = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $viewName = $row['TABLE_NAME'];
+            $viewDefinition = $row['VIEW_DEFINITION'];
+            
+            // Normalize the view definition (remove extra whitespace)
+            $viewDefinition = preg_replace('/\s+/', ' ', $viewDefinition);
+            $viewDefinition = trim($viewDefinition);
+            
+            $views[$viewName] = [
+                'name' => $viewName,
+                'definition' => $viewDefinition,
+            ];
+        }
+        
+        return $views;
+    }
+}
+
+<?php
+
+namespace DbUpdater;
+
+use PDO;
+use PDOException;
+
+class DatabaseHandler
+{
+    private $pdo;
+    private $logger;
+
+    public function __construct(array $config, Logger $logger)
+    {
+        $this->logger = $logger;
+        $this->connect($config);
+    }
+
+    private function connect(array $config): void
+    {
+        $username = $config['username'] ?? '';
+        $password = $config['password'] ?? '';
+        
+        // Check if DSN is provided directly
+        if (isset($config['dsn']) && !empty($config['dsn'])) {
+            $dsn = $config['dsn'];
+            // Extract database name from DSN for logging if possible
+            $dbname = $this->extractDbnameFromDsn($dsn) ?? ($config['dbname'] ?? '');
+        } else {
+            // Construct DSN from individual parameters
+            $host = $config['host'] ?? 'localhost';
+            $port = $config['port'] ?? 3306;
+            $dbname = $config['dbname'] ?? '';
+            $charset = $config['charset'] ?? 'utf8mb4';
+            
+            $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
+        }
+
+        try {
+            $this->pdo = new PDO($dsn, $username, $password, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            ]);
+            $this->logger->info("Connected to database: " . ($dbname ?: 'unknown'));
+        } catch (PDOException $e) {
+            $this->logger->error("Database connection failed: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Extract database name from DSN string
+     */
+    private function extractDbnameFromDsn(string $dsn): ?string
+    {
+        // Parse DSN: mysql:host=...;dbname=...;charset=...
+        if (preg_match('/dbname=([^;]+)/i', $dsn, $matches)) {
+            return trim($matches[1]);
+        }
+        return null;
+    }
+
+    public function getPdo(): PDO
+    {
+        return $this->pdo;
+    }
+
+    public function query(string $sql): array
+    {
+        try {
+            $this->logger->debug("Executing query: {$sql}");
+            $stmt = $this->pdo->query($sql);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            $this->logger->error("Query failed: {$sql}", ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
+
+    public function execute(string $sql): bool
+    {
+        try {
+            $this->logger->logSql($sql);
+            $result = $this->pdo->exec($sql);
+            $this->logger->info("Query executed successfully, affected rows: {$result}");
+            return true;
+        } catch (PDOException $e) {
+            $this->logger->error("Execution failed: {$sql}", ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
+
+    public function getDatabaseName(): string
+    {
+        return $this->pdo->query("SELECT DATABASE()")->fetchColumn();
+    }
+
+}
+
+<?php
+
+namespace DbUpdater;
+
+class SqlGenerator
+{
+    private $logger;
+    private $desiredSchema;
+
+    public function __construct(Logger $logger, array $desiredSchema)
+    {
+        $this->logger = $logger;
+        $this->desiredSchema = $desiredSchema;
+    }
+
+    public function generateSql(array $differences): array
+    {
+        $sqlStatements = [];
+
+        // Generate CREATE TABLE statements
+        foreach ($differences['tables_to_create'] ?? [] as $tableName) {
+            $sqlStatements[] = $this->generateCreateTableInternal($tableName);
+        }
+
+        // Generate ALTER TABLE statements
+        foreach ($differences['tables_to_alter'] ?? [] as $tableName => $tableDiff) {
+            $alterStatements = $this->generateAlterTable($tableName, $tableDiff);
+            $sqlStatements = array_merge($sqlStatements, $alterStatements);
+        }
+        
+        // Generate CREATE OR REPLACE VIEW statements
+        foreach ($differences['views_to_create'] ?? [] as $viewName) {
+            $sqlStatements[] = $this->generateCreateViewInternal($viewName);
+        }
+        
+        // Generate CREATE OR REPLACE VIEW statements for modified views
+        foreach ($differences['views_to_modify'] ?? [] as $viewName) {
+            $sqlStatements[] = $this->generateCreateViewInternal($viewName);
+        }
+        
+        // Generate DROP VIEW statements (if enabled)
+        foreach ($differences['views_to_drop'] ?? [] as $viewName) {
+            $sqlStatements[] = "DROP VIEW IF EXISTS `{$viewName}`;";
+        }
+
+        return $sqlStatements;
+    }
+
+    /**
+     * Public method to generate CREATE TABLE statement (for initialization)
+     */
+    public function generateCreateTable(string $tableName): string
+    {
+        return $this->generateCreateTableInternal($tableName);
+    }
+
+    /**
+     * Public method to generate CREATE OR REPLACE VIEW statement (for initialization)
+     */
+    public function generateCreateView(string $viewName): string
+    {
+        return $this->generateCreateViewInternal($viewName);
+    }
+    
+    /**
+     * Generate CREATE OR REPLACE VIEW statement
+     */
+    private function generateCreateViewInternal(string $viewName): string
+    {
+        $view = $this->desiredSchema['views'][$viewName];
+        $definition = $view['definition'];
+        
+        // Ensure definition ends with semicolon
+        $definition = rtrim($definition, ';');
+        
+        return "CREATE OR REPLACE VIEW `{$viewName}` AS {$definition};";
+    }
+
+    private function generateCreateTableInternal(string $tableName): string
+    {
+        $table = $this->desiredSchema['tables'][$tableName];
+        $sql = "CREATE TABLE `{$tableName}` (\n";
+
+        $parts = [];
+
+        // Add columns
+        foreach ($table['columns'] as $columnName => $column) {
+            $parts[] = "  " . $this->generateColumnDefinition($column);
+        }
+
+        // Add primary key if exists
+        foreach ($table['indexes'] as $indexName => $index) {
+            if ($index['unique'] && strtoupper($indexName) === 'PRIMARY') {
+                $columns = implode('`, `', $index['columns']);
+                $parts[] = "  PRIMARY KEY (`{$columns}`)";
+            }
+        }
+
+        // Add other indexes
+        foreach ($table['indexes'] as $indexName => $index) {
+            if (strtoupper($indexName) !== 'PRIMARY') {
+                $columns = implode('`, `', $index['columns']);
+                $indexType = $index['unique'] ? 'UNIQUE KEY' : 'KEY';
+                $parts[] = "  {$indexType} `{$indexName}` (`{$columns}`)";
+            }
+        }
+
+        // Add foreign keys
+        foreach ($table['foreign_keys'] as $fkName => $fk) {
+            $columns = implode('`, `', $fk['columns']);
+            $refColumns = implode('`, `', $fk['referenced_columns']);
+            $parts[] = "  CONSTRAINT `{$fkName}` FOREIGN KEY (`{$columns}`) REFERENCES `{$fk['referenced_table']}` (`{$refColumns}`) ON UPDATE {$fk['on_update']} ON DELETE {$fk['on_delete']}";
+        }
+
+        $sql .= implode(",\n", $parts);
+        $sql .= "\n)";
+
+        // Add table options
+        $options = $table['table_options'] ?? [];
+        $optionParts = [];
+        
+        if (!empty($options['engine'])) {
+            $optionParts[] = "ENGINE={$options['engine']}";
+        }
+        
+        if (!empty($options['collation'])) {
+            $optionParts[] = "COLLATE={$options['collation']}";
+        }
+        
+        if (!empty($options['comment'])) {
+            $optionParts[] = "COMMENT='" . addslashes($options['comment']) . "'";
+        }
+        
+        if (!empty($options['auto_increment'])) {
+            $optionParts[] = "AUTO_INCREMENT={$options['auto_increment']}";
+        }
+
+        if (!empty($optionParts)) {
+            $sql .= " " . implode(" ", $optionParts);
+        }
+
+        $sql .= ";";
+
+        return $sql;
+    }
+
+    private function generateAlterTable(string $tableName, array $diff): array
+    {
+        $statements = [];
+
+        // Drop foreign keys first (if needed)
+        foreach ($diff['foreign_keys_to_drop'] ?? [] as $fkName) {
+            $statements[] = "ALTER TABLE `{$tableName}` DROP FOREIGN KEY `{$fkName}`;";
+        }
+
+        // Drop indexes
+        foreach ($diff['indexes_to_drop'] ?? [] as $indexName) {
+            if (strtoupper($indexName) === 'PRIMARY') {
+                $statements[] = "ALTER TABLE `{$tableName}` DROP PRIMARY KEY;";
+            } else {
+                $statements[] = "ALTER TABLE `{$tableName}` DROP INDEX `{$indexName}`;";
+            }
+        }
+
+        // Add columns
+        foreach ($diff['columns_to_add'] ?? [] as $columnName => $column) {
+            $columnDef = $this->generateColumnDefinition($column);
+            $statements[] = "ALTER TABLE `{$tableName}` ADD COLUMN {$columnDef};";
+        }
+
+        // Modify columns
+        foreach ($diff['columns_to_modify'] ?? [] as $columnName => $columnData) {
+            $columnDef = $this->generateColumnDefinition($columnData['desired']);
+            $statements[] = "ALTER TABLE `{$tableName}` MODIFY COLUMN {$columnDef};";
+        }
+
+        // Drop columns (if enabled)
+        foreach ($diff['columns_to_drop'] ?? [] as $columnName) {
+            $statements[] = "ALTER TABLE `{$tableName}` DROP COLUMN `{$columnName}`;";
+        }
+
+        // Add indexes
+        foreach ($diff['indexes_to_add'] ?? [] as $indexName => $index) {
+            $columns = implode('`, `', $index['columns']);
+            
+            if ($index['unique'] && strtoupper($indexName) === 'PRIMARY') {
+                $statements[] = "ALTER TABLE `{$tableName}` ADD PRIMARY KEY (`{$columns}`);";
+            } elseif ($index['unique']) {
+                $statements[] = "ALTER TABLE `{$tableName}` ADD UNIQUE KEY `{$indexName}` (`{$columns}`);";
+            } else {
+                $statements[] = "ALTER TABLE `{$tableName}` ADD KEY `{$indexName}` (`{$columns}`);";
+            }
+        }
+
+        // Add foreign keys
+        foreach ($diff['foreign_keys_to_add'] ?? [] as $fkName => $fk) {
+            $columns = implode('`, `', $fk['columns']);
+            $refColumns = implode('`, `', $fk['referenced_columns']);
+            $statements[] = "ALTER TABLE `{$tableName}` ADD CONSTRAINT `{$fkName}` FOREIGN KEY (`{$columns}`) REFERENCES `{$fk['referenced_table']}` (`{$refColumns}`) ON UPDATE {$fk['on_update']} ON DELETE {$fk['on_delete']};";
+        }
+
+        // Modify table options
+        if (!empty($diff['table_options'])) {
+            $options = $diff['table_options'];
+            $optionParts = [];
+            
+            if (isset($options['engine'])) {
+                $optionParts[] = "ENGINE={$options['engine']}";
+            }
+            
+            if (isset($options['collation'])) {
+                $optionParts[] = "COLLATE={$options['collation']}";
+            }
+            
+            if (!empty($optionParts)) {
+                $statements[] = "ALTER TABLE `{$tableName}` " . implode(" ", $optionParts) . ";";
+            }
+        }
+
+        return $statements;
+    }
+
+    private function generateColumnDefinition(array $column): string
+    {
+        $def = "`{$column['name']}` {$column['type']}";
+
+        // CHARACTER SET and COLLATE must come before NOT NULL and DEFAULT
+        if (!empty($column['charset'])) {
+            $def .= " CHARACTER SET {$column['charset']}";
+        }
+
+        if (!empty($column['collation'])) {
+            $def .= " COLLATE {$column['collation']}";
+        }
+
+        if (!($column['nullable'] ?? true)) {
+            $def .= " NOT NULL";
+        }
+
+        // Handle DEFAULT clause
+        // Use array_key_exists instead of isset because isset(null) returns false
+        if (array_key_exists('default', $column)) {
+            if ($column['default'] === null) {
+                // Explicitly set DEFAULT NULL for nullable columns to match schema file
+                if ($column['nullable'] ?? true) {
+                    $def .= " DEFAULT NULL";
+                }
+            } else {
+                $default = $column['default'];
+                // Determine if this is a string type column
+                $isStringType = preg_match('/^(varchar|char|text|tinytext|mediumtext|longtext|enum|set)/i', $column['type']);
+                
+                // Quote string defaults - always quote for string types, or if it contains non-numeric characters
+                if ($isStringType || (is_string($default) && !preg_match('/^[\d\.]+$/', $default) && strtoupper($default) !== 'NULL')) {
+                    $default = "'" . addslashes($default) . "'";
+                }
+                $def .= " DEFAULT {$default}";
+            }
+        }
+
+        if (!empty($column['extra'])) {
+            $def .= " " . strtoupper($column['extra']);
+        }
+
+        // CHECK constraint comes after DEFAULT and AUTO_INCREMENT
+        if (!empty($column['check'])) {
+            $def .= " CHECK ({$column['check']})";
+        }
+
+        if (!empty($column['comment'])) {
+            $def .= " COMMENT '" . addslashes($column['comment']) . "'";
+        }
+
+        return $def;
+    }
+}
+
+<?php
+
+/**
+ * Simple autoloader for DbUpdater classes
+ */
+
+spl_autoload_register(function ($class) {
+    // Project-specific namespace prefix
+    $prefix = 'DbUpdater\\';
+
+    // Base directory for the namespace prefix
+    $base_dir = __DIR__ . '/src/';
+
+    // Does the class use the namespace prefix?
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) {
+        // No, move to the next registered autoloader
+        return;
+    }
+
+    // Get the relative class name
+    $relative_class = substr($class, $len);
+
+    // Replace the namespace prefix with the base directory, replace namespace
+    // separators with directory separators in the relative class name, append
+    // with .php
+    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
+
+    // If the file exists, require it
+    if (file_exists($file)) {
+        require $file;
+    }
+});
+
+zPªÊzLåÏK‘/Õ∫o˚ƒ*	t≥bÛüÚ2≤üy   GBMB
