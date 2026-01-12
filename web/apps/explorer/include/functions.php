@@ -37,7 +37,8 @@ function explorer_tx_link($id, $short=false) {
 }
 
 function get_data_model($total, $link, $default_sorting = "", $rowsPerPage=10) {
-	$pages = ceil($total / $rowsPerPage);
+    $no_count = $total == PHP_INT_MAX;
+	$pages = $no_count ? PHP_INT_MAX : ceil($total / $rowsPerPage);
 	$page = 1;
 	if(isset($_GET['page'])) {
 		$page = $_GET['page'];
@@ -88,7 +89,7 @@ function get_data_model($total, $link, $default_sorting = "", $rowsPerPage=10) {
 		$paginator = '
 		<div class="row">
 			<div class="col-sm-12 col-md-5 d-flex align-items-center">
-				Showing ' . $start . ' to ' . $end . ' of ' . $total . ' entries
+				' . ($no_count ? "Showing page $page" : 'Showing ' . $start . ' to ' . $end . ' of ' . $total . ' entries') . '
 			</div>
 			<div class="col-sm-12 col-md-7 d-flex justify-content-end align-items-center">
 		
@@ -118,12 +119,12 @@ function get_data_model($total, $link, $default_sorting = "", $rowsPerPage=10) {
                     <a class="page-link" href="' . $link . '&page=' . ($page + 1) . '' . $sorting_query . '&'.$search_query.'" aria-label="Next">
                         <span aria-hidden="true">Next</span>
                     </a>
-                <li>
+                <li>' .($no_count ? '' : '
                 <li class="page-item">
                     <a class="page-link" href="' . $link . '&page=' . $pages . '' . $sorting_query . '&'.$search_query.'" aria-label="Next">
                         <span aria-hidden="true">Last</span>
                     </a>
-                </li>';
+                </li>');
 		}
 		$paginator .= '</ul>
 		</div>

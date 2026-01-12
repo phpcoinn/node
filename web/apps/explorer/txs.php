@@ -52,7 +52,7 @@ function TransactiongetAll($dm) {
 }
 
 $link = '/apps/explorer/txs.php?';
-$dm = get_data_model(TransactiongetCount(), $link, "order by height desc");
+$dm = get_data_model(PHP_INT_MAX, $link, "order by height desc");
 $txs = TransactiongetAll($dm);
 
 define("HEAD_CSS", ["/apps/common/css/flatpickr.min.css","/apps/common/css/choices.min.css"]);

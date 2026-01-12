@@ -37,7 +37,7 @@ $balance = Account::pendingBalance($address);
 
 if(in_array($type, ["generator", "miner", "masternode"])) {
     $txStat = Transaction::getTxStatByType($address, $type);
-    $dm=get_data_model($txStat['tx_cnt'],
+    $dm=get_data_model(PHP_INT_MAX,
         '/apps/explorer/address_info.php?address='.$address.'&type='.$type);
     $transactions = Transaction::getByAddressType($address, $type,$dm);
     $rewardStat = Transaction::getRewardsStat($address, $type);
@@ -64,7 +64,7 @@ if(in_array($type, ["generator", "miner", "masternode"])) {
                    as stake_stat) as s2;";
     $txStat=$db->row($sql);
 
-    $dm=get_data_model($txStat['tx_cnt'],
+    $dm=get_data_model(PHP_INT_MAX,
         '/apps/explorer/address_info.php?address='.$address.'&type='.$type);
     if(is_array($dm)) {
         $page = $dm['page'];
