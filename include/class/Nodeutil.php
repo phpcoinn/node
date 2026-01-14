@@ -590,7 +590,8 @@ class Nodeutil
 			'hashRate10'=>$cachedData['hashRate10'],
 			'hashRate100'=>$cachedData['hashRate100'],
 			'lastBlockTime'=>$current['date'],
-            'php_version' => PHP_VERSION
+            'php_version' => PHP_VERSION,
+            'pruned_height' => $_config['pruned_height'],
 		];
 	}
 
