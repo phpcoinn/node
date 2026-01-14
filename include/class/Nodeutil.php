@@ -914,7 +914,7 @@ class Nodeutil
 
     static function checkDBSchema($dry_run = true) {
         global $_config;
-        _log("DB schema check start");
+        _log("DB schema check start",2);
 
         $pruned = Config::isPruned();
         $schema_file = ROOT . "/include/schema/".NETWORK.($pruned ? "-pruned":"").".sql";
@@ -923,7 +923,7 @@ class Nodeutil
             return;
         }
 
-        _log("Checking schema file: ".$schema_file);
+        _log("Checking schema file: ".$schema_file,3);
 
         touch(ROOT."/maintenance");
         $lock_dir = ROOT . "/tmp/db-migrate";
@@ -940,17 +940,17 @@ class Nodeutil
             file_put_contents($config_file, json_encode($db_updater_config, JSON_PRETTY_PRINT));
             $cmd="php " .ROOT . "/utils/db_updater.phar ".escapeshellarg($schema_file)." --json --config=".escapeshellarg($config_file)." ".
                 ($dry_run ? "--dry-run" : "");
-            _log($cmd);
-            _log("DB updater started ...");
+            _log($cmd,4);
+            _log("DB updater started ...",2);
             $res = shell_exec($cmd);
-            _log("DB updater finished ...");
+            _log("DB updater finished ...",2);
             $res = json_decode($res, true);
             if($res['success'] === true) {
-                _log("DB updater: " . $res['message']);
+                _log("DB updater: " . $res['message'],2);
                 unlink(ROOT . "/maintenance");
                 Config::setVal('dbversion', DB_SCHEMA_VERSION);
             } else if ($res['status']=="dry_run") {
-                _log("DB updater: " . print_r($res));
+                _log("DB updater: " . print_r($res),2);
                 unlink(ROOT . "/maintenance");
             } else {
                 _log("Error executing db update: " . $res['error']);
@@ -959,6 +959,6 @@ class Nodeutil
             @rmdir($lock_dir);
         }
 
-        _log("DB schema check complete");
+        _log("DB schema check complete",2);
     }
 }
