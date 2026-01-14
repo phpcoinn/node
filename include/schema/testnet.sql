@@ -164,6 +164,7 @@ CREATE TABLE `peers` (
   `response_time` decimal(20,8) DEFAULT 0.00000000,
   `response_cnt` int(11) DEFAULT 0,
   `version` varchar(20) DEFAULT NULL,
+  `info` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`info`)),
   PRIMARY KEY (`id`),
   UNIQUE KEY `hostname` (`hostname`),
   UNIQUE KEY `ip` (`ip`),
@@ -171,7 +172,7 @@ CREATE TABLE `peers` (
   KEY `ping` (`ping`),
   KEY `reserve` (`reserve`),
   KEY `stuckfail` (`stuckfail`)
-) ENGINE=InnoDB AUTO_INCREMENT=104 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -401,4 +402,4 @@ CREATE TABLE `transactions` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-12 12:36:11
+-- Dump completed on 2026-01-14 18:37:11

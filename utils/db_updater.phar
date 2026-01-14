@@ -297,7 +297,7 @@ $updater = new DbUpdater($config, $dryRun, $jsonOutput);
 $updater->run($ddlFile);
 
 __HALT_COMPILER(); ?>
-é                    src/Logger.php∏  Ybi∏  Í9∞Ë¥         src/SchemaComparator.php:  Ybi:  ∫‡Ÿ¥         src/DdlGenerator.php  Ybi  ’bç¥         src/SchemaParser.phpuR  YbiuR  Îiˆe¥         src/SchemaExtractor.php‹   Ybi‹   ÙÓèS¥         src/DatabaseHandler.phph  Ybih  .æqÇ¥         src/SqlGenerator.phpx&  Ybix&  AÖŸ¥         autoload.phpx  Ybix  ë±j¥      <?php
+é                    src/Logger.php∏  q‰gi∏  Í9∞Ë¥         src/SchemaComparator.php:  q‰gi:  ∫‡Ÿ¥         src/DdlGenerator.php  q‰gi  ’bç¥         src/SchemaParser.php…S  q‰gi…S  ï§EÙ¥         src/SchemaExtractor.php‹   q‰gi‹   ÙÓèS¥         src/DatabaseHandler.phph  q‰gih  .æqÇ¥         src/SqlGenerator.phpl'  q‰gil'  Ó á¥         autoload.phpx  q‰gix  ë±j¥      <?php
 
 namespace DbUpdater;
 
@@ -1209,6 +1209,7 @@ class SchemaParser
             'comment' => '',
             'charset' => null,
             'collation' => null,
+            'check' => null,
         ];
 
         // Extract type - match data type with optional parameters like varchar(128), int(11), decimal(20,8)
@@ -1274,6 +1275,12 @@ class SchemaParser
         // Extract COLLATE
         if (preg_match("/\bCOLLATE\s+(\w+)/i", $definition, $collateMatch)) {
             $column['collation'] = $collateMatch[1];
+        }
+
+        // Extract CHECK constraint
+        // Match CHECK (expression) - can contain nested parentheses
+        if (preg_match('/\bCHECK\s*\(([^()]*(?:\([^()]*\)[^()]*)*)\)/i', $definition, $checkMatch)) {
+            $column['check'] = $checkMatch[1]; // Store the expression without CHECK keyword
         }
 
         return $column;
@@ -2057,6 +2064,15 @@ class SqlGenerator
     {
         $def = "`{$column['name']}` {$column['type']}";
 
+        // CHARACTER SET and COLLATE must come before NOT NULL and DEFAULT
+        if (!empty($column['charset'])) {
+            $def .= " CHARACTER SET {$column['charset']}";
+        }
+
+        if (!empty($column['collation'])) {
+            $def .= " COLLATE {$column['collation']}";
+        }
+
         if (!($column['nullable'] ?? true)) {
             $def .= " NOT NULL";
         }
@@ -2086,12 +2102,9 @@ class SqlGenerator
             $def .= " " . strtoupper($column['extra']);
         }
 
-        if (!empty($column['charset'])) {
-            $def .= " CHARACTER SET {$column['charset']}";
-        }
-
-        if (!empty($column['collation'])) {
-            $def .= " COLLATE {$column['collation']}";
+        // CHECK constraint comes after DEFAULT and AUTO_INCREMENT
+        if (!empty($column['check'])) {
+            $def .= " CHECK ({$column['check']})";
         }
 
         if (!empty($column['comment'])) {
@@ -2136,4 +2149,4 @@ spl_autoload_register(function ($class) {
     }
 });
 
-ÖäFWIÎ„`4‹…‡ÛÇ.ˆ˘∆ê[ÕØ¸z‰ ªí/   GBMB
+zPªÊzLåÏK‘/Õ∫o˚ƒ*	t≥bÛüÚ2≤üy   GBMB
