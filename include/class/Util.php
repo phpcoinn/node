@@ -2274,4 +2274,23 @@ order by t1.height, t1.id;
         }
 
     }
+
+    static function dbSchema($argv) {
+        echo("DB Schema check tool\n");
+        if(!isset($argv[2]) || !in_array($argv[2], ["check","update"])) {
+            echo "Usage:\n
+check   - check current database structure with defined
+update  - update current structure to defined\n";
+            exit;
+        }
+
+        switch($argv[2]) {
+            case "check":
+                Nodeutil::checkDBSchema(true);
+                break;
+            case "update":
+                Nodeutil::checkDBSchema(false);
+                break;
+        }
+    }
 }
