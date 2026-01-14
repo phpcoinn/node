@@ -163,6 +163,7 @@ CREATE TABLE `peers` (
   `response_time` decimal(20,8) DEFAULT 0.00000000,
   `response_cnt` int(11) DEFAULT 0,
   `version` varchar(20) DEFAULT NULL,
+  `info` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`info`)),
   PRIMARY KEY (`id`),
   UNIQUE KEY `hostname` (`hostname`),
   UNIQUE KEY `ip` (`ip`),
