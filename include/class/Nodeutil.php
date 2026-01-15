@@ -926,7 +926,6 @@ class Nodeutil
 
         _log("Checking schema file: ".$schema_file,3);
 
-        touch(ROOT."/maintenance");
         $lock_dir = ROOT . "/tmp/db-migrate";
         if (mkdir($lock_dir, 0700, true)) {
 
@@ -948,11 +947,9 @@ class Nodeutil
             $res = json_decode($res, true);
             if($res['success'] === true) {
                 _log("DB updater: " . $res['message'],2);
-                unlink(ROOT . "/maintenance");
                 Config::setVal('dbversion', DB_SCHEMA_VERSION);
             } else if ($res['status']=="dry_run") {
                 _log("DB updater: " . print_r($res),2);
-                unlink(ROOT . "/maintenance");
             } else {
                 _log("Error executing db update: " . $res['error']);
             }
