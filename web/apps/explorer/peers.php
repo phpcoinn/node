@@ -69,6 +69,7 @@ require_once __DIR__. '/../common/include/top.php';
                     <th>Blacklist reason</th>
                 <?php } ?>
                 <th>Score</th>
+                <th>Database</th>
             </tr>
         </thead>
         <tbody>
@@ -124,6 +125,12 @@ require_once __DIR__. '/../common/include/top.php';
                             </div>
                             <?php echo round($peer['score'],2) ?>
                         <?php } ?>
+                    </td>
+                    <td>
+                        <?php
+                        $info=json_decode($peer['info'],true);
+                        echo $info['dbversion'];
+                        ?>
                     </td>
                 </tr>
             <?php } ?>

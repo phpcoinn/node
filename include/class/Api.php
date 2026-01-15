@@ -805,7 +805,6 @@ class Api
 	 * @apiSuccess {numeric} data[].fails Number of failed connections to peer
 	 * @apiSuccess {numeric} data[].stuckfail Number of failed stuck connections to peer
 	 * @apiSuccess {numeric} data[].height Blockchain height of peer
-	 * @apiSuccess {string} data[].appshash Hash of peer apps
 	 * @apiSuccess {numeric} data[].score Peer node score
 	 * @apiSuccess {string} data[].blacklist_reason Reason why peer is blacklisted
 	 * @apiSuccess {string} data[].version Version of peer node
