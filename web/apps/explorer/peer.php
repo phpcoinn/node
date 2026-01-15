@@ -168,17 +168,6 @@ $peer = $sel_peer;
             </td>
         </tr>
         <tr>
-            <td><strong>Apps hash</strong></td>
-            <td>
-                <div class="d-flex">
-                    <div class="app-hash me-5">
-                        <?php echo hashimg($peer['appshash'], "Apps hash: ". $peer['appshash']) ?>
-                    </div>
-                    <?php echo $peer['appshash'] ?>
-                </div>
-            </td>
-        </tr>
-        <tr>
             <td><strong>Score</strong></td>
             <td>
                 <div class="d-flex">
@@ -256,6 +245,18 @@ $peer = $sel_peer;
                     <br/>
                     Hash: <?php echo $peer['dappshash'] ?>
 	            <?php } ?>
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Database</strong></td>
+            <td>
+                <?php
+                $info = json_decode($peer['info'], true);
+                echo "Version: " . $info['dbversion'];
+                ?>
+                <?php if (!empty($info['pruned_height'])) { ?>
+                    <span class="badge rounded-pill bg-warning text-black">DB Pruned</span>
+                <?php } ?>
             </td>
         </tr>
     </table>
