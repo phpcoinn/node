@@ -167,7 +167,6 @@ CREATE TABLE `peers` (
   UNIQUE KEY `ip` (`ip`),
   KEY `blacklisted` (`blacklisted`),
   KEY `ping` (`ping`),
-  KEY `reserve` (`reserve`),
   KEY `stuckfail` (`stuckfail`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
