@@ -963,8 +963,10 @@ class Nodeutil
                     if(!$dry_run) {
                         _log("DB updater: Executing migration");
                         require_once($migration_file);
-                        Config::setVal('dbversion', DB_SCHEMA_VERSION);
                     }
+                }
+                if(!$dry_run) {
+                    Config::setVal('dbversion', DB_SCHEMA_VERSION);
                 }
             }
             unlink($config_file);
