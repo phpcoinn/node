@@ -282,6 +282,21 @@ SET character_set_client = utf8mb4;
 SET character_set_client = @saved_cs_client;
 
 --
+-- Table structure for table `transaction_data`
+--
+
+DROP TABLE IF EXISTS `transaction_data`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `transaction_data` (
+  `tx_id` varchar(128) NOT NULL,
+  `data` mediumtext DEFAULT NULL,
+  PRIMARY KEY (`tx_id`),
+  CONSTRAINT `fk_tx_data` FOREIGN KEY (`tx_id`) REFERENCES `transactions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `transactions`
 --
 
