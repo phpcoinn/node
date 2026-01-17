@@ -945,16 +945,32 @@ class Nodeutil
             $res = shell_exec($cmd);
             _log("DB updater finished ...",2);
             $res = json_decode($res, true);
+            $error = false;
             if($res['success'] === true) {
                 _log("DB updater: " . $res['message'],2);
-                Config::setVal('dbversion', DB_SCHEMA_VERSION);
             } else if ($res['status']=="dry_run") {
                 _log("DB updater: " . print_r($res),2);
+                _log("Check migration file");
+
             } else {
+                $error = true;
                 _log("Error executing db update: " . $res['error']);
+            }
+            if(!$error) {
+                $migration_file = ROOT . "/include/schema/migrations/".DB_SCHEMA_VERSION.".php";
+                if(file_exists($migration_file)) {
+                    _log("DB updater: " . "Existing migration file",2);
+                    if(!$dry_run) {
+                        _log("DB updater: Executing migration");
+                        require_once($migration_file);
+                        Config::setVal('dbversion', DB_SCHEMA_VERSION);
+                    }
+                }
             }
             unlink($config_file);
             @rmdir($lock_dir);
+        } else {
+            _log("Can not lock dir $lock_dir");
         }
 
         _log("DB schema check complete",2);
