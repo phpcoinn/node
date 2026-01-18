@@ -752,7 +752,7 @@ class Util
 		global $db;
 		$db_name = $db->single('select database()');
 		echo "Exporting database...".PHP_EOL;
-		$cmd = "mysqldump $options --single-transaction $db_name accounts blocks transactions masternode smart_contracts smart_contract_state > $file";
+		$cmd = "mysqldump $options --single-transaction $db_name accounts blocks transactions transaction_data masternode smart_contracts smart_contract_state > $file";
 		shell_exec($cmd);
 		echo "Database exported".PHP_EOL;
 	}
