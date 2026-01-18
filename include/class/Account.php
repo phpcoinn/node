@@ -128,7 +128,8 @@ class Account
 	    }
 
             $sql = "(
-            SELECT * FROM transactions t
+            SELECT t.*, td.data FROM transactions t
+            LEFT JOIN transaction_data td ON t.id = td.tx_id
             WHERE t.src = :src
             $cond1
             ORDER BY t.height DESC
@@ -136,7 +137,8 @@ class Account
         )
         UNION ALL
         (
-            SELECT * FROM transactions t
+            SELECT t.*, td.data FROM transactions t
+            LEFT JOIN transaction_data td ON t.id = td.tx_id
             WHERE t.dst = :dst
             $cond2
             ORDER BY t.height DESC

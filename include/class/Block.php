@@ -766,7 +766,9 @@ class Block
         if (!$block) {
             return false;
         }
-        $r = $db->run("SELECT * FROM transactions WHERE block=:block", [":block" => $block['id']]);
+        $r = $db->run("SELECT t.*, td.data FROM transactions t 
+            LEFT JOIN transaction_data td on td.tx_id = t.id
+            WHERE block=:block", [":block" => $block['id']]);
         $transactions = [];
         foreach ($r as $x) {
             $trans = [
