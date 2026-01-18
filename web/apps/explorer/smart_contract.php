@@ -46,7 +46,9 @@ order by t.height desc, t.id desc";
 $mempool_txs = $db->run($sql);
 
 
-$sql="select * from transactions t where
+$sql="select t.*, td.data from transactions t 
+left join transaction_data td on t.id=td.tx_id         
+where
 (t.dst='$id' and t.type in (5,6)) or (t.src = '$id' and t.type = 7)                               
 order by t.height desc, t.id desc";
 $txs = $db->run($sql);
@@ -160,7 +162,10 @@ if(isset($_SESSION['account'])) {
 }
 
 $scBalance = Account::getBalance($smartContract['address']);
-$sql="select * from transactions t where t.dst = ? and t.height = ?";
+$sql="select t.*, td.data
+from transactions t 
+left join transaction_data td on t.id = td.tx_id
+where t.dst = ? and t.height = ?";
 $tx = $db->row($sql, [$smartContract['address'], $smartContract['height']], false);
 
 global $loggedIn;

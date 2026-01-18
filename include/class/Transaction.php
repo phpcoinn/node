@@ -74,7 +74,9 @@ class Transaction
         global $db;
 
 		try {
-			$txs = $db->run("SELECT * FROM transactions WHERE block=:block ORDER by `type` DESC", [":block" => $block['id']]);
+			$txs = $db->run("SELECT t.*, td.data FROM transactions t
+                    LEFT JOIN transaction_data td on t.id = td.tx_id
+                    WHERE block=:block ORDER by `type` DESC", [":block" => $block['id']]);
 			foreach ($txs as $tx) {
 
                 $t1=microtime(true);
@@ -566,13 +568,19 @@ class Transaction
 				":type"    => $this->type,
 				":date"       => $this->date,
 				":message"    => $this->msg,
-				":src"        => $src,
-				":data"    => $this->data
+				":src"        => $src
 			];
 			$res = Transaction::insert($bind);
 			if ($res != 1) {
 				throw new Exception("Can not insert transaction");
 			}
+
+            if(!empty($this->data)) {
+                $res = Transaction::insertData($this->id, $this->data);
+                if ($res != 1) {
+                    throw new Exception("Can not insert transaction data");
+                }
+            }
 
 			$type = $this->type;
 			$res = true;
@@ -1060,7 +1068,9 @@ class Transaction
         global $db;
         $current = Block::current();
 
-        $x = $db->row("SELECT * FROM transactions WHERE id=:id", [":id" => $id]);
+        $x = $db->row("SELECT t.*, td.data FROM transactions t 
+            left join transaction_data td on t.id = td.tx_id
+                    WHERE id=:id", [":id" => $id]);
 
         if (!$x) {
             return false;
@@ -1117,9 +1127,13 @@ class Transaction
             return false;
         }
         if (!empty($id)) {
-            $r = $db->run("SELECT * FROM transactions WHERE block=:id", [":id" => $id]);
+            $r = $db->run("SELECT t.*, td.data FROM transactions t 
+            LEFT JOIN transaction_data td on t.id = td.tx_id
+         WHERE block=:id", [":id" => $id]);
         } else {
-            $r = $db->run("SELECT * FROM transactions WHERE height=:height", [":height" => $height]);
+            $r = $db->run("SELECT t.*, td.data FROM transactions t 
+         LEFT JOIN transaction_data td on t.id = td.tx_id
+         WHERE height=:height", [":height" => $height]);
         }
         $res = [];
         foreach ($r as $x) {
@@ -1193,7 +1207,9 @@ class Transaction
 
 	static function getById($id) {
 		global $db;
-		$x = $db->row("SELECT * FROM transactions WHERE id=:id", [":id" => $id]);
+		$x = $db->row("SELECT t.*, td.data FROM transactions t 
+            LEFT JOIN transaction_data td on t.id = td.tx_id
+            WHERE id=:id", [":id" => $id]);
 		if($x) {
 			return Transaction::getFromDbRecord($x);
 		} else {
@@ -1349,12 +1365,19 @@ class Transaction
     	global $db;
 	    $res = $db->run(
 		    "INSERT into transactions 
-    			(id, public_key, block,  height, dst, val, fee, signature, type, message, `date`, src, data)
-    			values (:id, :public_key, :block, :height, :dst, :val, :fee, :signature, :type, :message, :date, :src, :data)
+    			(id, public_key, block,  height, dst, val, fee, signature, type, message, `date`, src)
+    			values (:id, :public_key, :block, :height, :dst, :val, :fee, :signature, :type, :message, :date, :src)
     			",
 		    $bind
 	    );
 	    return $res;
+    }
+
+    static function insertData($txid, $data) {
+        global $db;
+        $sql="insert into transaction_data (tx_id, data) values (:id, :data)";
+        $res = $db->run($sql, [":id"=>$txid, ":data"=>$data]);
+        return $res;
     }
 
 	static function getAddressStat($address) {
