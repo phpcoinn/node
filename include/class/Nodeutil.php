@@ -915,7 +915,7 @@ class Nodeutil
 
     static function checkDBSchema($dry_run = true) {
         global $_config;
-        _log("DB schema check start",2);
+        _log("DB schema check start");
 
         $pruned = Config::isPruned();
         $schema_file = ROOT . "/include/schema/".NETWORK.($pruned ? "-pruned":"").".sql";
@@ -924,7 +924,7 @@ class Nodeutil
             return;
         }
 
-        _log("Checking schema file: ".$schema_file,3);
+        _log("Checking schema file: ".$schema_file);
 
         $lock_dir = ROOT . "/tmp/db-migrate";
         if (mkdir($lock_dir, 0700, true)) {
@@ -941,17 +941,16 @@ class Nodeutil
             $cmd="php " .ROOT . "/utils/db_updater.phar ".escapeshellarg($schema_file)." --json --config=".escapeshellarg($config_file)." ".
                 ($dry_run ? "--dry-run" : "");
             _log($cmd,4);
-            _log("DB updater started ...",2);
+            _log("DB updater started ...");
             $res = shell_exec($cmd);
-            _log("DB updater finished ...",2);
+            _log("DB updater finished ...");
             $res = json_decode($res, true);
             $error = false;
             if($res['success'] === true) {
-                _log("DB updater: " . $res['message'],2);
+                _log("DB updater: " . $res['message']);
             } else if ($res['status']=="dry_run") {
-                _log("DB updater: " . print_r($res),2);
-                _log("Check migration file");
-
+                _log("DB updater: " . print_r($res));
+                _log("Check migration file", 2);
             } else {
                 $error = true;
                 _log("Error executing db update: " . $res['error']);
@@ -959,7 +958,6 @@ class Nodeutil
             if(!$error) {
                 $migration_file = ROOT . "/include/schema/migrations/".DB_SCHEMA_VERSION.".php";
                 if(file_exists($migration_file)) {
-                    _log("DB updater: " . "Existing migration file",2);
                     if(!$dry_run) {
                         _log("DB updater: Executing migration");
                         require_once($migration_file);
@@ -975,6 +973,6 @@ class Nodeutil
             _log("Can not lock dir $lock_dir");
         }
 
-        _log("DB schema check complete",2);
+        _log("DB schema check complete");
     }
 }
