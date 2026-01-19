@@ -78,12 +78,19 @@ try {
                 $transaction['message'],
                 $transaction['date'],
                 $transaction['public_key'],
-                $transaction['data'],
             ], false);
             if (!$res) {
                 throw new Exception("Error inserting transactions at height" . $transaction['height']);
             }
             _log("Inserted transaction " . $transaction['id'] . " at height " . $transaction['height']);
+
+            if(!empty($transaction['data'])) {
+                $sql="insert into transaction_data (tx_id, data) values (?,?)";
+                $res = $db->run($sql, [$transaction['id'], $transaction['data']]);
+                if(!$res) {
+                    throw new Exception("Error inserting transaction data at height" . $transaction['height']);
+                }
+            }
         }
 
         $smart_contracts = $data['smart_contracts'];
@@ -175,6 +182,7 @@ try {
 //    $db->rollBack();
     $db->commit();
 } catch (Exception $e) {
+    _log($e->getMessage());
     $db->rollBack();
 }
 
