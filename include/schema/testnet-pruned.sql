@@ -316,7 +316,6 @@ CREATE TABLE `transactions` (
   `date` int(11) DEFAULT NULL,
   `public_key` varchar(255) DEFAULT NULL,
   `src` varchar(128) DEFAULT NULL,
-  `data` mediumtext DEFAULT NULL,
   KEY `dst` (`dst`),
   KEY `transactions_src_index` (`src`),
   KEY `height` (`height`),
