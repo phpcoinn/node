@@ -928,6 +928,9 @@ class Nodeutil
                     'username' => $_config['db_user'],
                     'password' => $_config['db_pass'],
                 ],
+                'ignore_columns' => [
+                    'transactions.data'
+                ]
             ];
             file_put_contents($config_file, json_encode($db_updater_config, JSON_PRETTY_PRINT));
             $cmd="php " .ROOT . "/utils/db_updater.phar ".escapeshellarg($schema_file)." --json --config=".escapeshellarg($config_file)." ".
