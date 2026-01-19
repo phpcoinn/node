@@ -319,6 +319,7 @@ CREATE TABLE `transactions` (
   `date` int(11) NOT NULL,
   `public_key` varchar(255) NOT NULL,
   `src` varchar(128) DEFAULT NULL,
+  `data` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `block_id` (`block`),
   KEY `dst` (`dst`),
