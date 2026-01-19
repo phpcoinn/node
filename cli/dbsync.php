@@ -63,8 +63,8 @@ try {
 
         $transactions = $data['transactions'];
         foreach ($transactions as $index => $transaction) {
-            $sql = "insert into transactions (id, block, height, src, dst, val, fee, signature, type, message, date, public_key,data)
-            values (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            $sql = "insert into transactions (id, block, height, src, dst, val, fee, signature, type, message, date, public_key)
+            values (?,?,?,?,?,?,?,?,?,?,?,?)";
             $res = $db->run($sql, [
                 $transaction['id'],
                 $transaction['block'],
