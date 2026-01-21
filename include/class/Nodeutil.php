@@ -910,8 +910,7 @@ class Nodeutil
         global $_config;
         _log("DB schema check start");
 
-        $pruned = Config::isPruned();
-        $schema_file = ROOT . "/include/schema/".NETWORK.($pruned ? "-pruned":"").".sql";
+        $schema_file = ROOT . "/include/schema/".NETWORK.".sql";
         if(!file_exists($schema_file)) {
             _log("Schema file not found: ".$schema_file);
             return;
