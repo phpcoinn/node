@@ -76,7 +76,7 @@ DROP TABLE IF EXISTS `config`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `config` (
-  `cfg` varchar(30) NOT NULL,
+  `cfg` varchar(255) NOT NULL,
   `val` varchar(200) NOT NULL,
   PRIMARY KEY (`cfg`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
