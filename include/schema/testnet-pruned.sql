@@ -64,7 +64,7 @@ CREATE TABLE `blocks` (
   KEY `blocks_masternode_height_index` (`masternode`,`height`),
   KEY `blocks_generator_index` (`generator`),
   KEY `blocks_miner_index` (`miner`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=COMPRESSED;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -308,8 +308,8 @@ CREATE TABLE `transactions` (
   `block` varchar(128) DEFAULT NULL,
   `height` int(11) NOT NULL DEFAULT 0,
   `dst` varchar(128) DEFAULT NULL,
-  `val` decimal(42,8) DEFAULT NULL,
-  `fee` decimal(42,8) DEFAULT NULL,
+  `val` decimal(20,8) DEFAULT NULL,
+  `fee` decimal(20,8) DEFAULT NULL,
   `signature` varchar(255) DEFAULT NULL,
   `type` tinyint(4) NOT NULL DEFAULT 0,
   `message` varchar(255) DEFAULT NULL,
