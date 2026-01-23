@@ -2151,6 +2151,12 @@ class Util
             
             // Disable foreign key checks temporarily
             $db->fkCheck(false);
+
+            // Drop foreign key
+            _log("Drop foreign key");
+            $sql='alter table transaction_data
+                drop foreign key fk_tx_data;';
+            $db->run($sql);
             
             _log("Creating new table");
             $sql='drop table if exists transactions1';
@@ -2161,7 +2167,7 @@ class Util
             $sql='
         create table if not exists  transactions1
 with t1 as (
-    select * from transactions t where t.height <= '.$prune_height_safe.' and t.type in (2,3,5)
+    select * from transactions t where t.height <= '.$prune_height_safe.' and t.type in (2,3,5,6,7)
     union all
     select *
             from transactions t
@@ -2178,10 +2184,9 @@ with t1 as (
                    null          as message,
                    null          as date,
                    null          as public_key,
-                   t.src,
-                   null          as data
+                   t.src
             from transactions t
-            where t.type not in (2, 3, 5)
+            where t.type not in (2, 3, 5, 6, 7)
               and t.height <= '.$prune_height_safe.'
             group by t.type, t.src, t.dst
 ) select * from t1
@@ -2228,7 +2233,7 @@ order by t1.height, t1.id;
                 'create index transactions_id_index on transactions (id)',
                 'create index transactions_src_dst_height_index on transactions (src, dst, height)'
             ];
-            
+
             foreach($indexes as $index_sql) {
                 try {
                     $db->run($index_sql);
@@ -2236,6 +2241,14 @@ order by t1.height, t1.id;
                     _log("Warning: Could not create index: ".$e->getMessage());
                 }
             }
+
+            // Restore foreign key
+            _log("Restore foreign key");
+            $sql='alter table transaction_data
+                add constraint fk_tx_data
+                    foreign key (tx_id) references transactions (id)
+                        on delete cascade;';
+            $db->run($sql);
             
             // Re-enable foreign key checks
             $db->fkCheck(true);
