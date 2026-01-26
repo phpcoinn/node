@@ -261,8 +261,8 @@ class SmartContract
 				throw new Exception("File or folder for deploy $file does not exists");
 			}
 
-            $debug_str="";
             $debug_str="-dxdebug.start_with_request=1";
+            $debug_str="";
 			$cmd = "php $debug_str --define phar.readonly=0 ".ROOT."/utils/sc_compile.php $address $file $phar_file  2>/dev/null";
 			$output = shell_exec($cmd);
 

@@ -7,7 +7,7 @@ class SmartContractEngine
 	public static $debug_logs = [];
 	public static $smartContracts = [];
 
-    public static $debug = true;
+    public static $debug = false;
 
 
 	public static function getRunFolder() {
