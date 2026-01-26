@@ -26,9 +26,16 @@ class Util
 	 *
 	 * @apiExample {cli} Example usage:
 	 * php util.php pop 1
+     * php util.php pop =10000 - delete up to block 10000
 	 */
 	static function pop($argv) {
-		$no = intval(@$argv[2]);
+        $val=@$argv[2];
+        if(!empty($val) && substr($val,0,1)=='=') {
+            $block_number = intval(substr($val,1));
+            $no = Block::getHeight() - $block_number;
+        } else {
+            $no = intval($val);
+        }
 		if(empty($no)) {
 			$no = 1;
 		}
@@ -2177,8 +2184,8 @@ with t1 as (
                    null          as block,
                    '.$prune_height_safe.' as height,
                    t.dst,
-                   sum(t.val)    as val,
-                   sum(t.fee)    as fee,
+                   cast(sum(t.val) as decimal(20,8))    as val,
+                   cast(sum(t.fee) as decimal(20,8))    as fee,
                    null          as signature,
                    t.type           as type,
                    null          as message,
