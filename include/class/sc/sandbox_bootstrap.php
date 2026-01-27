@@ -237,7 +237,7 @@ set_exception_handler(function($e){
 if($legacy_engine) {
     //Old engine - leagacy execution
     $old = true;
-    require '/home/marko/web/phpcoin/node/include/class/sc/templates/contract_entry_legacy.php';
+    require __DIR__  . '/templates/contract_entry_legacy.php';
 }
 
 ?>
