@@ -1,7 +1,7 @@
 <?php
 
 require_once dirname(dirname(dirname(dirname(__DIR__)))) . '/include/sc.inc.php';
-require_once '/home/marko/web/phpcoin/node/include/class/SmartContractEngine.php';
+require_once dirname(dirname(dirname(dirname(__DIR__)))) . '/include/class/SmartContractEngine.php';
 
 $input_data = $GLOBALS['SANDBOX_INPUT_DATA'] ?? null;
 if ($input_data !== null) {
