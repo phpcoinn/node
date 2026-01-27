@@ -41,8 +41,12 @@ class Sandbox {
         $engine_version = "1.0";
         $phar = new Phar($phar_path);
         if (isset($phar['interface.json'])) {
-            $interface = $phar['interface.json'];
+            $interface = json_decode($phar['interface.json']->getContent(), true);
             $engine_version = "2.0";
+        } else {
+            if(!empty($address)) {
+                $interface = SmartContractEngine::getInterface($address);
+            }
         }
 
         // Extract address from PHAR's interface.json if not provided
@@ -77,7 +81,8 @@ class Sandbox {
             'input' => $input,
             'address' => $address,
             'initial_state' => $initial_state,
-            'engine_version' => $engine_version
+            'engine_version' => $engine_version,
+            'interface' => $interface
         ], $debug);
 
         // Save state after execution (outside sandbox)
@@ -293,7 +298,7 @@ class Sandbox {
         // Build command with debug options if enabled
         $cmd = "php -c $iniFile -d auto_prepend_file=$bootstrapFile";
         $cmd .= " -d max_execution_time=" . SC_MAX_EXEC_TIME;
-        $cmd .= " -d memory_limit=2M" . SC_MEMORY_LIMIT;
+        $cmd .= " -d memory_limit=" . SC_MEMORY_LIMIT;
         if ($debug) {
             $cmd .= " -d error_reporting=" . E_ALL;
             // Enable Xdebug for CLI debugging

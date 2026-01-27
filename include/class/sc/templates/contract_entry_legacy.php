@@ -10,6 +10,7 @@ if ($input_data !== null) {
     $data = json_decode(stream_get_contents(STDIN), true);
 }
 $initial_state = $data['initial_state'] ?? [];
+$interface = $data['interface'] ?? null;
 
 $sc_dir = SmartContractEngine::getRunFolder();
 $sc_address = $data['address'] ?? null;
@@ -74,7 +75,7 @@ if(!empty($className)) {
     $class = new $className();
 }
 
-$smartContractWrapper = new SmartContractWrapper($class, $sc_address);
+$smartContractWrapper = new SmartContractWrapper($class, $sc_address, $interface);
 $result = $smartContractWrapper->run($data['input'], $initial_state);
 
 if(empty($result)) {

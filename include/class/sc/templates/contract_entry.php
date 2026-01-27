@@ -51,7 +51,7 @@ if ($input_data !== null) {
 } else {
     $data = json_decode(stream_get_contents(STDIN), true);
 }
-
+$interface = $data['interface'] ?? null;
 // Extract methods taht will be called, input, execution mode, address, state mode, and initial state
 $methods = [];
 if(!isset($data['input'])) {
@@ -108,23 +108,6 @@ $initial_state = $data['initial_state'] ?? []; // State loaded outside sandbox
 // Store execution mode in GLOBALS so contract can access it
 $GLOBALS['SANDBOX_EXECUTION_MODE'] = $execution_mode;
 
-// Load interface.json to get address and allowed methods
-$interface = null;
-$phar_path_for_interface = Phar::running(false);
-if ($phar_path_for_interface) {
-    try {
-        $phar = new Phar($phar_path_for_interface);
-        if (isset($phar['interface.json'])) {
-            $interface = json_decode($phar['interface.json']->getContent(), true);
-        if ($interface && isset($interface['address']) && $address === null) {
-                $address = $interface['address'];
-            }
-        }
-    } catch (Exception $e) {
-        throw new Exception("Smart contract failed: Error reading interface: " . $e->getMessage());
-    }
-}
-
 $methods = array_values($methods);
 foreach($methods as $method) {
     if($method == 'deploy') {
@@ -152,7 +135,7 @@ foreach($methods as $method) {
 // Instantiate class
 ob_start();
 $contract = new $__CLASS_NAME__();
-$contractWrapper = new SmartContractWrapper($contract, $address);
+$contractWrapper = new SmartContractWrapper($contract, $address, $interface);
 $result = $contractWrapper->run($input, $initial_state);
 
 if(empty($result)) {

@@ -12,13 +12,16 @@ class SmartContractWrapper
 
 	public $internal = false;
 
-	public function __construct($class, $address)
+    private $interface;
+
+	public function __construct($class, $address, $interface = null)
 	{
         $this->smartContract = $class;
 		if(!$this->smartContract) {
 			throw new Exception("Smart contract class not found");
 		}
         $this->address = $address;
+        $this->interface = $interface;
         SmartContractContext::$address = $address;
 	}
 
@@ -93,8 +96,7 @@ class SmartContractWrapper
     }
 
     private function loadState() {
-        // Use interface.json to get properties (no Reflection)
-        $interface = $this->loadInterface();
+        $interface = $this->interface;
         $this->state = $this->readVarsState();
         
         if ($interface && isset($interface['properties'])) {
@@ -119,8 +121,7 @@ class SmartContractWrapper
 
     private function saveState() {
         $height=intval($this->args['height']);
-        // Use interface.json to get properties (no Reflection)
-        $interface = $this->loadInterface();
+        $interface = $this->interface;
         
         if ($interface && isset($interface['properties'])) {
             foreach($interface['properties'] as $prop) {
@@ -156,9 +157,8 @@ class SmartContractWrapper
 	public function view_method() {
 		$methodName = $this->args['method'];
 		$params = $this->args['params'];
-		
-		// Use interface.json to check if method is a view method (no Reflection)
-		$interface = $this->loadInterface();
+
+        $interface = $this->interface;
 		if ($interface && isset($interface['views'])) {
 			$isView = false;
 			foreach($interface['views'] as $view) {
@@ -333,34 +333,6 @@ class SmartContractWrapper
 		*/
 	}
 
-	/**
-	 * Load interface.json from PHAR file
-	 * @return array|null Interface definition or null if not available
-	 */
-	private function loadInterface() {
-		static $interface = null;
-		if ($interface !== null) {
-			return $interface; // Cache for performance
-		}
-		
-		$phar_path = Phar::running(false);
-		if (!$phar_path) {
-			return null; // Not running from PHAR
-		}
-		
-		try {
-			$phar = new Phar($phar_path);
-			if (isset($phar['interface.json'])) {
-				$interface = json_decode($phar['interface.json']->getContent(), true);
-				return $interface;
-			}
-		} catch (Exception $e) {
-			// Log error but don't fail - interface might not be available
-			return null;
-		}
-		
-		return null;
-	}
 
 	/**
 	 * Validate parameters against interface definition
@@ -369,7 +341,7 @@ class SmartContractWrapper
 	 * @throws Exception If validation fails
 	 */
 	private function validateParameters($methodName, $params) {
-		$interface = $this->loadInterface();
+        $interface = $this->interface;
 		if (!$interface) {
 			// If interface not available, skip validation (backward compatibility)
 			return;
@@ -482,8 +454,7 @@ class SmartContractWrapper
             throw new Exception("Error cleaning SmartContract state");
         }
 
-        // Load interface once (no Reflection)
-        $interface = $this->loadInterface();
+        $interface = $this->interface;
         
         foreach ($transactions as $transaction) {
             $this->loadState();
@@ -541,9 +512,8 @@ class SmartContractWrapper
         $virtual=$this->args['virtual'];
         SmartContractContext::$virtual = $virtual;
         
-        // Use interface.json to get properties (no Reflection)
-        $interface = $this->loadInterface();
-        
+        $interface = $this->interface;
+
         if ($interface && isset($interface['properties'])) {
             foreach($interface['properties'] as $prop) {
                 // Only initialize @SmartContractMap properties
@@ -583,10 +553,8 @@ class SmartContractWrapper
 	}
 
     private function get_deploy_method() {
-        // Use interface.json to get deploy method name (no Reflection)
-        $interface = $this->loadInterface();
-        if ($interface && isset($interface['deploy']) && isset($interface['deploy']['name'])) {
-            return $interface['deploy']['name'];
+        if (isset($this->interface['deploy']['name'])) {
+            return $this->interface['deploy']['name'];
         }
         return false;
     }
@@ -657,8 +625,7 @@ class SmartContractWrapper
 
     public function isTransactMethod($method)
     {
-        // Use interface.json to check if method is a transact method (no Reflection)
-        $interface = $this->loadInterface();
+        $interface = $this->interface;
         if ($interface && isset($interface['methods'])) {
             foreach($interface['methods'] as $m) {
                 if($m['name'] === $method) {
