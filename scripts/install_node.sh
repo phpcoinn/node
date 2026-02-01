@@ -4,6 +4,7 @@
 
 NETWORK="mainnet" # Default network
 DOCKER=false
+FULL=false
 
 function parse_arguments() {
     while (( "$#" )); do
@@ -22,9 +23,14 @@ function parse_arguments() {
                 echo "network_name: testnet or mainnet. If not provided, mainnet is used by default."
                 exit 0
                 ;;
-	    --docker)
-		echo "Runnung in docker"
+	          --docker)
+		        echo "Runnung in docker"
                 DOCKER=true
+                shift 1
+                ;;
+	          --full)
+		        echo "Installing full node"
+                FULL=true
                 shift 1
                 ;;
             *)
@@ -40,16 +46,20 @@ function parse_arguments() {
     fi
 }
 
+function delim(){
+	TERM_COLS=$(tput cols)
+	myString=$(printf "%${TERM_COLS}s");echo ${myString// /=}
+}
+
+
 parse_arguments "$@" # Call the function and pass all arguments
 
 # Rest of your script here
 
 servers=("phpcoin.net" "cn.phpcoin.net")
-declare -A git_urls
 declare -A server_urls
 
-git_urls["phpcoin.net"]="https://git.phpcoin.net/node"
-git_urls["cn.phpcoin.net"]="https://cn.phpcoin.net/git/phpcoin-node.git"
+GIT_URL="https://git.phpcoin.net/node"
 
 server_urls["phpcoin.net"]="https://phpcoin.net"
 server_urls["cn.phpcoin.net"]="https://cn.phpcoin.net"
@@ -78,10 +88,11 @@ find_best_server() {
     best_server_result=$best_server
 }
 
+delim
 echo "PHPCoin $NETWORK node Installation"
-echo "==================================================================================================="
+delim
 echo "PHPCoin: define db user and pass"
-echo "==================================================================================================="
+delim
 export DEBIAN_FRONTEND=noninteractive
 export DB_NAME=phpcoin$NETWORK
 export DB_USER=phpcoin
@@ -94,34 +105,33 @@ if [ "$DOCKER" = true ]; then
 fi
 
 echo "PHPCoin: update system"
-echo "==================================================================================================="
+delim
 apt update
-apt install curl wget git sed net-tools unzip -y
+apt install curl wget git sed net-tools unzip bc -y
 echo "install php with nginx server"
 apt install nginx php-fpm php-mysql php-gmp php-bcmath php-curl php-mbstring -y
 apt install mariadb-server -y
 service mariadb start
 
 echo "PHPCoin: create database and set user"
-echo "==================================================================================================="
+delim
 mysql -e "create database $DB_NAME;"
 mysql -e "create user '$DB_USER'@'localhost' identified by '$DB_PASS';"
 mysql -e "grant all privileges on $DB_NAME.* to '$DB_USER'@'localhost';"
 
 echo "PHPCoin: find best network server"
-echo "==================================================================================================="
+delim
 find_best_server
 echo "Best server: $best_server_result"
 
 echo "PHPCoin: download node"
-echo "==================================================================================================="
-
+delim
 
 if [ "$DOCKER" = true ]; then
   if [ -d "$NODE_DIR/config" ]; then
     cd $NODE_DIR
     git init
-    git remote add origin ${git_urls[$best_server_result]}
+    git remote add origin $GIT_URL
     git fetch origin
     git add .
     if [ "$NETWORK" = "mainnet" ]; then
@@ -138,10 +148,10 @@ if [ ! -d "$NODE_DIR" ]; then
   cd $NODE_DIR
   if [ "$NETWORK" = "mainnet" ]
   then
-    git clone ${git_urls[$best_server_result]} .
+    git clone $GIT_URL .
   elif [ "$NETWORK" = "testnet" ]
   then
-    git clone ${git_urls[$best_server_result]} --branch test .
+    git clone $GIT_URL --branch test .
   fi
 fi
 
@@ -170,13 +180,17 @@ then
     PORT="80"
     HOSTNAME="http://$IP:$EXT_PORT"
   fi
-  BLOCKCHAIN_SNAPSHOT="blockchain-$NETWORK"
+  if [ "$FULL" = true ]; then
+    BLOCKCHAIN_SNAPSHOT="blockchain-$NETWORK"
+  else
+    BLOCKCHAIN_SNAPSHOT="blockchain-$NETWORK-pruned"
+  fi
 fi
 
 git config core.fileMode false
 
 echo "PHPCoin: Configure nginx"
-echo "==================================================================================================="
+delim
 cat << EOF > /etc/nginx/sites-available/phpcoin-$NETWORK
 server {
     listen $PORT;
@@ -204,30 +218,54 @@ service nginx restart
 service php8.1-fpm start
 
 echo "PHPCoin: setup config file"
-echo "==================================================================================================="
+delim
 CONFIG_FILE=config/config.inc.php
-if [ ! -f "$CONFIGFILE" ]; then
+if [ ! -f "$CONFIG_FILE" ]; then
   cp config/config-sample.inc.php config/config.inc.php
   sed -i "s/ENTER-DB-NAME/$DB_NAME/g" config/config.inc.php
   sed -i "s/ENTER-DB-USER/$DB_USER/g" config/config.inc.php
   sed -i "s/ENTER-DB-PASS/$DB_PASS/g" config/config.inc.php
 fi
 echo "PHPCoin: configure node"
-echo "==================================================================================================="
+delim
 mkdir tmp
 mkdir dapps
 chown -R www-data:www-data .
 
+
+if [ "$NETWORK" = "testnet" ]; then
+  echo "PHPCoin: Creating database tables"
+  if [ "$FULL" = true ]; then
+      mysql $DB_NAME < $NODE_DIR/include/schema/testnet.sql
+  else
+      mysql $DB_NAME < $NODE_DIR/include/schema/testnet-pruned.sql
+  fi
+  mysql $DB_NAME -e "insert into config (cfg, val) values('hostname','$HOSTNAME');"
+  if [ "$FULL" = false ]; then
+      mysql $DB_NAME -e "insert config (cfg, val) values('pruned_height', 1800000);"
+  fi
+else
+  echo "PHPCoin: Creating database tables"
+  mysql $DB_NAME < $NODE_DIR/include/schema/mainnet.sql
+  mysql $DB_NAME -e "insert into config (cfg, val) values('hostname','$HOSTNAME');"
+fi
+
 echo "PHPCoin: open start page"
-echo "==================================================================================================="
+delim
 curl $HOSTNAME > /dev/null 2>&1
 cd $NODE_DIR
 php cli/util.php version > /dev/null
 sleep 5
 mysql $DB_NAME -e "update config set val='$HOSTNAME' where cfg='hostname';"
 
+
+if [ "$NETWORK" = true ]; then
+echo "PHPCoin: skip DB import"
+else
+
+
 echo "PHPCoin: import blockchain"
-echo "==================================================================================================="
+delim
 cd $NODE_DIR
 wget ${server_urls[$best_server_result]}/download/$BLOCKCHAIN_SNAPSHOT.sql.zip -O $BLOCKCHAIN_SNAPSHOT.sql.zip
 unzip -o $BLOCKCHAIN_SNAPSHOT.sql.zip
@@ -280,10 +318,13 @@ service mariadb restart
 
 rm $BLOCKCHAIN_SNAPSHOT.sql
 rm $BLOCKCHAIN_SNAPSHOT.sql.zip
+fi
+
 rm -rf $NODE_DIR/tmp/*
 
 service nginx start
 
-echo "==================================================================================================="
+delim
 echo "PHPCoin: Install finished"
 echo "PHPCoin: Open your node at $HOSTNAME"
+delim
