@@ -837,4 +837,8 @@ class PeerRequest
         api_echo($res);
     }
 
+    static function getInfo() {
+        api_echo(Peer::getInfo());
+    }
+
 }

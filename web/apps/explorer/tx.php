@@ -1,4 +1,5 @@
 <?php
+global $_config;
 require_once dirname(__DIR__)."/apps.inc.php";
 require_once ROOT. '/web/apps/explorer/include/functions.php';
 define("PAGE", true);
@@ -26,6 +27,9 @@ if(isset($_GET['action'])) {
 		    $tx->mempool = true;
         } else {
 		    $tx = Transaction::getById($id);
+        }
+        if(Config::isPruned() && $tx_height < $_config['pruned_height']) {
+            die("Transaction is pruned");
         }
         $block = Block::getFromArray(Block::get($tx_height));
 	    $res = $tx->verify($block, $err);

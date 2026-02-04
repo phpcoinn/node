@@ -168,15 +168,20 @@ class Nodeutil
 
 
 	static function calculateBlocksHash($height) {
-		global $db;
+		global $db, $_config;
 		if(empty($height)) {
 			$height = Block::getHeight();
 		}
+        $start_height = BLOCKCHAIN_CHECKPOINT;
+        if(Config::isPruned()) {
+            $start_height = $_config['pruned_height'];
+        }
 		$rows = $db->run("select id from blocks where height >= :height and height <=:top order by height asc",
-			[":height"=>BLOCKCHAIN_CHECKPOINT, ":top"=>$height]);
+			[":height"=>$start_height, ":top"=>$height]);
 		return [
 			'height'=>$height,
-			'hash'=>md5(json_encode($rows))
+			'hash'=>md5(json_encode($rows)),
+            'pruned' => Config::isPruned()
 		];
 	}
 
@@ -520,7 +525,8 @@ class Nodeutil
                 'miner'        => $miner,
                 'masternode'   => $masternode,
                 'lastBlockTime'=>$current['date'],
-                'php_version' => PHP_VERSION
+                'php_version' => PHP_VERSION,
+                'pruned_height' => $_config['pruned_height'],
             ];
         }
 
@@ -584,7 +590,8 @@ class Nodeutil
 			'hashRate10'=>$cachedData['hashRate10'],
 			'hashRate100'=>$cachedData['hashRate100'],
 			'lastBlockTime'=>$current['date'],
-            'php_version' => PHP_VERSION
+            'php_version' => PHP_VERSION,
+            'pruned_height' => $_config['pruned_height'],
 		];
 	}
 
@@ -910,7 +917,8 @@ class Nodeutil
         global $_config;
         _log("DB schema check start");
 
-        $schema_file = ROOT . "/include/schema/".NETWORK.".sql";
+        $pruned = Config::isPruned();
+        $schema_file = ROOT . "/include/schema/".NETWORK.($pruned ? "-pruned":"").".sql";
         if(!file_exists($schema_file)) {
             _log("Schema file not found: ".$schema_file);
             return;

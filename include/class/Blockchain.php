@@ -206,4 +206,15 @@ class Blockchain
             return 1;
         }
     }
+
+    static function isValidHeight($height)
+    {
+        global $_config;
+        if(!Config::isPruned()) {
+            return true;
+        } else {
+            return $height > $_config['pruned_height'] + 100; //staking maturity + difficuly calculation
+        }
+    }
+
 }

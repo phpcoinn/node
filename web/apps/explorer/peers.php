@@ -131,6 +131,9 @@ require_once __DIR__. '/../common/include/top.php';
                         $info=json_decode($peer['info'],true);
                         echo $info['dbversion'];
                         ?>
+                        <?php if (!empty($info['pruned_height'])) { ?>
+                            <span class="badge rounded-pill bg-warning text-black">DB Pruned</span>
+                        <?php } ?>
                     </td>
                 </tr>
             <?php } ?>

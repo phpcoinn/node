@@ -7,7 +7,7 @@
  */
 class DB extends PDO
 {
-    private $error;
+    public $error;
     private $sql;
     private $bind;
     public $debugger = 0;

@@ -274,6 +274,7 @@ class Peer
 			"dapps_id"=>$dapps_data['dapps_id'],
 			"dapps_hash"=>$dapps_data['dapps_hash'],
 			"dbversion"=>$_config['dbversion'],
+            "pruned_height"=>@$_config['pruned_height'],
 		];
 	}
 

@@ -420,7 +420,7 @@ class Transaction
     }
 
 	// add a new transaction to mempool and lock it with the current height
-	public function add_mempool($peer = "")
+	public function add_mempool($peer = "", &$err = null)
 	{
 		global $db;
 
@@ -450,6 +450,7 @@ class Transaction
 			$bind
 		);
 		if($res === false) {
+            $err = $db->error;
 			return false;
 		}
 		return true;
@@ -983,7 +984,9 @@ class Transaction
 					}
 					$maturity = $height - $last_height;
 					if($maturity < Blockchain::getStakingMaturity($height)) {
+                        if(Blockchain::isValidHeight($height)) {
 						throw new Exception("Staking winner check failed: Staking maturity not valid ".$maturity);
+					}
 					}
 
 					$balance = Account::getBalanceAtHeight($this->dst, $height);
@@ -1307,9 +1310,9 @@ class Transaction
 				Masternode::checkSend($this);
 			}
 
-			$res = $this->add_mempool("local");
+			$res = $this->add_mempool("local", $err);
 			if(!$res) {
-				throw new Exception("Error adding tansaction to mempool");
+				throw new Exception("Error adding tansaction to mempool: " . json_encode($err));
 			}
 
 			$db->commit();
