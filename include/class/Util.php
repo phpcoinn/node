@@ -1991,7 +1991,8 @@ class Util
 
             $sql="delete from smart_contract_state";
             $db->run($sql);
-            $url=$node."/api.php?q=getScState";
+            $top_height = Block::getHeight();
+            $url=$node."/api.php?q=getScState&to_height=".$top_height;
             $res = url_get($url);
             $res = json_decode($res, true);
             if($res!==false) {
