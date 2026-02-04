@@ -23,6 +23,10 @@ $updateAvb = $maxPeerBuildNumber > $currentVersion;
                 |
                 <a href="https://buy.phpcoin.net/?utm_source=explorer&utm_medium=community&utm_campaign=direct_buy" target="_blank"
                    class="">Direct buy</a>
+
+                <?php if(Config::isPruned()) { ?>
+                    <span class="badge rounded-pill bg-warning text-black">DB Pruned</span>
+                <?php } ?>
             </div>
             <div class="col-sm-6">
                 <div class="text-center text-md-end d-flex justify-content-center justify-content-sm-end align-items-center mb-2 mb-sm-0">

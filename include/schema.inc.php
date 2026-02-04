@@ -309,7 +309,7 @@ if (empty($dbversion)) {
         $db->run("INSERT INTO `config` (`cfg`, `val`) VALUES ('sync', '0');");
 
         create_views();
-        _log("Initialize database complete");
+        _log("Initialize databaase complete");
 
     });
 }
