@@ -286,7 +286,6 @@ class Masternode extends Task
 
 	static function getMasternodeHeight($id, $height) {
 		global $db;
-
         $sql="select max(height) from (
             select max(height) as height from transactions t where t.type = 2 and t.height <= $height
             and t.dst = '$id' and (t.message='mncreate' or t.message='')
@@ -1242,9 +1241,9 @@ class Masternode extends Task
 	static function checkCollateral($masternode, $height) {
 		global $db;
 		$collateral = Block::getMasternodeCollateral($height);
-		$sql="select * from transactions t use index(transactions_type_index) 
-            where ((t.dst = :dst and (t.message='mncreate' or t.message='')) or t.message=:dst2) and t.type = :type and t.val =:collateral and t.height <= :height
-            order by t.height desc limit 1";
+        $sql="select * from transactions t use index(transactions_type_index) 
+        where ((t.dst = :dst and (t.message='mncreate' or t.message='')) or t.message=:dst2) and t.type = :type and t.val =:collateral and t.height <= :height
+        order by t.height desc limit 1";
 		$row = $db->row($sql, [":dst"=>$masternode, ":dst2"=>$masternode, ":type"=>TX_TYPE_MN_CREATE, ":collateral"=>$collateral, ":height"=>$height]);
 		return $row;
 	}

@@ -229,10 +229,10 @@ $redirect=$_SERVER['REQUEST_URI'];
                                     <i class="fas fa-faucet me-2"></i><span data-key="t-dashboards">Faucet</span>
                                 </a>
                             </li>
-                            <li class="nav-item d-flex align-items-center">
-                                <a href="https://buy.phpcoin.net/?utm_source=explorer&utm_medium=community&utm_campaign=direct_buy" target="_blank"
-                                   class="btn btn-primary">Buy PHPCoin</a>
-                            </li>
+                                <li class="nav-item d-flex align-items-center">
+                                    <a href="https://buy.phpcoin.net/?utm_source=explorer&utm_medium=community&utm_campaign=direct_buy" target="_blank"
+                                       class="btn btn-primary">Buy PHPCoin</a>
+                                </li>
                         </ul>
                         <ul class="navbar-nav d-flex">
                             <?php if($logged) {

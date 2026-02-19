@@ -564,7 +564,7 @@ class Api
 	 *
 	 * @apiSuccess {object} Response wrapper object
 	 * @apiSuccess {string} status Status: "ok" for success
-	 * @apiSuccess {string} data  Version
+	 * @apiSuccess {string} data Version
 	 * @apiSuccess {string} coin Coin name
 	 * @apiSuccess {string} version Node version
 	 * @apiSuccess {string} network Network name
@@ -591,7 +591,7 @@ class Api
 	 *
 	 * @apiSuccess {object} Response wrapper object
 	 * @apiSuccess {string} status Status: "ok" for success
-	 * @apiSuccess {string} data  Transaction id
+	 * @apiSuccess {string} data Transaction id
 	 * @apiSuccess {string} coin Coin name
 	 * @apiSuccess {string} version Node version
 	 * @apiSuccess {string} network Network name
@@ -644,7 +644,7 @@ class Api
 	 *
 	 * @apiSuccess {object} Response wrapper object
 	 * @apiSuccess {string} status Status: "ok" for success
-	 * @apiSuccess {numeric} data  Number of mempool transactions
+	 * @apiSuccess {numeric} data Number of mempool transactions
 	 * @apiSuccess {string} coin Coin name
 	 * @apiSuccess {string} version Node version
 	 * @apiSuccess {string} network Network name
@@ -688,9 +688,9 @@ class Api
 	 *
 	 * @apiSuccess {object} Response wrapper object
 	 * @apiSuccess {string} status Status: "ok" for success
-	 * @apiSuccess {object}  data A collection of data about the sync process.
+	 * @apiSuccess {object} data A collection of data about the sync process.
 	 * @apiSuccess {boolean} data.sync_running Whether the sync process is currently running.
-	 * @apiSuccess {number}  data.last_sync The timestamp for the last time the sync process was run.
+	 * @apiSuccess {number} data.last_sync The timestamp for the last time the sync process was run.
 	 * @apiSuccess {boolean} data.sync Whether the sync process is currently synchronising.
 	 * @apiSuccess {string} coin Coin name
 	 * @apiSuccess {string} version Node version
@@ -716,7 +716,7 @@ class Api
 	 *
 	 * @apiSuccess {object} Response wrapper object
 	 * @apiSuccess {string} status Status: "ok" for success
-	 * @apiSuccess {object}  data A collection of data about the node.
+	 * @apiSuccess {object} data A collection of data about the node.
 	 * @apiSuccess {string} data.hostname The hostname of the node.
 	 * @apiSuccess {string} data.version The current version of the node.
 	 * @apiSuccess {string} data.network Node network.
@@ -1169,7 +1169,7 @@ class Api
      *
      * @apiSuccess {object} Response wrapper object
      * @apiSuccess {string} status Status: "ok" for success
-     * @apiSuccess {string} data  Transaction id
+     * @apiSuccess {string} data Transaction id
      * @apiSuccess {string} coin Coin name
      * @apiSuccess {string} version Node version
      * @apiSuccess {string} network Network name
@@ -1214,7 +1214,7 @@ class Api
      *
      * @apiSuccess {object} Response wrapper object
      * @apiSuccess {string} status Status: "ok" for success
-     * @apiSuccess {string} data  Transaction id
+     * @apiSuccess {string} data Transaction id
      * @apiSuccess {string} coin Coin name
      * @apiSuccess {string} version Node version
      * @apiSuccess {string} network Network name

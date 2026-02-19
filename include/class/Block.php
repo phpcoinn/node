@@ -240,6 +240,9 @@ class Block
             return null;
         }
         $process_schash = SmartContract::process($smart_contracts, $height, $test,  $err, $state_updates);
+        if(empty($process_schash)){
+            return false;
+        }
         if($height >= UPDATE_15_EXTENDED_SC_HASH_V2) {
             $res = Nodeutil::calculateSmartContractsHashV2($height);
             $current_state_hash = $res['hash'];
@@ -955,7 +958,7 @@ class Block
     }
 
 	public function verifyBlock(&$error = false) {
-
+        global $_config;
 		$data = $this->data;
 		$height = $this->height;
 
@@ -985,7 +988,9 @@ class Block
 			$difficulty = $this->difficulty;
 			$calculated_difficulty = Block::difficulty($this->height-1);
 			if($difficulty != $calculated_difficulty) {
+                if(Blockchain::isValidHeight($this->height)) {
 				throw new Exception("Block check: invalid difficulty $difficulty - expected $calculated_difficulty");
+			}
 			}
 
 			$prev_block = Block::getAtHeight($height - 1);

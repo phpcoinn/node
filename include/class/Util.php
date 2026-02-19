@@ -1787,7 +1787,7 @@ class Util
 //				$db->exec("unlock tables");
 			}
 
-			_log("Check differences");
+            _log("Check differences");
             if(Config::isPruned()) {
                 $sql = "select calc.*, a.*
                     from (
@@ -1817,7 +1817,7 @@ class Util
                     return;
                 }
             } else {
-			$sql="select calc.*, a.*
+                $sql = "select calc.*, a.*
 				from (
 		         select ids.id,
 		                (select case when tp.public_key is null then '' else tp.public_key end from transactions tp where tp.src = ids.id limit 1) as public_key,
@@ -1842,13 +1842,13 @@ class Util
 				   or calc.block <> a.block
 				   or calc.balance <> a.balance
 				   or calc.height <> a.height";
-			$res = $db->run($sql);
-			$diff_rows = count($res);
-			_log("Found $diff_rows different rows");
+                $res = $db->run($sql);
+                $diff_rows = count($res);
+                _log("Found $diff_rows different rows");
 
-			if($diff_rows > 0) {
-				_log("Update accounts table");
-				$sql="update (
+                if ($diff_rows > 0) {
+                    _log("Update accounts table");
+                    $sql = "update (
 			         select ids.id,
 			                (select case when tp.public_key is null then '' else tp.public_key end from transactions tp where tp.src = ids.id limit 1) as public_key,
 			                (select b.id from blocks b where b.height = min(min_height)) as block,
@@ -1873,11 +1873,11 @@ class Util
 			   or calc.block <> a.block
 			   or calc.balance <> a.balance
 			   or calc.height <> a.height";
-				$res=$db->run($sql);
-				_log("Accounts updated res=$res");
-			} else {
-				_log("No need to update accounts");
-			}
+                    $res = $db->run($sql);
+                    _log("Accounts updated res=$res");
+                } else {
+                    _log("No need to update accounts");
+                }
             }
 
             //check generators without public_key
@@ -2140,23 +2140,23 @@ class Util
         Config::setSync(1);
 
         // Lock tables to prevent concurrent access during this destructive operation
-        // IMPORTANT: DDL operations (CREATE TABLE, DROP TABLE, RENAME TABLE) automatically
-        // release table locks in MySQL/MariaDB. The locks here provide protection BEFORE
-        // we start DDL operations, preventing other processes from beginning operations on
-        // these tables. Once DDL starts, locks are released, but we're already committed
-        // to the operation. This should be run during maintenance windows when the node
+        // IMPORTANT: DDL operations (CREATE TABLE, DROP TABLE, RENAME TABLE) automatically 
+        // release table locks in MySQL/MariaDB. The locks here provide protection BEFORE 
+        // we start DDL operations, preventing other processes from beginning operations on 
+        // these tables. Once DDL starts, locks are released, but we're already committed 
+        // to the operation. This should be run during maintenance windows when the node 
         // is not actively processing blocks/transactions.
         _log("Locking tables");
         $db->lockTables();
-
+        
         try {
             // Start database transaction
-            // Note: DDL operations (CREATE TABLE, DROP TABLE, RENAME TABLE, CREATE INDEX)
-            // auto-commit in MySQL/MariaDB and release table locks. The transaction here
+            // Note: DDL operations (CREATE TABLE, DROP TABLE, RENAME TABLE, CREATE INDEX) 
+            // auto-commit in MySQL/MariaDB and release table locks. The transaction here 
             // provides better error handling and allows rollback of DML operations (DELETE).
             // DDL operations cannot be rolled back.
             $db->beginTransaction();
-
+            
             // Disable foreign key checks temporarily
             $db->fkCheck(false);
 
@@ -2165,11 +2165,11 @@ class Util
             $sql='alter table transaction_data
                 drop foreign key fk_tx_data;';
             $db->run($sql);
-
+            
             _log("Creating new table");
             $sql='drop table if exists transactions1';
             $db->run($sql);
-
+            
             // Use intval to ensure safe integer value (CREATE TABLE doesn't support parameters)
             $prune_height_safe = intval($prune_height);
             $sql='
@@ -2203,7 +2203,7 @@ order by t1.height, t1.id;
         
         ';
             $db->run($sql);
-
+            
             // Drop foreign key constraint if it exists
             _log("Dropping foreign key constraint");
             try {
@@ -2213,19 +2213,19 @@ order by t1.height, t1.id;
                 _log("Warning: Could not drop foreign key constraint: ".$e->getMessage());
                 // Continue anyway as it might not exist
             }
-
+            
             _log("Dropping old transactions table");
             $sql= 'drop table transactions';
             $db->run($sql);
-
+            
             _log("Deleting blocks");
             $sql = 'delete from blocks where height <= ?';
             $db->run($sql, [$prune_height], false);
-
+            
             _log("Renaming transactions1 to transactions");
             $sql='rename table transactions1 to transactions';
             $db->run($sql);
-
+            
             // Recreate all original indexes
             _log("Recreating indexes");
             $indexes = [
@@ -2258,36 +2258,36 @@ order by t1.height, t1.id;
                     foreign key (tx_id) references transactions (id)
                         on delete cascade;';
             $db->run($sql);
-
+            
             // Re-enable foreign key checks
             $db->fkCheck(true);
-
+            
             // Commit transaction if still active (DDL operations auto-commit, so this may not be needed)
             // The DELETE operation would benefit from transaction, but DDL operations have already committed
             if($db->inTransaction()) {
                 $db->commit();
             }
-
+            
             Config::setVal("blockchain_invalid", 0);
             Config::setSync(0);
             $time = time() - $start;
             _log("Complete prune time=$time seconds");
-
+            
             // Unlock tables after successful completion
             _log("Unlocking tables");
             $db->unlockTables();
             unlink(ROOT."/maintenance");
         } catch (Exception $e) {
             _log("Error during pruning: ".$e->getMessage());
-
+            
             // Rollback transaction if we're still in one
             if($db->inTransaction()) {
                 _log("Rolling back transaction");
                 $db->rollBack();
             }
-
+            
             $db->fkCheck(true); // Re-enable FK checks even on error
-
+            
             // Always unlock tables, even on error
             _log("Unlocking tables after error");
             $db->unlockTables();

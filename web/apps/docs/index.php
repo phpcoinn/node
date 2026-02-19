@@ -148,9 +148,9 @@ require_once __DIR__. '/../common/include/top.php';
 <?php echo $pd->text($text); ?>
 
 
-    <hr>
+<hr>
 <p>
-            PHPCoin Docs Viewer v<?php echo PHPCOIN_DOCS_VIEWER_VERSION ?>
+    PHPCoin Docs Viewer v<?php echo PHPCOIN_DOCS_VIEWER_VERSION ?>
 </p>
 
 

@@ -68,10 +68,12 @@ function coin2pem($data, $is_private_key = false)
 	return "-----BEGIN PUBLIC KEY-----\n".$data."\n-----END PUBLIC KEY-----\n";
 }
 
-function base58_decode($base58)
-{
-	$alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-	$base = strlen($alphabet);
+if(!function_exists('base58_decode')) {
+
+    function base58_decode($base58)
+    {
+        $alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        $base = strlen($alphabet);
 
 	// Type Validation
 	if (is_string($base58) === false) {
@@ -112,6 +114,7 @@ function base58_decode($base58)
 	return $output;
 }
 
+}
 
 
 // Base58 encoding/decoding functions - all credits go to https://github.com/stephen-hill/base58php
@@ -164,21 +167,23 @@ function hex2coin($hex)
 	return base58_encode($data);
 }
 
-function valid($address)
-{
-    $addressBin=base58_decode($address);
-    $addressHex=bin2hex($addressBin);
-    $addressChecksum=substr($addressHex, -8);
-    $baseAddress = substr($addressHex, 0, -8);
-    if(substr($baseAddress, 0, 2) != CHAIN_PREFIX) {
-        return false;
+if(!function_exists('valid')) {
+    function valid($address)
+    {
+        $addressBin = base58_decode($address);
+        $addressHex = bin2hex($addressBin);
+        $addressChecksum = substr($addressHex, -8);
+        $baseAddress = substr($addressHex, 0, -8);
+        if (substr($baseAddress, 0, 2) != CHAIN_PREFIX) {
+            return false;
+        }
+        $checksumCalc1 = hash('sha256', $baseAddress);
+        $checksumCalc2 = hash('sha256', $checksumCalc1);
+        $checksumCalc3 = hash('sha256', $checksumCalc2);
+        $checksum = substr($checksumCalc3, 0, 8);
+        $valid = $addressChecksum == $checksum;
+        return $valid;
     }
-    $checksumCalc1=hash('sha256', $baseAddress);
-    $checksumCalc2=hash('sha256', $checksumCalc1);
-    $checksumCalc3=hash('sha256', $checksumCalc2);
-    $checksum=substr($checksumCalc3, 0, 8);
-    $valid = $addressChecksum == $checksum;
-    return $valid;
 }
 
 function getAddress($public_key) {

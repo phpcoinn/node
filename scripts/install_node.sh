@@ -23,8 +23,8 @@ function parse_arguments() {
                 echo "network_name: testnet or mainnet. If not provided, mainnet is used by default."
                 exit 0
                 ;;
-	          --docker)
-		        echo "Runnung in docker"
+	    --docker)
+		echo "Runnung in docker"
                 DOCKER=true
                 shift 1
                 ;;
@@ -181,7 +181,7 @@ then
     HOSTNAME="http://$IP:$EXT_PORT"
   fi
   if [ "$FULL" = true ]; then
-    BLOCKCHAIN_SNAPSHOT="blockchain-$NETWORK"
+  BLOCKCHAIN_SNAPSHOT="blockchain-$NETWORK"
   else
     BLOCKCHAIN_SNAPSHOT="blockchain-$NETWORK-pruned"
   fi

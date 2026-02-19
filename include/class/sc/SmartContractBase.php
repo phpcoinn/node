@@ -42,293 +42,60 @@ class SmartContractBase
         $this->id = $tx['id'];
 	}
 
-	public function log($s) {
-		$log_file = ROOT . "/tmp/sc/smart_contract.log";
-		$s = $this->height." ".$this->address.": ".$s.PHP_EOL;
-		@file_put_contents($log_file, $s, FILE_APPEND);
-	}
-
-    static function getStateVar($address, $height, $name, $key=null) {
-        $db = SmartContractContext::$db;
-        if(SmartContractContext::$virtual) {
-            $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
-            $state = json_decode(file_get_contents($state_file), true);
-            $val = $state[$name];
-            if(is_array($val)) {
-                if(strlen($key)==0) {
-                    return count($val);
-                } else {
-                    return $state[$name][$key];
-                }
-            } else {
-                return $val;
-            }
-        }
-
-        if($key ===  null || strlen($key)==0) {
-            $sql="select s.var_value from smart_contract_state s 
-                   where s.sc_address = :sc_address and s.variable = :variable and s.height <= :height and s.var_key is null order by s.height desc limit 1";
-            $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name, ":height"=>$height]);
-        } else {
-            $sql="select s.var_value from smart_contract_state s 
-                   where s.sc_address = :sc_address and s.variable = :variable and s.var_key =:var_key and s.height <= :height order by s.height desc limit 1";
-            $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name, ":var_key"=>$key, ":height"=>$height]);
-        }
-        return $res;
-    }
-
-    static function setStateVar($address, $height, $name, $value, $key=null) {
-        $db = SmartContractContext::$db;
-        if(strlen($value) > 1000) {
-            throw new Exception("Storing value for variable $name key $key exceeds 1000 characters");
-        }
-        if(SmartContractContext::$virtual) {
-            $state_file = ROOT . '/tmp/sc/'.$address.'.state.json';
-            $state = @json_decode(file_get_contents($state_file), true);
-            if($key==null || strlen($key)==0) {
-                $state[$name]=$value;
-            } else {
-                $state[$name][$key]=$value;
-            }
-            file_put_contents($state_file, json_encode($state));
-            return;
-        }
-
-
-        $var_value = $value === null ? null : "$value";
-        if(strlen($key)==0) {
-            $sql="select * from smart_contract_state sc where sc_address=:address
-                and variable = :variable and var_key is null and height = :height";
-            $row = $db->row($sql, [":address"=>$address, ":variable"=>$name, ":height"=>$height]);
-            if($row) {
-                $sql="update smart_contract_state set var_value=:var_value where sc_address=:address
-                and variable = :variable and var_key is null and height = :height";
-            } else {
-                $sql="insert into smart_contract_state set var_value=:var_value, sc_address=:address
-                , variable = :variable , var_key = null, height = :height";
-            }
-            $res = $db->run($sql, [":address"=>$address, ":variable"=>$name, ":height"=>$height, ":var_value"=>$var_value]);
-            if($res === false) {
-                throw new Exception("Error storing variable $name key=$key for Smart Contract ".$address.": ".$db->errorInfo()[2]);
-            }
-        } else {
-            $sql="select * from smart_contract_state sc where sc_address=:address
-                and variable = :variable and var_key =:var_key and height = :height";
-            $row = $db->row($sql, [":address"=>$address, ":variable"=>$name, ":height"=>$height,":var_key"=>$key]);
-            if($row) {
-                $sql="update smart_contract_state set var_value=:var_value where sc_address=:address
-                and variable = :variable and var_key =:var_key and height = :height";
-            } else {
-                $sql="insert into smart_contract_state set var_value=:var_value, sc_address=:address
-                , variable = :variable, var_key =:var_key, height = :height";
-            }
-            $res = $db->run($sql, [":address"=>$address, ":variable"=>$name, ":height"=>$height, ":var_value"=>$var_value,":var_key"=>$key]);
-            if($res === false) {
-                throw new Exception("Error storing variable $name key=$key for Smart Contract ".$address.": ".$db->errorInfo()[2]);
-            }
-        }
-        $sc_state_update = [
-            "address"=>$address,
-            "height"=>$height,
-            "name"=>$name,
-            "value"=>$value,
-            "key"=>$key
-        ];
-        SmartContractContext::$sc_state_updates[]=$sc_state_update;
-    }
-
-    static function insertSmartContract($db, $transaction, $height) {
-
-        if(SmartContractContext::$virtual) {
-            return;
-        }
-
-        $sql="select max(height) from blocks";
-
-        $top_height = $db->single($sql);
-        if($height <= $top_height) {
-            return;
-        }
-
-        $sql="insert into smart_contracts (address, height, code, signature, name, description, metadata)
-            values (:address, :height, :code, :signature, :name, :description, :metadata)";
-
-        $data=$transaction['data'];
-        $data = json_decode(base64_decode($data), true);
-        $metadata = $data['metadata'];
-        $name = $metadata['name'];
-        $description = $metadata['description'];
-
-        $bind = [
-            ":address" => $transaction['dst'],
-            ":height" => $height,
-            ":code" => $transaction['data'],
-            ":signature" => $transaction['msg'],
-            ":name"=>$name,
-            ":description"=>$description,
-            ":metadata"=>json_encode($metadata),
-        ];
-
-        $res = $db->run($sql, $bind);
-        _log("INSERT CS = $res");
-        if(!$res) {
-            throw new Exception("Error inserting smart contract: ".$db->errorInfo()[2]);
-        }
-    }
-
-    static function existsStateVar($address, $height, $name, $key=null) {
-        $db = SmartContractContext::$db;
-
-        if(strlen($key)==0) {
-            $sql="select 1 from smart_contract_state s 
-                   where s.sc_address = :sc_address and s.variable = :variable and s.height <=:height order by s.height desc limit 1";
-            $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name, ":height"=>$height]);
-        } else {
-            $sql="select 1 from smart_contract_state s 
-                   where s.sc_address = :sc_address and s.variable = :variable and s.var_key =:var_key and s.height <=:height order by s.height desc limit 1";
-            $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name, ":var_key"=>$key, ":height"=>$height]);
-        }
-        return $res == 1;
-    }
-
-    static function countStateVar($address, $height, $name) {
-        $db = SmartContractContext::$db;
-
-        $sql = "select count(distinct s.var_key) from smart_contract_state s 
-           where s.sc_address = :sc_address and s.variable = :variable and s.height <= :height";
-        $res=$db->single($sql, [":sc_address" =>$address, ":variable" => $name, ":height"=>$height]);
-        _log("countStateVar res=$res sql=$sql address=$address name=$name height=$height");
-        return $res;
-    }
-
-    static function stateVarKeys($address, $height, $name) {
-        $db = SmartContractContext::$db;
-
-        $sql="select distinct(s.var_key) from smart_contract_state s 
-               where s.sc_address = :sc_address and s.variable = :variable and s.height<=:height order by s.var_key";
-        $rows=$db->run($sql, [":sc_address" =>$address, ":variable" => $name, ":height"=>$height]);
-        $list = [];
-        foreach ($rows as $row) {
-            $list[]=$row['var_key'];
-        }
-        return $list;
-    }
-
-    static function stateAll($address, $height, $name) {
-        $db = SmartContractContext::$db;
-
-        $sql="select s.var_key, s.var_value from smart_contract_state s 
-               where s.sc_address = :sc_address and s.variable = :variable and s.height <= :height order by s.var_key";
-        $rows=$db->run($sql, [":sc_address" =>$address, ":variable" => $name, ":height"=>$height]);
-        $list = [];
-        foreach ($rows as $row) {
-            $key = $row['var_key'];
-            $val = $row['var_value'];
-            $list[$key]=$val;
-        }
-        return $list;
-    }
-
-    static function stateClear($address, $name, $key=null) {
-        $db = SmartContractContext::$db;
-
-        if($key == null) {
-            $sql = "delete from smart_contract_state 
-               where sc_address = :sc_address and variable = :variable";
-            $res = $db->run($sql, [":sc_address" => $address, ":variable" => $name]);
-        } else {
-            $sql = "delete from smart_contract_state 
-               where sc_address = :sc_address and variable = :variable and var_key =:key";
-            $res = $db->run($sql, [":sc_address" => $address, ":variable" => $name, ":key"=>$key]);
-        }
-        if($res === false) {
-            throw new Exception("Error deleting map variable $name for Smart Contract ".$address.": ".$db->errorInfo()[2]);
-        }
-        return $res;
-    }
-
-    static function query($address, $sql, $params =[]) {
-        $db = SmartContractContext::$db;
-        $final_sql="with s as (select ss.variable, ss.var_key, ss.var_value
-               from (select s.sc_address, s.variable, ifnull(s.var_key, 'null') as var_key, max(s.height) as height
-                     from smart_contract_state s
-                     where s.sc_address = :sc_address
-                     group by s.variable, s.var_key, s.sc_address) as last_vars
-                        join smart_contract_state ss
-                             on (ss.sc_address = last_vars.sc_address and ss.variable = last_vars.variable
-                                 and ifnull(ss.var_key, 'null') = last_vars.var_key and ss.height = last_vars.height))
-                                 select *
-                from s
-                where 1=1 ";
-        $final_sql.= " $sql";
-        $all_params = $params;
-        $all_params[":sc_address"] = $address;
-        $rows=$db->run($final_sql, $all_params);
-        $list = [];
-        foreach ($rows as $row) {
-            $key = $row['var_key'];
-            $val = $row['var_value'];
-            $list[$key]=$val;
-        }
-        return $list;
-    }
-
     public function debug($log) {
         if(SmartContractContext::$virtual) {
             SmartContractContext::$debug_logs[]=$log;
         }
     }
 
+    /**
+     * Execute a method on another smart contract
+     * 
+     * NOTE: Inter-contract calls are disabled in this version for security reasons.
+     * This feature may be re-enabled in a future version with proper security measures.
+     * 
+     * @param string $contract Contract address (not used - feature disabled)
+     * @param string $method Method name (not used - feature disabled)
+     * @param array $params Method parameters (not used - feature disabled)
+     * @throws Exception Always throws exception indicating feature is disabled
+     */
     public function execSmartContract($contract, $method, $params) {
-        $this->requireExtFile($contract);
-        $smartContractWrapper = new SmartContractWrapper($contract);
-        if($this->isFromTransactMethod()) {
-            $is_transact_method = $smartContractWrapper->isTransactMethod($method);
-            if($is_transact_method) {
-                $smartContractWrapper->execExt($this, $method, $params);
-            } else {
-                $this->error("Can not exec transact external method from non-transact method");
-            }
-        } else {
-            $this->error("Can not exec external method from non-transact method");
-        }
+        $this->error("Inter-contract calls are disabled in this version. Smart contracts cannot call other smart contracts.");
     }
 
+    /**
+     * Call a view method on another smart contract
+     * 
+     * NOTE: Inter-contract calls are disabled in this version for security reasons.
+     * This feature may be re-enabled in a future version with proper security measures.
+     * 
+     * @param string $contract Contract address (not used - feature disabled)
+     * @param string $method Method name (not used - feature disabled)
+     * @param array $params Method parameters (not used - feature disabled)
+     * @return mixed Never returns - always throws exception
+     * @throws Exception Always throws exception indicating feature is disabled
+     */
     public function callSmartContract($contract, $method, $params) {
-        $this->requireExtFile($contract);
-        $smartContractWrapper = new SmartContractWrapper($contract);
-        return $smartContractWrapper->callExt($this, $method, $params);
+        $this->error("Inter-contract calls are disabled in this version. Smart contracts cannot call other smart contracts.");
     }
 
-    private function requireExtFile($contract) {
-        require_once "phar://".ROOT."/tmp/sc/$contract.phar";
-    }
-
-    private function isFromTransactMethod() {
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-        foreach ($backtrace as $frame) {
-            if (isset($frame['class'], $frame['function'])) {
-                try {
-                    $reflection = new ReflectionMethod($frame['class'], $frame['function']);
-                    $docComment = $reflection->getDocComment();
-                    if ($docComment && strpos($docComment, '@SmartContractTransact') !== false) {
-                        _log("Detected @SmartContractView in {$frame['class']}::{$frame['function']}");
-                        return true;
-                    }
-                } catch (ReflectionException $e) {
-                    // Handle cases where the method doesn't exist
-                    continue;
-                }
-            }
-        }
-        return false;
-    }
-
+    /**
+     * Get fields for external contract calls
+     * 
+     * NOTE: This method is kept for backward compatibility but is not used
+     * since inter-contract calls are disabled.
+     * 
+     * @return array Transaction and context fields
+     */
     public function getExtFields() {
         $args['transaction']=$this->tx;
         $args['height']=$this->height;
         $args['address']=$this->address;
         return $args;
+    }
+
+    public function log($msg) {
+        SmartContractContext::$logs[] = $msg;
     }
 
 }
