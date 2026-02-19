@@ -1893,7 +1893,9 @@ class Api
         $to_height = @$data['to_height'];
         if(empty($from_height)) $from_height = 0;
         if(empty($to_height)) $to_height = PHP_INT_MAX;
-        $sql="select * from smart_contract_state s where s.height >= ? and s.height <= ? order by s.height";
+        // Order by same clause as calculateSmartContractsHashV2 to ensure consistent ordering
+        // This matches: ORDER BY height DESC, sc_address, variable, var_key, var_value
+        $sql="select * from smart_contract_state s where s.height >= ? and s.height <= ? order by s.height desc, s.sc_address, s.variable, s.var_key, s.var_value";
         $rows = $db->run($sql, [$from_height, $to_height], false);
         api_echo($rows);
     }

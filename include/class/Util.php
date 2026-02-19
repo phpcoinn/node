@@ -1991,7 +1991,8 @@ class Util
 
             $sql="delete from smart_contract_state";
             $db->run($sql);
-            $url=$node."/api.php?q=getScState";
+            $top_height = Block::getHeight();
+            $url=$node."/api.php?q=getScState&to_height=".$top_height;
             $res = url_get($url);
             $res = json_decode($res, true);
             if($res!==false) {
@@ -2174,9 +2175,10 @@ class Util
             $sql='
         create table if not exists  transactions1
 with t1 as (
-    select * from transactions t where t.height <= '.$prune_height_safe.' and t.type in (2,3,5,6,7)
+    select t.id, t.block, t.height, t.dst, t.val, t.fee, t.signature, t.type, t.message, t.date, t.public_key, t.src 
+    from transactions t where t.height <= '.$prune_height_safe.' and t.type in (2,3,5,6,7)
     union all
-    select *
+    select t.id, t.block, t.height, t.dst, t.val, t.fee, t.signature, t.type, t.message, t.date, t.public_key, t.src 
             from transactions t
             where t.height > '.$prune_height_safe.'
             union all

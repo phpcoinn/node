@@ -25,7 +25,7 @@ if(!Account::valid($address)) {
 $balance = Account::pendingBalance($address);
 $public_key = Account::publicKey($address);
 
-$dm=get_data_model(Account::getCountByAddress($address),
+$dm=get_data_model(PHP_INT_MAX,
     '/apps/explorer/address.php?address='.$address, "", 100);
 
 $transactions = Account::getTransactions($address, $dm);
