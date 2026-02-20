@@ -174,7 +174,11 @@ class Block
                     $schash = $this->processSmartContractTxs($this->height);
                     _log("SCHASH: block=" . $this->schash . " calc=" . $schash, 5);
                     if ($schash === false) {
-                        throw new Exception("Parse block failed " . $this->height . " Missing schash");
+//                        if(in_array($this->id, ['AgjiqJEsec3EoHAE5nyuwvAgvVwsNPALmq9jRrs2xUdN'])) {
+//                            _log("Ignore Missing schash id=".$this->id);
+//                        } else {
+                            throw new Exception("Parse block failed " . $this->height . " Missing schash id=".$this->id);
+//                        }
                     }
                     if (!empty($this->schash) && $this->schash != $schash) {
                         if (in_array($this->height, IGNORE_SC_HASH_HEIGHT)) {

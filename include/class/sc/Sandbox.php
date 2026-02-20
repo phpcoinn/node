@@ -46,6 +46,17 @@ class Sandbox {
         } else {
             if(!empty($address)) {
                 $interface = SmartContractEngine::getInterface($address);
+                if(!$interface) {
+                    $transactions = $input['transactions'];
+                    foreach($transactions as $transaction) {
+                        if($transaction->type === TX_TYPE_SC_CREATE) {
+                            $data = $transaction->data;
+                            $data = base64_decode($data);
+                            $data = json_decode($data, true);
+                            $interface = $data['interface'];
+                        }
+                    }
+                }
             }
         }
 
@@ -285,7 +296,7 @@ class Sandbox {
         if (pathinfo($phar_file, PATHINFO_EXTENSION) !== 'phar') {
             throw new InvalidArgumentException("File is not a PHAR archive: $phar_file");
         }
-
+        $debug = true;
         // Get absolute paths for config files
         $sandboxDir = __DIR__;
         $iniFile = $debug ? "php-sandbox-debug.ini" : "php-sandbox.ini";
