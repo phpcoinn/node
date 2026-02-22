@@ -102,7 +102,7 @@ class SmartContractWrapper
         if ($interface && isset($interface['properties'])) {
             foreach($interface['properties'] as $prop) {
                 // Only load @SmartContractVar properties (not maps)
-                if($prop['type'] === 'var') {
+                if($prop['type'] === 'var' || empty($prop['type'])) {
                     $name = $prop['name'];
                     // Direct property access (no Reflection)
                     $this->smartContract->$name = @$this->state[$name];

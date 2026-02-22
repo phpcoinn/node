@@ -125,7 +125,7 @@ CREATE TABLE `mempool` (
   `public_key` varchar(255) NOT NULL,
   `date` bigint(20) NOT NULL,
   `peer` varchar(64) DEFAULT NULL,
-  `data` text DEFAULT NULL,
+  `data` mediumtext DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `height` (`height`),
   KEY `peer` (`peer`),

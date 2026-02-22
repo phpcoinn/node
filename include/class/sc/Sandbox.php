@@ -296,7 +296,7 @@ class Sandbox {
         if (pathinfo($phar_file, PATHINFO_EXTENSION) !== 'phar') {
             throw new InvalidArgumentException("File is not a PHAR archive: $phar_file");
         }
-        $debug = true;
+
         // Get absolute paths for config files
         $sandboxDir = __DIR__;
         $iniFile = $debug ? "php-sandbox-debug.ini" : "php-sandbox.ini";
