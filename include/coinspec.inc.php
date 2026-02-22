@@ -9,8 +9,8 @@ if($_config['chain_id'] != DEFAULT_CHAIN_ID && file_exists(__DIR__ . "/coinspec.
 const NETWORK = "mainnet";
 const CHAIN_ID = "00";
 const COIN_PORT = "";
-const VERSION = "1.7.0";
-const BUILD_VERSION = 395;
+const VERSION = "1.7.1";
+const BUILD_VERSION = 396;
 const MIN_VERSION = "1.6.6";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -100,4 +100,4 @@ const BLACKLISTED_SMART_CONTRACTS = [];
 
 const DEV_REWARD_ADDRESS = "PdEvtfZwNsbddKLCZQcjTgjpdcznS1w3pG";
 
-const DB_SCHEMA_VERSION = 103;
+const DB_SCHEMA_VERSION = 104;
