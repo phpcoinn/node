@@ -9,8 +9,8 @@ if($_config['chain_id'] != DEFAULT_CHAIN_ID && file_exists(__DIR__ . "/coinspec.
 const NETWORK = "mainnet";
 const CHAIN_ID = "00";
 const COIN_PORT = "";
-const VERSION = "1.7.0";
-const BUILD_VERSION = 395;
+const VERSION = "1.7.1";
+const BUILD_VERSION = 396;
 const MIN_VERSION = "1.6.6";
 const DEVELOPMENT = false;
 const XDEBUG = "";
@@ -95,10 +95,7 @@ const DELETE_CHAIN_HEIGHT = PHP_INT_MAX;
 const MN_CREATE_IGNORE_HEIGHT = [30234];
 const MN_COLD_START_HEIGHT = 290000;
 
-const IGNORE_SC_HASH_HEIGHT = [
-//    1038163,1038164,1039242,1039247,1039283,1039288,1039290,1039294,1040298,1040301,1040303,
-//    1041550,1041559,1041565,1041566,1041601
-];
+const IGNORE_SC_HASH_HEIGHT = [];
 const BLACKLISTED_SMART_CONTRACTS = [];
 
 const DEV_REWARD_ADDRESS = "PdEvtfZwNsbddKLCZQcjTgjpdcznS1w3pG";
