@@ -176,7 +176,7 @@ class SmartContractEngine
      * @return string
      * @throws Exception
      */
-    static function buildPharFile($sc_address, $code) {
+    static function buildPharFile($sc_address, $code, $clear=false) {
         $sc_dir = self::getRunFolder();
         if(!file_exists($sc_dir)) {
             $res = @mkdir($sc_dir);
@@ -185,7 +185,7 @@ class SmartContractEngine
             }
         }
         $phar_file = $sc_dir . "/$sc_address.phar";
-        if(!file_exists($phar_file) || self::$virtual || DEVELOPMENT) {
+        if(!file_exists($phar_file) || self::$virtual || DEVELOPMENT || $clear) {
             $res = file_put_contents($phar_file, $code);
             if(!$res) {
                 throw new Exception("Enable to write phar $sc_address file");
@@ -259,11 +259,10 @@ class SmartContractEngine
      * @return false|mixed
      * @throws Exception
      */
-	static function verifyCode($code, &$error = null, $address=null) {
-		return try_catch(function () use ($error, $code, $address) {
-
+	static function verifyCode($code, &$error = null, $address=null, $clear=false) {
+		return try_catch(function () use ($error, $code, $address, $clear) {
             $code = base64_decode($code);
-            $phar_file = SmartContractEngine::buildPharFile($address, $code);
+            $phar_file = SmartContractEngine::buildPharFile($address, $code, $clear);
             $interface = Compiler::readInterface($phar_file);
             return $interface;
 
