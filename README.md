@@ -1,3 +1,5 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/phpcoinn/node)
+
 # The PHPCoin (PHP) cryptocurrency node.
 
 For detailed information on installation, usage, and development, please see the [PHPCoin Documentation](./docs/).
