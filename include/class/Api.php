@@ -505,6 +505,55 @@ class Api
 	}
 
 	/**
+	 * @api {get} /api.php?q=getNetworkDifficulty  getNetworkDifficulty
+	 * @apiName getNetworkDifficulty
+	 * @apiGroup API
+	 * @apiDescription Returns latest block difficulties for sparkline charts.
+	 *
+	 * @apiParam {numeric} [count=100] Number of latest blocks to return (max 300)
+	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
+	 * @apiSuccess {object} data Difficulty payload
+	 * @apiSuccess {numeric} data.startHeight First returned block height
+	 * @apiSuccess {numeric} data.endHeight Last returned block height
+	 * @apiSuccess {array} data.difficulties Ordered list of difficulty values (oldest -> newest)
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 */
+	static function getNetworkDifficulty($data) {
+		global $db;
+		$count = intval($data['count'] ?? 100);
+		if ($count < 1) {
+			$count = 1;
+		}
+		if ($count > 300) {
+			$count = 300;
+		}
+		// Keep LIMIT as a sanitized integer literal for consistent behavior across PDO drivers.
+		$rows = $db->run("SELECT height, difficulty FROM blocks ORDER BY height DESC LIMIT $count");
+		if (!is_array($rows)) {
+			$rows = [];
+		}
+		usort($rows, function ($a, $b) {
+			return intval($a['height']) <=> intval($b['height']);
+		});
+		$difficulties = [];
+		foreach ($rows as $row) {
+			$difficulties[] = intval($row['difficulty'] ?? 0);
+		}
+		$startHeight = count($rows) > 0 ? intval($rows[0]['height']) : null;
+		$endHeight = count($rows) > 0 ? intval($rows[count($rows) - 1]['height']) : null;
+		api_echo([
+			"startHeight" => $startHeight,
+			"endHeight" => $endHeight,
+			"difficulties" => $difficulties,
+		]);
+	}
+
+	/**
 	 * @api {get} /api.php?q=getBlockTransactions  getBlockTransactions
 	 * @apiName getBlockTransactions
 	 * @apiGroup API
