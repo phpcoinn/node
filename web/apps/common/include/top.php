@@ -250,18 +250,18 @@ $redirect=$_SERVER['REQUEST_URI'];
                                 <li class="nav-item dropdown">
                                     <span class="nav-link">
                                         <i class="fas fa-coins me-2"></i>
-                                        <a href="<?php echo "/dapps.php?url=".GATEWAY."/wallet" ?>">
+                                        <a href="<?php echo "/dapps.php?url=".GATEWAY."/wallet/" ?>">
                                             <?php echo $session_balance ?>
                                         </a>
                                     </span>
                                 </li>
                                 <li class="nav-item d-flex align-items-center">
-                                    <a href="/dapps.php?url=<?php echo GATEWAY ?>/wallet?action=top_logout&redirect=<?php echo urlencode($_SERVER['REQUEST_URI']) ?>"
+                                    <a href="/dapps.php?url=<?php echo GATEWAY ?>/legacywallet?action=top_logout&redirect=<?php echo urlencode($_SERVER['REQUEST_URI']) ?>"
                                        class="btn btn-outline-primary">Logout</a>
                                 </li>
                             <?php } else { ?>
                                 <li class="nav-item d-flex align-items-center">
-                                    <a href="/dapps.php?url=<?php echo GATEWAY ?>/wallet?redirect=<?php echo urlencode($redirect) ?>"
+                                    <a href="/dapps.php?url=<?php echo GATEWAY ?>/legacywallet?action=top_login&redirect=<?php echo urlencode($redirect) ?>"
                                        class="btn btn-primary">Login</a>
                                 </li>
                             <?php } ?>

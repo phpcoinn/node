@@ -134,7 +134,7 @@ function handleWindowClose(walletWindow, reject) {
 
 function connectWallet(options = {}) {
 
-    const WALLET_URL = options.walletUrl || "https://wallet.phpcoin.net/connect/auth.php";
+    const WALLET_URL = options.walletUrl || "https://wallet.phpcoin.net/#/connect";
     const WALLET_ORIGIN = new URL(WALLET_URL).origin;
 
     function generateNonce() {
@@ -245,7 +245,7 @@ function connectWallet(options = {}) {
 
 function signTransactionWithWallet(options = {}) {
 
-    const WALLET_URL = options.walletUrl || "https://wallet.phpcoin.net/connect/auth.php";
+    const WALLET_URL = options.walletUrl || "https://wallet.phpcoin.net/#/connect";
     const WALLET_ORIGIN = new URL(WALLET_URL).origin;
     const transaction = options.transaction;
     const chainId = options.chainId != null ? String(options.chainId) : "00";
