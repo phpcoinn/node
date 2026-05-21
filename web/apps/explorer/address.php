@@ -25,8 +25,13 @@ if(!Account::valid($address)) {
 $balance = Account::pendingBalance($address);
 $public_key = Account::publicKey($address);
 
-$dm=get_data_model(PHP_INT_MAX,
-    '/apps/explorer/address.php?address='.$address, "", 100);
+$show_balances = isset($_GET['show_balances']);
+$address_link = '/apps/explorer/address.php?address='.$address;
+if ($show_balances) {
+    $address_link .= '&show_balances=1';
+}
+
+$dm=get_data_model(PHP_INT_MAX, $address_link, "", 100);
 
 $transactions = Account::getTransactions($address, $dm);
 $addressStat = Transaction::getAddressStat($address);
@@ -161,7 +166,17 @@ require_once __DIR__. '/../common/include/top.php';
     </div>
 <?php } ?>
 
-<h4>Transactions</h4>
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h4 class="mb-0">Transactions</h4>
+    <form method="get" class="mb-0">
+        <input type="hidden" name="address" value="<?php echo $address ?>">
+        <div class="form-check mb-0">
+            <input type="checkbox" class="form-check-input" name="show_balances" id="show_balances" value="1"
+                onclick="this.form.submit()" <?php if ($show_balances) { ?>checked="checked"<?php } ?>>
+            <label class="form-check-label" for="show_balances">Show balances</label>
+        </div>
+    </form>
+</div>
 <div class="table-responsive">
 <table class="table table-sm table-striped">
     <thead class="table-light">
@@ -174,12 +189,24 @@ require_once __DIR__. '/../common/include/top.php';
             <th>From/To</th>
             <th>Type</th>
             <th class="text-end">Value</th>
+            <?php if ($show_balances) { ?>
+            <th class="text-end">Balance</th>
+            <?php } ?>
 <!--            <th>Message</th>-->
             <th class="text-end">Fee</th>
         </tr>
     </thead>
     <tbody>
-        <?php foreach($transactions as $transaction) {
+        <?php
+        if ($show_balances) {
+            $offset = ($dm['page'] - 1) * $dm['limit'];
+            $running_balance = floatvalue($balance);
+            if ($offset > 0) {
+                $running_balance += Account::getTransactionsBalanceOffset($address, $offset);
+            }
+        }
+
+        foreach($transactions as $transaction) {
 	        $party="";
             if($transaction['type'] != TX_TYPE_REWARD && $transaction['type'] != TX_TYPE_FEE) {
                 if ($address == $transaction['dst']) {
@@ -226,12 +253,21 @@ require_once __DIR__. '/../common/include/top.php';
                 <td class="<?php echo $transaction['sign']=='-' ? 'text-danger' : 'text-success' ?> text-end">
                     <?php echo $transaction['sign'] .  num($transaction['val']) ?>
                 </td>
+                <?php if ($show_balances) { ?>
+                <td class="text-end">
+                    <?php echo num($running_balance) ?>
+                </td>
+                <?php } ?>
                 <td class="text-end">
                     <?php echo !empty(floatval($transaction['fee']) && $transaction['src']==$address) ? "-".num($transaction['fee']) : '' ?>
                 </td>
 <!--                <td style="word-break: break-all">--><?php //echo $transaction['message'] ?><!--</td>-->
             </tr>
-    <?php } ?>
+    <?php
+            if ($show_balances) {
+                $running_balance = Account::reverseTransactionBalance($running_balance, $transaction, $address);
+            }
+        } ?>
     </tbody>
 </table>
 </div>

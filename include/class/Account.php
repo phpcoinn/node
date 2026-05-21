@@ -241,6 +241,121 @@ class Account
         return $transactions;
     }
 
+    private static function transactionBalanceReverseSql()
+    {
+        return "CASE
+            WHEN t.type = ".TX_TYPE_REWARD." OR t.type = ".TX_TYPE_FEE." THEN -t.val
+            WHEN t.type = ".TX_TYPE_BURN." THEN t.val
+            WHEN t.type IN (".TX_TYPE_SEND.", ".TX_TYPE_MN_CREATE.", ".TX_TYPE_MN_REMOVE.", ".TX_TYPE_SYSTEM.", ".TX_TYPE_SC_CREATE.", ".TX_TYPE_SC_EXEC.")
+                AND t.dst = :id_dst1 THEN -t.val
+            WHEN t.type IN (".TX_TYPE_SEND.", ".TX_TYPE_MN_CREATE.", ".TX_TYPE_MN_REMOVE.", ".TX_TYPE_SYSTEM.", ".TX_TYPE_SC_CREATE.", ".TX_TYPE_SC_EXEC.")
+                AND t.dst <> :id_dst2 THEN t.val + IF(t.src = :id_src1, t.fee, 0)
+            WHEN t.dst = :id_dst3 THEN -t.val
+            ELSE t.val + IF(t.src = :id_src2, t.fee, 0)
+        END";
+    }
+
+    static function reverseTransactionBalance($balance, $transaction, $address)
+    {
+        if ($transaction['sign'] == '+') {
+            $balance -= floatval($transaction['val']);
+        } elseif ($transaction['sign'] == '-') {
+            $balance += floatval($transaction['val']);
+            if ($transaction['src'] == $address && floatval($transaction['fee'])) {
+                $balance += floatval($transaction['fee']);
+            }
+        } elseif ($transaction['dst'] == $address) {
+            $balance -= floatval($transaction['val']);
+        } else {
+            $balance += floatval($transaction['val']);
+            if ($transaction['src'] == $address && floatval($transaction['fee'])) {
+                $balance += floatval($transaction['fee']);
+            }
+        }
+        return $balance;
+    }
+
+    static function getTransactionsBalanceOffset($id, $offset, $filter = null)
+    {
+        global $db;
+
+        $offset = intval($offset);
+        if ($offset <= 0) {
+            return 0;
+        }
+
+        $cond1 = '';
+        $cond2 = '';
+        $params = [
+            ":src" => $id,
+            ":dst" => $id,
+            ":id_dst1" => $id,
+            ":id_dst2" => $id,
+            ":id_src1" => $id,
+            ":id_dst3" => $id,
+            ":id_src2" => $id,
+            ":offset" => $offset,
+        ];
+        if(isset($filter['address']) && !empty($filter['address'])) {
+            $cond1 .= ' and (t.src = :address_src1 or t.dst = :address_dst1) ';
+            $params['address_src1'] = $filter['address'];
+            $params['address_dst1'] = $filter['address'];
+            $cond2 .= ' and (t.src = :address_src2 or t.dst = :address_dst2) ';
+            $params['address_src2'] = $filter['address'];
+            $params['address_dst2'] = $filter['address'];
+        }
+
+        if(isset($filter['type']) && strlen($filter['type']) > 0) {
+            $cond1 .= ' and t.type = :type1 ';
+            $params['type1']=$filter['type'];
+            $cond2 .= ' and t.type = :type2 ';
+            $params['type2']=$filter['type'];
+        }
+
+        if(isset($filter['dir']) && !empty($filter['dir'])) {
+            if($filter['dir'] == 'send') {
+                $cond1 .= ' and t.src = :send1 ';
+                $params['send1']=$id;
+                $cond2 .= ' and t.src = :send2 ';
+                $params['send2']=$id;
+            } else if ($filter['dir'] == 'receive') {
+                $cond1 .= ' and t.dst = :receive1 ';
+                $params['receive1']=$id;
+                $cond2 .= ' and t.dst = :receive2 ';
+                $params['receive2']=$id;
+            }
+        }
+
+        $reverseSql = self::transactionBalanceReverseSql();
+        $sql = "SELECT COALESCE(SUM(adjustment), 0) FROM (
+            SELECT $reverseSql AS adjustment FROM (
+                (
+                    SELECT t.id, t.height, t.dst, t.src, t.val, t.fee, t.type
+                    FROM transactions t
+                    WHERE t.src = :src
+                    $cond1
+                    ORDER BY t.height DESC
+                    LIMIT :limit1
+                )
+                UNION ALL
+                (
+                    SELECT t.id, t.height, t.dst, t.src, t.val, t.fee, t.type
+                    FROM transactions t
+                    WHERE t.dst = :dst
+                    $cond2
+                    ORDER BY t.height DESC
+                    LIMIT :limit2
+                )
+                ORDER BY height DESC
+                LIMIT :offset
+            ) t
+        ) offsets";
+        $params[':limit1'] = $offset;
+        $params[':limit2'] = $offset;
+
+        return floatval($db->single($sql, $params));
+    }
+
     static function getCountByAddress($id) {
 		global $db;
 
