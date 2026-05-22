@@ -124,7 +124,7 @@ class Transaction
 		        if($type == TX_TYPE_REWARD) {
 			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 		        }
-				if ($type == TX_TYPE_SEND || $type == TX_TYPE_SYSTEM) {
+				if ($type == TX_TYPE_SEND || $type == TX_TYPE_SYSTEM || $type == TX_TYPE_DATA) {
 			        $res = $res && Account::addBalance($tx->dst, floatval($tx->val)*(-1),$dst_height);
 			        $res = $res && Account::addBalance($tx->src, floatval($tx->val) + floatval($tx->fee),$src_height);
 					$tx->add_mempool();
@@ -617,7 +617,12 @@ class Transaction
 				throw new Exception("Can not insert transaction");
 			}
 
-            if(!empty($this->data)) {
+            if($this->type == TX_TYPE_DATA) {
+                $res = Transaction::insertTxData($this->id, $this->tx_data, $this->data, $error);
+                if ($res != 1) {
+                    throw new Exception("Can not insert tx_data: $error");
+                }
+            } else if(!empty($this->data)) {
                 $res = Transaction::insertData($this->id, $this->data);
                 if ($res != 1) {
                     throw new Exception("Can not insert transaction data");
@@ -628,7 +633,7 @@ class Transaction
 			$res = true;
 			if($type == TX_TYPE_REWARD && $this->val > 0) {
 				$res = $res && Account::addBalance($this->dst, $this->val,$height);
-			} else if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE || $type == TX_TYPE_SYSTEM) {
+			} else if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE || $type == TX_TYPE_SYSTEM || $type == TX_TYPE_DATA) {
 				$res = $res && Account::addBalance($this->src, ($this->val + $this->fee)*(-1),$height);
 				$res = $res && Account::addBalance($this->dst, ($this->val),$height);
 			} else if ($type == TX_TYPE_FEE) {
@@ -1539,6 +1544,62 @@ class Transaction
         $sql="insert into transaction_data (tx_id, data) values (:id, :data)";
         $res = $db->run($sql, [":id"=>$txid, ":data"=>$data]);
         return $res;
+    }
+
+    static function insertTxData($txid, $txDataRaw, $data, &$error = null) {
+        global $db;
+        try {
+            if(empty($txDataRaw)) {
+                throw new Exception("Missing tx_data payload");
+            }
+            $payload = json_decode($txDataRaw, true);
+            if(!is_array($payload) || json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception("Invalid tx_data payload json");
+            }
+
+            $res = self::validateTxDataPayload($payload, $validationError);
+            if(!$res) {
+                throw new Exception($validationError);
+            }
+
+            $app = array_key_exists("app", $payload) ? $payload["app"] : "";
+            $action = array_key_exists("action", $payload) ? $payload["action"] : "";
+            $string1 = array_key_exists("string1", $payload) ? $payload["string1"] : null;
+            $string2 = array_key_exists("string2", $payload) ? $payload["string2"] : null;
+            $int1 = array_key_exists("int1", $payload) ? intval($payload["int1"]) : null;
+            $int2 = array_key_exists("int2", $payload) ? intval($payload["int2"]) : null;
+            $float1 = array_key_exists("float1", $payload) ? floatval($payload["float1"]) : null;
+            $float2 = array_key_exists("float2", $payload) ? floatval($payload["float2"]) : null;
+            $address1 = array_key_exists("address1", $payload) ? $payload["address1"] : null;
+            $address2 = array_key_exists("address2", $payload) ? $payload["address2"] : null;
+            $jsonData = array_key_exists("json_data", $payload) ? $payload["json_data"] : null;
+            if(!is_null($jsonData) && !is_string($jsonData)) {
+                $jsonData = json_encode($jsonData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            }
+
+            $sql = "insert into transaction_data
+                    (tx_id, data, app, action, string1, string2, int1, int2, float1, float2, address1, address2, json_data)
+                    values
+                    (:tx_id, :data, :app, :action, :string1, :string2, :int1, :int2, :float1, :float2, :address1, :address2, :json_data)";
+            return $db->run($sql, [
+                ":tx_id"=>$txid,
+                ":data"=>$data,
+                ":app"=>$app,
+                ":action"=>$action,
+                ":string1"=>$string1,
+                ":string2"=>$string2,
+                ":int1"=>$int1,
+                ":int2"=>$int2,
+                ":float1"=>$float1,
+                ":float2"=>$float2,
+                ":address1"=>$address1,
+                ":address2"=>$address2,
+                ":json_data"=>$jsonData
+            ]);
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            return false;
+        }
     }
 
 	static function getAddressStat($address) {
