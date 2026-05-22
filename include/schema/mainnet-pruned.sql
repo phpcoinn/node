@@ -126,6 +126,7 @@ CREATE TABLE `mempool` (
   `date` bigint(20) NOT NULL,
   `peer` varchar(64) DEFAULT NULL,
   `data` mediumtext DEFAULT NULL,
+  `tx_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tx_data`)),
   PRIMARY KEY (`id`),
   KEY `height` (`height`),
   KEY `peer` (`peer`),
@@ -168,7 +169,7 @@ CREATE TABLE `peers` (
   KEY `blacklisted` (`blacklisted`),
   KEY `ping` (`ping`),
   KEY `stuckfail` (`stuckfail`)
-) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -291,7 +292,22 @@ DROP TABLE IF EXISTS `transaction_data`;
 CREATE TABLE `transaction_data` (
   `tx_id` varchar(128) NOT NULL,
   `data` mediumtext DEFAULT NULL,
+  `app` varchar(64) DEFAULT NULL,
+  `action` varchar(64) DEFAULT NULL,
+  `string1` varchar(255) DEFAULT NULL,
+  `string2` varchar(255) DEFAULT NULL,
+  `int1` bigint(20) DEFAULT NULL,
+  `int2` bigint(20) DEFAULT NULL,
+  `float1` double DEFAULT NULL,
+  `float2` double DEFAULT NULL,
+  `address1` varchar(128) DEFAULT NULL,
+  `address2` varchar(128) DEFAULT NULL,
+  `json_data` mediumtext DEFAULT NULL,
   PRIMARY KEY (`tx_id`),
+  KEY `idx_tx_data_app_action` (`app`,`action`),
+  KEY `idx_tx_data_app_action_int2` (`app`,`action`,`int2`),
+  KEY `idx_tx_data_address1` (`address1`),
+  KEY `idx_tx_data_address2` (`address2`),
   CONSTRAINT `fk_tx_data` FOREIGN KEY (`tx_id`) REFERENCES `transactions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

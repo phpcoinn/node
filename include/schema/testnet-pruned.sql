@@ -60,8 +60,8 @@ CREATE TABLE `blocks` (
   `schash` varchar(128) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `height` (`height`),
-  KEY `blocks_masternode_index` (`masternode`),
   KEY `blocks_masternode_height_index` (`masternode`,`height`),
+  KEY `blocks_masternode_index` (`masternode`),
   KEY `blocks_generator_index` (`generator`),
   KEY `blocks_miner_index` (`miner`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
@@ -75,7 +75,7 @@ DROP TABLE IF EXISTS `config`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `config` (
-  `cfg` varchar(30) NOT NULL,
+  `cfg` varchar(255) NOT NULL,
   `val` varchar(200) NOT NULL,
   PRIMARY KEY (`cfg`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -90,13 +90,13 @@ DROP TABLE IF EXISTS `masternode`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `masternode` (
   `public_key` varchar(255) NOT NULL,
+  `id` varchar(128) DEFAULT NULL,
   `height` int(11) NOT NULL,
   `ip` varchar(30) DEFAULT NULL,
   `win_height` int(11) DEFAULT NULL,
-  `signature` varchar(255) DEFAULT NULL,
-  `id` varchar(128) DEFAULT NULL,
   `collateral` int(11) NOT NULL DEFAULT 10000,
   `verified` int(11) NOT NULL DEFAULT 0,
+  `signature` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`public_key`),
   UNIQUE KEY `masternode_ip_uindex` (`ip`),
   KEY `height` (`height`),
