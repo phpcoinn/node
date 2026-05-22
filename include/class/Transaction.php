@@ -279,6 +279,9 @@ class Transaction
 	    $trans->peer = @$x['peer'];
 	    $trans->data = $x['data'];
         $trans->tx_data = @$x['tx_data'];
+        if($trans->type == TX_TYPE_DATA && !empty($trans->tx_data)) {
+            $trans->tx_data = self::buildCanonicalTxDataPayloadString($trans->tx_data);
+        }
 	    return $trans;
     }
 
@@ -296,6 +299,9 @@ class Transaction
 		$trans->signature = @$x['signature'];
 		$trans->data = @$x['data'];
         $trans->tx_data = @$x['tx_data'];
+        if($trans->type == TX_TYPE_DATA && !empty($trans->tx_data)) {
+            $trans->tx_data = self::buildCanonicalTxDataPayloadString($trans->tx_data);
+        }
 		$trans->height = @$x['height'];
 		return $trans;
 	}
@@ -317,7 +323,11 @@ class Transaction
 			$trans['data']=$this->data;
 		}
         if(!empty($this->tx_data)) {
-            $trans['tx_data']=$this->tx_data;
+            if(intval($this->type) === TX_TYPE_DATA) {
+                $trans['tx_data']=self::buildCanonicalTxDataPayloadString($this->tx_data);
+            } else {
+                $trans['tx_data']=$this->tx_data;
+            }
         }
 	    ksort($trans);
 	    return $trans;
@@ -463,7 +473,7 @@ class Transaction
 		$height = $current['height'];
         $txData = null;
         if($this->type == TX_TYPE_DATA) {
-            $txData = $this->tx_data;
+            $txData = self::buildCanonicalTxDataPayloadString($this->tx_data);
             $this->tx_data = $txData;
         }
 		$bind = [
@@ -1126,15 +1136,7 @@ class Transaction
                 return (string)$rawData;
             }
         }
-
-        $canonical = [];
-        foreach (self::$txDataFieldOrder as $field) {
-            if(array_key_exists($field, $payload)) {
-                $canonical[$field] = $payload[$field];
-            } else {
-                $canonical[$field] = null;
-            }
-        }
+        $canonical = self::normalizeTxDataPayloadForSignature($payload);
         return json_encode($canonical, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
@@ -1143,7 +1145,42 @@ class Transaction
         foreach (self::$txDataFieldOrder as $field) {
             $payload[$field] = array_key_exists($field, $row) ? $row[$field] : null;
         }
-        return json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $canonical = self::normalizeTxDataPayloadForSignature($payload);
+        return json_encode($canonical, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    public static function normalizeTxDataPayloadForSignature($payload) {
+        $canonical = [];
+        foreach (self::$txDataFieldOrder as $field) {
+            $value = array_key_exists($field, $payload) ? $payload[$field] : null;
+            if($value === null) {
+                $canonical[$field] = null;
+                continue;
+            }
+            if($field === "app" || $field === "action" || $field === "string1" || $field === "string2") {
+                $canonical[$field] = (string)$value;
+            } else if($field === "int1" || $field === "int2") {
+                $canonical[$field] = intval($value);
+            } else if($field === "float1" || $field === "float2") {
+                $canonical[$field] = floatval($value);
+            } else if($field === "address1" || $field === "address2") {
+                $canonical[$field] = (string)$value;
+            } else if($field === "json_data") {
+                if(is_string($value)) {
+                    $decoded = json_decode($value, true);
+                    if(json_last_error() === JSON_ERROR_NONE) {
+                        $canonical[$field] = $decoded;
+                    } else {
+                        $canonical[$field] = $value;
+                    }
+                } else {
+                    $canonical[$field] = $value;
+                }
+            } else {
+                $canonical[$field] = $value;
+            }
+        }
+        return $canonical;
     }
 
     public static function validateTxDataPayload($payload, &$error = null) {
@@ -1225,7 +1262,7 @@ class Transaction
         global $db;
         $current = Block::current();
 
-        $x = $db->row("SELECT t.*, td.data FROM transactions t 
+        $x = $db->row("SELECT t.*, td.* FROM transactions t 
             left join transaction_data td on t.id = td.tx_id
                     WHERE id=:id", [":id" => $id]);
 
@@ -1251,6 +1288,9 @@ class Transaction
 		    "public_key" => $x['public_key'],
 		    "data" => $x['data'],
 	    ];
+        if(intval($x['type']) === TX_TYPE_DATA) {
+            $trans['tx_data'] = self::buildCanonicalTxDataPayloadFromDbRow($x);
+        }
 	    $trans['confirmations'] = $height - $x['height'];
 
 	    if ($x['type'] == TX_TYPE_REWARD) {
@@ -1367,10 +1407,13 @@ class Transaction
 
 	static function getById($id) {
 		global $db;
-		$x = $db->row("SELECT t.*, td.data FROM transactions t 
+		$x = $db->row("SELECT t.*, td.* FROM transactions t 
             LEFT JOIN transaction_data td on t.id = td.tx_id
-            WHERE id=:id", [":id" => $id]);
+            WHERE t.id=:id", [":id" => $id]);
 		if($x) {
+            if(intval($x['type']) === TX_TYPE_DATA) {
+                $x['tx_data'] = self::buildCanonicalTxDataPayloadFromDbRow($x);
+            }
 			return Transaction::getFromDbRecord($x);
 		} else {
 			return null;
@@ -1570,14 +1613,14 @@ class Transaction
                 throw new Exception($validationError);
             }
 
-            $app = array_key_exists("app", $payload) ? $payload["app"] : "";
-            $action = array_key_exists("action", $payload) ? $payload["action"] : "";
+            $app = array_key_exists("app", $payload) ? $payload["app"] : null;
+            $action = array_key_exists("action", $payload) ? $payload["action"] : null;
             $string1 = array_key_exists("string1", $payload) ? $payload["string1"] : null;
             $string2 = array_key_exists("string2", $payload) ? $payload["string2"] : null;
-            $int1 = array_key_exists("int1", $payload) ? intval($payload["int1"]) : null;
-            $int2 = array_key_exists("int2", $payload) ? intval($payload["int2"]) : null;
-            $float1 = array_key_exists("float1", $payload) ? floatval($payload["float1"]) : null;
-            $float2 = array_key_exists("float2", $payload) ? floatval($payload["float2"]) : null;
+            $int1 = (array_key_exists("int1", $payload) && $payload["int1"] !== null) ? intval($payload["int1"]) : null;
+            $int2 = (array_key_exists("int2", $payload) && $payload["int2"] !== null) ? intval($payload["int2"]) : null;
+            $float1 = (array_key_exists("float1", $payload) && $payload["float1"] !== null) ? floatval($payload["float1"]) : null;
+            $float2 = (array_key_exists("float2", $payload) && $payload["float2"] !== null) ? floatval($payload["float2"]) : null;
             $address1 = array_key_exists("address1", $payload) ? $payload["address1"] : null;
             $address2 = array_key_exists("address2", $payload) ? $payload["address2"] : null;
             $jsonData = array_key_exists("json_data", $payload) ? $payload["json_data"] : null;
@@ -1585,11 +1628,11 @@ class Transaction
                 $jsonData = json_encode($jsonData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             }
 
-            $sql = "insert into transaction_data
-                    (tx_id, data, app, action, string1, string2, int1, int2, float1, float2, address1, address2, json_data)
+            $sql = "insert into `transaction_data`
+                    (`tx_id`, `data`, `app`, `action`, `string1`, `string2`, `int1`, `int2`, `float1`, `float2`, `address1`, `address2`, `json_data`)
                     values
                     (:tx_id, :data, :app, :action, :string1, :string2, :int1, :int2, :float1, :float2, :address1, :address2, :json_data)";
-            return $db->run($sql, [
+            $res = $db->run($sql, [
                 ":tx_id"=>$txid,
                 ":data"=>$data,
                 ":app"=>$app,
@@ -1604,6 +1647,10 @@ class Transaction
                 ":address2"=>$address2,
                 ":json_data"=>$jsonData
             ]);
+            if($res === false) {
+                throw new Exception("DB insert tx_data failed: ".$db->error);
+            }
+            return $res;
         } catch (Exception $e) {
             $error = $e->getMessage();
             return false;
@@ -1674,6 +1721,8 @@ class Transaction
 				return "Send smart contract";
 			case TX_TYPE_SYSTEM:
 				return "System";
+            case TX_TYPE_DATA:
+                return "Data";
 		}
 	}
 
