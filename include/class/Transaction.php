@@ -1138,6 +1138,14 @@ class Transaction
         return json_encode($canonical, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
+    public static function buildCanonicalTxDataPayloadFromDbRow($row) {
+        $payload = [];
+        foreach (self::$txDataFieldOrder as $field) {
+            $payload[$field] = array_key_exists($field, $row) ? $row[$field] : null;
+        }
+        return json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
     public static function validateTxDataPayload($payload, &$error = null) {
         try {
             if($payload === null || $payload === "") {
