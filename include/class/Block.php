@@ -523,7 +523,7 @@ class Block
 		        $max = Block::max_transactions();
 				$count = 0;
 		        foreach ($this->data as $x) {
-					if($x['type']==TX_TYPE_SEND || $x['type']==TX_TYPE_BURN || $x['type']==TX_TYPE_SYSTEM) {
+					if($x['type']==TX_TYPE_SEND || $x['type']==TX_TYPE_BURN || $x['type']==TX_TYPE_SYSTEM || $x['type']==TX_TYPE_DATA) {
 						$count++;
 					}
 		        }
@@ -549,7 +549,7 @@ class Block
 
 		        // prepare total balance
 		        $type = $tx->type;
-		        if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE || $type == TX_TYPE_MN_REMOVE  || $type == TX_TYPE_BURN || $type == TX_TYPE_SYSTEM) {
+		        if ($type == TX_TYPE_SEND || $type == TX_TYPE_MN_CREATE || $type == TX_TYPE_MN_REMOVE  || $type == TX_TYPE_BURN || $type == TX_TYPE_SYSTEM || $type == TX_TYPE_DATA) {
 			        @$balance[$tx->src] += $tx->val + $tx->fee;
 		        }
 
