@@ -18,6 +18,38 @@ if(!$tx) {
         exit;
     }
 }
+
+$txDataPayload = null;
+if(intval($tx['type']) === TX_TYPE_DATA) {
+    if(!empty($tx['tx_data'])) {
+        $txDataPayload = json_decode($tx['tx_data'], true);
+    } else if(!$mempool) {
+        global $db;
+        $txDataRow = $db->row("SELECT app, action, string1, string2, int1, int2, float1, float2, address1, address2, json_data
+            FROM transaction_data WHERE tx_id=:id", [":id"=>$tx['id']]);
+        if($txDataRow) {
+            $txDataPayload = [
+                "app"=>$txDataRow['app'],
+                "action"=>$txDataRow['action'],
+                "string1"=>$txDataRow['string1'],
+                "string2"=>$txDataRow['string2'],
+                "int1"=>$txDataRow['int1'],
+                "int2"=>$txDataRow['int2'],
+                "float1"=>$txDataRow['float1'],
+                "float2"=>$txDataRow['float2'],
+                "address1"=>$txDataRow['address1'],
+                "address2"=>$txDataRow['address2'],
+                "json_data"=>$txDataRow['json_data'],
+            ];
+            if(!empty($txDataPayload['json_data'])) {
+                $decoded = json_decode($txDataPayload['json_data'], true);
+                if(json_last_error() === JSON_ERROR_NONE) {
+                    $txDataPayload['json_data'] = $decoded;
+                }
+            }
+        }
+    }
+}
 if(isset($_GET['action'])) {
     $action = $_GET['action'];
     if($action == "check") {
@@ -205,9 +237,37 @@ require_once __DIR__. '/../common/include/top.php';
         </div>
     <?php } ?>
 
+    <?php if ($tx['type']==TX_TYPE_DATA) { ?>
+        <h3>TX_DATA</h3>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <?php if(is_array($txDataPayload)) { ?>
+                    <?php foreach($txDataPayload as $k => $v) { ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($k) ?></td>
+                            <td style="word-break: break-all">
+                                <?php
+                                if(is_array($v) || is_object($v)) {
+                                    echo htmlspecialchars(json_encode($v, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                                } else {
+                                    echo htmlspecialchars((string)$v);
+                                }
+                                ?>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                <?php } else { ?>
+                    <tr>
+                        <td>tx_data</td>
+                        <td>Not available</td>
+                    </tr>
+                <?php } ?>
+            </table>
+        </div>
+    <?php } ?>
+
 </div>
     <a href="<?php echo $_SERVER['PHP_SELF'] ?>?id=<?php echo $tx['id'] ?>&action=check" class="btn btn-info">Check</a>
 <?php
 require_once __DIR__ . '/../common/include/bottom.php';
 ?>
-
