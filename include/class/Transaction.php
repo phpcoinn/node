@@ -1086,8 +1086,34 @@ class Transaction
     	$parts[]=$this->type;
     	$parts[]=$this->publicKey;
     	$parts[]=$date;
+        if($this->type == TX_TYPE_DATA) {
+            $canonicalPayload = self::buildCanonicalTxDataPayloadString($this->data);
+            $parts[] = hash("sha256", $canonicalPayload);
+        }
 	    $base = implode("-", $parts);
 	    return $base;
+    }
+
+    public static function buildCanonicalTxDataPayloadString($rawData) {
+        if($rawData === null || $rawData === "") {
+            $payload = [];
+        } else {
+            $payload = json_decode($rawData, true);
+            if(!is_array($payload)) {
+                // Keep deterministic behavior even for invalid payloads.
+                return (string)$rawData;
+            }
+        }
+
+        $canonical = [];
+        foreach (self::$txDataFieldOrder as $field) {
+            if(array_key_exists($field, $payload)) {
+                $canonical[$field] = $payload[$field];
+            } else {
+                $canonical[$field] = null;
+            }
+        }
+        return json_encode($canonical, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     public static function validateTxDataPayload($payload, &$error = null) {
