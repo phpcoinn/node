@@ -563,7 +563,7 @@ class Peer
 
     static function getMiningNodes($limit = 10) {
         global $db;
-        $sql="select * from peers where miner is not null 
+        $sql="select * from peers where generator is not null 
             and blacklisted < ".DB::unixTimeStamp()." order by response_time/response_cnt
             limit $limit";
         $rows = $db->run($sql);

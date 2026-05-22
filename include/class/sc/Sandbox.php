@@ -46,6 +46,17 @@ class Sandbox {
         } else {
             if(!empty($address)) {
                 $interface = SmartContractEngine::getInterface($address);
+                if(!$interface) {
+                    $transactions = $input['transactions'];
+                    foreach($transactions as $transaction) {
+                        if($transaction->type === TX_TYPE_SC_CREATE) {
+                            $data = $transaction->data;
+                            $data = base64_decode($data);
+                            $data = json_decode($data, true);
+                            $interface = $data['interface'];
+                        }
+                    }
+                }
             }
         }
 
