@@ -42,6 +42,7 @@ const TX_TYPE_SC_EXEC = 6;
 const TX_TYPE_SC_SEND = 7;
 const TX_TYPE_BURN = 8;
 const TX_TYPE_SYSTEM = 9;
+const TX_TYPE_DATA = 10;
 
 const HASHING_ALGO = PASSWORD_ARGON2I;
 const HASHING_OPTIONS = ['memory_cost' => 2048, "time_cost" => 2, "threads" => 1];
@@ -64,6 +65,7 @@ const STAKING_START_HEIGHT = 500001;
 
 const SC_MAX_EXEC_TIME = 30;
 const SC_MEMORY_LIMIT = "256M";
+const TX_DATA_FEE = 0.001;
 
 const GIT_URL = "https://github.com/phpcoinn/node";
 const UPDATE_1_BLOCK_ZERO_TIME = 9000;
@@ -105,4 +107,4 @@ const BLACKLISTED_SMART_CONTRACTS = [
 
 const DEV_REWARD_ADDRESS = "PdEvtfZwNsbddKLCZQcjTgjpdcznS1w3pG";
 
-const DB_SCHEMA_VERSION = 111;
+const DB_SCHEMA_VERSION = 112;

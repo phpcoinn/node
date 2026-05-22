@@ -2,6 +2,33 @@
 
 class Transaction
 {
+    // Canonical TX_TYPE_DATA payload field order used for deterministic hashing/signatures.
+    public static $txDataFieldOrder = [
+        'app',
+        'action',
+        'string1',
+        'string2',
+        'int1',
+        'int2',
+        'float1',
+        'float2',
+        'address1',
+        'address2',
+        'json_data',
+    ];
+    public static $txDataAllowedFields = [
+        'app',
+        'action',
+        'string1',
+        'string2',
+        'int1',
+        'int2',
+        'float1',
+        'float2',
+        'address1',
+        'address2',
+        'json_data',
+    ];
 
 
 	public $val;
@@ -44,6 +71,8 @@ class Transaction
 			$fee = Blockchain::getSmartContractExecFee($block_height);
 		} else if($this->type == TX_TYPE_SC_SEND) {
 			$fee = Blockchain::getSmartContractExecFee($block_height);
+		} else if($this->type == TX_TYPE_DATA) {
+			$fee = TX_DATA_FEE;
 		} else if($this->type == TX_TYPE_BURN || $this->type == TX_TYPE_SYSTEM) {
 			$fee = 0;
 		}
@@ -717,7 +746,7 @@ class Transaction
 
 	        // the value must be >=0
 	        if ($this->val <= 0 && in_array($phase, ["genesis","launch","mining","combined","deflation","increasing","decreasing","main"]) && $height > UPDATE_10_ZERO_TX_NOT_ALLOWED) {
-				if($this->type != TX_TYPE_SC_CREATE && $this->type != TX_TYPE_SC_EXEC && $this->type != TX_TYPE_SC_SEND) {
+				if($this->type != TX_TYPE_SC_CREATE && $this->type != TX_TYPE_SC_EXEC && $this->type != TX_TYPE_SC_SEND && $this->type != TX_TYPE_DATA) {
 		            throw new Exception("Transaction type {$this->val} - Value <= 0", 3);
 		        }
 	        }
@@ -736,7 +765,7 @@ class Transaction
 
 			//check types
 		    $type = $this->type;
-			$allowedTypes = [TX_TYPE_REWARD, TX_TYPE_SEND, TX_TYPE_SYSTEM];
+			$allowedTypes = [TX_TYPE_REWARD, TX_TYPE_SEND, TX_TYPE_SYSTEM, TX_TYPE_DATA];
 			if(Masternode::allowedMasternodes($height)) {
 				$allowedTypes[]=TX_TYPE_MN_CREATE;
 				$allowedTypes[]=TX_TYPE_MN_REMOVE;
@@ -798,7 +827,8 @@ class Transaction
 
 
             if ($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_MN_CREATE || $this->type == TX_TYPE_MN_REMOVE || $this->type == TX_TYPE_SC_SEND
-                || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_CREATE || $this->type == TX_TYPE_SYSTEM) {
+                || $this->type == TX_TYPE_SC_EXEC || $this->type == TX_TYPE_SC_CREATE || $this->type == TX_TYPE_SYSTEM
+				|| $this->type == TX_TYPE_DATA) {
 	            // invalid destination address
 	            if (!Account::valid($this->dst)) {
 		            throw new Exception("{$this->id} - Invalid destination address");
@@ -854,7 +884,8 @@ class Transaction
             }
 
 
-			if($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_BURN || $this->type == TX_TYPE_MN_CREATE || $this->type == TX_TYPE_SYSTEM) {
+			if($this->type==TX_TYPE_SEND || $this->type == TX_TYPE_BURN || $this->type == TX_TYPE_MN_CREATE
+                || $this->type == TX_TYPE_SYSTEM || $this->type == TX_TYPE_DATA) {
 				$res = Masternode::checkIsSendFromMasternode($height, $this, $error, $verify);
 				if(!$res) {
 					throw new Exception("Invalid transaction for send: $error");
@@ -895,6 +926,20 @@ class Transaction
 					throw new Exception("Invalid transaction for send smart contract: $error");
 				}
 			}
+
+            if($this->type==TX_TYPE_DATA) {
+                $payload = [];
+                if(!empty($this->data)) {
+                    $payload = json_decode($this->data, true);
+                    if(json_last_error() !== JSON_ERROR_NONE) {
+                        throw new Exception("Invalid tx_data payload json");
+                    }
+                }
+                $res = self::validateTxDataPayload($payload, $error);
+                if(!$res) {
+                    throw new Exception("Invalid transaction for tx_data payload: $error");
+                }
+            }
 
 			if ($this->type == TX_TYPE_REWARD) {
 				$res = Masternode::checkTx($this, $block, $error);
@@ -1043,6 +1088,59 @@ class Transaction
     	$parts[]=$date;
 	    $base = implode("-", $parts);
 	    return $base;
+    }
+
+    public static function validateTxDataPayload($payload, &$error = null) {
+        try {
+            if($payload === null || $payload === "") {
+                return true;
+            }
+            if(!is_array($payload)) {
+                throw new Exception("Invalid tx_data payload format");
+            }
+
+            foreach ($payload as $key => $value) {
+                if(!in_array($key, self::$txDataAllowedFields, true)) {
+                    throw new Exception("Invalid tx_data key: $key");
+                }
+                if($value === null) {
+                    continue;
+                }
+
+                if($key === "app" || $key === "action" || $key === "string1" || $key === "string2") {
+                    if(!is_string($value)) {
+                        throw new Exception("tx_data.$key must be string");
+                    }
+                    if(($key === "app" || $key === "action") && strlen($value) > 64) {
+                        throw new Exception("tx_data.$key too long");
+                    }
+                    if(($key === "string1" || $key === "string2") && strlen($value) > 255) {
+                        throw new Exception("tx_data.$key too long");
+                    }
+                } else if($key === "int1" || $key === "int2") {
+                    if(!(is_int($value) || (is_string($value) && preg_match('/^-?[0-9]+$/', $value) === 1))) {
+                        throw new Exception("tx_data.$key must be integer");
+                    }
+                } else if($key === "float1" || $key === "float2") {
+                    if(!(is_float($value) || is_int($value) || (is_string($value) && is_numeric($value)))) {
+                        throw new Exception("tx_data.$key must be numeric");
+                    }
+                } else if($key === "address1" || $key === "address2") {
+                    if(!is_string($value) || !Account::valid($value)) {
+                        throw new Exception("tx_data.$key invalid address");
+                    }
+                } else if($key === "json_data" && is_string($value)) {
+                    json_decode($value, true);
+                    if(json_last_error() !== JSON_ERROR_NONE) {
+                        throw new Exception("tx_data.json_data invalid json");
+                    }
+                }
+            }
+            return true;
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            return false;
+        }
     }
 
 //	private function get_check_height() {
