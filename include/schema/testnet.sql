@@ -295,8 +295,8 @@ DROP TABLE IF EXISTS `transaction_data`;
 CREATE TABLE `transaction_data` (
   `tx_id` varchar(128) NOT NULL,
   `data` mediumtext DEFAULT NULL,
-  `app` varchar(64) NOT NULL,
-  `action` varchar(64) NOT NULL,
+  `app` varchar(64) DEFAULT NULL,
+  `action` varchar(64) DEFAULT NULL,
   `string1` varchar(255) DEFAULT NULL,
   `string2` varchar(255) DEFAULT NULL,
   `int1` bigint(20) DEFAULT NULL,
