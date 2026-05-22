@@ -773,7 +773,7 @@ class Block
         if (!$block) {
             return false;
         }
-        $r = $db->run("SELECT t.*, td.data FROM transactions t 
+        $r = $db->run("SELECT t.*, td.* FROM transactions t 
             LEFT JOIN transaction_data td on td.tx_id = t.id
             WHERE block=:block", [":block" => $block['id']]);
         $transactions = [];
@@ -793,6 +793,9 @@ class Block
 			if(!empty($x['data'])) {
 				$trans['data']=$x['data'];
 			}
+            if(intval($x['type']) === TX_TYPE_DATA) {
+                $trans['tx_data'] = Transaction::buildCanonicalTxDataPayloadFromDbRow($x);
+            }
             ksort($trans);
             $transactions[$x['id']] = $trans;
         }
