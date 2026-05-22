@@ -43,6 +43,7 @@ class Transaction
 	public $peer;
 	public $id;
 	public $data;
+    public $tx_data;
 
 	public $src;
 
@@ -277,6 +278,7 @@ class Transaction
 	    $trans->height = $x['height'];
 	    $trans->peer = @$x['peer'];
 	    $trans->data = $x['data'];
+        $trans->tx_data = @$x['tx_data'];
 	    return $trans;
     }
 
@@ -293,6 +295,7 @@ class Transaction
 		$trans->fee = floatval($x['fee']);
 		$trans->signature = @$x['signature'];
 		$trans->data = @$x['data'];
+        $trans->tx_data = @$x['tx_data'];
 		$trans->height = @$x['height'];
 		return $trans;
 	}
@@ -313,6 +316,9 @@ class Transaction
 		if(!empty($this->data)) {
 			$trans['data']=$this->data;
 		}
+        if(!empty($this->tx_data)) {
+            $trans['tx_data']=$this->tx_data;
+        }
 	    ksort($trans);
 	    return $trans;
     }
@@ -455,6 +461,11 @@ class Transaction
 
 		$current = Block::current();
 		$height = $current['height'];
+        $txData = null;
+        if($this->type == TX_TYPE_DATA) {
+            $txData = $this->tx_data;
+            $this->tx_data = $txData;
+        }
 		$bind = [
 			":peer"      => $peer,
 			":id"        => $this->id,
@@ -469,13 +480,14 @@ class Transaction
 			":date"      => $this->date,
 			":message"   => $this->msg,
 			":data"   => $this->data,
+            ":tx_data" => $txData,
 		];
 
 
 		$res = $db->run(
 			"INSERT into mempool  
-			    (peer, id, public_key, height, src, dst, val, fee, signature, type, message, `date`, data)
-			    values (:peer, :id, :public_key, :height, :src, :dst, :val, :fee, :signature, :type, :message, :date, :data)",
+			    (peer, id, public_key, height, src, dst, val, fee, signature, type, message, `date`, data, tx_data)
+			    values (:peer, :id, :public_key, :height, :src, :dst, :val, :fee, :signature, :type, :message, :date, :data, :tx_data)",
 			$bind
 		);
 		if($res === false) {
@@ -928,9 +940,13 @@ class Transaction
 			}
 
             if($this->type==TX_TYPE_DATA) {
+                if(empty($this->tx_data)) {
+                    throw new Exception("Missing tx_data payload");
+                }
                 $payload = [];
-                if(!empty($this->data)) {
-                    $payload = json_decode($this->data, true);
+                $rawPayload = $this->tx_data;
+                if(!empty($rawPayload)) {
+                    $payload = json_decode($rawPayload, true);
                     if(json_last_error() !== JSON_ERROR_NONE) {
                         throw new Exception("Invalid tx_data payload json");
                     }
@@ -1087,7 +1103,8 @@ class Transaction
     	$parts[]=$this->publicKey;
     	$parts[]=$date;
         if($this->type == TX_TYPE_DATA) {
-            $canonicalPayload = self::buildCanonicalTxDataPayloadString($this->data);
+            $rawPayload = $this->tx_data;
+            $canonicalPayload = self::buildCanonicalTxDataPayloadString($rawPayload);
             $parts[] = hash("sha256", $canonicalPayload);
         }
 	    $base = implode("-", $parts);
@@ -1296,6 +1313,9 @@ class Transaction
 		if(!empty($x['data'])) {
 			$trans['data']=$x['data'];
 		}
+		if(!empty($x['tx_data'])) {
+            $trans['tx_data']=$x['tx_data'];
+        }
 
         $trans['type_label'] = "mempool";
         $trans['confirmations'] = -1;
