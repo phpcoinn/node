@@ -2061,6 +2061,123 @@ class Api
     }
 
     /**
+     * @api            {get} /api.php?q=getTxData  getTxData
+     * @apiName        getTxData
+     * @apiGroup       API
+     * @apiDescription Returns tx_data indexed payload for a transaction id.
+     *
+     * @apiParam {string} transaction Transaction ID
+     *
+     * @apiSuccess {object} Response wrapper object
+     * @apiSuccess {string} status Status: "ok" for success
+     * @apiSuccess {object} data TX_DATA row
+     */
+    static function getTxData($data) {
+        global $db;
+        $id = san($data['transaction']);
+        if(empty($id)) {
+            api_err("Missing transaction");
+        }
+        $sql = "select td.tx_id, td.data, td.app, td.action, td.string1, td.string2, td.int1, td.int2, td.float1, td.float2,
+                       td.address1, td.address2, td.json_data,
+                       t.height, t.block, t.date, t.src, t.dst, t.type
+                from transaction_data td
+                join transactions t on t.id = td.tx_id
+                where td.tx_id = :id";
+        $row = $db->row($sql, [":id"=>$id], false);
+        if(!$row) {
+            api_err("tx_data not found");
+        }
+        api_echo($row);
+    }
+
+    /**
+     * @api            {get} /api.php?q=findTxData  findTxData
+     * @apiName        findTxData
+     * @apiGroup       API
+     * @apiDescription Search tx_data rows by indexed fields.
+     *
+     * @apiParam {string} [app] Filter by app
+     * @apiParam {string} [action] Filter by action
+     * @apiParam {string} [address1] Filter by address1
+     * @apiParam {string} [address2] Filter by address2
+     * @apiParam {string} [string1] Filter by string1
+     * @apiParam {string} [string2] Filter by string2
+     * @apiParam {numeric} [int1] Filter by int1
+     * @apiParam {numeric} [int2] Filter by int2
+     * @apiParam {numeric} [fromHeight] Minimum block height
+     * @apiParam {numeric} [toHeight] Maximum block height
+     * @apiParam {numeric} [limit=100] Max results (max 100)
+     * @apiParam {numeric} [offset=0] Result offset
+     */
+    static function findTxData($data) {
+        global $db;
+        $sql = "select td.tx_id, td.app, td.action, td.string1, td.string2, td.int1, td.int2, td.float1, td.float2,
+                       td.address1, td.address2, td.json_data,
+                       t.height, t.block, t.date, t.src, t.dst, t.type
+                from transaction_data td
+                join transactions t on t.id = td.tx_id
+                where 1=1";
+        $params = [];
+
+        if(isset($data['app'])) {
+            $sql .= " and td.app = :app";
+            $params[':app'] = $data['app'];
+        }
+        if(isset($data['action'])) {
+            $sql .= " and td.action = :action";
+            $params[':action'] = $data['action'];
+        }
+        if(isset($data['address1'])) {
+            $sql .= " and td.address1 = :address1";
+            $params[':address1'] = $data['address1'];
+        }
+        if(isset($data['address2'])) {
+            $sql .= " and td.address2 = :address2";
+            $params[':address2'] = $data['address2'];
+        }
+        if(isset($data['string1'])) {
+            $sql .= " and td.string1 = :string1";
+            $params[':string1'] = $data['string1'];
+        }
+        if(isset($data['string2'])) {
+            $sql .= " and td.string2 = :string2";
+            $params[':string2'] = $data['string2'];
+        }
+        if(isset($data['int1'])) {
+            $sql .= " and td.int1 = :int1";
+            $params[':int1'] = intval($data['int1']);
+        }
+        if(isset($data['int2'])) {
+            $sql .= " and td.int2 = :int2";
+            $params[':int2'] = intval($data['int2']);
+        }
+        if(isset($data['fromHeight'])) {
+            $sql .= " and t.height >= :fromHeight";
+            $params[':fromHeight'] = intval($data['fromHeight']);
+        }
+        if(isset($data['toHeight'])) {
+            $sql .= " and t.height <= :toHeight";
+            $params[':toHeight'] = intval($data['toHeight']);
+        }
+
+        $limit = isset($data['limit']) ? intval($data['limit']) : 100;
+        if($limit <= 0 || $limit > 100) {
+            $limit = 100;
+        }
+        $offset = isset($data['offset']) ? intval($data['offset']) : 0;
+        if($offset < 0) {
+            $offset = 0;
+        }
+        $sql .= " order by t.height desc, td.tx_id desc limit :offset, :limit";
+        $params[':offset'] = $offset;
+        $params[':limit'] = $limit;
+
+        $rows = $db->run($sql, $params, false);
+        api_echo($rows);
+    }
+
+    /**
      * @api            {get} /api.php?q=generateSendTransaction  generateSendTransaction
      * @apiName        generateSendTransaction
      * @apiGroup       API
