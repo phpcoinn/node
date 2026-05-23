@@ -247,7 +247,9 @@ require_once __DIR__. '/../common/include/top.php';
                             <td><?php echo htmlspecialchars($k) ?></td>
                             <td style="word-break: break-all">
                                 <?php
-                                if(is_array($v) || is_object($v)) {
+                                if($v === null) {
+                                    echo '<span class="text-muted">&lt;NULL&gt;</span>';
+                                } else if(is_array($v) || is_object($v)) {
                                     echo htmlspecialchars(json_encode($v, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
                                 } else {
                                     echo htmlspecialchars((string)$v);
