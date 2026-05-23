@@ -2176,7 +2176,7 @@ class Util
         create table if not exists  transactions1
 with t1 as (
     select t.id, t.block, t.height, t.dst, t.val, t.fee, t.signature, t.type, t.message, t.date, t.public_key, t.src 
-    from transactions t where t.height <= '.$prune_height_safe.' and t.type in (2,3,5,6,7)
+    from transactions t where t.height <= '.$prune_height_safe.' and t.type in (2,3,5,6,7,10)
     union all
     select t.id, t.block, t.height, t.dst, t.val, t.fee, t.signature, t.type, t.message, t.date, t.public_key, t.src 
             from transactions t
@@ -2195,7 +2195,7 @@ with t1 as (
                    null          as public_key,
                    t.src
             from transactions t
-            where t.type not in (2, 3, 5, 6, 7)
+            where t.type not in (2, 3, 5, 6, 7, 10)
               and t.height <= '.$prune_height_safe.'
             group by t.type, t.src, t.dst
 ) select * from t1
