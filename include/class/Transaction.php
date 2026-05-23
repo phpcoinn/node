@@ -299,9 +299,6 @@ class Transaction
 		$trans->signature = @$x['signature'];
 		$trans->data = @$x['data'];
         $trans->tx_data = @$x['tx_data'];
-        if($trans->type == TX_TYPE_DATA && !empty($trans->tx_data)) {
-            $trans->tx_data = self::buildCanonicalTxDataPayloadString($trans->tx_data);
-        }
 		$trans->height = @$x['height'];
 		return $trans;
 	}
@@ -965,6 +962,9 @@ class Transaction
                     if(json_last_error() !== JSON_ERROR_NONE) {
                         throw new Exception("Invalid tx_data payload json");
                     }
+                    if(!is_array($payload)) {
+                        throw new Exception("Invalid tx_data payload format");
+                    }
                 }
                 $res = self::validateTxDataPayload($payload, $error);
                 if(!$res) {
@@ -1479,7 +1479,7 @@ class Transaction
 
             $src = Account::getAddress($this->publicKey);
             _log("addToMemPool $src");
-            if(Blacklist::checkAddress($src)) {
+            if(!empty($src) && Blacklist::checkAddress($src)) {
                 throw new Exception("Address {$src} is blacklisted");
             }
 
