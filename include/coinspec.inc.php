@@ -9,9 +9,9 @@ if($_config['chain_id'] != DEFAULT_CHAIN_ID && file_exists(__DIR__ . "/coinspec.
 const NETWORK = "testnet";
 const CHAIN_ID = "01";
 const COIN_PORT = "";
-const VERSION = "1.8.0";
-const BUILD_VERSION = 514;
-const MIN_VERSION = "1.7.0";
+const VERSION = "1.8.1";
+const BUILD_VERSION = 515;
+const MIN_VERSION = "1.8.0";
 const DEVELOPMENT = false;
 const XDEBUG = "&XDEBUG_SESSION_START=PHPSTORM";
 const XDEBUG_CLI = "";
