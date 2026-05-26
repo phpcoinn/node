@@ -94,6 +94,7 @@ require_once __DIR__. '/../common/include/top.php';
             <option value="<?php echo TX_TYPE_SC_CREATE ?>" <?php if(isset($dm['search']['type']) && in_array(TX_TYPE_SC_CREATE,$dm['search']['type'])) { ?> selected<?php } ?>>Create Smart Contract</option>
             <option value="<?php echo TX_TYPE_SC_EXEC ?>" <?php if(isset($dm['search']['type']) && in_array(TX_TYPE_SC_EXEC,$dm['search']['type'])) { ?> selected<?php } ?>>Execute Smart Contract</option>
             <option value="<?php echo TX_TYPE_SC_SEND ?>" <?php if(isset($dm['search']['type']) && in_array(TX_TYPE_SC_SEND,$dm['search']['type'])) { ?> selected<?php } ?>>Send Smart Contract</option>
+            <option value="<?php echo TX_TYPE_DATA ?>" <?php if(isset($dm['search']['type']) && in_array(TX_TYPE_DATA,$dm['search']['type'])) { ?> selected<?php } ?>>Data</option>
             <option value="<?php echo TX_TYPE_SYSTEM ?>" <?php if(isset($dm['search']['type']) && in_array(TX_TYPE_SYSTEM,$dm['search']['type'])) { ?> selected<?php } ?>>System</option>
         </select>
     </div>
@@ -162,10 +163,14 @@ require_once __DIR__. '/../common/include/top.php';
     .choices__list--multiple .choices__item {
         padding: 2px 5px;
     }
+
+    @media (min-width: 640px) {
+        .choices__list--dropdown .choices__item--selectable {
+            padding-right: 10px !important;
+        }
+    }
 </style>
 
 <?php
 require_once __DIR__ . '/../common/include/bottom.php';
 ?>
-
-
