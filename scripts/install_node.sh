@@ -109,7 +109,7 @@ delim
 apt update
 apt install curl wget git sed net-tools unzip bc -y
 echo "install php with nginx server"
-apt install nginx php-fpm php-mysql php-gmp php-bcmath php-curl php-mbstring -y
+apt install nginx php-fpm php-mysql php-gmp php-bcmath php-curl php-mbstring php-xml pv -y
 apt install mariadb-server -y
 service mariadb start
 
@@ -164,26 +164,31 @@ export IP=$(curl -s http://whatismyip.akamai.com/)
 PORT=""
 HOSTNAME=""
 BLOCKCHAIN_SNAPSHOT=""
+PRUNED_HEIGHT=""
+
+if [ "$FULL" = true ]; then
+  BLOCKCHAIN_SNAPSHOT="blockchain-$NETWORK"
+else
+  BLOCKCHAIN_SNAPSHOT="blockchain-$NETWORK-pruned"
+fi
+
+
 if [ "$NETWORK" = "mainnet" ]
 then
   PORT="80"
+  PRUNED_HEIGHT=1200000
   HOSTNAME="http://$IP"
   if [ "$DOCKER" = true ]; then
     HOSTNAME="http://$IP:$EXT_PORT"
   fi
-  BLOCKCHAIN_SNAPSHOT="blockchain"
 elif [ "$NETWORK" = "testnet" ]
 then
   PORT="81"
+  PRUNED_HEIGHT=2000000
   HOSTNAME="http://$IP:$PORT"
   if [ "$DOCKER" = true ]; then
     PORT="80"
     HOSTNAME="http://$IP:$EXT_PORT"
-  fi
-  if [ "$FULL" = true ]; then
-  BLOCKCHAIN_SNAPSHOT="blockchain-$NETWORK"
-  else
-    BLOCKCHAIN_SNAPSHOT="blockchain-$NETWORK-pruned"
   fi
 fi
 
@@ -232,22 +237,15 @@ mkdir tmp
 mkdir dapps
 chown -R www-data:www-data .
 
-
-if [ "$NETWORK" = "testnet" ]; then
   echo "PHPCoin: Creating database tables"
   if [ "$FULL" = true ]; then
-      mysql $DB_NAME < $NODE_DIR/include/schema/testnet.sql
+    mysql $DB_NAME < $NODE_DIR/include/schema/$NETWORK.sql
   else
-      mysql $DB_NAME < $NODE_DIR/include/schema/testnet-pruned.sql
+    mysql $DB_NAME < $NODE_DIR/include/schema/$NETWORK-pruned.sql
   fi
   mysql $DB_NAME -e "insert into config (cfg, val) values('hostname','$HOSTNAME');"
   if [ "$FULL" = false ]; then
-      mysql $DB_NAME -e "insert config (cfg, val) values('pruned_height', 1800000);"
-  fi
-else
-  echo "PHPCoin: Creating database tables"
-  mysql $DB_NAME < $NODE_DIR/include/schema/mainnet.sql
-  mysql $DB_NAME -e "insert into config (cfg, val) values('hostname','$HOSTNAME');"
+    mysql $DB_NAME -e "insert config (cfg, val) values('pruned_height', $PRUNED_HEIGHT);"
 fi
 
 echo "PHPCoin: open start page"
@@ -269,13 +267,12 @@ delim
 cd $NODE_DIR
 wget ${server_urls[$best_server_result]}/download/$BLOCKCHAIN_SNAPSHOT.sql.zip -O $BLOCKCHAIN_SNAPSHOT.sql.zip
 unzip -o $BLOCKCHAIN_SNAPSHOT.sql.zip
+ln -s blockchain.sql $BLOCKCHAIN_SNAPSHOT.sql
 cd $NODE_DIR
 
 memory_info=$(free -m | grep Mem)
 total_memory=$(echo $memory_info | awk '{print $2}')
 echo "PHPCoin: Total memory is ${total_memory}M"
-if [ $total_memory -lt 16000 ]
-then
 
   echo "PHPCoin: tweaking db import config ..."
   nearest_power_of_2() {
@@ -307,10 +304,11 @@ EOF
   service nginx stop
   service mariadb restart
   sleep 5
-fi
+
 
 echo "PHPCoin: Starting import ..."
-time php cli/util.php importdb $BLOCKCHAIN_SNAPSHOT.sql
+
+pv $BLOCKCHAIN_SNAPSHOT.sql | mysql $DB_NAME
 
 echo "PHPCoin: reverting db config ..."
 rm /etc/mysql/mariadb.conf.d/import.cnf
@@ -321,6 +319,10 @@ rm $BLOCKCHAIN_SNAPSHOT.sql.zip
 fi
 
 rm -rf $NODE_DIR/tmp/*
+
+echo "PHPCoin: open start page"
+delim
+curl $HOSTNAME > /dev/null 2>&1
 
 service nginx start
 
