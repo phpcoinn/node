@@ -122,7 +122,7 @@ Pruned mode is the **default for new testnet installs**.
 You can convert an existing full node to a pruned node:
 
 ```bash
-php cli/util.php config-set pruned_height 1800000
+php cli/util.php config-set pruned_height 2000000
 php cli/util.php prune-node --log
 ```
 
