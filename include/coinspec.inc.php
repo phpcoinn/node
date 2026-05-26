@@ -65,7 +65,7 @@ const STAKING_START_HEIGHT = 20001;
 
 const SC_MAX_EXEC_TIME = 30;
 const SC_MEMORY_LIMIT = "256M";
-const TX_DATA_FEE = 0.001;
+const TX_DATA_FEE = 1;
 
 const GIT_URL = "https://github.com/phpcoinn/node";
 const UPDATE_1_BLOCK_ZERO_TIME = 0;

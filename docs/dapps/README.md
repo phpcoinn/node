@@ -8,3 +8,4 @@
 This section explains how to develop decentralized applications (Dapps) on the PHPCoin platform.
 
 * [Developing Dapps](./developing-dapps.md)
+* [TX_DATA Developer Instruction Manual](./tx-data-developer-instruction-manual.md)

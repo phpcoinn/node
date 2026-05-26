@@ -21,5 +21,6 @@ Welcome to the official documentation for PHPCoin. This documentation provides a
   * **[Smart Contract Builder's Guide](./smart-contracts/builders-guide.md)** - A detailed guide on how to build smart contracts.
 * **[dApps](./dapps/)** - Information on how to build decentralized applications (Dapps) on PHPCoin.
   * **[Developing dApps](./dapps/developing-dapps.md)** - A guide on how to develop dApps.
+  * **[TX_DATA Developer Instruction Manual](./dapps/tx-data-developer-instruction-manual.md)** - A developer manual for building TX_DATA-based applications and services.
 * **[API](./api/)** - The complete API reference for a PHPCoin node.
   * **[API Reference](./api/api-reference.md)** - A detailed reference for the PHPCoin API.
