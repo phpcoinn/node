@@ -352,7 +352,7 @@ class Wallet
 		if(DEVELOPMENT) {
 			return "http://phpcoin";
 		} else {
-            echo "CHAIN: ".DEFAULT_CHAIN_ID . PHP_EOL;
+            echo "CHAIN: ".CHAIN_ID . PHP_EOL;
 			echo "Connected to peer: $peer".PHP_EOL;
 			return $peer;
 		}

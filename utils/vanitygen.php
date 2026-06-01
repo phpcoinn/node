@@ -7,7 +7,9 @@ const VANITYGEN_USAGE = 'Usage: php vanitygen.php prefix [-c] [-d]' . PHP_EOL .
     '  -c         Case sensitive matching' . PHP_EOL .
     '  -d         Enable debug output' . PHP_EOL;
 const VANITYGEN_URL = 'https://github.com/phpcoinn/node/blob/main/utils/vanitygen.php';    
-const DEFAULT_CHAIN_ID = '00';
+if(!defined("CHAIN_ID")) {
+    define("CHAIN_ID", trim(@file_get_contents(dirname(__DIR__)."/chain_id")) ?: "00");
+}
 
 $debug = false;
 
