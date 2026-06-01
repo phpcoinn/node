@@ -60,8 +60,8 @@ CREATE TABLE `blocks` (
   `schash` varchar(128) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `height` (`height`),
-  KEY `blocks_masternode_index` (`masternode`),
   KEY `blocks_masternode_height_index` (`masternode`,`height`),
+  KEY `blocks_masternode_index` (`masternode`),
   KEY `blocks_generator_index` (`generator`),
   KEY `blocks_miner_index` (`miner`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
@@ -75,7 +75,7 @@ DROP TABLE IF EXISTS `config`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `config` (
-  `cfg` varchar(30) NOT NULL,
+  `cfg` varchar(255) NOT NULL,
   `val` varchar(200) NOT NULL,
   PRIMARY KEY (`cfg`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -90,17 +90,17 @@ DROP TABLE IF EXISTS `masternode`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `masternode` (
   `public_key` varchar(255) NOT NULL,
+  `id` varchar(128) DEFAULT NULL,
   `height` int(11) NOT NULL,
   `ip` varchar(30) DEFAULT NULL,
   `win_height` int(11) DEFAULT NULL,
-  `signature` varchar(255) DEFAULT NULL,
-  `id` varchar(128) DEFAULT NULL,
   `collateral` int(11) NOT NULL DEFAULT 10000,
   `verified` int(11) NOT NULL DEFAULT 0,
+  `signature` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`public_key`),
   UNIQUE KEY `masternode_ip_uindex` (`ip`),
   KEY `height` (`height`),
-  KEY `last_won` (`win_height`),
+  KEY `win_height` (`win_height`),
   KEY `mix` (`height`,`signature`,`id`,`public_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -323,6 +323,7 @@ CREATE TABLE `transactions` (
   `id` varchar(128) DEFAULT NULL,
   `block` varchar(128) DEFAULT NULL,
   `height` int(11) NOT NULL DEFAULT 0,
+  `src` varchar(128) DEFAULT NULL,
   `dst` varchar(128) DEFAULT NULL,
   `val` decimal(20,8) DEFAULT NULL,
   `fee` decimal(20,8) DEFAULT NULL,
@@ -331,7 +332,6 @@ CREATE TABLE `transactions` (
   `message` varchar(255) DEFAULT NULL,
   `date` int(11) DEFAULT NULL,
   `public_key` varchar(255) DEFAULT NULL,
-  `src` varchar(128) DEFAULT NULL,
   KEY `dst` (`dst`),
   KEY `transactions_src_index` (`src`),
   KEY `height` (`height`),
@@ -339,8 +339,8 @@ CREATE TABLE `transactions` (
   KEY `public_key` (`public_key`),
   KEY `transactions_src_dst_val_fee_index` (`src`,`dst`,`val`,`fee`),
   KEY `transactions_type_index` (`type`),
-  KEY `idx_src_height` (`src`,`height`,`val`),
   KEY `idx_dst_height` (`dst`,`height`,`val`),
+  KEY `idx_src_height` (`src`,`height`,`val`),
   KEY `transactions_block_index` (`block`),
   KEY `transactions_id_index` (`id`),
   KEY `transactions_src_dst_height_index` (`src`,`dst`,`height`)
