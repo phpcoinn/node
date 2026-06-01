@@ -6,8 +6,8 @@ if(!defined("ROOT")) {
 }
 
 $chain_id = trim(file_get_contents(ROOT."/chain_id")) ?? "00";
-if(!defined("DEFAULT_CHAIN_ID")) {
-    define("DEFAULT_CHAIN_ID", $chain_id);
+if(!defined("CHAIN_ID")) {
+    define("CHAIN_ID", $chain_id);
 }
 
 require_once ROOT . "/include/coinspec.inc.php";

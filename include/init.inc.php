@@ -2,7 +2,9 @@
 $GLOBALS['start_time']=microtime(true);
 
 $chain_id = trim(file_get_contents(dirname(__DIR__)."/chain_id")) ?? "00";
-define("DEFAULT_CHAIN_ID", $chain_id);
+if(!defined("CHAIN_ID")) {
+    define("CHAIN_ID", $chain_id);
+}
 
 $blocked_agents = ["DataForSeoBot","BLEXBot","SemrushBot","YandexBot","AhrefsBot"];
 if (php_sapi_name() !== 'cli') {
