@@ -1,7 +1,7 @@
 /*M!999999\- enable the sandbox mode */ 
--- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
+-- MariaDB dump 10.19  Distrib 10.6.22-MariaDB, for debian-linux-gnu (x86_64)
 --
--- Host: 10.0.1.220    Database: phpcointestnet
+-- Host: localhost    Database: phpcoinmainnet
 -- ------------------------------------------------------
 -- Server version	10.6.22-MariaDB-0ubuntu0.22.04.1
 
@@ -32,7 +32,8 @@ CREATE TABLE `accounts` (
   `height` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `accounts` (`block`),
-  KEY `alias` (`alias`)
+  KEY `alias` (`alias`),
+  CONSTRAINT `accounts` FOREIGN KEY (`block`) REFERENCES `blocks` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -282,6 +283,7 @@ SET character_set_client = utf8mb4;
   1 AS `height` */;
 SET character_set_client = @saved_cs_client;
 
+
 --
 -- Table structure for table `transaction_data`
 --
@@ -290,8 +292,8 @@ DROP TABLE IF EXISTS `transaction_data`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `transaction_data` (
-  `tx_id` varchar(128) NOT NULL,
-  `data` mediumtext DEFAULT NULL,
+    `tx_id` varchar(128) NOT NULL,
+    `data` mediumtext DEFAULT NULL,
   `app` varchar(64) DEFAULT NULL,
   `action` varchar(64) DEFAULT NULL,
   `string1` varchar(255) DEFAULT NULL,
@@ -303,12 +305,12 @@ CREATE TABLE `transaction_data` (
   `address1` varchar(128) DEFAULT NULL,
   `address2` varchar(128) DEFAULT NULL,
   `json_data` mediumtext DEFAULT NULL,
-  PRIMARY KEY (`tx_id`),
+    PRIMARY KEY (`tx_id`),
   KEY `idx_tx_data_app_action` (`app`,`action`),
   KEY `idx_tx_data_app_action_int2` (`app`,`action`,`int2`),
   KEY `idx_tx_data_address1` (`address1`),
   KEY `idx_tx_data_address2` (`address2`),
-  CONSTRAINT `fk_tx_data` FOREIGN KEY (`tx_id`) REFERENCES `transactions` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_tx_data` FOREIGN KEY (`tx_id`) REFERENCES `transactions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -320,18 +322,21 @@ DROP TABLE IF EXISTS `transactions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `transactions` (
-  `id` varchar(128) DEFAULT NULL,
-  `block` varchar(128) DEFAULT NULL,
-  `height` int(11) NOT NULL DEFAULT 0,
+  `id` varchar(128) NOT NULL,
+  `block` varchar(128) NOT NULL,
+  `height` int(11) NOT NULL,
   `src` varchar(128) DEFAULT NULL,
   `dst` varchar(128) DEFAULT NULL,
-  `val` decimal(20,8) DEFAULT NULL,
-  `fee` decimal(20,8) DEFAULT NULL,
-  `signature` varchar(255) DEFAULT NULL,
-  `type` tinyint(4) NOT NULL DEFAULT 0,
-  `message` varchar(255) DEFAULT NULL,
-  `date` int(11) DEFAULT NULL,
-  `public_key` varchar(255) DEFAULT NULL,
+  `val` decimal(20,8) NOT NULL,
+  `fee` decimal(20,8) NOT NULL,
+  `signature` varchar(255) NOT NULL,
+  `type` tinyint(4) NOT NULL,
+  `message` varchar(255) DEFAULT '',
+  `date` int(11) NOT NULL,
+  `public_key` varchar(255) NOT NULL,
+  `data` text DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `block_id` (`block`),
   KEY `dst` (`dst`),
   KEY `transactions_src_index` (`src`),
   KEY `height` (`height`),
@@ -341,10 +346,8 @@ CREATE TABLE `transactions` (
   KEY `transactions_type_index` (`type`),
   KEY `idx_dst_height` (`dst`,`height`,`val`),
   KEY `idx_src_height` (`src`,`height`,`val`),
-  KEY `transactions_block_index` (`block`),
-  KEY `transactions_id_index` (`id`),
-  KEY `transactions_src_dst_height_index` (`src`,`dst`,`height`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  CONSTRAINT `block_id` FOREIGN KEY (`block`) REFERENCES `blocks` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -428,4 +431,4 @@ CREATE TABLE `transactions` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-22 14:07:08
+-- Dump completed on 2026-01-21 11:34:14
