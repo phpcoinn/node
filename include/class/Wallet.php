@@ -178,12 +178,18 @@ class Wallet
 			case "masternode-remove":
 				$this->removeMasternode(@$this->arg2, @$this->arg3);
 				break;
-			case "sign":
-				$this->sign(@$this->arg2);
-				break;
-			case "smart-contract-create":
-				$this->createSmartContract(@$this->arg2, @$this->arg3);
-				break;
+				case "sign":
+					$this->sign(@$this->arg2);
+					break;
+				case "verify":
+					$this->verifySignature(@$this->arg2, @$this->arg3, @$this->arg4);
+					break;
+				case "network":
+					$this->network();
+					break;
+				case "smart-contract-create":
+					$this->createSmartContract(@$this->arg2, @$this->arg3);
+					break;
 			case "smart-contract-exec":
 				$this->execSmartContract(@$this->arg2, @$this->arg3);
 				break;
@@ -477,14 +483,31 @@ class Wallet
 		echo "Transaction created: ".$res['data'].PHP_EOL;
 	}
 
-	function sign($message) {
-		if(empty($message)) {
-			echo "Message is empty!".PHP_EOL;
-			exit;
+		function sign($message) {
+			if(empty($message)) {
+				echo "Message is empty!".PHP_EOL;
+				exit;
+			}
+			$res = ec_sign($message, $this->private_key);
+			echo $res . PHP_EOL;
 		}
-		$res = ec_sign($message, $this->private_key);
-		echo $res . PHP_EOL;
-	}
+
+		function verifySignature($message, $signature, $publicKey = null) {
+			if(empty($message)) {
+				echo "Message is empty!".PHP_EOL;
+				exit;
+			}
+			if(empty($signature)) {
+				echo "Signature is empty!".PHP_EOL;
+				exit;
+			}
+			if(empty($publicKey)) {
+				$publicKey = $this->public_key;
+			}
+			$res = ec_verify($message, $signature, $publicKey);
+			echo $res ? "VALID" : "INVALID";
+			echo PHP_EOL;
+		}
 
 	function createSmartContract($sc_address, $file) {
 		if(empty($sc_address)) {
@@ -643,7 +666,7 @@ class Wallet
 	}
 
 
-	function sendSmartContract($dst_address, $method) {
+		function sendSmartContract($dst_address, $method) {
 		if(empty($dst_address)) {
 			echo "Destination address not specified".PHP_EOL;
 			exit;
@@ -686,11 +709,21 @@ class Wallet
 		$this->checkApiResponse($res);
 		echo "Transaction created: ".$res['data'].PHP_EOL;
 
-	}
+		}
+
+		function network() {
+			echo "Network: ".NETWORK.PHP_EOL;
+			echo "Chain ID: ".CHAIN_ID.PHP_EOL;
+			echo "Remote peers source: ".REMOTE_PEERS_LIST_URL.PHP_EOL;
+			$envNetwork = getenv("NETWORK");
+			if($envNetwork !== false && strlen($envNetwork) > 0) {
+				echo "NETWORK env: ".$envNetwork.PHP_EOL;
+			}
+		}
 
 
-	function help() {
-		die("wallet <command> <options>
+		function help() {
+			die("wallet <command> <options>
 
 Commands:
 
@@ -698,6 +731,8 @@ balance                                                             prints the b
 balance <address>                                                   prints the balance of the specified address
 export                                                              prints the wallet data
 block                                                               show data about the current block
+verify <message> <signature> [public_key]                           verifies signed message
+network                                                             prints selected network and chain id
 encrypt                                                             encrypts the wallet
 decrypt                                                             decrypts the wallet
 transactions                                                        show the latest transactions

@@ -1,6 +1,7 @@
 <?php
 
-$chain_id = trim(@file_get_contents(dirname(__DIR__)."/chain_id"));
+require_once __DIR__ . "/network_chain_id.inc.php";
+$chain_id = resolve_chain_id();
 if(file_exists(__DIR__ . "/genesis.".$chain_id.".inc.php")) {
 	require_once __DIR__ . "/genesis.".$chain_id.".inc.php";
 	return;
