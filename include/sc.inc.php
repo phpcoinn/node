@@ -11,7 +11,10 @@ const CHAIN_PREFIX = "38";
 const TX_TYPE_SC_CREATE = 5;
 const TX_TYPE_SC_EXEC = 6;
 const TX_TYPE_SC_SEND = 7;
-const UPDATE_15_EXTENDED_SC_HASH_V2=0;
+$chain_id = trim(file_get_contents(ROOT."/chain_id")) ?? "00";
+if(!defined("UPDATE_15_EXTENDED_SC_HASH_V2")) {
+    define("UPDATE_15_EXTENDED_SC_HASH_V2", $chain_id == "00" ? 0 : 1117000);
+}
 
 if(!function_exists('_log')) {
     function _log($log)
