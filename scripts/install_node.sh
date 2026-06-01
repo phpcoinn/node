@@ -176,7 +176,7 @@ fi
 if [ "$NETWORK" = "mainnet" ]
 then
   PORT="80"
-  PRUNED_HEIGHT=1200000
+  PRUNED_HEIGHT=1400000
   HOSTNAME="http://$IP"
   if [ "$DOCKER" = true ]; then
     HOSTNAME="http://$IP:$EXT_PORT"
