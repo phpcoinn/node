@@ -1,9 +1,5 @@
 <?php
 if(php_sapi_name() !== 'cli') exit;
-$chain_id = trim(@file_get_contents(dirname(__DIR__)."/chain_id")) ?: "00";
-if(!defined("CHAIN_ID")) {
-    define("CHAIN_ID", $chain_id);
-}
 const MINER_VERSION = "1.5";
 if(Phar::running()) {
 	require_once 'vendor/autoload.php';
@@ -75,7 +71,7 @@ echo "Network:        ".$res['network'].PHP_EOL;
 $_config['enable_logging'] = true;
 $_config['log_verbosity']=0;
 $_config['log_file']="/dev/null";
-$_config['chain_id'] = $chain_id;
+$_config['chain_id'] = $res['chain_id'];
 
 define("ROOT", __DIR__);
 

@@ -2,7 +2,7 @@
 
 // testnet specification
 const NETWORK = "testnet";
-const CHAIN_ID = "01";
+if(!defined('CHAIN_ID')) define('CHAIN_ID', "01");
 const COIN_PORT = "";
 const VERSION = "1.8.1";
 const BUILD_VERSION = 515;
