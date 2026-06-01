@@ -359,14 +359,15 @@ class Dapps extends Task
 
 		$functions_file = ROOT . "/include/dapps.functions.php";
 
-		$allowed_files = [
-			ROOT . "/chain_id",
-			ROOT . "/include/dapps.functions.php",
-			ROOT . "/include/common.functions.php",
-			ROOT . "/include/coinspec.inc.php",
-			ROOT . "/tmp/sessions",
-			ROOT . "/include/class/CommonSessionHandler.php",
-		];
+			$allowed_files = [
+				ROOT . "/chain_id",
+				ROOT . "/include/dapps.functions.php",
+				ROOT . "/include/common.functions.php",
+				ROOT . "/include/coinspec.inc.php",
+				ROOT . "/include/network_chain_id.inc.php",
+				ROOT . "/tmp/sessions",
+				ROOT . "/include/class/CommonSessionHandler.php",
+			];
 
 		if(file_exists(ROOT."/chain_id")) {
 			$chain_id = trim(file_get_contents(ROOT."/chain_id"));
