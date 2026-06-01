@@ -174,8 +174,12 @@ class Block
                     $schash = $this->processSmartContractTxs($this->height);
                     _log("SCHASH: block=" . $this->schash . " calc=" . $schash, 5);
                     if ($schash === false) {
-                        if(in_array($this->id, ['B9DzmeoTRWtqMbbjfbANgmKNiNTbhhyxubGypLDUmCXR'])) {
-                            _log("Ignore Missing schash id=".$this->id);
+                        if(NETWORK == "testnet") {
+                            if(in_array($this->id, ['B9DzmeoTRWtqMbbjfbANgmKNiNTbhhyxubGypLDUmCXR'])) {
+                                _log("Ignore Missing schash id=".$this->id);
+                            } else {
+                                throw new Exception("Parse block failed " . $this->height . " Missing schash id=".$this->id);
+                            }
                         } else {
                             throw new Exception("Parse block failed " . $this->height . " Missing schash id=".$this->id);
                         }
@@ -996,8 +1000,8 @@ class Block
 			$calculated_difficulty = Block::difficulty($this->height-1);
 			if($difficulty != $calculated_difficulty) {
                 if(Blockchain::isValidHeight($this->height)) {
-                    throw new Exception("Block check: invalid difficulty $difficulty - expected $calculated_difficulty");
-                }
+				throw new Exception("Block check: invalid difficulty $difficulty - expected $calculated_difficulty");
+			}
 			}
 
 			$prev_block = Block::getAtHeight($height - 1);
