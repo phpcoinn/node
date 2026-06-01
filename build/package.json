@@ -24,10 +24,10 @@
   "apidoc": {
     "title": "PHPCoin Node API",
     "url": "",
-    "sampleUrl": "https://node1.phpcoin.net"
+    "sampleUrl": "http://localhost"
   },
   "scripts": {
-    "build_doc": "rm -rf ../web/doc && node_modules/.bin/apidoc -o ../web/doc/ -i ../include -f Api.php",
+    "build_doc": "rm -rf ../web/doc && node scripts/write_apidoc_config.js && node_modules/.bin/apidoc -c apidoc.config.generated.json -o ../web/doc/ -i ../include -f Api.php",
     "build_web_miner": "node_modules/.bin/browserify js/web-miner.js -o ../web/apps/common/js/web-miner.js",
     "build_phpcoin_crypto": "node_modules/.bin/browserify js/phpcoin-crypto.js -o ../web/apps/common/js/phpcoin-crypto.js"
   },
