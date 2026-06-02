@@ -2,6 +2,12 @@
 /**
  * Default config file
  */
+// Backward compatibility for existing config.inc.php files created before
+// network selection was moved to chain_id-based loaders.
+if(!defined("DEFAULT_CHAIN_ID")) {
+    define("DEFAULT_CHAIN_ID", "00");
+}
+
 // Default database connection
 $_config['chain_id'] = trim(file_get_contents(dirname(__DIR__)."/chain_id"));
 $_config['db_connect'] = 'mysql:host=localhost;dbname=phpcoin;charset=utf8';
