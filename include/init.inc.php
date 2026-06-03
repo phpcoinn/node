@@ -1,8 +1,6 @@
 <?php
 $GLOBALS['start_time']=microtime(true);
 
-const DEFAULT_CHAIN_ID = "01";
-
 $blocked_agents = ["DataForSeoBot","BLEXBot","SemrushBot","YandexBot","AhrefsBot"];
 if (php_sapi_name() !== 'cli') {
 	if(isset($_SERVER['HTTP_USER_AGENT'])) {
@@ -140,12 +138,6 @@ if($block) {
         api_err("Invalid genesis block. DB block id ".$block['id']." does not match checkpoint id ".$checkpoints[1]);
     }
 }
-
-$chain_id = trim(file_get_contents(dirname(__DIR__)."/chain_id"));
-if($chain_id!= CHAIN_ID) {
-    api_err("Invalid chain. Please check chain_id file");
-}
-
 
 if(!defined("CRON")) {
     Nodeutil::runAtInterval("check-cron", 60, function () {

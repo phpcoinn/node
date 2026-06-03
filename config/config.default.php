@@ -2,6 +2,12 @@
 /**
  * Default config file
  */
+// Backward compatibility for existing config.inc.php files created before
+// network selection was moved to chain_id-based loaders.
+if(!defined("DEFAULT_CHAIN_ID")) {
+    define("DEFAULT_CHAIN_ID", "00");
+}
+
 // Default database connection
 $_config['chain_id'] = trim(file_get_contents(dirname(__DIR__)."/chain_id"));
 $_config['db_connect'] = 'mysql:host=localhost;dbname=phpcoin;charset=utf8';
@@ -15,7 +21,11 @@ $_config['public_api'] = true;
 $_config['allowed_hosts'] = ['*'];
 
 // The initial peers to sync from
-$_config['initial_peer_list'] = [
+$_config['initial_peer_list'] = $_config['chain_id'] == "00"  ? [
+    'https://main1.phpcoin.net',
+    'https://main2.phpcoin.net',
+    'https://main3.phpcoin.net'
+] : [
     'https://node1.phpcoin.net',
     'https://node2.phpcoin.net',
     'https://node3.phpcoin.net'
