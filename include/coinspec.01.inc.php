@@ -4,8 +4,8 @@
 const NETWORK = "testnet";
 if(!defined('CHAIN_ID')) define('CHAIN_ID', "01");
 const COIN_PORT = "";
-const VERSION = "1.8.1";
-const BUILD_VERSION = 515;
+const VERSION = "1.9.0";
+const BUILD_VERSION = 516;
 const MIN_VERSION = "1.8.0";
 const DEVELOPMENT = false;
 const XDEBUG = "&XDEBUG_SESSION_START=PHPSTORM";
@@ -102,4 +102,4 @@ const BLACKLISTED_SMART_CONTRACTS = [
 
 const DEV_REWARD_ADDRESS = "PdEvtfZwNsbddKLCZQcjTgjpdcznS1w3pG";
 
-const DB_SCHEMA_VERSION = 112;
+const DB_SCHEMA_VERSION = 113;
