@@ -334,7 +334,6 @@ CREATE TABLE `transactions` (
   `message` varchar(255) DEFAULT '',
   `date` int(11) NOT NULL,
   `public_key` varchar(255) NOT NULL,
-  `data` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `block_id` (`block`),
   KEY `dst` (`dst`),
