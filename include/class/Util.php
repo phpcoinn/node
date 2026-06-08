@@ -858,22 +858,18 @@ class Util
 	}
 
 	static function update($argv) {
-		global $_config;
-		$branch = @trim($argv[2]);
-		$force = @trim($argv[3]);
-		if(empty($branch)) {
-            $branch = GIT_BRANCH;
-		}
+		$force = in_array("--force", $argv);
+        $chain_id = CHAIN_ID;
         $currentVersion = BUILD_VERSION;
-		echo "Checking node branch=$branch force=$force update current version = ".BUILD_VERSION.PHP_EOL;
+        _log("Checking node CHAIN_ID=$chain_id force=$force update current version = ".BUILD_VERSION);
 		$maxPeerBuildNumber = Peer::getMaxBuildNumber();
 
-        $check_url = "https://phpcoin.net/version.php?branch={branch}";
-        $check_url=str_replace("{branch}",$branch,$check_url);
+        $check_url = "https://phpcoin.net/version.php?chain_id=$chain_id";
         $cmd= "curl -m 30 -H 'Cache-Control: no-cache, no-store' -s $check_url";
         $res = shell_exec($cmd);
         $version = intval($res);
         _log("AUTO_UPDATE: check url $check_url version=$version",4);
+
 
         $user = shell_exec("whoami");
 
@@ -882,7 +878,7 @@ class Util
 //            return;
 //        }
 
-        _log("AUTO_UPDATE: call php util check_url=$check_url branch=$branch force=$force node version=$currentVersion git version=$version maxPeerBuildNumber=$maxPeerBuildNumber user=$user");
+        _log("AUTO_UPDATE: call php util check_url=$check_url CHAIN_ID=$chain_id force=$force node version=$currentVersion git version=$version maxPeerBuildNumber=$maxPeerBuildNumber user=$user");
 		if($version > $currentVersion || $maxPeerBuildNumber > $currentVersion || !empty($force)) {
 			echo "There is new version: $version - updating node".PHP_EOL;
             _log("AUTO_UPDATE: Updating node");
@@ -926,19 +922,21 @@ class Util
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
+
             $cmd="cd ".ROOT." && git fetch  2>&1";
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-			$cmd="cd ".ROOT." && git restore .  2>&1";
+
+            $cmd="cd ".ROOT." && git restore .  2>&1";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-			$cmd="cd ".ROOT." && git checkout -b $branch 2>&1";
+			$cmd="cd ".ROOT." && git checkout -B main 2>&1";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-			$cmd="cd ".ROOT." && git reset --hard origin/$branch";
+			$cmd="cd ".ROOT." && git reset --hard origin/main";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res");
 
@@ -950,7 +948,7 @@ class Util
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-			$cmd="cd ".ROOT." && git pull origin $branch  2>&1";
+			$cmd="cd ".ROOT." && git pull origin main  2>&1";
 			$res = shell_exec($cmd);
 			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
