@@ -10,9 +10,9 @@ if(file_exists(__DIR__ . "/coinspec.".$_config['chain_id'].".inc.php")) {
 const NETWORK = "mainnet";
 const CHAIN_ID = "00";
 const COIN_PORT = "";
-const VERSION = "1.10.2";
-const BUILD_VERSION = 403;
-const MIN_VERSION = "1.10.0";
+const VERSION = "1.10.3";
+const BUILD_VERSION = 404;
+const MIN_VERSION = "1.10.2";
 const DEVELOPMENT = false;
 const XDEBUG = "";
 const XDEBUG_CLI = "";
@@ -103,4 +103,4 @@ const BLACKLISTED_SMART_CONTRACTS = [];
 
 const DEV_REWARD_ADDRESS = "PdEvtfZwNsbddKLCZQcjTgjpdcznS1w3pG";
 
-const DB_SCHEMA_VERSION = 106;
+const DB_SCHEMA_VERSION = 107;
