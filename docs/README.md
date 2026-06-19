@@ -9,6 +9,8 @@ Welcome to the official documentation for PHPCoin. This documentation provides a
   * **[Running a Node](./getting-started/running-a-node.md)** - Instructions on how to run a PHPCoin node.
 * **[Wallet](./wallet/)** - Instructions on how to use the command-line and web-based wallets.
   * **[Using the Wallet](./wallet/using-the-wallet.md)** - A detailed guide on how to use the PHPCoin wallet.
+* **Asymmetric Messaging** - Encrypt messages with a recipient public key and decrypt them with the wallet private key.
+  * **[Wallet Message Decryption](./wallet/using-the-wallet.md)** - Wallet-side decrypt usage for base64 message packets.
 * **[Mining](./mining/)** - Information on how to mine PHPCoin using different methods.
   * **[How to Mine](./mining/how-to-mine.md)** - A guide on how to get started with mining.
   * **[Miner Workflow](./mining/miner-workflow.md)** - A detailed, technical step-by-step breakdown of the different mining processes.

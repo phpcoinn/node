@@ -150,20 +150,6 @@ function hex2pem($data, $is_private_key = false)
 }
 
 
-// converts PEM key to the base58 version used by PHP
-function pem2coin($data)
-{
-    $data = str_replace("-----BEGIN PUBLIC KEY-----", "", $data);
-    $data = str_replace("-----END PUBLIC KEY-----", "", $data);
-    $data = str_replace("-----BEGIN EC PRIVATE KEY-----", "", $data);
-    $data = str_replace("-----END EC PRIVATE KEY-----", "", $data);
-    $data = str_replace("\n", "", $data);
-    $data = base64_decode($data);
-
-
-    return base58_encode($data);
-}
-
 function priv2pub($private_key) {
 	$pk = coin2pem($private_key, true);
 	$pkey = openssl_pkey_get_private($pk);

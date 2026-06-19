@@ -24,6 +24,16 @@ Address prefix: P
 
 Transaction fee: 0 (during mining and masternode phase)
 
+**Asymmetric messaging**
+
+PHPCoin now includes a full asymmetric message encryption flow based on PHPCoin secp256k1 keys:
+
+* sender encrypts with recipient public key
+* payload is returned as a single base64 packet string
+* receiver decrypts with the matching wallet private key
+* works in Node, browser bundle, and PHP
+* available from `phpcoin-crypto`, `api.php`, `cli/util.php`, and `utils/wallet.php`
+
 **Mainnet**
 
 Genesis block: 2023-04-01 12:00:00

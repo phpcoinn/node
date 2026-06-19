@@ -178,9 +178,12 @@ class Wallet
 			case "masternode-remove":
 				$this->removeMasternode(@$this->arg2, @$this->arg3);
 				break;
-				case "sign":
+			case "sign":
 					$this->sign(@$this->arg2);
 					break;
+			case "decrypt-message":
+				$this->decryptMessage(@$this->arg2);
+				break;
 				case "verify":
 					$this->verifySignature(@$this->arg2, @$this->arg3, @$this->arg4);
 					break;
@@ -261,6 +264,14 @@ class Wallet
 			die("Could not write the wallet file! Please check the permissions on the current directory and save a backup of the above keys.\n");
 		}
 		echo "The wallet has been decrypted!\n";
+	}
+
+	function decryptMessage($payloadB64) {
+		if (empty($payloadB64)) {
+			die("ERROR: Missing encrypted payload".PHP_EOL);
+		}
+		$plaintext = decryptWithPrivateKey($payloadB64, $this->private_key);
+		echo $plaintext.PHP_EOL;
 	}
 
 	function transactions() {
@@ -742,6 +753,7 @@ login-link                                                          generate log
 masternode-create <address> <reward_address>                        create masternode with address
 masternode-remove <payoutaddress>  <address>                        remove masternode with address
 sign <message>                                                      sign message with wallet private key
+decrypt-message <payload_b64>                                       decrypt asymmetric message with wallet private key
 smart-contract-create <address> <file>	                            create smart contract
 smart-contract-exec <address> <method>                  			execute smart contract method
 smart-contract-send <address> <method>                      		transfer coins from smart contract

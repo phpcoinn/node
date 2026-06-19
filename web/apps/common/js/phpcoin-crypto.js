@@ -29258,6 +29258,129 @@ function privateKeyToPem(privateKeyBase58) {
     return privateKey
 }
 
+const ASYM_INFO = Buffer.from('PHPCoin asymmetric encryption v1', 'utf8')
+
+function assertAsymSupported() {
+    if (typeof crypto.createPrivateKey !== 'function' ||
+        typeof crypto.createPublicKey !== 'function' ||
+        typeof crypto.diffieHellman !== 'function') {
+        throw new Error('Asymmetric encryption requires the Node crypto API')
+    }
+}
+
+function bytesToBase64(bytes) {
+    return Buffer.from(bytes).toString('base64')
+}
+
+function base64ToBytes(base64) {
+    return new Uint8Array(Buffer.from(base64, 'base64'))
+}
+
+function toBase64Url(bytes) {
+    return Buffer.from(bytes)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/g, '')
+}
+
+function keyObjectFromPrivateKey(privateKey) {
+    assertAsymSupported()
+    if (typeof privateKey !== 'string') {
+        throw new Error('Invalid private key')
+    }
+    const pem = privateKey.includes('BEGIN ')
+        ? privateKey
+        : coin2pem(privateKey, true)
+    return crypto.createPrivateKey({ key: pem, format: 'pem', type: 'sec1' })
+}
+
+function keyObjectFromPublicKey(publicKey) {
+    assertAsymSupported()
+    if (typeof publicKey !== 'string') {
+        throw new Error('Invalid public key')
+    }
+    const pem = publicKey.includes('BEGIN ')
+        ? publicKey
+        : coin2pem(publicKey, false)
+    try {
+        return crypto.createPublicKey({
+            key: pem.replace('BEGIN EC PUBLIC KEY', 'BEGIN PUBLIC KEY'),
+            format: 'pem',
+            type: 'spki'
+        })
+    } catch {
+        const der = Buffer.from(
+            pem
+                .replace(/-----BEGIN [^-]+-----/g, '')
+                .replace(/-----END [^-]+-----/g, '')
+                .replace(/\s+/g, ''),
+            'base64'
+        )
+        const point = der.subarray(der.length - 65)
+        if (point.length !== 65 || point[0] !== 0x04) {
+            throw new Error('Unsupported public key format')
+        }
+        const jwk = {
+            kty: 'EC',
+            crv: 'secp256k1',
+            x: toBase64Url(point.subarray(1, 33)),
+            y: toBase64Url(point.subarray(33, 65))
+        }
+        return crypto.createPublicKey({ key: jwk, format: 'jwk' })
+    }
+}
+
+function deriveSharedSecret(privateKeyInput, publicKeyInput) {
+    assertAsymSupported()
+    const privateKey = typeof privateKeyInput === 'string'
+        ? keyObjectFromPrivateKey(privateKeyInput)
+        : privateKeyInput
+    const publicKey = typeof publicKeyInput === 'string'
+        ? keyObjectFromPublicKey(publicKeyInput)
+        : publicKeyInput
+    return crypto.diffieHellman({ privateKey, publicKey })
+}
+
+function deriveAesKey(sharedSecret) {
+    return crypto.hkdfSync('sha256', sharedSecret, Buffer.alloc(0), ASYM_INFO, 32)
+}
+
+function encryptWithSecret(plaintext, sharedSecret) {
+    const key = deriveAesKey(sharedSecret)
+    const iv = crypto.randomBytes(12)
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
+    cipher.setAAD(ASYM_INFO)
+    const ciphertext = Buffer.concat([
+        cipher.update(String(plaintext), 'utf8'),
+        cipher.final()
+    ])
+    const tag = cipher.getAuthTag()
+    return {
+        iv: bytesToBase64(iv),
+        tag: bytesToBase64(tag),
+        ciphertext: bytesToBase64(ciphertext)
+    }
+}
+
+function decryptWithSecret(payload, sharedSecret) {
+    const key = deriveAesKey(sharedSecret)
+    const iv = base64ToBytes(String(payload.iv || ''))
+    const ciphertext = Buffer.from(base64ToBytes(String(payload.ciphertext || '')))
+    const tag = base64ToBytes(String(payload.tag || ''))
+    if (ciphertext.length === 0 || tag.length !== 16) {
+        throw new Error('Invalid ciphertext payload')
+    }
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
+    decipher.setAAD(ASYM_INFO)
+    decipher.setAuthTag(tag)
+    const decrypted = Buffer.concat([
+        decipher.update(ciphertext),
+        decipher.final()
+    ])
+    return decrypted.toString('utf8')
+}
+
 module.exports = {
     generateAccount() {
         let privateKey = new PrivateKey();
@@ -29276,6 +29399,54 @@ module.exports = {
     getAddress,
     pem2coin,
     coin2pem,
+    generateEncryptionKeyPair() {
+        assertAsymSupported()
+        const account = module.exports.generateAccount()
+        const privatePem = coin2pem(account.privateKey, true)
+        const publicPem = crypto.createPublicKey({
+            key: privatePem,
+            format: 'pem',
+            type: 'sec1'
+        }).export({
+            format: 'pem',
+            type: 'spki'
+        }).toString()
+        return {
+            ...account,
+            privatePem,
+            publicPem
+        }
+    },
+    encryptForPublicKey(plaintext, recipientPublicKey) {
+        assertAsymSupported()
+        const recipientKey = typeof recipientPublicKey === 'object' && recipientPublicKey.publicKey
+            ? recipientPublicKey.publicKey
+            : recipientPublicKey
+        const ephemeral = module.exports.generateEncryptionKeyPair()
+        const sharedSecret = deriveSharedSecret(ephemeral.privatePem, recipientKey)
+        const encrypted = encryptWithSecret(plaintext, sharedSecret)
+        return {
+            alg: 'ECDH-secp256k1+A256GCM',
+            iv: encrypted.iv,
+            tag: encrypted.tag,
+            epk: ephemeral.publicKey,
+            ciphertext: encrypted.ciphertext
+        }
+    },
+    decryptWithPrivateKey(payload, recipientPrivateKey) {
+        assertAsymSupported()
+        if (!payload || typeof payload !== 'object') {
+            throw new Error('Invalid encrypted payload')
+        }
+        const recipientPem = typeof recipientPrivateKey === 'object' && recipientPrivateKey.privatePem
+            ? recipientPrivateKey.privatePem
+            : recipientPrivateKey
+        const ephemeralKey = typeof payload.epk === 'object' && payload.epk.publicKey
+            ? payload.epk.publicKey
+            : payload.epk
+        const sharedSecret = deriveSharedSecret(recipientPem, ephemeralKey)
+        return decryptWithSecret(payload, sharedSecret)
+    },
     sign(data, privateKey) {
         let privateKeyPem = privateKeyToPem(privateKey)
         let signature = Ecdsa.sign(data, privateKeyPem);

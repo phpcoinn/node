@@ -68,6 +68,157 @@ function coin2pem($data, $is_private_key = false)
 	return "-----BEGIN PUBLIC KEY-----\n".$data."\n-----END PUBLIC KEY-----\n";
 }
 
+if (!function_exists('pem2coin')) {
+function pem2coin($pem)
+{
+    $pem = str_replace("-----BEGIN PUBLIC KEY-----", "", $pem);
+    $pem = str_replace("-----END PUBLIC KEY-----", "", $pem);
+    $pem = str_replace("-----BEGIN EC PRIVATE KEY-----", "", $pem);
+    $pem = str_replace("-----END EC PRIVATE KEY-----", "", $pem);
+    $pem = str_replace("\n", "", $pem);
+    $pem = base64_decode($pem);
+    return base58_encode($pem);
+}
+}
+
+function generateKeyPair()
+{
+    $args = [
+        "curve_name" => "secp256k1",
+        "private_key_type" => OPENSSL_KEYTYPE_EC,
+    ];
+
+    $key = openssl_pkey_new($args);
+    if ($key === false) {
+        return false;
+    }
+
+    openssl_pkey_export($key, $privatePem);
+
+    if (PHP_VERSION_ID > 80000) {
+        $in = sys_get_temp_dir() . "/phpcoin.asym.in.pem";
+        $out = sys_get_temp_dir() . "/phpcoin.asym.out.pem";
+        file_put_contents($in, $privatePem);
+        shell_exec("openssl ec -in " . escapeshellarg($in) . " -out " . escapeshellarg($out) . " >/dev/null 2>&1");
+        if (is_file($out)) {
+            $privatePem = file_get_contents($out);
+            unlink($out);
+        }
+        if (is_file($in)) {
+            unlink($in);
+        }
+    }
+
+    $publicDetails = openssl_pkey_get_details($key);
+    if ($publicDetails === false || !isset($publicDetails['key'])) {
+        return false;
+    }
+
+    return [
+        'private_key' => pem2coin($privatePem),
+        'public_key' => pem2coin($publicDetails['key']),
+    ];
+}
+
+function generateEncryptionKeyPair()
+{
+    $account = generateKeyPair();
+    if ($account === false) {
+        return false;
+    }
+
+    return [
+        'privateKey' => $account['private_key'],
+        'publicKey' => $account['public_key'],
+        'privatePem' => coin2pem($account['private_key'], true),
+        'publicPem' => coin2pem($account['public_key']),
+    ];
+}
+
+function phpcoin_asym_hkdf(string $sharedSecret): string
+{
+    return hash_hkdf('sha256', $sharedSecret, 32, 'PHPCoin asymmetric encryption v1', '');
+}
+
+function encryptForPublicKey(string $plaintext, string $recipientPublicKey): string
+{
+    $ephemeral = generateEncryptionKeyPair();
+    if ($ephemeral === false) {
+        throw new RuntimeException('Ephemeral account generation failed');
+    }
+
+    $senderPrivate = openssl_pkey_get_private($ephemeral['privatePem']);
+    $recipientPublic = openssl_pkey_get_public(coin2pem($recipientPublicKey));
+    if ($senderPrivate === false || $recipientPublic === false) {
+        throw new RuntimeException('Key import failed');
+    }
+
+    $sharedSecret = openssl_pkey_derive($recipientPublic, $senderPrivate, 32);
+    if ($sharedSecret === false) {
+        throw new RuntimeException('Shared secret derivation failed');
+    }
+
+    $key = phpcoin_asym_hkdf($sharedSecret);
+    $iv = random_bytes(12);
+    $tag = '';
+    $ciphertext = openssl_encrypt(
+        $plaintext,
+        'aes-256-gcm',
+        $key,
+        OPENSSL_RAW_DATA,
+        $iv,
+        $tag,
+        'PHPCoin asymmetric encryption v1',
+        16
+    );
+    if ($ciphertext === false) {
+        throw new RuntimeException('Encryption failed');
+    }
+
+    return base64_encode(json_encode([
+        'alg' => 'ECDH-secp256k1+A256GCM',
+        'iv' => base64_encode($iv),
+        'tag' => base64_encode($tag),
+        'epk' => $ephemeral['publicKey'],
+        'ciphertext' => base64_encode($ciphertext),
+    ], JSON_UNESCAPED_SLASHES));
+}
+
+function decryptWithPrivateKey(string $payloadB64, string $recipientPrivateKey): string
+{
+    $payload = json_decode(base64_decode($payloadB64, true), true);
+    if (!is_array($payload)) {
+        throw new RuntimeException('Invalid encrypted payload');
+    }
+
+    $recipientPrivate = openssl_pkey_get_private(coin2pem($recipientPrivateKey, true));
+    $ephemeralPublic = openssl_pkey_get_public(coin2pem($payload['epk']));
+    if ($recipientPrivate === false || $ephemeralPublic === false) {
+        throw new RuntimeException('Key import failed');
+    }
+
+    $sharedSecret = openssl_pkey_derive($ephemeralPublic, $recipientPrivate, 32);
+    if ($sharedSecret === false) {
+        throw new RuntimeException('Shared secret derivation failed');
+    }
+
+    $key = phpcoin_asym_hkdf($sharedSecret);
+    $plaintext = openssl_decrypt(
+        base64_decode($payload['ciphertext']),
+        'aes-256-gcm',
+        $key,
+        OPENSSL_RAW_DATA,
+        base64_decode($payload['iv']),
+        base64_decode($payload['tag']),
+        'PHPCoin asymmetric encryption v1'
+    );
+    if ($plaintext === false) {
+        throw new RuntimeException('Decryption failed');
+    }
+
+    return $plaintext;
+}
+
 if(!function_exists('base58_decode')) {
 
     function base58_decode($base58)

@@ -19,4 +19,6 @@ PHPcoin comes with a wide range of features that make it a powerful and flexible
 
 *   **API:** A comprehensive API is available for developers who want to build applications that interact with the PHPcoin blockchain.
 
+*   **Asymmetric Messaging:** PHPCoin supports public-key message encryption. Senders encrypt to a recipient public key, the node returns a base64 packet, and the receiver decrypts it with the matching wallet private key.
+
 *   **Open Source:** PHPcoin is an open-source project, which means its code is publicly available for anyone to review, use, or contribute to.

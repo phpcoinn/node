@@ -57,6 +57,46 @@ class Api
 	}
 
 	/**
+	 * @api {get} /api.php?q=encryptForPublicKey encryptForPublicKey
+	 * @apiName encryptForPublicKey
+	 * @apiGroup API
+	 * @apiDescription Encrypts a message for a recipient public key and returns a base64 packet string.
+	 *
+	 * @apiParam {string} message Plaintext message
+	 * @apiParam {string} public_key Recipient public key
+	 *
+	 * @apiSuccess {object} Response wrapper object
+	 * @apiSuccess {string} status Status: "ok" for success
+	 * @apiSuccess {string} data Base64 encrypted packet string
+	 * @apiSuccess {string} coin Coin name
+	 * @apiSuccess {string} version Node version
+	 * @apiSuccess {string} network Network name
+	 * @apiSuccess {string} chain_id Chain ID
+	 *
+	 * @apiError {object} Error response wrapper object
+	 * @apiError {string} status Status: "error" for errors
+	 * @apiError {string} data Error message
+	 * @apiError {string} coin Coin name
+	 * @apiError {string} version Node version
+	 * @apiError {string} network Network name
+	 * @apiError {string} chain_id Chain ID
+	 */
+	static function encryptForPublicKey($data) {
+		$message = $data['message'] ?? '';
+		$public_key = $data['public_key'] ?? '';
+		if (empty($message)) {
+			api_err("Missing message");
+		}
+		if (empty($public_key)) {
+			api_err("Missing public_key");
+		}
+		if (strlen($public_key) < 32) {
+			api_err("Invalid public key");
+		}
+		api_echo(encryptForPublicKey($message, $public_key));
+	}
+
+	/**
 	 * @api {get} /api.php?q=base58  base58
 	 * @apiName base58
 	 * @apiGroup API

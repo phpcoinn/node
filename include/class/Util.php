@@ -462,6 +462,33 @@ class Util
 		echo PHP_EOL;
 	}
 
+	/**
+	 * @api {php util.php} encrypt-for-public-key Encrypt-for-public-key
+	 * @apiName encrypt-for-public-key
+	 * @apiGroup UTIL
+	 * @apiDescription Encrypts a message for a recipient public key and returns a base64 packet string
+	 *
+	 * @apiParam {text} arg2 Message to encrypt
+	 * @apiParam {text} arg3 Recipient public key
+	 *
+	 * @apiExample {cli} Example usage:
+	 * php util.php encrypt-for-public-key "hello world" PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSC...
+	 */
+	static function encryptForPublicKey($argv) {
+		$message = @$argv[2];
+		$public_key = trim(@$argv[3]);
+		if ($message === null || $message === '') {
+			echo "Missing argument: encrypt-for-public-key <message> <public-key>".PHP_EOL;
+			exit;
+		}
+		if (empty($public_key)) {
+			echo "Missing argument: encrypt-for-public-key <message> <public-key>".PHP_EOL;
+			exit;
+		}
+		$encrypted = encryptForPublicKey($message, $public_key);
+		echo $encrypted.PHP_EOL;
+	}
+
 	static function cleanBlacklist() {
 		Peer::cleanBlacklist();
 		echo "All the peers have been removed from the blacklist\n";

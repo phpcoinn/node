@@ -39,9 +39,27 @@ The command-line wallet supports a variety of commands:
 *   `masternode-create <address> <reward_address>`: Create a masternode.
 *   `masternode-remove <payout_address> [address]`: Remove a masternode.
 *   `sign <message>`: Sign a message with your wallet's private key.
+*   `decrypt-message <payload_b64>`: Decrypt a PHPCoin asymmetric message packet with the wallet private key.
 *   `smart-contract-create <address> <file>`: Create a smart contract.
 *   `smart-contract-exec <address> <method>`: Execute a smart contract.
 *   `smart-contract-send <address> <method>`: Send coins from a smart contract.
+
+## Asymmetric Messages
+
+PHPCoin also supports encrypted messages outside the wallet balance flow.
+
+Sender side:
+
+1. Call `api.php?q=encryptForPublicKey` or `php cli/util.php encrypt-for-public-key <message> <public_key>`.
+2. The node returns a single base64 packet string.
+
+Receiver side:
+
+1. Open the wallet with the matching private key.
+2. Run `php utils/wallet.php decrypt-message <payload_b64>`.
+3. The wallet prints the original plaintext message.
+
+This flow uses PHPCoin secp256k1 keys and is separate from wallet password encryption.
 
 To get a list of all available commands, run:
 

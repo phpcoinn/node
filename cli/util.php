@@ -78,6 +78,7 @@ balance <address|public_key>                            - Prints the balance of 
 block <height|id>                                       - Returns a specific block
 check-address <address>                                 - Checks a specific address for validity
 get-address <public_key>                                - Converts a public key into an address
+encrypt-for-public-key <message> <public_key>           - Encrypts a message with a public key and prints a base64 packet
 clean-blacklist                                         - Delete blacklisted peers
 compare-blocks <peer> [<limit>]                         - Compare blocks with peer
 compare-accounts <peer>                                 - Compare accounts with peer
