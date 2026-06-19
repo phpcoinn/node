@@ -21,6 +21,14 @@ You can use any HTTP client to make calls to the API. In PHP, you can use the `f
 
 ## Example Dapp
 
-The `dapps/demo` directory contains a simple example Dapp that visualizes the PHPcoin network topology. This Dapp is a good starting point for learning how to develop Dapps on PHPcoin.
+The live reference demo is under the main dapps bundle:
 
-The Dapp's frontend is built with HTML and JavaScript, and it uses the `vivagraph.js` and `go.js` libraries to visualize the network graph. The Dapp's backend is written in PHP, and it uses the `file_get_contents()` function to call the node's API and get information about the network.
+**`dapps/PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/demo/`**
+
+On a node: `/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/demo/`
+
+It is an interactive **“Dapps functions”** page — an accordion UI that exercises helpers from `include/dapps.functions.php` (`dapps_get`, `dapps_post`, `dapps_api`, sessions, redirects, local exec, etc.). Use **Try it** buttons to see request/response shapes.
+
+A companion file **`demo/api.php`** returns sample JSON for the `dapps_request()` demo.
+
+> **Note:** An older root-level `node/dapps/demo/` (network topology / vivagraph experiment) was removed; only the PeC85 bundle demo remains.
