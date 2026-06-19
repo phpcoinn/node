@@ -4,6 +4,7 @@ const ellipticcurve = require("starkbank-ecdsa");
 const Base58 = require("base-58")
 const crypto = require("crypto");
 const Ecdsa = ellipticcurve.Ecdsa;
+const EcdsaMath = require("starkbank-ecdsa/ellipticcurve/math");
 const PrivateKey = ellipticcurve.PrivateKey;
 const PublicKey = ellipticcurve.PublicKey;
 const Signature = ellipticcurve.Signature;
@@ -104,14 +105,6 @@ function privateKeyToPem(privateKeyBase58) {
 
 const ASYM_INFO = Buffer.from('PHPCoin asymmetric encryption v1', 'utf8')
 
-function assertAsymSupported() {
-    if (typeof crypto.createPrivateKey !== 'function' ||
-        typeof crypto.createPublicKey !== 'function' ||
-        typeof crypto.diffieHellman !== 'function') {
-        throw new Error('Asymmetric encryption requires the Node crypto API')
-    }
-}
-
 function bytesToBase64(bytes) {
     return Buffer.from(bytes).toString('base64')
 }
@@ -120,74 +113,72 @@ function base64ToBytes(base64) {
     return new Uint8Array(Buffer.from(base64, 'base64'))
 }
 
-function toBase64Url(bytes) {
-    return Buffer.from(bytes)
-        .toString('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/g, '')
+function toFixedLengthBytes(value, length) {
+    const hex = value.toString(16).padStart(length * 2, '0')
+    return Buffer.from(hex, 'hex')
 }
 
-function keyObjectFromPrivateKey(privateKey) {
-    assertAsymSupported()
-    if (typeof privateKey !== 'string') {
-        throw new Error('Invalid private key')
+function normalizePrivateKeyPem(privateKeyInput) {
+    if (typeof privateKeyInput === 'string') {
+        return privateKeyInput.includes('BEGIN ')
+            ? privateKeyInput
+            : coin2pem(privateKeyInput, true)
     }
-    const pem = privateKey.includes('BEGIN ')
-        ? privateKey
-        : coin2pem(privateKey, true)
-    return crypto.createPrivateKey({ key: pem, format: 'pem', type: 'sec1' })
+    if (privateKeyInput && typeof privateKeyInput.privatePem === 'string') {
+        return privateKeyInput.privatePem
+    }
+    if (privateKeyInput && typeof privateKeyInput.privateKey === 'string') {
+        return coin2pem(privateKeyInput.privateKey, true)
+    }
+    throw new Error('Invalid private key')
 }
 
-function keyObjectFromPublicKey(publicKey) {
-    assertAsymSupported()
-    if (typeof publicKey !== 'string') {
-        throw new Error('Invalid public key')
+function normalizePublicKeyPem(publicKeyInput) {
+    if (typeof publicKeyInput === 'string') {
+        return publicKeyInput.includes('BEGIN ')
+            ? publicKeyInput
+            : coin2pem(publicKeyInput, false)
     }
-    const pem = publicKey.includes('BEGIN ')
-        ? publicKey
-        : coin2pem(publicKey, false)
-    try {
-        return crypto.createPublicKey({
-            key: pem.replace('BEGIN EC PUBLIC KEY', 'BEGIN PUBLIC KEY'),
-            format: 'pem',
-            type: 'spki'
-        })
-    } catch {
-        const der = Buffer.from(
-            pem
-                .replace(/-----BEGIN [^-]+-----/g, '')
-                .replace(/-----END [^-]+-----/g, '')
-                .replace(/\s+/g, ''),
-            'base64'
-        )
-        const point = der.subarray(der.length - 65)
-        if (point.length !== 65 || point[0] !== 0x04) {
-            throw new Error('Unsupported public key format')
-        }
-        const jwk = {
-            kty: 'EC',
-            crv: 'secp256k1',
-            x: toBase64Url(point.subarray(1, 33)),
-            y: toBase64Url(point.subarray(33, 65))
-        }
-        return crypto.createPublicKey({ key: jwk, format: 'jwk' })
+    if (publicKeyInput && typeof publicKeyInput.publicPem === 'string') {
+        return publicKeyInput.publicPem
     }
+    if (publicKeyInput && typeof publicKeyInput.publicKey === 'string') {
+        return coin2pem(publicKeyInput.publicKey, false)
+    }
+    throw new Error('Invalid public key')
 }
 
 function deriveSharedSecret(privateKeyInput, publicKeyInput) {
-    assertAsymSupported()
-    const privateKey = typeof privateKeyInput === 'string'
-        ? keyObjectFromPrivateKey(privateKeyInput)
-        : privateKeyInput
-    const publicKey = typeof publicKeyInput === 'string'
-        ? keyObjectFromPublicKey(publicKeyInput)
-        : publicKeyInput
-    return crypto.diffieHellman({ privateKey, publicKey })
+    const privateKeyPem = normalizePrivateKeyPem(privateKeyInput)
+    const publicKeyPem = normalizePublicKeyPem(publicKeyInput)
+    const privateKey = PrivateKey.fromPem(privateKeyPem)
+    const publicKey = PublicKey.fromPem(publicKeyPem)
+    const sharedPoint = EcdsaMath.multiply(
+        publicKey.point,
+        privateKey.secret,
+        privateKey.curve.N,
+        privateKey.curve.A,
+        privateKey.curve.P
+    )
+    if (sharedPoint.isAtInfinity()) {
+        throw new Error('Invalid shared secret')
+    }
+    return toFixedLengthBytes(sharedPoint.x, privateKey.curve.length())
 }
 
 function deriveAesKey(sharedSecret) {
-    return crypto.hkdfSync('sha256', sharedSecret, Buffer.alloc(0), ASYM_INFO, 32)
+    const salt = Buffer.alloc(32, 0)
+    const prk = crypto.createHmac('sha256', salt).update(sharedSecret).digest()
+    let previous = Buffer.alloc(0)
+    const blocks = []
+    while (Buffer.concat(blocks).length < 32) {
+        const counter = Buffer.from([blocks.length + 1])
+        previous = crypto.createHmac('sha256', prk)
+            .update(Buffer.concat([previous, ASYM_INFO, counter]))
+            .digest()
+        blocks.push(previous)
+    }
+    return Buffer.concat(blocks).subarray(0, 32)
 }
 
 function encryptWithSecret(plaintext, sharedSecret) {
@@ -223,6 +214,10 @@ function decryptWithSecret(payload, sharedSecret) {
         decipher.final()
     ])
     return decrypted.toString('utf8')
+}
+
+function generateKeyPair() {
+    return module.exports.generateAccount()
 }
 
 function generateDeterministicAccount(input, salt) {
@@ -621,54 +616,6 @@ module.exports = {
     getAddress,
     pem2coin,
     coin2pem,
-    generateEncryptionKeyPair() {
-        assertAsymSupported()
-        const account = module.exports.generateAccount()
-        const privatePem = coin2pem(account.privateKey, true)
-        const publicPem = crypto.createPublicKey({
-            key: privatePem,
-            format: 'pem',
-            type: 'sec1'
-        }).export({
-            format: 'pem',
-            type: 'spki'
-        }).toString()
-        return {
-            ...account,
-            privatePem,
-            publicPem
-        }
-    },
-    encryptForPublicKey(plaintext, recipientPublicKey) {
-        assertAsymSupported()
-        const recipientKey = typeof recipientPublicKey === 'object' && recipientPublicKey.publicKey
-            ? recipientPublicKey.publicKey
-            : recipientPublicKey
-        const ephemeral = module.exports.generateEncryptionKeyPair()
-        const sharedSecret = deriveSharedSecret(ephemeral.privatePem, recipientKey)
-        const encrypted = encryptWithSecret(plaintext, sharedSecret)
-        return {
-            alg: 'ECDH-secp256k1+A256GCM',
-            iv: encrypted.iv,
-            tag: encrypted.tag,
-            epk: ephemeral.publicKey,
-            ciphertext: encrypted.ciphertext
-        }
-    },
-    decryptWithPrivateKey(payload, recipientPrivateKey) {
-        assertAsymSupported()
-        if (!payload || typeof payload !== 'object') {
-            throw new Error('Invalid encrypted payload')
-        }
-        const recipientPem = typeof recipientPrivateKey === 'object' && recipientPrivateKey.privatePem
-            ? recipientPrivateKey.privatePem
-            : recipientPrivateKey
-        const ephemeralKey = typeof payload.epk === 'object' && payload.epk.publicKey
-            ? payload.epk.publicKey
-            : payload.epk
-        const sharedSecret = deriveSharedSecret(recipientPem, ephemeralKey)
-        return decryptWithSecret(payload, sharedSecret)
-    },
     sign(data, privateKey) {
         let privateKeyPem = privateKeyToPem(privateKey)
         let signature = Ecdsa.sign(data, privateKeyPem);
@@ -739,6 +686,48 @@ module.exports = {
     },
     verifyAddress,
     generateDeterministicAccount,
+    generateEncryptionKeyPair() {
+        const account = generateKeyPair()
+        const privatePem = coin2pem(account.privateKey, true)
+        const publicPem = PrivateKey.fromPem(privatePem).publicKey().toPem()
+        return {
+            ...account,
+            privatePem,
+            publicPem
+        }
+    },
+    encryptForPublicKey(plaintext, recipientPublicKey) {
+        const recipientKey = typeof recipientPublicKey === 'object' && recipientPublicKey.publicKey
+            ? recipientPublicKey.publicKey
+            : recipientPublicKey
+        const ephemeral = module.exports.generateEncryptionKeyPair()
+        const sharedSecret = deriveSharedSecret(ephemeral.privatePem, recipientKey)
+        const encrypted = encryptWithSecret(plaintext, sharedSecret)
+        const payload = {
+            alg: 'ECDH-secp256k1+A256GCM',
+            iv: encrypted.iv,
+            tag: encrypted.tag,
+            epk: ephemeral.publicKey,
+            ciphertext: encrypted.ciphertext
+        }
+        return Buffer.from(JSON.stringify(payload)).toString('base64')
+    },
+    decryptWithPrivateKey(payload, recipientPrivateKey) {
+        if (!payload) {
+            throw new Error('Invalid encrypted payload')
+        }
+        const decoded = typeof payload === 'string'
+            ? JSON.parse(Buffer.from(payload, 'base64').toString('utf8'))
+            : payload
+        const recipientPem = typeof recipientPrivateKey === 'object' && recipientPrivateKey.privatePem
+            ? recipientPrivateKey.privatePem
+            : recipientPrivateKey
+        const ephemeralKey = typeof decoded.epk === 'object' && decoded.epk.publicKey
+            ? decoded.epk.publicKey
+            : decoded.epk
+        const sharedSecret = deriveSharedSecret(recipientPem, ephemeralKey)
+        return decryptWithSecret(decoded, sharedSecret)
+    },
     connectWallet,
     signTransactionWithWallet,
     walletListen,
@@ -763,10 +752,8 @@ module.exports = {
     }
 }
 
-
-
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"base-58":3,"big-integer":5,"buffer":55,"crypto":73,"md5":156,"starkbank-ecdsa":249}],2:[function(require,module,exports){
+},{"base-58":3,"big-integer":5,"buffer":55,"crypto":73,"md5":156,"starkbank-ecdsa":249,"starkbank-ecdsa/ellipticcurve/math":238}],2:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 

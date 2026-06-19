@@ -283,7 +283,7 @@ $createTokenFee = Blockchain::getSmartContractCreateFee();
 
 </div>
 
-<script src="/apps/common/js/phpcoin-crypto.js" type="text/javascript"></script>
+<script src="/apps/common/js/phpcoin-crypto.browser.js" type="text/javascript"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 <script src="/apps/explorer/tokens/tokens.js" type="text/javascript"></script>
@@ -395,7 +395,7 @@ $createTokenFee = Blockchain::getSmartContractCreateFee();
                         }
                         enterPrivateKey((privateKey) => {
                             if (privateKey) {
-                                let signature = sign(chainId+signatureBase, privateKey);
+                                let signature = phpcoinCrypto.sign(chainId+signatureBase, privateKey);
                                 console.log(signatureBase,signature)
                                 if(!signature) {
                                     Swal.fire(
@@ -474,4 +474,3 @@ $createTokenFee = Blockchain::getSmartContractCreateFee();
 <?php
 require_once __DIR__ . '/../../common/include/bottom.php';
 ?>
-

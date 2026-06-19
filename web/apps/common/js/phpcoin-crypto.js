@@ -29399,54 +29399,6 @@ module.exports = {
     getAddress,
     pem2coin,
     coin2pem,
-    generateEncryptionKeyPair() {
-        assertAsymSupported()
-        const account = module.exports.generateAccount()
-        const privatePem = coin2pem(account.privateKey, true)
-        const publicPem = crypto.createPublicKey({
-            key: privatePem,
-            format: 'pem',
-            type: 'sec1'
-        }).export({
-            format: 'pem',
-            type: 'spki'
-        }).toString()
-        return {
-            ...account,
-            privatePem,
-            publicPem
-        }
-    },
-    encryptForPublicKey(plaintext, recipientPublicKey) {
-        assertAsymSupported()
-        const recipientKey = typeof recipientPublicKey === 'object' && recipientPublicKey.publicKey
-            ? recipientPublicKey.publicKey
-            : recipientPublicKey
-        const ephemeral = module.exports.generateEncryptionKeyPair()
-        const sharedSecret = deriveSharedSecret(ephemeral.privatePem, recipientKey)
-        const encrypted = encryptWithSecret(plaintext, sharedSecret)
-        return {
-            alg: 'ECDH-secp256k1+A256GCM',
-            iv: encrypted.iv,
-            tag: encrypted.tag,
-            epk: ephemeral.publicKey,
-            ciphertext: encrypted.ciphertext
-        }
-    },
-    decryptWithPrivateKey(payload, recipientPrivateKey) {
-        assertAsymSupported()
-        if (!payload || typeof payload !== 'object') {
-            throw new Error('Invalid encrypted payload')
-        }
-        const recipientPem = typeof recipientPrivateKey === 'object' && recipientPrivateKey.privatePem
-            ? recipientPrivateKey.privatePem
-            : recipientPrivateKey
-        const ephemeralKey = typeof payload.epk === 'object' && payload.epk.publicKey
-            ? payload.epk.publicKey
-            : payload.epk
-        const sharedSecret = deriveSharedSecret(recipientPem, ephemeralKey)
-        return decryptWithSecret(payload, sharedSecret)
-    },
     sign(data, privateKey) {
         let privateKeyPem = privateKeyToPem(privateKey)
         let signature = Ecdsa.sign(data, privateKeyPem);

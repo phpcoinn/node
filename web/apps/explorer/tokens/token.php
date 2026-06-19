@@ -441,7 +441,7 @@ $totalSupply = $totalSupply / pow(10, $decimals);
 <hr/>
 <?php if ($loggedIn) { ?>
 
-    <script src="/apps/common/js/phpcoin-crypto.js" type="text/javascript"></script>
+    <script src="/apps/common/js/phpcoin-crypto.browser.js" type="text/javascript"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="/apps/explorer/tokens/tokens.js" type="text/javascript"></script>
@@ -464,7 +464,7 @@ $totalSupply = $totalSupply / pow(10, $decimals);
             },
             methods: {
                 sendToken() {
-                    if(!this.address || !verifyAddress(this.address)) {
+                    if(!this.address || !phpcoinCrypto.verifyAddress(this.address)) {
                         Swal.fire(
                             {
                                 title: 'Invalid address',
@@ -664,4 +664,3 @@ $totalSupply = $totalSupply / pow(10, $decimals);
 <?php
 require_once __DIR__ . '/../../common/include/bottom.php';
 ?>
-

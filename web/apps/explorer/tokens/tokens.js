@@ -64,7 +64,7 @@ function enterPrivateKey(cb) {
 let sendTransaction = (tx, signature_base, privateKey) => {
     console.log("sendTransaction", signature_base, privateKey);
     try {
-        let signature = sign(chainId+signature_base, privateKey);
+        let signature = phpcoinCrypto.sign(chainId+signature_base, privateKey);
         if(signature) {
             tx.signature = signature;
             axios.post('/api.php?q=sendTransactionJson',tx).then(res=>{

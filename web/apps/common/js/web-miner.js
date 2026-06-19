@@ -421,7 +421,6 @@ class WebMiner {
 
 if(typeof window !== 'undefined')  {
     window.WebMiner = WebMiner
-    window.sign = phpcoinCrypto.sign
 }
 
 global.WebMiner = WebMiner

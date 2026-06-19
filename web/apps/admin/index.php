@@ -252,7 +252,7 @@ $nonce = uniqid();
         </div>
 
         <script src="/apps/common/js/jquery.min.js"></script>
-        <script src="/apps/common/js/phpcoin-crypto.js" type="text/javascript"></script>
+        <script src="/apps/common/js/phpcoin-crypto.browser.js" type="text/javascript"></script>
         <script type="text/javascript">
 
             $(function(){
@@ -271,8 +271,8 @@ $nonce = uniqid();
                         throw new Error("Empty private key");
                     }
                     let nonce = $("form [name=nonce]").val().trim()
-                    let sig = sign(chainId+nonce, privateKey)
-                    let publicKey = get_public_key(privateKey)
+                    let sig = phpcoinCrypto.sign(chainId+nonce, privateKey)
+                    let publicKey = phpcoinCrypto.getPublicKey(privateKey)
                     $("form [name=signature]").val(sig)
                     $("form [name=public_key]").val(publicKey)
                     $("form [name=private_key]").val("")
@@ -743,6 +743,5 @@ $nonce = uniqid();
 <?php
 require_once __DIR__ . '/../common/include/bottom.php';
 ?>
-
 
 
