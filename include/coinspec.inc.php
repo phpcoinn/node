@@ -10,8 +10,8 @@ if(file_exists(__DIR__ . "/coinspec.".$_config['chain_id'].".inc.php")) {
 const NETWORK = "mainnet";
 const CHAIN_ID = "00";
 const COIN_PORT = "";
-const VERSION = "1.10.3";
-const BUILD_VERSION = 404;
+const VERSION = "1.11.0";
+const BUILD_VERSION = 405;
 const MIN_VERSION = "1.10.2";
 const DEVELOPMENT = false;
 const XDEBUG = "";
