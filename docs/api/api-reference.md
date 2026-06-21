@@ -72,6 +72,24 @@ Generates a new PHPcoin account.
     /api.php?q=generateAccount
     ```
 
+## Cryptography
+
+### encryptForPublicKey
+
+Encrypts a plaintext message for a recipient public key and returns a base64 transport packet.
+
+*   **URL:** `/api.php?q=encryptForPublicKey`
+*   **Method:** `GET`
+*   **Parameters:**
+    *   `message` (string, required): Plaintext to encrypt.
+    *   `public_key` (string, required): Recipient PHPCoin public key (base58).
+*   **Response:** Standard API wrapper; `data` is a base64 string encoding a JSON packet (`alg`, `iv`, `tag`, `epk`, `ciphertext`).
+*   **Example:**
+    ```
+    /api.php?q=encryptForPublicKey&message=hello&public_key=PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSC...
+    ```
+*   **Notes:** Decryption is wallet-local only — use `php utils/wallet.php decrypt-message <payload_b64>`. See [Asymmetric Messaging](../wallet/asymmetric-messaging.md).
+
 ## Transactions
 
 ### getTransactions

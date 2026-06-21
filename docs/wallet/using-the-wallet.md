@@ -46,20 +46,9 @@ The command-line wallet supports a variety of commands:
 
 ## Asymmetric Messages
 
-PHPCoin also supports encrypted messages outside the wallet balance flow.
+PHPCoin supports public-key message encryption with secp256k1 account keys — separate from wallet password encryption. Encrypt via `api.php?q=encryptForPublicKey` or `php cli/util.php encrypt-for-public-key`; decrypt with `decrypt-message <payload_b64>`.
 
-Sender side:
-
-1. Call `api.php?q=encryptForPublicKey` or `php cli/util.php encrypt-for-public-key <message> <public_key>`.
-2. The node returns a single base64 packet string.
-
-Receiver side:
-
-1. Open the wallet with the matching private key.
-2. Run `php utils/wallet.php decrypt-message <payload_b64>`.
-3. The wallet prints the original plaintext message.
-
-This flow uses PHPCoin secp256k1 keys and is separate from wallet password encryption.
+See **[Asymmetric Messaging](./asymmetric-messaging.md)** for the packet format, API details, JS usage, and development smoke tests.
 
 To get a list of all available commands, run:
 
