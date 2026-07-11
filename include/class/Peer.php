@@ -261,6 +261,7 @@ class Peer
 		$dapps_data = Cache::get("dapps_data", function() {
 			return Dapps::getLocalData();
 		});
+        $peersCount = Peer::getCount();
 //		_log("Cache: dapps_data = ".json_encode($dapps_data), 5);
 		return [
 			"height" => $current['height'],
@@ -275,6 +276,7 @@ class Peer
 			"dapps_hash"=>$dapps_data['dapps_hash'],
 			"dbversion"=>$_config['dbversion'],
             "pruned_height"=>@$_config['pruned_height'],
+            "peers" => $peersCount,
 		];
 	}
 
