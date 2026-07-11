@@ -70,6 +70,7 @@ require_once __DIR__. '/../common/include/top.php';
                 <?php } ?>
                 <th>Score</th>
                 <th>Database</th>
+                <th>Peers</th>
             </tr>
         </thead>
         <tbody>
@@ -134,6 +135,11 @@ require_once __DIR__. '/../common/include/top.php';
                         <?php if (!empty($info['pruned_height'])) { ?>
                             <span class="badge rounded-pill bg-warning text-black">DB Pruned</span>
                         <?php } ?>
+                    </td>
+                    <td>
+                        <?php
+                        echo $info['peers'];
+                        ?>
                     </td>
                 </tr>
             <?php } ?>
