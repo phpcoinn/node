@@ -147,9 +147,9 @@ global $_config;
                 <div class="col-sm-6 col-md-4 col-lg-3 col-12 col-xl-2 my-3">
                     <div class="d-grid gap-2" data-bs-toggle="tooltip" title="Exchange">
                         <a class="btn btn-lg btn-primary btn-block text-white-50 waves-effect waves-light"
-                           href="https://klingex.io/trade/PHP-USDT?ref=3436CA42" target="_blank">
-                            <h5 class="mb-3 text-white">Exchange</h5>
-                            <img src="https://klingex.io/symbol.svg" style="width:38px;height:38px" class="p-1 bg-white rounded-2"/>
+                           href="https://buy.phpcoin.net/" target="_blank">
+                            <h5 class="mb-3 text-white">Marketplace</h5>
+                            <i class="fas fa-coins fa-2x"></i>
                         </a>
                     </div>
                 </div>

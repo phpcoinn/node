@@ -20,10 +20,8 @@ $updateAvb = $maxPeerBuildNumber > $currentVersion;
                 <?php } ?>
 
                 |
-                Trade on <a href="https://klingex.io/trade/PHP-USDT?ref=3436CA42" target="_blank">KlingEx</a>
-                |
-                <a href="https://buy.phpcoin.net/?utm_source=explorer&utm_medium=community&utm_campaign=direct_buy" target="_blank"
-                   class="">Direct buy</a>
+                Trade on <a href="https://buy.phpcoin.net/?utm_source=explorer&utm_medium=community&utm_campaign=direct_buy" target="_blank"
+                   class="">PHPCoin Marketplace</a>
 
                 <?php if(Config::isPruned()) { ?>
                     <span class="badge rounded-pill bg-warning text-black">DB Pruned</span>

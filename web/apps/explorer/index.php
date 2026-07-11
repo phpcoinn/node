@@ -256,7 +256,7 @@ global $btcPrice, $usdPrice;
                     <div class="col-6">
                         <i class="fas fa-dollar-sign  me-1 h4"></i>
                         <span class="text-muted mb-3 lh-1 text-truncate h4">
-                            <a href="https://klingex.io/trade/PHP-USDT?ref=3436CA42" target="_blank">Price</a>
+                            <a href="https://buy.phpcoin.net/" target="_blank">Price</a>
                         </span>
                         <h2 class="my-2">
                             <?php echo empty(floatval($btcPrice)) ? "-" : $btcPrice ?> ₿
@@ -266,12 +266,10 @@ global $btcPrice, $usdPrice;
                         </div>
                     </div>
                     <div class="col-6 text-end">
-                        <div class="text-nowrap">
-                            Trade on <a href="https://klingex.io/trade/PHP-USDT?ref=3436CA42" target="_blank">KlingEx</a>
-                        </div>
                         <div>
+                            Trade on <br/>
                             <a href="https://buy.phpcoin.net/?utm_source=explorer&utm_medium=community&utm_campaign=direct_buy" target="_blank"
-                               class="">Direct buy</a>
+                               class="">PHPCoin Marketplace</a>
                         </div>
                     </div>
                 </div>
