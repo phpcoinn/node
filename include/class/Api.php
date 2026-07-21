@@ -2139,6 +2139,8 @@ class Api
      *
      * @apiParam {string} [app] Filter by app
      * @apiParam {string} [action] Filter by action
+     * @apiParam {string} [src] Filter by transaction source address
+     * @apiParam {string} [dst] Filter by transaction destination address
      * @apiParam {string} [address1] Filter by address1
      * @apiParam {string} [address2] Filter by address2
      * @apiParam {string} [string1] Filter by string1
@@ -2167,6 +2169,14 @@ class Api
         if(isset($data['action'])) {
             $sql .= " and td.action = :action";
             $params[':action'] = $data['action'];
+        }
+        if(isset($data['src'])) {
+            $sql .= " and t.src = :src";
+            $params[':src'] = $data['src'];
+        }
+        if(isset($data['dst'])) {
+            $sql .= " and t.dst = :dst";
+            $params[':dst'] = $data['dst'];
         }
         if(isset($data['address1'])) {
             $sql .= " and td.address1 = :address1";

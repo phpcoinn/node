@@ -366,6 +366,7 @@ class Dapps extends Task
 				ROOT . "/include/coinspec.inc.php",
 				ROOT . "/include/network_chain_id.inc.php",
 				ROOT . "/tmp/sessions",
+				sys_get_temp_dir(),
 				ROOT . "/include/class/CommonSessionHandler.php",
 			];
 

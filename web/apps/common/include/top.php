@@ -18,10 +18,22 @@ usort($menuPeers, function($p1, $p2) {
 
 
 if(NETWORK == "mainnet") {
-    $res = file_get_contents("https://main1.phpcoin.net/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/api.php?q=coinInfo");
+    $priceCtx = stream_context_create([
+        'http' => [
+            'timeout' => 2,
+            'ignore_errors' => true,
+            'header' => "User-Agent: PHPCoin Web Wallet\r\n",
+        ],
+    ]);
+    $res = @file_get_contents("https://main1.phpcoin.net/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/api.php?q=coinInfo", false, $priceCtx);
     $res = json_decode($res, true);
-    $btcPrice = num($res['btcPrice'], 8);
-    $usdPrice = num($res['usdPrice'], 6);
+    if (is_array($res)) {
+        $btcPrice = num($res['btcPrice'] ?? 0, 8);
+        $usdPrice = num($res['usdPrice'] ?? 0, 6);
+    } else {
+        $btcPrice = num(0, 8);
+        $usdPrice = num(0, 6);
+    }
 }
 
 CommonSessionHandler::setup();
