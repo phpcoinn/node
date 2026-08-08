@@ -27,7 +27,16 @@ while(true) {
 	}
 
 	$url = $hostname."/peer.php?q=getBlock";
-	$peer_block = peer_post($url, ["height"=>$height]);
+	$peer_block = false;
+	$err = null;
+	for($try=0; $try<3; $try++) {
+		$err = null;
+		$peer_block = peer_post($url, ["height"=>$height], 30, $err);
+		if($peer_block || $err == "invalid-block") {
+			break;
+		}
+		sleep(1);
+	}
 
 	if ($peer_block) {
 		$blocks_ok = $peer_block['id'] == $block['id'];
@@ -39,15 +48,19 @@ while(true) {
 			$invalid_height = $height;
 			$max_height = $height;
 		}
-		if(abs($max_height - $min_height) <=1 ) {
-			break;
-		}
-		$height =intval(($max_height - $min_height) / 2 + $min_height);
+	} else if ($err == "invalid-block") {
+		// pruned peer does not store this block - can not compare here, continue search closer to the tip
+		_log("PeerCheck: peer does not have block at height $height - skipping to newer blocks");
+		$min_height = $height;
 	} else {
 		_log("PeerCheck: no block from peer");
 		Peer::blacklist($peer['id'], "Unresponsive");
 		exit;
 	}
+	if(abs($max_height - $min_height) <=1 ) {
+		break;
+	}
+	$height =intval(($max_height - $min_height) / 2 + $min_height);
 }
 
 
@@ -60,6 +73,10 @@ _log("Invalid height = $invalid_height");
 $block = Block::export("",$invalid_height);
 $url = $hostname."/peer.php?q=getBlock";
 $peer_block = peer_post($url, ["height"=>$invalid_height]);
+if(!$peer_block) {
+	_log("PeerCheck: can not get block at invalid height $invalid_height from peer - abort");
+	exit;
+}
 
 _log("my block: ".print_r($block,1));
 _log("peer block: ".print_r($peer_block,1));
