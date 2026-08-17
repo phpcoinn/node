@@ -23,17 +23,9 @@ class CommonSessionHandler implements SessionHandlerInterface {
     #[\ReturnTypeWillChange]
     public function gc($max_lifetime)
     {
-        $deleted=0;
-        _log("Dapps: call session gc");
-        foreach (glob($this->path."/sess_*") as $filename) {
-            if (filemtime($filename) + $max_lifetime < time()) {
-                $res= @unlink($filename);
-                if($res) {
-                    $deleted++;
-                }
-            }
-        }
-        return $deleted;
+        // Session cleanup is performed by Cron::process(). Scanning the entire
+        // session directory from a web request can overload busy nodes.
+        return 0;
     }
 
     #[\ReturnTypeWillChange]
@@ -67,6 +59,42 @@ class CommonSessionHandler implements SessionHandlerInterface {
         return $ret;
     }
 
+    static function cleanupExpired($max_lifetime = null) {
+        $sessions_dir = ROOT."/tmp/sessions";
+        if(!is_dir($sessions_dir)) {
+            return ["checked"=>0, "deleted"=>0];
+        }
+
+        if($max_lifetime === null) {
+            $max_lifetime = intval(ini_get("session.gc_maxlifetime"));
+        }
+        if($max_lifetime <= 0) {
+            $max_lifetime = 1440;
+        }
+
+        $checked = 0;
+        $deleted = 0;
+        $cutoff = time() - $max_lifetime;
+
+        foreach (new DirectoryIterator($sessions_dir) as $file) {
+            if($file->isDot() || !$file->isFile()) {
+                continue;
+            }
+            if(strpos($file->getFilename(), "sess_") !== 0) {
+                continue;
+            }
+
+            $checked++;
+            $filename = $file->getPathname();
+            $modified = @filemtime($filename);
+            if($modified !== false && $modified < $cutoff && @unlink($filename)) {
+                $deleted++;
+            }
+        }
+
+        return ["checked"=>$checked, "deleted"=>$deleted];
+    }
+
     static function setup($session_id = null) {
         $handler = new CommonSessionHandler();
         session_set_save_handler($handler, true);
@@ -76,6 +104,6 @@ class CommonSessionHandler implements SessionHandlerInterface {
         if(!empty($session_id)) {
             session_id($session_id);
         }
-        @session_start();
+        @session_start(["gc_probability"=>0]);
     }
 }

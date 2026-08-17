@@ -23,6 +23,13 @@ class Cron extends Task
 
         self::processTasks();
 
+        if($min % 5 == 0) {
+            try_catch(function () {
+                $result = CommonSessionHandler::cleanupExpired();
+                _log("Cron: session cleanup checked=".$result['checked']." deleted=".$result['deleted']);
+            });
+        }
+
         if($min % 5 == 0 && !DEVELOPMENT) {
 
             try_catch(function () {
