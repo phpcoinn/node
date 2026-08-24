@@ -31,8 +31,8 @@ class Account
 			$in = sys_get_temp_dir() . "/phpcoin.in.pem";
 			$out = sys_get_temp_dir() . "/phpcoin.out.pem";
 			file_put_contents($in, $pvkey);
-			$cmd = "openssl ec -in $in -out $out >/dev/null 2>&1";
-			shell_exec($cmd);
+			$proc = proc_open(['openssl', 'ec', '-in', $in, '-out', $out], [], $pipes);
+			if (is_resource($proc)) proc_close($proc);
 			$pvkey = file_get_contents($out);
 			unlink($in);
 			unlink($out);
