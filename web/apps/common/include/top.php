@@ -74,6 +74,9 @@ $redirect=$_SERVER['REQUEST_URI'];
     <!-- Icons Css -->
     <link href="/apps/common/css/icons.min.css" rel="stylesheet" type="text/css" />
 
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3955892313807781"
+            crossorigin="anonymous"></script>
+
     <?php
     if (defined("HEAD_CSS")) {
         $headCss = HEAD_CSS;
@@ -303,3 +306,19 @@ $redirect=$_SERVER['REQUEST_URI'];
             <div class="page-content">
 <!--                container-->
                 <div class="container-fluid">
+
+                    <div style="width: 100%; max-height: 100px !important; margin-bottom: 10px">
+
+
+                        <!-- node-top -->
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="ca-pub-3955892313807781"
+                             data-ad-slot="5657775456"
+                             data-ad-format="horizontal"
+                             data-full-width-responsive="false"></ins>
+                        <script>
+                            (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
+
+                    </div>
