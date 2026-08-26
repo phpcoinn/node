@@ -244,13 +244,19 @@ class Dapps extends Task
 		}
 		$arr = explode("/", $url);
 		$dapps_id = $arr[0];
+		if(!Security::validDappsId($dapps_id)) {
+			_log("Dapps: Invalid dapps_id");
+			return;
+		}
 		$dapps_dir = Dapps::getDappsDir();
-		if(!file_exists($dapps_dir ."/". $dapps_id)) {
+		$dapps_root = $dapps_dir . "/" . $dapps_id;
+		if(!file_exists($dapps_root)) {
 			_log("Dapps: Does not exists $dapps_id");
 			$res = Dapps::downloadDapps($dapps_id);
 			if($res) {
 				sleep(5);
-				header("location: " . $_SERVER['REQUEST_URI']);
+				$uri = str_replace(["\r", "\n"], '', (string)($_SERVER['REQUEST_URI'] ?? '/'));
+				header("location: " . $uri);
 			}
 			return;
 		}
@@ -258,9 +264,13 @@ class Dapps extends Task
 		_log("Dapps: Start render dapps page $dapps_id", 5);
 
 		$url_info = parse_url($url);
-		$file = $url_info['path'];
-
-		$file = $dapps_dir . "/" . $file;
+		$rel = $url_info['path'] ?? '';
+		$file = $dapps_dir . "/" . $rel;
+		$file = Security::jailPath($dapps_root, $file);
+		if($file === false) {
+			_log("Dapps: Path escapes dapp directory");
+			return;
+		}
 
 		if(!file_exists($file)) {
 			_log("Dapps: File $file not exists");
@@ -275,16 +285,23 @@ class Dapps extends Task
 			$files = scandir($file);
 			_log("Dapps: Files in dir ".json_encode($files), 5);
 			foreach ($files as $dir_file) {
-				if($dir_file == "index.html") {
-					$file = $file . "/" . $dir_file;
-					break;
-				}
-				if($dir_file == "index.php") {
-					$file = $file . "/" . $dir_file;
+				if($dir_file == "index.html" || $dir_file == "index.php") {
+					$candidate = $file . "/" . $dir_file;
+					$jailed = Security::jailPath($dapps_root, $candidate);
+					if($jailed !== false) {
+						$file = $jailed;
+					}
 					break;
 				}
 			}
 		}
+
+		$jailed = Security::jailPath($dapps_root, $file);
+		if($jailed === false) {
+			_log("Dapps: Entry escapes dapp directory");
+			return;
+		}
+		$file = $jailed;
 
 		if(!is_file($file)) {
 			_log("Dapps: Entry $file does not exists", 5);
@@ -411,7 +428,7 @@ class Dapps extends Task
             'SERVER' =>$_SERVER,
         ];
 
-        $output = Sandbox::runDapp($file, $cmdData, $allowed_files, true);
+        $output = Sandbox::runDapp($file, $cmdData, $allowed_files, DEVELOPMENT);
 
         ob_end_clean();
         ob_start();
@@ -420,7 +437,7 @@ class Dapps extends Task
         $out = trim($output);
         _log("Dapps: Parsing output $out", 5);
 
-        header("Access-Control-Allow-Origin: *");
+        Security::sendCorsHeaders();
         $out = str_replace("PHP Warning:  JIT is incompatible with third party extensions that override zend_execute_ex(). JIT disabled. in Unknown on line 0\n", "", $out);
 
         if(strpos($out, "action:")===0) {
@@ -438,7 +455,11 @@ class Dapps extends Task
 		$str = str_replace("action:", "", $out);
 		$actionObj = json_decode($str, true);
 		if($actionObj['type']=="redirect") {
-			header("location: " . $actionObj['url']);
+			$redir = str_replace(["\r", "\n"], '', (string)($actionObj['url'] ?? ''));
+			if($redir === '') {
+				return;
+			}
+			header("location: " . $redir);
 			exit;
 		}
 		if($actionObj['type']=="dapps_request") {
@@ -490,7 +511,7 @@ class Dapps extends Task
 			echo $data;
 			exit;
 		}
-        if($actionObj['type']=="dapps_sql") {
+        if($actionObj['type']=="dapps_sql" && self::isLocal($dapps_id)) {
             $query = $actionObj['query'];
             $params = $actionObj['params'];
             global $db;
@@ -564,10 +585,15 @@ class Dapps extends Task
 				api_err("Dapps: Downloaded empty file from remote server", 0);
 			} else {
 				_log("Dapps: Downloaded size $size file=$local_file", 5);
-				$cmd = "cd ".self::getDappsDir()." && rm -rf $dapps_id";
+				if(!Security::validDappsId($dapps_id)) {
+					api_err("Dapps: Invalid dapps id", 0);
+				}
+				$cmd = "cd ".escapeshellarg(self::getDappsDir())." && rm -rf ".escapeshellarg($dapps_id);
 				shell_exec($cmd);
-				$cmd = "cd ".ROOT." && tar -xzf tmp/dapps.$dapps_id.tar.gz -C . --owner=0 --group=0 --mode=744 --mtime='2020-01-01 00:00:00 UTC'";
-				shell_exec($cmd);
+				$ok = Security::extractTarSafely($local_file, ROOT, "dapps/".$dapps_id);
+				if(!$ok) {
+					api_err("Dapps: Rejected unsafe archive", 0);
+				}
 				$cmd = "cd ".self::getDappsDir()." && find $dapps_id -type f -exec touch {} +";
 				shell_exec($cmd);
 				$cmd = "cd ".self::getDappsDir()." && find $dapps_id -type d -exec touch {} +";

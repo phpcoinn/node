@@ -20,6 +20,16 @@ $_config['public_api'] = true;
 // Hosts that are allowed to mine on this node
 $_config['allowed_hosts'] = ['*'];
 
+// If this node is behind a reverse proxy (Cloudflare, nginx), list those proxy IPs.
+// Forwarded client-IP headers are ignored unless REMOTE_ADDR is in this list.
+$_config['trusted_proxies'] = [];
+
+// Browser CORS origin for api.php. Keep '*' so web wallets on other origins keep working.
+$_config['cors_origin'] = '*';
+
+// Unattended git auto-update from phpcoin.net. Leave false unless you accept that risk.
+$_config['allow_auto_update'] = false;
+
 // The initial peers to sync from
 $_config['initial_peer_list'] = $_config['chain_id'] == "00"  ? [
     'https://main1.phpcoin.net',

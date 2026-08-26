@@ -207,18 +207,7 @@ class Nodeutil
 	}
 
 	static function getRemoteAddr() {
-		if(isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
-			$ip = san_ip($_SERVER['HTTP_CF_CONNECTING_IP']);
-		} elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-			$ip = san_ip($_SERVER['HTTP_X_FORWARDED_FOR']);
-		} else {
-			$ip = san_ip($_SERVER['REMOTE_ADDR']);
-		}
-		$ip = Peer::validateIp($ip);
-		if(!$ip) {
-			_log("Peer Request: invalid ip = $ip SERVER=".json_encode($_SERVER));
-		}
-		return $ip;
+		return Security::getRemoteAddr();
 	}
 
 
@@ -235,6 +224,9 @@ class Nodeutil
 		$query = $db->run("SELECT cfg, val FROM config");
 		if(is_array($query)) {
 			foreach ($query as $res) {
+                if (in_array($res['cfg'], Security::SENSITIVE_CONFIG_KEYS, true)) {
+                    continue;
+                }
 				$_config[$res['cfg']] = trim($res['val']);
 			}
 		}
@@ -255,9 +247,11 @@ class Nodeutil
 	static function extractAppsArchive() {
 		$cmd = "cd ".ROOT."/web && rm -rf apps";
 		shell_exec($cmd);
-		$cmd = "cd ".ROOT." && tar -xzf tmp/apps.tar.gz -C . --owner=0 --group=0 --mode=744 --mtime='2020-01-01 00:00:00 UTC'";
-		_log("Extracting archive : $cmd", 3);
-		shell_exec($cmd);
+		$ok = Security::extractTarSafely(ROOT."/tmp/apps.tar.gz", ROOT, "web/apps");
+		if(!$ok) {
+			_log("extractAppsArchive: rejected unsafe archive");
+			return;
+		}
 		$cmd = "cd ".ROOT."/web && find apps -type f -exec touch {} +";
 		shell_exec($cmd);
 		$cmd = "cd ".ROOT."/web && find apps -type d -exec touch {} +";
@@ -266,7 +260,9 @@ class Nodeutil
 			$cmd = "cd ".ROOT."/web && chown -R www-data:www-data apps";
 			shell_exec($cmd);
 		}
-		opcache_reset();
+		if (function_exists('opcache_reset')) {
+			opcache_reset();
+		}
 	}
 
 	static function measure($out=false, $min_time=1, $min_diff = 1) {
