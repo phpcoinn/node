@@ -19,7 +19,7 @@ require_once __DIR__. '/../common/include/top.php';
 
 <form class="app-search d-block pt-0" method="get" action="">
     <div class="position-relative">
-        <input type="text" class="form-control" placeholder="Search: Address" name="search" value="<?php echo $_GET['search'] ?>">
+        <input type="text" class="form-control" placeholder="Search: Address" name="search" value="<?php echo h($_GET['search'] ?? '') ?>">
         <button class="btn btn-primary" type="submit"><i class="bx bx-search-alt align-middle"></i></button>
     </div>
 </form>

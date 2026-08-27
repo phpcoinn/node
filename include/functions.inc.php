@@ -22,13 +22,18 @@ function san_host($a)
     return $a;
 }
 
+function h($value)
+{
+    return Security::h($value);
+}
+
 // api  error and exit
 function api_err($data, $verbosity = 4)
 {
     _log("api_err: ".json_encode($data),$verbosity);
     if (!headers_sent()) {
         header('Content-Type: application/json');
-	    header('Access-Control-Allow-Origin: *');
+	    Security::sendCorsHeaders();
     }
     echo json_encode(["status" => "error", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK, "chain_id"=>CHAIN_ID]);
 	//Nodeutil::measure();
@@ -40,7 +45,7 @@ function api_echo($data, $verbosity=5)
 {
     if (!headers_sent()) {
         header('Content-Type: application/json');
-	    header('Access-Control-Allow-Origin: *');
+	    Security::sendCorsHeaders();
     }
     _log("api_echo: " . json_encode($data), $verbosity);
     echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK, "chain_id"=>CHAIN_ID]);
@@ -140,13 +145,17 @@ function pem2hex($data)
 // converts hex key to PEM
 function hex2pem($data, $is_private_key = false)
 {
-    $data = hex2bin($data);
-    $data = base58_encode($data);
-    $data = base64_encode($data);
-    if ($is_private_key) {
-        return "-----BEGIN EC PRIVATE KEY-----\n".$data."\n-----END EC PRIVATE KEY-----";
+    $raw = @hex2bin($data);
+    if ($raw === false) {
+        return false;
     }
-    return "-----BEGIN PUBLIC KEY-----\n".$data."\n-----END PUBLIC KEY-----";
+    $data = base64_encode($raw);
+    $dat = str_split($data, 64);
+    $data = implode("\n", $dat);
+    if ($is_private_key) {
+        return "-----BEGIN EC PRIVATE KEY-----\n".$data."\n-----END EC PRIVATE KEY-----\n";
+    }
+    return "-----BEGIN PUBLIC KEY-----\n".$data."\n-----END PUBLIC KEY-----\n";
 }
 
 
@@ -180,7 +189,7 @@ function ec_verify($data, $signature, $key, $chain_id = CHAIN_ID)
 // verify the validity of an url
 function isValidURL($url)
 {
-    return preg_match('|^(ht)?(f)?tp(s)?://[a-z0-9-]+(.[a-z0-9-]+)*(:[0-9]+)?(/.*)?$|i', $url);
+    return Security::isSafePeerUrl($url);
 }
 
 // POST data to an URL (usualy peer). The data is an array, json encoded with is sent as $_POST['data']
@@ -234,7 +243,8 @@ function peer_post($url, $data = [], $timeout = 30, &$err= null, $info = null, &
 	curl_setopt($ch, CURLOPT_POST, 1);
 	curl_setopt($ch, CURLOPT_POSTFIELDS,$postdata );
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+	curl_setopt($ch, CURLOPT_MAXREDIRS, 0);
 	curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, !DEVELOPMENT);
 	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, !DEVELOPMENT);
 	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
@@ -301,7 +311,8 @@ function url_get($url,$timeout = 30) {
 	$ch = curl_init();
 	curl_setopt($ch, CURLOPT_URL,$url);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+	curl_setopt($ch, CURLOPT_MAXREDIRS, 0);
 	curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 	if(DEVELOPMENT) {
 		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, 0);
@@ -327,7 +338,8 @@ function url_post($url, $postdata, $timeout=30) {
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 
-	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+	curl_setopt($ch, CURLOPT_MAXREDIRS, 0);
 	if(DEVELOPMENT) {
 		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, 0);
 		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, 0);
@@ -400,7 +412,11 @@ function load_db_config() {
     $db->debugger = 1;
 	if(is_array($query)) {
 		foreach ($query as $res) {
-			$_config[$res['cfg']] = trim($res['val']);
+            $key = $res['cfg'];
+            if (in_array($key, Security::SENSITIVE_CONFIG_KEYS, true)) {
+                continue;
+            }
+			$_config[$key] = trim($res['val']);
 		}
 	}
 	return $_config;

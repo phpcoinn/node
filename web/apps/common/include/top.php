@@ -38,12 +38,17 @@ if(NETWORK == "mainnet") {
 
 CommonSessionHandler::setup();
 
-if(isset($_GET['auth_data'])) {
+if (isset($_GET['auth_data'])) {
     $auth_data = json_decode(base64_decode($_GET['auth_data']), true);
-    if($auth_data['request_code']==$_SESSION['request_code']) {
+    if(is_array($auth_data) && isset($auth_data['request_code']) && isset($_SESSION['request_code'])
+        && hash_equals((string)$_SESSION['request_code'], (string)$auth_data['request_code'])) {
         $_SESSION['account']=$auth_data['account'];
     }
-    header("location: " . $auth_data['redirect']);
+    $redir = $auth_data['redirect'] ?? '/';
+    if(!Security::isSafeRedirect($redir)) {
+        $redir = '/';
+    }
+    header("location: " . $redir);
     exit;
 }
 

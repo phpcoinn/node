@@ -13,8 +13,8 @@ class CommonSessionHandler implements SessionHandlerInterface {
     #[\ReturnTypeWillChange]
     public function destroy($id)
     {
-//        _log("Dapps: destroy session");
-        $sess_file = $this->path."/sess_$id";
+        $safeId = Security::safeSessionId($id);
+        $sess_file = $this->path."/sess_".$safeId;
         if (!file_exists($sess_file)) return false;
         $ret = @unlink($sess_file);
         return $ret;
@@ -55,7 +55,8 @@ class CommonSessionHandler implements SessionHandlerInterface {
     public function write($id, $data)
     {
         if(empty($data)) return true;
-        $ret= file_put_contents($this->path."/sess_$id", $data) === false ? false : true;
+        $safeId = Security::safeSessionId($id);
+        $ret= file_put_contents($this->path."/sess_".$safeId, $data) === false ? false : true;
         return $ret;
     }
 
@@ -101,8 +102,20 @@ class CommonSessionHandler implements SessionHandlerInterface {
         $sessions_dir = ROOT."/tmp/sessions";
         @mkdir($sessions_dir);
         session_save_path($sessions_dir);
+        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        if (PHP_VERSION_ID >= 70300) {
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path' => '/',
+                'secure' => $secure,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+        } else {
+            session_set_cookie_params(0, '/; samesite=Lax', '', $secure, true);
+        }
         if(!empty($session_id)) {
-            session_id($session_id);
+            session_id(Security::safeSessionId($session_id));
         }
         @session_start(["gc_probability"=>0]);
     }

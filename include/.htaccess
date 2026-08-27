@@ -1,0 +1,7 @@
+# Deny web access if the vhost document root is the repository root.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Deny from all
+</IfModule>

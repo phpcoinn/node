@@ -33,6 +33,7 @@ return array(
     'Propagate' => $baseDir . '/include/class/Propagate.php',
     'Sandbox' => $baseDir . '/include/class/sc/Sandbox.php',
     'SdkUtil' => $baseDir . '/include/class/SdkUtil.php',
+    'Security' => $baseDir . '/include/class/Security.php',
     'SmartContract' => $baseDir . '/include/class/SmartContract.php',
     'SmartContractBase' => $baseDir . '/include/class/sc/SmartContractBase.php',
     'SmartContractContext' => $baseDir . '/include/class/sc/SmartContractWrapper.php',

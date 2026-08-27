@@ -885,11 +885,19 @@ class Util
 	}
 
 	static function update($argv) {
+		global $_config;
 		$force = in_array("--force", $argv);
         $chain_id = CHAIN_ID;
         $currentVersion = BUILD_VERSION;
         _log("Checking node CHAIN_ID=$chain_id force=$force update current version = ".BUILD_VERSION);
 		$maxPeerBuildNumber = Peer::getMaxBuildNumber();
+
+        $allow = !empty($_config['allow_auto_update']);
+        if(!$allow && !$force) {
+            echo "Auto-update is disabled. Set allow_auto_update in config.inc.php or pass --force.".PHP_EOL;
+            _log("AUTO_UPDATE: skipped (allow_auto_update=false)");
+            return;
+        }
 
         $check_url = "https://phpcoin.net/version.php?chain_id=$chain_id";
         $cmd= "curl -m 30 -H 'Cache-Control: no-cache, no-store' -s $check_url";
@@ -954,18 +962,21 @@ class Util
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
+            if($force) {
+                $cmd="cd ".ROOT." && git restore .  2>&1";
+                $res = shell_exec($cmd);
+                _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-            $cmd="cd ".ROOT." && git restore .  2>&1";
-			$res = shell_exec($cmd);
-			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
+                $cmd="cd ".ROOT." && git checkout -B main 2>&1";
+                $res = shell_exec($cmd);
+                _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-			$cmd="cd ".ROOT." && git checkout -B main 2>&1";
-			$res = shell_exec($cmd);
-			_log("AUTO_UPDATE: cmd=$cmd res=$res",4);
+                $cmd="cd ".ROOT." && git reset --hard origin/main";
+                $res = shell_exec($cmd);
+                _log("AUTO_UPDATE: cmd=$cmd res=$res");
+            }
 
-			$cmd="cd ".ROOT." && git reset --hard origin/main";
-			$res = shell_exec($cmd);
-			_log("AUTO_UPDATE: cmd=$cmd res=$res");
+			$cmd="cd ".ROOT." && git pull origin main  2>&1";
 
             $cmd="cd ".ROOT." && git config user.name \"PHP Coin Auto Updater\"";
             $res = shell_exec($cmd);

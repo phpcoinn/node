@@ -62,13 +62,20 @@ class Cache
 
 	public static function clearOldFiles()
 	{
-		$cmd = "find ".self::$path." -mtime +1 -exec ls -al {} +";
+		if(empty(self::$path) || !is_dir(self::$path)) {
+			return;
+		}
+		$cmd = "find ".escapeshellarg(self::$path)." -mtime +1 -type f -delete";
 		shell_exec($cmd);
 	}
 
 	public static function resetCache() {
-		$cmd = "rm -rf ".self::$path = ROOT . "/tmp/cache";
-		shell_exec($cmd);
+		$path = ROOT . "/tmp/cache";
+		self::$path = $path;
+		if(is_dir($path)) {
+			$cmd = "rm -rf ".escapeshellarg($path);
+			shell_exec($cmd);
+		}
 	}
 
     static function syncStore($key,$ttl,$fn) {

@@ -25,22 +25,28 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 OR OTHER DEALINGS IN THE SOFTWARE.
 */
 header('Content-Type: application/json');
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
     http_response_code(200);
     exit();
 }
 
 require_once dirname(__DIR__).'/include/init.inc.php';
+Security::sendCorsHeaders();
 
 Api::checkAccess();
-$q = $_GET['q'];
+$q = $_GET['q'] ?? '';
 $data = Api::getData();
 
 if(empty($q)) {
+	api_err("Invalid request");
+	return;
+}
+
+if(Security::isBlockedDevApiMethod($q)) {
 	api_err("Invalid request");
 	return;
 }
@@ -51,7 +57,7 @@ if(method_exists(Api::class, $q)) {
 } else {
 	$str = str_replace(' ', '', ucwords(str_replace('-', ' ', $q)));
 	$str[0] = strtolower($str[0]);
-	if(method_exists(Api::class, $str)) {
+	if(method_exists(Api::class, $str) && !Security::isBlockedDevApiMethod($str)) {
 		call_user_func([Api::class, $str], $data);
 		return;
 	} else {

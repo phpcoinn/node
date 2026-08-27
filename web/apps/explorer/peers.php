@@ -93,8 +93,8 @@ require_once __DIR__. '/../common/include/top.php';
                 ?>
                 <tr class="<?php echo $show_all ? $bg_color : '' ?>">
                     <td>
-                        <a href="/apps/explorer/peer.php?id=<?php echo $peer['id'] ?>"><?php echo $peer['hostname'] ?></a>
-                        <a href="<?php echo $peer['hostname'] ?>" target="_blank" class="float-end"
+                        <a href="/apps/explorer/peer.php?id=<?php echo (int)$peer['id'] ?>"><?php echo h($peer['hostname']) ?></a>
+                        <a href="<?php echo h($peer['hostname']) ?>" target="_blank" class="float-end"
                            data-bs-toggle="tooltip" data-bs-placement="top" title="Open in new window">
                             <span class="fa fa-external-link-alt"></span>
                         </a>
@@ -115,7 +115,7 @@ require_once __DIR__. '/../common/include/top.php';
                                 echo " | " . durationFormat($peer['blacklisted']-time());
                             } ?>
                         </td>
-                        <td><?php echo $peer['blacklist_reason'] ?></td>
+                        <td><?php echo h($peer['blacklist_reason']) ?></td>
                     <?php } ?>
                     <td>
                         <?php if ($peer['score']) { ?>

@@ -5,12 +5,12 @@ function explorer_address_link($address, $short= false) {
 	if($short) {
 		$text  = truncate_hash($address);
 	}
-	return '<a href="/apps/explorer/address.php?address='.$address.'">'.$text.'</a>';
+	return '<a href="/apps/explorer/address.php?address='.urlencode($address).'">'.h($text).'</a>';
 }
 function explorer_address_pubkey($pubkey, $show = 12) {
 	if(!empty($pubkey)) {
 		$pubkey_short = substr($pubkey, 0, $show) . "..." .substr($pubkey, -$show);
-		return '<a href="/apps/explorer/address.php?pubkey='.$pubkey.'" title="'.$pubkey.'">'.$pubkey_short.'</a>';
+		return '<a href="/apps/explorer/address.php?pubkey='.urlencode($pubkey).'" title="'.h($pubkey).'">'.h($pubkey_short).'</a>';
 	}
 }
 function explorer_block_link($block_id, $short= false) {
@@ -20,7 +20,7 @@ function explorer_block_link($block_id, $short= false) {
 	} else {
 		$text = $block_id;
 	}
-	return '<a href="/apps/explorer/block.php?id='.$block_id.'" '.($short?'title="'.$block_id.'" data-bs-toggle="tooltip"':'').'>'.$text.'</a>';
+	return '<a href="/apps/explorer/block.php?id='.urlencode($block_id).'" '.($short?'title="'.h($block_id).'" data-bs-toggle="tooltip"':'').'>'.h($text).'</a>';
 }
 
 function explorer_height_link($height) {
@@ -33,7 +33,7 @@ function explorer_tx_link($id, $short=false) {
 	} else {
 		$text = $id;
 	}
-	return '<a href="/apps/explorer/tx.php?id='.$id.'" '.($short?'title="'.$id.'" data-bs-toggle="tooltip"':'').'>'.$text.'</a>';
+	return '<a href="/apps/explorer/tx.php?id='.urlencode($id).'" '.($short?'title="'.h($id).'" data-bs-toggle="tooltip"':'').'>'.h($text).'</a>';
 }
 
 function get_data_model($total, $link, $default_sorting = "", $rowsPerPage=10) {
@@ -41,9 +41,9 @@ function get_data_model($total, $link, $default_sorting = "", $rowsPerPage=10) {
 	$pages = $no_count ? PHP_INT_MAX : ceil($total / $rowsPerPage);
 	$page = 1;
 	if(isset($_GET['page'])) {
-		$page = $_GET['page'];
+		$page = intval($_GET['page']);
 	}
-	if($page<0) {
+	if($page<1) {
 		$page = 1;
 	}
 	if($page > $pages) {
@@ -54,13 +54,16 @@ function get_data_model($total, $link, $default_sorting = "", $rowsPerPage=10) {
 	$sorting_query = '';
     $order = 'desc';
 	if(isset($_GET['sort'])) {
-		$sort = $_GET['sort'];
-		if(isset($_GET['order'])) {
-			$order = $_GET['order'];
-		} else {
-			$order = 'asc';
+		$sortCandidate = (string)$_GET['sort'];
+		if (preg_match('/^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)?(\/[A-Za-z0-9_]+)?$/', $sortCandidate)) {
+			$sort = $sortCandidate;
+			if(isset($_GET['order'])) {
+				$order = Security::allowlistOrder($_GET['order']);
+			} else {
+				$order = 'asc';
+			}
+			$sorting_query = '&sort='.urlencode($sort).'&order='.$order;
 		}
-		$sorting_query = '&sort='.$sort.'&order='.$order;
 	}
 
 	$search = null;
@@ -134,11 +137,9 @@ function get_data_model($total, $link, $default_sorting = "", $rowsPerPage=10) {
 	$start = ($page-1)*$rowsPerPage;
 
 	$sorting = $default_sorting;
-	if(isset($_GET['sort'])) {
-		$sorting = ' order by '.$_GET['sort'];
-		if(isset($_GET['order'])){
-			$sorting.= ' ' . $_GET['order'];
-		}
+	if($sort) {
+		$sorting = ' order by '.$sort;
+		$sorting.= ' ' . $order;
 	}
 
 	return [
@@ -167,7 +168,7 @@ function sort_column($link, $dm, $column, $name, $align = 'text-end') {
 function display_short($string, $show = 12) {
 	if(!empty($string)) {
 		$string_short = substr($string, 0, $show) . "..." .substr($string, -$show);
-		return '<span title="'.$string.'">'.$string_short.'</span>';
+		return '<span title="'.h($string).'">'.h($string_short).'</span>';
 	}
 }
 
