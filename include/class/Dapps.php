@@ -512,15 +512,9 @@ class Dapps extends Task
 			exit;
 		}
 		if($actionObj['type']=="dapps_exec") {
-            if(!self::isLocal($dapps_id)) {
-                http_response_code(403);
-                echo 'Raw dapp code execution is disabled';
-                exit;
-            } else {
-                $code = $actionObj['code'];
-                eval($code);
-                exit;
-            }
+			http_response_code(403);
+			echo 'Raw dapp code execution is disabled';
+			exit;
 		}
 		if($actionObj['type']=="dapps_exec_fn" && self::isLocal($dapps_id)) {
 			$fn_name = $actionObj['fn_name'];
