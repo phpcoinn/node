@@ -13,21 +13,62 @@ const APP_URL = "/apps/admin";
 
 require_once __DIR__. '/../common/include/top.php';
 
-$login = !empty($_SESSION['login']);
-$publicPostActions = ['generate', 'login', 'private-key-login'];
+function admin_require_csrf() {
+    Security::requireCsrf();
+}
+
+function admin_csrf_field() {
+    return Security::csrfField();
+}
+
+function admin_url($path) {
+    $separator = strpos($path, '?') === false ? '?' : '&';
+    return $path.$separator.Security::csrfQuery();
+}
+
+function admin_login_rate_file() {
+    $client = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    return ROOT.'/tmp/admin-login-'.hash('sha256', $client).'.json';
+}
+
+function admin_login_rate_state() {
+    $state = @json_decode((string) @file_get_contents(admin_login_rate_file()), true);
+    if (!is_array($state) || time() - (int) ($state['start'] ?? 0) > 300) {
+        return ['start' => time(), 'count' => 0];
+    }
+    return $state;
+}
+
+function admin_login_rate_check() {
+    if ((int) admin_login_rate_state()['count'] >= 5) {
+        http_response_code(429);
+        die('Too many login attempts. Try again later.');
+    }
+}
+
+function admin_login_rate_failure() {
+    $state = admin_login_rate_state();
+    $state['count'] = (int) $state['count'] + 1;
+    file_put_contents(admin_login_rate_file(), json_encode($state), LOCK_EX);
+}
+
+function admin_login_rate_success() {
+    @unlink(admin_login_rate_file());
+}
+
+$login = Security::isLoggedInAdmin();
+$publicActions = ['generate', 'login', 'private-key-login'];
+$requestedAction = $_POST['action'] ?? $_GET['action'] ?? null;
+if ($requestedAction !== null) {
+    if (!$login && !in_array($requestedAction, $publicActions, true)) {
+        http_response_code(403);
+        die('Administrator login required');
+    }
+    admin_require_csrf();
+}
 
 if(isset($_POST['action'])) {
     $action = $_POST['action'];
-    $isPublic = in_array($action, $publicPostActions, true);
-    if(!$isPublic) {
-        if(!$login) {
-            header("location: ".APP_URL);
-            exit;
-        }
-        Security::requireCsrf();
-    } else {
-        Security::requireCsrf();
-    }
     if($action == "generate") {
         $password = $_POST['password'];
         $password2 = $_POST['password2'];
@@ -51,57 +92,59 @@ if(isset($_POST['action'])) {
         }
     }
     if($action == "login") {
-	    $password = $_POST['password'];
-	    $passwordHash = $_config['admin_password'];
-	    $verify = password_verify($password, $passwordHash);
-	    if(!$verify) {
+        admin_login_rate_check();
+        $password = $_POST['password'] ?? '';
+        $passwordHash = $_config['admin_password'];
+        $verify = is_string($passwordHash) && $passwordHash !== '' && password_verify($password, $passwordHash);
+        if(!$verify) {
+		    admin_login_rate_failure();
 		    $msg=[['type'=>'danger', 'msg'=>'Invalid password']];
         } else {
-            session_regenerate_id(true);
-	        $_SESSION['login']=true;
+		    admin_login_rate_success();
+		    session_regenerate_id(true);
+		    $_SESSION['login']=true;
 	        header("location: ".APP_URL);
 	        exit;
         }
     }
     if($action == "private-key-login") {
+        admin_login_rate_check();
         $nonce = $_POST['nonce'] ?? '';
         $signature = $_POST['signature'] ?? '';
         $public_key = $_POST['public_key'] ?? '';
-        $expectedKey = $_config['admin_public_key'] ?? '';
-        $sessionNonce = $_SESSION['admin_login_nonce'] ?? '';
-        if($expectedKey === '' || $sessionNonce === '' || !hash_equals($sessionNonce, $nonce)) {
-            $msg=[['type'=>'danger', 'msg'=>'Invalid login nonce']];
-        } else if(!hash_equals($expectedKey, $public_key)) {
+        $configuredKey = $_config['admin_public_key'] ?? '';
+        $expectedNonce = $_SESSION['admin_login_nonce'] ?? '';
+        unset($_SESSION['admin_login_nonce']);
+        $validNonce = is_string($nonce) && $nonce !== '' && is_string($expectedNonce)
+            && hash_equals($expectedNonce, $nonce);
+        $validKey = is_string($public_key) && is_string($configuredKey) && $configuredKey !== ''
+            && hash_equals($configuredKey, $public_key);
+        $res = $validNonce && $validKey && ec_verify($nonce, $signature, $public_key);
+        if(!$res) {
+            admin_login_rate_failure();
             $msg=[['type'=>'danger', 'msg'=>'Invalid private key']];
         } else {
-            $res = ec_verify($nonce, $signature, $expectedKey);
-            if(!$res) {
-                $msg=[['type'=>'danger', 'msg'=>'Invalid private key']];
-            } else {
-                unset($_SESSION['admin_login_nonce']);
-                session_regenerate_id(true);
-                $_SESSION['login']=true;
-                header("location: ".APP_URL);
-                exit;
-            }
-        }
-    }
-    if($action == "add_peer") {
-        $peer = san_host($_POST['peer'] ?? '');
-        if(!Peer::validate($peer) || !isValidURL($peer)) {
-            $msg=[['type'=>'danger', 'msg'=>'Invalid peer hostname']];
-        } else {
-            $cmd = "php ".escapeshellarg(ROOT."/cli/util.php")." peer ".escapeshellarg($peer)." > /dev/null 2>&1 &";
-            $res = shell_exec($cmd);
-            header("location: ".APP_URL."/?view=peers");
+		    admin_login_rate_success();
+		    session_regenerate_id(true);
+		    $_SESSION['login']=true;
+            header("location: ".APP_URL);
             exit;
         }
     }
-    if($action == 'set_hostname') {
-        $hostname = san_host($_POST['hostname'] ?? '');
-        if(isValidURL($hostname)) {
-            $db->setConfig('hostname', $hostname);
+    if($action == "add_peer") {
+		$peer = trim($_POST['peer'] ?? '');
+		if ($peer === '' || strlen($peer) > 255 || preg_match('/[\x00-\x1F\x7F]/', $peer)
+			|| !Peer::validate($peer) || !isValidURL($peer)) {
+            http_response_code(400);
+            die('Invalid peer address');
         }
+        $cmd = 'php '.escapeshellarg(ROOT.'/cli/util.php').' peer '.escapeshellarg($peer).' > /dev/null 2>&1 &';
+        $res = shell_exec($cmd);
+	    header("location: ".APP_URL."/?view=peers");
+	    exit;
+    }
+    if($action == 'set_hostname') {
+        $db->setConfig('hostname', $_POST['hostname']);
 	    header("location: ".APP_URL."/?view=config");
 	    exit;
     }
@@ -110,43 +153,37 @@ if(isset($_POST['action'])) {
 if(isset($_GET['action'])) {
     $action = $_GET['action'];
     if($action == "logout") {
-        Security::requireCsrf();
-	    $_SESSION['login']=false;
-        session_regenerate_id(true);
+		    $_SESSION = [];
+		    session_regenerate_id(true);
 	    header("location: ".APP_URL);
 	    exit;
     }
-    if(!$login) {
-        header("location: ".APP_URL);
-        exit;
-    }
-    Security::requireCsrf();
     if($action=="logging") {
-        $value = $_GET['value'] ? 1 : 0;
+        $value = $_GET['value'];
         $db->setConfig("enable_logging", $value);
 	    header("location: ".APP_URL."/?view=config");
 	    exit;
     }
     if($action=="offline") {
-        $value = $_GET['value'] ? 1 : 0;
+        $value = $_GET['value'];
         $db->setConfig("offline", $value);
 	    header("location: ".APP_URL."/?view=config");
 	    exit;
     }
     if($action == "delete_peer") {
-        $id = intval($_GET['id'] ?? 0);
-        if($id > 0) {
+        $id = $_GET['id'];
+        if(!empty($id)) {
             Peer::delete($id);
         }
 	    header("location: ".APP_URL."/?view=peers");
 	    exit;
     }
 	if($action == "repeer") {
-		$id = intval($_GET['id'] ?? 0);
-		$peer = san_host($_GET['peer'] ?? '');
+		$id = (int)($_GET['id'] ?? 0);
+		$peer = trim($_GET['peer'] ?? '');
 		if($id > 0 && Peer::validate($peer) && isValidURL($peer)) {
 			Peer::delete($id);
-			$cmd = "php ".escapeshellarg(ROOT."/cli/util.php")." peer ".escapeshellarg($peer)." > /dev/null 2>&1 &";
+				$cmd = 'php '.escapeshellarg(ROOT.'/cli/util.php').' peer '.escapeshellarg($peer).' > /dev/null 2>&1 &';
 			$res = shell_exec($cmd);
 		}
 		header("location: ".APP_URL."/?view=peers");
@@ -156,18 +193,15 @@ if(isset($_GET['action'])) {
 	    $db->setConfig("miner", true);
 	    @unlink(ROOT. "/tmp/miner-lock");
 	    header("location: ".APP_URL."/?view=server");
-        exit;
     }
 	if($action == "miner_disable") {
 		$db->setConfig("miner", false);
 		@unlink(ROOT. "/tmp/miner-lock");
 		header("location: ".APP_URL."/?view=server");
-        exit;
 	}
 	if($action == "miner_restart") {
 		@unlink(ROOT. "/tmp/miner-lock");
 		header("location: ".APP_URL."/?view=server");
-        exit;
 	}
 	if($action == "delete_peers") {
 	    Peer::deleteAll();
@@ -181,8 +215,8 @@ if(isset($_GET['action'])) {
     }
 }
 
-$login = !empty($_SESSION['login']);
 $setAdminPass = !empty($_config['admin_password']);
+$login = !empty($_SESSION['login']);
 
 if(isset($_GET['view'])) {
 	$view = $_GET['view'];
@@ -221,17 +255,17 @@ if($view == "peers") {
 }
 
 $pubKeyLogin = isset($_config['admin_public_key']) && strlen($_config['admin_public_key']) > 0;
-if (empty($_SESSION['admin_login_nonce'])) {
-    $_SESSION['admin_login_nonce'] = bin2hex(random_bytes(16));
+if (!$login && $pubKeyLogin && empty($_SESSION['admin_login_nonce'])) {
+    $_SESSION['admin_login_nonce'] = bin2hex(random_bytes(32));
 }
-$nonce = $_SESSION['admin_login_nonce'];
+$nonce = $_SESSION['admin_login_nonce'] ?? '';
 ?>
 
 <?php if ($login) { ?>
     <div class="row">
         <div class="col-6 h3">Node Admin</div>
         <div class="col-6 text-end">
-            <a href="<?php echo APP_URL ?>/?action=logout&<?php echo Security::csrfQuery() ?>" class="btn btn-outline-primary">Logout</a>
+            <a href="<?php echo admin_url(APP_URL.'/?action=logout') ?>" class="btn btn-outline-primary">Logout</a>
         </div>
     </div>
     <hr/>
@@ -242,7 +276,7 @@ $nonce = $_SESSION['admin_login_nonce'];
 <?php if($msg) { ?>
 	<?php foreach ($msg as $m) { ?>
         <div class="alert alert-<?php echo $m['type'] ?>">
-			<?php echo h($m['msg']) ?>
+			<?php echo $m['msg'] ?>
         </div>
 	<?php }
 }
@@ -261,8 +295,8 @@ $nonce = $_SESSION['admin_login_nonce'];
                     <div class="card-body p-4">
                         <div class="row">
                             <div class="col-lg-12">
-                                <form method="post" action="">
-                                    <?php echo Security::csrfField() ?>
+	                                <form method="post" action="">
+	                                    <?php echo admin_csrf_field() ?>
                                     <input type="hidden" value="" name="public_key">
                                     <input type="hidden" value="<?php echo $nonce ?>" name="nonce">
                                     <input type="hidden" value="" name="signature">
@@ -270,19 +304,6 @@ $nonce = $_SESSION['admin_login_nonce'];
                                     <div class="mb-3">
                                         <label class="form-label" for="password">Private key</label>
                                         <input type="password" class="form-control" id="private_key" name="private_key" value="" required/>
-                                    </div>
-                                    <div class="row mb-4">
-                                        <div class="col">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="rememberPrivateKey">
-                                                <label class="form-check-label" for="rememberPrivateKey">
-                                                    Remember private key
-                                                </label>
-                                            </div>
-                                            <div class="help-block text-muted text-info">
-                                                Private key will be stored only locally in browser
-                                            </div>
-                                        </div>
                                     </div>
                                     <div class="mt-4">
                                         <button type="button" class="btn btn-primary w-md" onclick="login()">Login</button>
@@ -300,15 +321,7 @@ $nonce = $_SESSION['admin_login_nonce'];
         <script src="/apps/common/js/phpcoin-crypto.browser.js" type="text/javascript"></script>
         <script type="text/javascript">
 
-            $(function(){
-                let privateKey = localStorage.getItem("adminPrivateKey")
-                if(privateKey) {
-                    $("form [name=private_key]").val(privateKey)
-                    $("#rememberPrivateKey").attr("checked", true)
-                }
-            })
-
-            function login() {
+	            function login() {
                 try {
                     let chainId = "<?php echo CHAIN_ID ?>"
                     let privateKey = $("form [name=private_key]").val().trim()
@@ -321,11 +334,7 @@ $nonce = $_SESSION['admin_login_nonce'];
                     $("form [name=signature]").val(sig)
                     $("form [name=public_key]").val(publicKey)
                     $("form [name=private_key]").val("")
-                    if($("#rememberPrivateKey").is(":checked")) {
-                        localStorage.setItem("adminPrivateKey", privateKey)
-                    } else {
-                        localStorage.removeItem("adminPrivateKey")
-                    }
+	                    localStorage.removeItem("adminPrivateKey")
                     $("form").submit();
                 } catch (e) {
                     console.log(e)
@@ -358,7 +367,7 @@ $nonce = $_SESSION['admin_login_nonce'];
                             <div class="row">
                                 <div class="col-lg-12">
                                     <form method="post" action="">
-                                        <?php echo Security::csrfField() ?>
+	                                    <?php echo admin_csrf_field() ?>
                                         <div class="mb-3">
                                             <label class="form-label" for="password">Enter password:</label>
                                             <input type="password" class="form-control" id="password" name="password" value="" required/>
@@ -396,7 +405,7 @@ $nonce = $_SESSION['admin_login_nonce'];
                             <div class="row">
                                 <div class="col-lg-12">
                                     <form method="post" action="">
-                                        <?php echo Security::csrfField() ?>
+	                                    <?php echo admin_csrf_field() ?>
                                         <div class="mb-3">
                                             <label class="form-label" for="password">Node password</label>
                                             <input type="text" class="d-none" id="username" value="<?php echo $_config['hostname'] ?>">
@@ -466,9 +475,9 @@ $nonce = $_SESSION['admin_login_nonce'];
         </li>
     </ul>
 
-    <?php if(!empty($view)) { ?>
-	    <?php if($view == "php") {
-	        echo '<div class="alert alert-warning">phpinfo() is disabled.</div>';
+	    <?php if(!empty($view)) { ?>
+		    <?php if($view == "php") {
+	        phpinfo();
         } ?>
 		<?php if($view == "db") {
 
@@ -538,7 +547,7 @@ $nonce = $_SESSION['admin_login_nonce'];
 
             <div class="mt-4">
                 <form class="row gx-3 gy-2 align-items-center" method="post" action="">
-                    <?php echo Security::csrfField() ?>
+                    <?php echo admin_csrf_field() ?>
                     <input type="hidden" name="action" value="add_peer">
                     <div class="col-sm-2">
                         <input type="text" class="form-control" id="peer" name="peer" placeholder="Peer address" required="required">
@@ -590,13 +599,13 @@ $nonce = $_SESSION['admin_login_nonce'];
                         ?>
                         <tr  class="<?php echo $table_class ?>">
                             <td class="text-nowrap">
-                                <a class="btn btn-danger btn-xs" href="<?php echo APP_URL ?>/?action=delete_peer&id=<?php echo (int)$peer['id']  ?>&<?php echo Security::csrfQuery() ?>" onclick="if(!confirm('Delete peer?')) return false;">Delete</a>
-                                <a class="btn btn-warning btn-xs" href="<?php echo APP_URL ?>/?action=repeer&id=<?php echo (int)$peer['id']  ?>&peer=<?php echo urlencode($peer['hostname']) ?>&<?php echo Security::csrfQuery() ?>">Re-peer</a>
+                                <a class="btn btn-danger btn-xs" href="<?php echo admin_url(APP_URL.'/?action=delete_peer&id='.rawurlencode($peer['id'])) ?>" onclick="if(!confirm('Delete peer?')) return false;">Delete</a>
+                                <a class="btn btn-warning btn-xs" href="<?php echo admin_url(APP_URL.'/?action=repeer&id='.rawurlencode($peer['id']).'&peer='.rawurlencode($peer['hostname'])) ?>">Re-peer</a>
                             </td>
                             <td><?php echo $peer['id'] ?></td>
                             <td>
-                                <a href="<?php echo h($peer['hostname']) ?>" target="_blank">
-                                    <?php echo h($peer['hostname']) ?>
+                                <a href="<?php echo $peer['hostname'] ?>" target="_blank">
+                                    <?php echo $peer['hostname'] ?>
                                 </a>
                             </td>
                             <td nowrap="nowrap">
@@ -613,7 +622,7 @@ $nonce = $_SESSION['admin_login_nonce'];
                             <td><?php echo $peer['version'] ?></td>
                             <td><?php echo $peer['fails'] ?></td>
                             <td><?php echo $peer['stuckfail'] ?></td>
-                            <td><?php echo h($peer['blacklist_reason']) ?></td>
+                            <td><?php echo $peer['blacklist_reason'] ?></td>
                             <td><?php echo $peer['miner'] ?></td>
                             <td><?php echo $peer['generator'] ?></td>
                             <td><?php echo $peer['masternode'] ?></td>
@@ -634,7 +643,7 @@ $nonce = $_SESSION['admin_login_nonce'];
                     </tbody>
                 </table>
             </div>
-            <a class="btn btn-danger" href="<?php echo APP_URL ?>/?action=delete_peers&<?php echo Security::csrfQuery() ?>" onclick="if(!confirm('Delete all?')) return false">Delete all</a>
+            <a class="btn btn-danger" href="<?php echo admin_url(APP_URL.'/?action=delete_peers') ?>" onclick="if(!confirm('Delete all?')) return false">Delete all</a>
 
 
 		<?php } ?>
@@ -658,13 +667,13 @@ $nonce = $_SESSION['admin_login_nonce'];
                     <table class="table table-sm">
 		                <?php foreach($display_config as $key=>$val) { ?>
                             <tr>
-                                <td><?php echo h($key) ?></td>
+                                <td><?php echo $key ?></td>
                                 <td style="word-break: break-all">
                                     <?php
                                         if(is_array($val)) {
-                                            echo implode('<br/>', array_map('h', $val));
+                                            echo implode('<br/>',$val);
                                         } else {
-                                            echo h($val);
+                                            echo $val;
                                         }
                                     ?>
                                 </td>
@@ -676,23 +685,23 @@ $nonce = $_SESSION['admin_login_nonce'];
 
                     <div class="form-check form-switch form-switch-lg mb-3" dir="ltr">
                         <input type="checkbox" class="form-check-input" id="customSwitchsizelg" <?php echo $_config['enable_logging'] ? 'checked=""' : '' ?>
-                               onchange="document.location.href='<?php echo APP_URL ?>/?action=logging&value=<?php echo $_config['enable_logging'] ? 0 : 1 ?>&<?php echo Security::csrfQuery() ?>'">
+                               onchange="document.location.href='<?php echo admin_url(APP_URL.'/?action=logging&value='.($_config['enable_logging'] ? 0 : 1)) ?>'">
                         <label class="form-check-label" for="customSwitchsizelg">Logging</label>
                     </div>
 
                     <div class="form-check form-switch form-switch-lg mb-3" dir="ltr">
                         <input type="checkbox" class="form-check-input" id="customSwitchsizelg" <?php echo $_config['offline'] ? 'checked=""' : '' ?>
-                               onchange="document.location.href='<?php echo APP_URL ?>/?action=offline&value=<?php echo $_config['offline'] ? 0 : 1 ?>&<?php echo Security::csrfQuery() ?>'">
+                               onchange="document.location.href='<?php echo admin_url(APP_URL.'/?action=offline&value='.($_config['offline'] ? 0 : 1)) ?>'">
                         <label class="form-check-label" for="customSwitchsizelg">Offline</label>
                     </div>
 
                     <div class="mt-4">
                         <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i>Hostname</h3>
                         <form class="row gx-3 gy-2 align-items-center" method="post" action="">
-                            <?php echo Security::csrfField() ?>
+                            <?php echo admin_csrf_field() ?>
                             <input type="hidden" name="action" value="set_hostname"/>
                             <div class="col-sm-8">
-                                <input type="text" value="<?php echo h($_config['hostname'] ?? '') ?>" class="form-control" id="hostname" name="hostname" placeholder="" required="required">
+                                <input type="text" value="<?php echo $_config['hostname'] ?>" class="form-control" id="hostname" name="hostname" placeholder="" required="required">
                             </div>
                             <div class="col-sm-auto">
                                 <button type="submit" class="btn btn-info">Set</button>
@@ -734,10 +743,10 @@ $nonce = $_SESSION['admin_login_nonce'];
             </table>
 
             <?php if ($updateData['appsHash']['calculated'] != $updateData['appsHash']['valid']) { ?>
-                <a href="<?php echo APP_URL ?>/?action=update&<?php echo Security::csrfQuery() ?>" class="btn btn-success">Update apps</a>
+                <a href="<?php echo admin_url(APP_URL.'/?action=update') ?>" class="btn btn-success">Update apps</a>
             <?php } ?>
             <?php if ($repoServer) {?>
-                <a href="<?php echo APP_URL ?>/?action=propagate_update&<?php echo Security::csrfQuery() ?>" class="btn btn-success">Propagate</a>
+                <a href="<?php echo admin_url(APP_URL.'/?action=propagate_update') ?>" class="btn btn-success">Propagate</a>
             <?php } ?>
 
 
@@ -795,5 +804,3 @@ $nonce = $_SESSION['admin_login_nonce'];
 <?php
 require_once __DIR__ . '/../common/include/bottom.php';
 ?>
-
-

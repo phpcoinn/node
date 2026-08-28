@@ -104,6 +104,10 @@ if(!$db->isSqlite() && floatval(substr($version, 0, 3)) < 8 && strpos($version, 
     api_err("The minimum mysql version required is 8, current version is $version");
 }
 
+if (floatval(phpversion()) < 7.2) {
+    api_err("The minimum php version required is 7.2");
+}
+
 // Getting extra configs from the database
 $_config = load_db_config();
 

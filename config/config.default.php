@@ -27,8 +27,9 @@ $_config['trusted_proxies'] = [];
 // Browser CORS origin for api.php. Keep '*' so web wallets on other origins keep working.
 $_config['cors_origin'] = '*';
 
-// Unattended git auto-update from phpcoin.net. Leave false unless you accept that risk.
-$_config['allow_auto_update'] = false;
+// Keep enabled so the node receives required network updates automatically.
+// Set false only if you will update manually; outdated nodes may be rejected by newer peers.
+$_config['allow_auto_update'] = true;
 
 // The initial peers to sync from
 $_config['initial_peer_list'] = $_config['chain_id'] == "00"  ? [

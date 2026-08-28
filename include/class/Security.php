@@ -28,6 +28,7 @@ class Security
         'checkMyPeer',
         'getDbBlocks',
         'getInfo',
+        'emitToScoket'
     ];
 
     const DEV_API_METHODS = [
@@ -208,48 +209,6 @@ class Security
         return hash_equals($reqHost, $host);
     }
 
-    static function jailPath($root, $path)
-    {
-        $rootReal = realpath($root);
-        if ($rootReal === false) {
-            return false;
-        }
-        $rootReal = rtrim(str_replace('\\', '/', $rootReal), '/');
-        $target = realpath($path);
-        if ($target !== false) {
-            $targetNorm = str_replace('\\', '/', $target);
-            if ($targetNorm === $rootReal || strpos($targetNorm, $rootReal.'/') === 0) {
-                return $target;
-            }
-            return false;
-        }
-        $normalized = self::normalizePath($path);
-        if ($normalized === $rootReal || strpos($normalized, $rootReal.'/') === 0) {
-            return $normalized;
-        }
-        return false;
-    }
-
-    static function normalizePath($path)
-    {
-        $path = str_replace('\\', '/', $path);
-        $parts = explode('/', $path);
-        $out = [];
-        $absolute = isset($path[0]) && $path[0] === '/';
-        foreach ($parts as $part) {
-            if ($part === '' || $part === '.') {
-                continue;
-            }
-            if ($part === '..') {
-                array_pop($out);
-                continue;
-            }
-            $out[] = $part;
-        }
-        $joined = implode('/', $out);
-        return $absolute ? '/'.$joined : $joined;
-    }
-
     static function csrfToken()
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -327,7 +286,7 @@ class Security
         return in_array($str, self::DEV_API_METHODS, true);
     }
 
-    static function extractTarSafely($archive, $destDir, $allowedPrefix)
+    static function extractTarSafely($archive, $destDir, $allowedPrefix, $extract = true)
     {
         if (!is_file($archive) || !is_dir($destDir)) {
             return false;
@@ -340,7 +299,7 @@ class Security
         $listing = [];
         $code = 0;
         exec($listCmd.' 2>&1', $listing, $code);
-        if ($code !== 0) {
+        if ($code !== 0 || count($listing) > 10000) {
             _log("Security: tar list failed for $archive");
             return false;
         }
@@ -372,9 +331,19 @@ class Security
                 return false;
             }
         }
-        $cmd = 'tar -xzf '.escapeshellarg($archive).' -C '.escapeshellarg($destReal).' --no-absolute-names --owner=0 --group=0 --mode=744 --mtime=\'2020-01-01 00:00:00 UTC\'';
-        shell_exec($cmd);
-        return true;
+        $details = [];
+        exec('tar -tvzf '.escapeshellarg($archive).' 2>&1', $details, $detailCode);
+        if ($detailCode !== 0) return false;
+        foreach ($details as $detail) {
+            if (in_array($detail[0] ?? '', ['l', 'h'], true)) return false;
+        }
+        if (!$extract) return true;
+        $cmd = 'tar -xzf '.escapeshellarg($archive).' -C '.escapeshellarg($destReal)
+            .' --no-same-owner --no-same-permissions';
+        $output = [];
+        $extractCode = 0;
+        exec($cmd.' 2>&1', $output, $extractCode);
+        return $extractCode === 0;
     }
 
     static function isAdminTaskClass($task)
@@ -384,6 +353,6 @@ class Security
 
     static function validDappsId($dapps_id)
     {
-        return is_string($dapps_id) && preg_match('/^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{20,128}$/', $dapps_id);
+        return is_string($dapps_id) && preg_match('/\A[A-Za-z0-9_-]{1,128}\z/', $dapps_id) === 1;
     }
 }

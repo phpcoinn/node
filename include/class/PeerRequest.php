@@ -808,10 +808,10 @@ class PeerRequest
         $accounts = [];
         $masternodes = [];
         if($max_height >= Block::getHeight()) {
-            $sql = "select id, public_key, block, balance, alias, height from accounts order by id";
+            $sql = "select * from accounts order by id";
             $accounts = $db->run($sql, [], false);
 
-            $sql = "select public_key, id, height, ip, win_height, collateral, verified, signature from masternode";
+            $sql = "select * from masternode";
             $masternodes = $db->run($sql, [], false);
         }
 

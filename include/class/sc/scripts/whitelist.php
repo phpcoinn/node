@@ -16,6 +16,7 @@
  */
 
 return [
+	'curl_init', 'curl_setopt', 'curl_setopt_array', 'curl_exec', 'curl_getinfo', 'curl_error', 'curl_errno', 'curl_close',
     // FILE OPERATIONS (for bootstrap only - reading input file)
     'file_exists','is_readable','file_get_contents',
     
@@ -88,4 +89,3 @@ return [
     //To supress warnings and other errors?
     'error_reporting','ob_start', 'ob_clean'
 ];
-

@@ -21,7 +21,6 @@ if(php_sapi_name() == "cli") {
     $_SERVER['GET_DATA']=$cmdData['GET_DATA'];
     $_SERVER['POST_DATA']=$cmdData['POST_DATA'];
     $_SERVER['INPUT_DATA']=$cmdData['INPUT_DATA'];
-    $_SERVER['SESSION_DATA']=$cmdData['SESSION_DATA'];
     $_SERVER['COOKIE_DATA']=$cmdData['COOKIE_DATA'];
 }
 
@@ -74,7 +73,8 @@ function dapps_post() {
  */
 function dapps_get_session() {
 	$session_id = $_SERVER['SESSION_ID'];
-    CommonSessionHandler::setup($session_id);
+    $namespace = $_SERVER['DAPPS_SESSION_NAMESPACE'] ?? null;
+    CommonSessionHandler::setup($session_id, $namespace);
 	return $session_id;
 }
 
@@ -321,7 +321,7 @@ function dapps_api_post($api=null, $node=null, $data=null, &$error = null) {
     if(empty($node)) {
         $node = $_SERVER['DAPPS_HOSTNAME'];
     }
-    $url = $node. "/api.php?q=".$api;
+	$url = $node. "/api.php?q=".$api;
     $postdata = http_build_query(
         [
             'data' => json_encode($data)
@@ -336,15 +336,10 @@ function dapps_api_post($api=null, $node=null, $data=null, &$error = null) {
             ]
     ];
     $context = stream_context_create($opts);
-    $res = file_get_contents($url, false, $context);
-    $res = json_decode($res, true);
-    if($res !== false && $res['status']=="ok") {
-        $data = $res['data'];
-        return $data;
-    } else {
-        $error = $res;
-        return false;
-    }
+	$res = file_get_contents($url, false, $context);
+	$res = json_decode($res, true);
+	if($res !== false && ($res['status'] ?? null)==="ok") return $res['data'];
+	$error = $res; return false;
 
 }
 

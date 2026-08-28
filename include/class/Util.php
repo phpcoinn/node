@@ -962,7 +962,7 @@ class Util
             $res = shell_exec($cmd);
             _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
 
-            if($force) {
+
                 $cmd="cd ".ROOT." && git restore .  2>&1";
                 $res = shell_exec($cmd);
                 _log("AUTO_UPDATE: cmd=$cmd res=$res",4);
@@ -974,9 +974,6 @@ class Util
                 $cmd="cd ".ROOT." && git reset --hard origin/main";
                 $res = shell_exec($cmd);
                 _log("AUTO_UPDATE: cmd=$cmd res=$res");
-            }
-
-			$cmd="cd ".ROOT." && git pull origin main  2>&1";
 
             $cmd="cd ".ROOT." && git config user.name \"PHP Coin Auto Updater\"";
             $res = shell_exec($cmd);

@@ -419,99 +419,117 @@ class Sandbox {
     static function runDapp($php_file,$input,$allowed_files,$debug=false)
     {
 
-        // Validate PHP file exists
-        if (!file_exists($php_file)) {
-            throw new InvalidArgumentException("PHP file does not exist: $php_file");
-        }
+        $phpFile = realpath($php_file);
+		$dappsDir = realpath(Dapps::getDappsDir());
+		if ($phpFile === false || $dappsDir === false || pathinfo($phpFile, PATHINFO_EXTENSION) !== 'php') {
+			throw new InvalidArgumentException('Invalid dapp PHP file');
+		}
+		$dappsPrefix = rtrim($dappsDir, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+		if (!str_starts_with($phpFile, $dappsPrefix)) {
+			throw new InvalidArgumentException('Dapp PHP file is outside dapps root');
+		}
+		$relative = substr($phpFile, strlen($dappsPrefix));
+		$dappId = explode(DIRECTORY_SEPARATOR, $relative, 2)[0];
+		$dappRoot = realpath($dappsDir.DIRECTORY_SEPARATOR.$dappId);
+		if ($dappRoot === false || !str_starts_with($phpFile, $dappRoot.DIRECTORY_SEPARATOR)) {
+			throw new InvalidArgumentException('Dapp PHP file is outside selected dapp');
+		}
 
-        // Ensure it's a PHP file
-        if (pathinfo($php_file, PATHINFO_EXTENSION) !== 'php') {
-            throw new InvalidArgumentException("File is not a PHAR archive: $php_file");
-        }
-        $iniFile = $debug ? "php-sandbox-debug.ini" : "php-sandbox.ini";
-        $sandboxDir = __DIR__;
-        $bootstrapFile = escapeshellarg("$sandboxDir/sandbox_dapp_bootstrap.php");
-        $cmd = "php -c $iniFile -d auto_prepend_file=$bootstrapFile";
-        $dapps_dir = Dapps::getDappsDir();
+		$iniPath = realpath(__DIR__.'/'.($debug ? 'php-sandbox-debug.ini' : 'php-sandbox.ini'));
+		$bootstrapPath = realpath(__DIR__.'/sandbox_dapp_bootstrap.php');
+		if ($iniPath === false || $bootstrapPath === false) {
+			throw new RuntimeException('Dapp sandbox configuration is missing');
+		}
 
-        $allowed_files[]=$bootstrapFile;
+		$basedirs = [$dappRoot];
+		foreach ($allowed_files as $allowedFile) {
+			$resolved = realpath($allowedFile);
+			if ($resolved !== false) $basedirs[] = $resolved;
+		}
+		$basedirs[] = $bootstrapPath;
+		$openBasedir = implode(PATH_SEPARATOR, array_values(array_unique($basedirs)));
+		$disabledFunctions = implode(',', [
+			'exec', 'passthru', 'shell_exec', 'system', 'proc_open', 'popen',
+			'pcntl_exec', 'pcntl_fork', 'putenv', 'mail', 'dl', 'set_time_limit',
+			'fsockopen', 'pfsockopen',
+			'stream_socket_client', 'stream_socket_server', 'stream_socket_accept',
+			'socket_create', 'socket_create_listen', 'socket_connect', 'socket_bind',
+			'socket_send', 'socket_sendto', 'socket_write', 'socket_recv', 'socket_recvfrom',
+			'socket_read', 'link', 'symlink', 'chown', 'chgrp', 'chmod', 'lchown', 'lchgrp',
+			'stream_wrapper_register', 'stream_wrapper_restore', 'stream_wrapper_unregister',
+		]);
 
-        $allowed_files_list = implode(":", $allowed_files);
-        $cmd .= " -d open_basedir=" . $dapps_dir.":".$allowed_files_list;
-//        $debug=false;
+        $debugCmd = '';
         if ($debug) {
-            $cmd .= " -d error_reporting=" . E_ALL;
+            $debugCmd = " -d error_reporting=" . E_ALL;
             // Enable Xdebug for CLI debugging
             if (extension_loaded('xdebug')) {
-                $cmd .= " -d xdebug.mode=debug";
-                $cmd .= " -d xdebug.start_with_request=yes";
-                $cmd .= " -d xdebug.idekey=PHPSTORM";
+                $debugCmd .= " -d xdebug.mode=debug";
+                $debugCmd .= " -d xdebug.start_with_request=yes";
+                $debugCmd .= " -d xdebug.idekey=PHPSTORM";
                 // Xdebug will connect to IDE on default port 9003 (Xdebug 3.x) or 9000 (Xdebug 2.x)
                 // Can be overridden with XDEBUG_CONFIG environment variable
             }
         }
-        $phpFileEscaped = escapeshellarg($php_file);
-        $cmd .= " $phpFileEscaped";
-
-        $use_stdin = !isset($env['SANDBOX_INPUT_DATA']);
-
-        // Prepare environment variables (for PhpStorm path mapping)
-        $env = $_ENV;
-        $input_json = json_encode($input);
-        $input_size = strlen($input_json);
-        $max_env_size = 32 * 1024; // 32KB limit for env vars (conservative)
-
-        if ($debug && extension_loaded('xdebug')) {
-            // Set PHP_IDE_CONFIG for PhpStorm path mapping
-            // Default server name, can be overridden with PHP_IDE_CONFIG env var
-            $php_ide_config = getenv('PHP_IDE_CONFIG') ?: 'serverName=PHAR_Sandbox';
-            $env['PHP_IDE_CONFIG'] = $php_ide_config;
-            // Set XDEBUG_SESSION to force Xdebug to start
-            $env['XDEBUG_SESSION'] = 'PHPSTORM';
-
-            // Only use environment variable for small inputs (to avoid "Argument list too long" error)
-            // For large inputs, use STDIN (Xdebug works fine with STDIN - it operates at PHP execution level, not I/O level)
-            if ($input_size <= $max_env_size) {
-                $env['SANDBOX_INPUT_DATA'] = $input_json;
-            }
-            // For large inputs, we'll use STDIN (handled below) - Xdebug will work normally
-        } elseif ($input_size <= $max_env_size) {
-            // Production mode: use env var for small inputs (more efficient)
-            $env['SANDBOX_INPUT_DATA'] = $input_json;
-        }
 
 
-        $proc = proc_open(
-            $cmd,
-            [
-                0 => $use_stdin ? ['pipe','r'] : ['file', '/dev/null', 'r'],
-                1 => ['pipe','w'],
-                2 => ['pipe','w']
-            ],
-            $pipes,
-            null,  // Use current working directory
-            $env   // Pass environment variables
-        );
+		$cmd = 'php -c '.escapeshellarg($iniPath)
+			.' -d auto_prepend_file='.escapeshellarg($bootstrapPath)
+			.' -d open_basedir='.escapeshellarg($openBasedir)
+			.' -d disable_functions='.escapeshellarg($disabledFunctions)
+			.' -d max_execution_time=5 -d memory_limit=32M '
+			. $debugCmd . ' '
+			.escapeshellarg($phpFile);
 
-        if ($use_stdin) {
-            // Send input via STDIN (for large inputs or when env var not set)
-            fwrite($pipes[0], $input_json);
-            fclose($pipes[0]);
-        }
+		$inputJson = json_encode($input);
+		if ($inputJson === false || strlen($inputJson) > 2 * 1024 * 1024) {
+			throw new RuntimeException('Dapp request data exceeds sandbox limit');
+		}
+		$proc = proc_open($cmd, [
+			0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w'],
+		], $pipes, $dappRoot, ['PATH' => '/usr/local/bin:/usr/bin:/bin']);
+		if (!is_resource($proc)) throw new RuntimeException('Unable to start dapp sandbox');
 
-        $output = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-
-        $errors = stream_get_contents($pipes[2]);
-        fclose($pipes[2]);
-
-        proc_close($proc);
-
-        return $output;
-
-
-
-
+		fwrite($pipes[0], $inputJson);
+		fclose($pipes[0]);
+		stream_set_blocking($pipes[1], false);
+		stream_set_blocking($pipes[2], false);
+		$output = '';
+		$errors = '';
+		$deadline = microtime(true) + 6.0;
+		$maxOutput = 2 * 1024 * 1024;
+		$failed = null;
+		while (true) {
+			$output .= (string) fread($pipes[1], 8192);
+			$errors .= (string) fread($pipes[2], 8192);
+			if (strlen($output) + strlen($errors) > $maxOutput) {
+				$failed = 'Dapp output limit exceeded';
+				proc_terminate($proc, 9);
+				break;
+			}
+			$status = proc_get_status($proc);
+			if (!$status['running']) {
+				$output .= (string) stream_get_contents($pipes[1]);
+				$errors .= (string) stream_get_contents($pipes[2]);
+				break;
+			}
+			if (microtime(true) >= $deadline) {
+				$failed = 'Dapp execution timed out';
+				proc_terminate($proc, 9);
+				break;
+			}
+			usleep(10000);
+		}
+		fclose($pipes[1]);
+		fclose($pipes[2]);
+		proc_close($proc);
+		if ($failed !== null) {
+			_log('Sandbox: '.$failed);
+			return 'Dapp execution failed';
+		}
+		if ($errors !== '') _log('Sandbox: dapp stderr: '.substr($errors, 0, 4096));
+		if ($debug && $errors !== '' && $output === '') return $errors;
+		return $output;
     }
 
 }
@@ -534,4 +552,3 @@ if (!function_exists('run_phar_directly')) {
         return Sandbox::runPharDirectly($phar_file, $input, $debug);
     }
 }
-

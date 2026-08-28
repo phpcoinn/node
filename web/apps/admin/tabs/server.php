@@ -8,34 +8,35 @@ global $action, $db;
 
 if($action == "task_enable") {
 	$task = $_GET['task'] ?? '';
-    if(!Security::isAdminTaskClass($task)) {
-        header("location: ".APP_URL."/?view=server");
-        exit;
-    }
+	if(!Security::isAdminTaskClass($task)) {
+		http_response_code(400);
+		exit;
+	}
     $task::enable();
 	header("location: ".APP_URL."/?view=server");
 	exit;
 }
 
 if($action == "task_disable") {
-	$task = $_GET['task'] ?? '';
-    if(!Security::isAdminTaskClass($task)) {
-        header("location: ".APP_URL."/?view=server");
-        exit;
-    }
+	    $task = $_GET['task'] ?? '';
+	if(!Security::isAdminTaskClass($task)) {
+		http_response_code(400);
+		exit;
+	}
     $task::disable();
 	header("location: ".APP_URL."/?view=server");
 	exit;
 }
 
 if($action == "task_stop") {
-	$task = $_GET['task'] ?? '';
-    if(!Security::isAdminTaskClass($task)) {
-        header("location: ".APP_URL."/?view=server");
-        exit;
-    }
-    $name = preg_replace('/[^a-z0-9_-]/i', '', $task::$name);
-	$cmd = "php ".escapeshellarg(ROOT."/cli/".$name.".php")." --stop";
+	    $task = $_GET['task'] ?? '';
+	if(!Security::isAdminTaskClass($task)) {
+		http_response_code(400);
+		exit;
+	}
+	    $name = $task::$name;
+	$name = preg_replace('/[^a-z0-9_-]/i', '', $name);
+		$cmd = "php ".escapeshellarg(ROOT."/cli/$name.php")." --stop";
 	$res = shell_exec($cmd);
 	header("location: ".APP_URL."/?view=server");
 	exit;
@@ -232,15 +233,15 @@ $res=Nodeutil::psAux("php ".ROOT ."/", 1, "ps -e -o user,pid,ppid,pcpu,pmem,lsta
                     <div>
                         <?php if ($task::canDisable()) { ?>
                             <?php if ($taskStatus['enabled']) { ?>
-                                <a href="/apps/admin/?view=server&task=<?php echo urlencode($task) ?>&action=task_disable&<?php echo Security::csrfQuery() ?>" class="btn btn-sm btn-danger">Disable</a>
+                                <a href="<?php echo admin_url('/apps/admin/?view=server&task='.rawurlencode($task).'&action=task_disable') ?>" class="btn btn-sm btn-danger">Disable</a>
                             <?php } else { ?>
-                                <a href="/apps/admin/?view=server&task=<?php echo urlencode($task) ?>&action=task_enable&<?php echo Security::csrfQuery() ?>" class="btn btn-sm btn-success">Enable</a>
+                                <a href="<?php echo admin_url('/apps/admin/?view=server&task='.rawurlencode($task).'&action=task_enable') ?>" class="btn btn-sm btn-success">Enable</a>
                             <?php } ?>
                         <?php } ?>
                     </div>
                     <div>
                         <?php if ($taskStatus['running']) { ?>
-                            <a href="/apps/admin/?view=server&task=<?php echo urlencode($task) ?>&action=task_stop&<?php echo Security::csrfQuery() ?>" class="btn btn-sm btn-warning">Stop</a>
+                            <a href="<?php echo admin_url('/apps/admin/?view=server&task='.rawurlencode($task).'&action=task_stop') ?>" class="btn btn-sm btn-warning">Stop</a>
                         <?php } ?>
                     </div>
                 </div>
