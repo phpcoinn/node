@@ -9,7 +9,7 @@ if(!defined("DEFAULT_CHAIN_ID")) {
 }
 
 // Default database connection
-$_config['chain_id'] = trim(file_get_contents(dirname(__DIR__)."/chain_id"));
+$_config['chain_id'] = trim(@file_get_contents(dirname(__DIR__)."/chain_id"));
 $_config['db_connect'] = 'mysql:host=localhost;dbname=phpcoin;charset=utf8';
 $_config['db_user'] = 'phpcoin';
 $_config['db_pass'] = 'phpcoin';

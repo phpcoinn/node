@@ -658,7 +658,7 @@ class Nodeutil
         $height = $data['height'];
         $address = $data['address'];
         $minerid = $data['minerid'];
-        $ip = $_SERVER['REMOTE_ADDR'];
+        $ip = @$_SERVER['REMOTE_ADDR'] ?? '';
         @$miningStat['totals'][$height]['hashes']+=$hashes;
         @$miningStat['totals'][$height]['intervals']+=$interval;
         @$miningStat['totals'][$height]['miner'][$minerid]=$minerid;
