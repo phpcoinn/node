@@ -63,7 +63,7 @@ $count=count($transactions);
 				<td><?php echo $transaction['peer'] ?></td>
 				<td><?php echo $transaction['error'] ?></td>
                 <td>
-                    <a class="btn btn-danger btn-xs" href="<?php echo APP_URL ?>/?view=mempool&action=delete_tx&id=<?php echo $transaction['id']  ?>"
+                    <a class="btn btn-danger btn-xs" href="<?php echo admin_url(APP_URL.'/?view=mempool&action=delete_tx&id='.rawurlencode($transaction['id'])) ?>"
                        onclick="if(!confirm('Delete mempool transaction?')) return false;">Delete</a>
                 </td>
 			</tr>
@@ -71,5 +71,5 @@ $count=count($transactions);
 		</tbody>
 	</table>
 </div>
-<a href="<?php echo APP_URL ?>/?view=mempool&action=empty_mempool" class="btn btn-danger"
+<a href="<?php echo admin_url(APP_URL.'/?view=mempool&action=empty_mempool') ?>" class="btn btn-danger"
     onclick="if(!confirm('Confirm?')) return false">Clear mempool</a>

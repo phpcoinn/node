@@ -48,7 +48,7 @@ $peer = $sel_peer;
 <ol class="breadcrumb m-0 ps-0 h4">
 	<li class="breadcrumb-item"><a href="/apps/explorer">Explorer</a></li>
 	<li class="breadcrumb-item"><a href="/apps/explorer/peers.php">Peers</a></li>
-	<li class="breadcrumb-item active"><?php echo $peer['hostname'] ?></li>
+	<li class="breadcrumb-item active"><?php echo h($peer['hostname']) ?></li>
 </ol>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
@@ -65,8 +65,8 @@ $peer = $sel_peer;
         <tr>
             <td><strong>Hostname</strong></td>
             <td>
-                <?php echo $peer['hostname'] ?>
-                <a href="<?php echo $peer['hostname'] ?>" target="_blank" class="ms-2"
+                <?php echo h($peer['hostname']) ?>
+                <a href="<?php echo h($peer['hostname']) ?>" target="_blank" class="ms-2"
                    data-bs-toggle="tooltip" data-bs-placement="top" title="Open in new window">
                     <span class="fa fa-external-link-alt"></span>
                 </a>
@@ -84,7 +84,7 @@ $peer = $sel_peer;
                     <span class="text-muted ps-2">Blacklisted until <?php echo display_date($peer['blacklisted']) ?>
                         (for <?php echo durationFormat($peer['blacklisted'] - time()) ?>)</span>
 	                <?php if (!empty($peer['blacklist_reason'])) { ?>
-                        <span class="text-muted ps-2"><?php echo $peer['blacklist_reason'] ?></span>
+                        <span class="text-muted ps-2"><?php echo h($peer['blacklist_reason']) ?></span>
 	                <?php } ?>
                 <?php } else {?>
                     <div class="badge rounded-pill bg-success font-size-12">Active</div>
@@ -93,7 +93,7 @@ $peer = $sel_peer;
                         (<?php echo durationFormat(time()-$peer['blacklisted']) ?> ago)</span>
 	                <?php } ?>
 	                <?php if (!empty($peer['blacklist_reason'])) { ?>
-                        <span class="text-muted ps-2"><?php echo $peer['blacklist_reason'] ?></span>
+                        <span class="text-muted ps-2"><?php echo h($peer['blacklist_reason']) ?></span>
 	                <?php } ?>
                 <?php } ?>
                 <br/>

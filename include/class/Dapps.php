@@ -8,6 +8,15 @@ class Dapps extends Task
 
 	static $run_interval = 30;
 
+	private static function validDappsId($dapps_id) {
+		return Security::validDappsId($dapps_id);
+	}
+
+	private static function extractDappsArchive($archive, $dapps_id, $extract = true) {
+		if(!self::validDappsId($dapps_id)) return false;
+		return Security::extractTarSafely($archive, ROOT, 'dapps/'.$dapps_id, $extract);
+	}
+
 	static function isLocal($dapps_id) {
 		global $_config;
 		return self::isEnabled() && Account::getAddress($_config['dapps_public_key'])==$dapps_id;
@@ -238,58 +247,87 @@ class Dapps extends Task
 			return;
 		}
 
-		$url = $_GET['url'];
-		if(substr($url, 0, 1)=='/') {
-			$url = substr($url, 1);
-		}
-		$arr = explode("/", $url);
-		$dapps_id = $arr[0];
-		$dapps_dir = Dapps::getDappsDir();
-		if(!file_exists($dapps_dir ."/". $dapps_id)) {
-			_log("Dapps: Does not exists $dapps_id");
-			$res = Dapps::downloadDapps($dapps_id);
+			$url = (string) ($_GET['url'] ?? '');
+			if(substr($url, 0, 1)=='/') {
+				$url = substr($url, 1);
+			}
+			$arr = explode("/", $url);
+			$dapps_id = $arr[0];
+			$dapps_dir = Dapps::getDappsDir();
+			if($dapps_id === '' || !preg_match('/\A[A-Za-z0-9_-]+\z/', $dapps_id)) {
+				http_response_code(404);
+				return;
+			}
+
+			$dapps_root = realpath($dapps_dir);
+			$dapp_root = realpath($dapps_dir . "/" . $dapps_id);
+			if($dapps_root === false) {
+				http_response_code(404);
+				return;
+			}
+
+			if($dapp_root === false) {
+				_log("Dapps: Does not exists $dapps_id");
+				$res = Dapps::downloadDapps($dapps_id);
 			if($res) {
 				sleep(5);
 				header("location: " . $_SERVER['REQUEST_URI']);
+				}
+				return;
 			}
-			return;
-		}
+
+			// A dapp root must be a real directory directly below the dapps root.
+			// This rejects traversal in the dapp id and dapp-directory symlinks.
+			if(!is_dir($dapp_root) || dirname($dapp_root) !== $dapps_root) {
+				http_response_code(404);
+				return;
+			}
 
 		_log("Dapps: Start render dapps page $dapps_id", 5);
 
-		$url_info = parse_url($url);
-		$file = $url_info['path'];
-
-		$file = $dapps_dir . "/" . $file;
-
-		if(!file_exists($file)) {
-			_log("Dapps: File $file not exists");
-			if(!Dapps::isLocal($dapps_id)) {
-				Dapps::downloadDapps($dapps_id);
+			$url_info = parse_url($url);
+			if($url_info === false || empty($url_info['path'])) {
+				http_response_code(404);
+				return;
 			}
-			return;
-		}
+
+			$file = realpath($dapps_root . "/" . ltrim($url_info['path'], '/'));
+			if($file === false) {
+				_log("Dapps: Requested file does not exist");
+				if(!Dapps::isLocal($dapps_id)) {
+					Dapps::downloadDapps($dapps_id);
+				}
+				http_response_code(404);
+				return;
+			}
+			if($file !== $dapp_root && !str_starts_with($file, $dapp_root . DIRECTORY_SEPARATOR)) {
+				_log("Dapps: Requested file is outside dapp root");
+				http_response_code(404);
+				return;
+			}
 
 		if(is_dir($file)) {
 			_log("Dapps: File $file is dir", 5);
 			$files = scandir($file);
 			_log("Dapps: Files in dir ".json_encode($files), 5);
-			foreach ($files as $dir_file) {
-				if($dir_file == "index.html") {
-					$file = $file . "/" . $dir_file;
-					break;
-				}
-				if($dir_file == "index.php") {
-					$file = $file . "/" . $dir_file;
-					break;
+				foreach ($files as $dir_file) {
+					if($dir_file == "index.html") {
+						$file = realpath($file . "/" . $dir_file);
+						break;
+					}
+					if($dir_file == "index.php") {
+						$file = realpath($file . "/" . $dir_file);
+						break;
+					}
 				}
 			}
-		}
 
-		if(!is_file($file)) {
-			_log("Dapps: Entry $file does not exists", 5);
-			return;
-		}
+			if($file === false || !is_file($file)
+				|| !str_starts_with($file, $dapp_root . DIRECTORY_SEPARATOR)) {
+				_log("Dapps: Entry $file does not exists", 5);
+				http_response_code(404);
+				return;
+			}
 
 		$file_type = mime_content_type($file);
 		$file_info = pathinfo($file);
@@ -308,10 +346,12 @@ class Dapps extends Task
 		}
 
 
-		_log("Dapps: Starting session", 5);
-		$tmp_dir = ROOT."/tmp/dapps";
-		@mkdir($tmp_dir);
-        CommonSessionHandler::setup();
+			_log("Dapps: Starting session", 5);
+			$dapps_session_namespace = 'dapp:'.$dapps_id;
+			$tmp_dir = ROOT."/tmp/dapps/".hash('sha256', $dapps_session_namespace);
+			@mkdir($tmp_dir, 0700, true);
+			session_name('DAPPSESSID_'.substr(hash('sha256', $dapps_id), 0, 16));
+	        CommonSessionHandler::setup(null, $dapps_session_namespace);
 		ob_start();
 		$session_id = session_id();
 		_log("Dapps: Getting session_id=$session_id", 5);
@@ -346,7 +386,6 @@ class Dapps extends Task
 			$server_args.=" $key='$val' ";
 		}
 		$post_data = base64_encode(json_encode($_POST));
-		$session_data = base64_encode(json_encode($_SESSION));
 
 		@parse_str($query, $parsed);
 		foreach ($_GET as $key=>$val) {
@@ -355,7 +394,13 @@ class Dapps extends Task
 		$get_data = base64_encode(json_encode($parsed));
         $input_data = base64_encode(json_encode(file_get_contents('php://input')));
 
-		$cookie_data = base64_encode(json_encode($_COOKIE));
+		$dapp_cookies = $_COOKIE;
+		foreach (array_keys($dapp_cookies) as $cookie_name) {
+			if ($cookie_name === 'PHPSESSID' || str_starts_with($cookie_name, 'DAPPSESSID_')) {
+				unset($dapp_cookies[$cookie_name]);
+			}
+		}
+		$cookie_data = base64_encode(json_encode($dapp_cookies));
 
 		$functions_file = ROOT . "/include/dapps.functions.php";
 
@@ -365,8 +410,8 @@ class Dapps extends Task
 				ROOT . "/include/common.functions.php",
 				ROOT . "/include/coinspec.inc.php",
 				ROOT . "/include/network_chain_id.inc.php",
-				ROOT . "/tmp/sessions",
-				sys_get_temp_dir(),
+				ROOT . "/tmp/sessions/".hash('sha256', 'dapp:'.$dapps_id),
+				$tmp_dir,
 				ROOT . "/include/class/CommonSessionHandler.php",
 			];
 
@@ -381,17 +426,6 @@ class Dapps extends Task
 			$allowed_files [] = ROOT . "/config/dapps.config.inc.php";
 		}
 
-		$allowed_files_list = implode(":", $allowed_files);
-
-        $debug="-dxdebug.start_with_request=1";
-        $debug="";
-
-        $cmd = "php $debug -d disable_functions=exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source,set_time_limit,ini_set" .
-			" -d open_basedir=" . $dapps_dir . "/$dapps_id:".$tmp_dir.":".$allowed_files_list .
-			" -d max_execution_time=5 -d memory_limit=128M " .
-			" -d auto_prepend_file=$functions_file $file 2>&1";
-		_log("Dapps: Executing dapps file cmd=$cmd", 5);
-
         if(empty($_SESSION)) {
             @session_destroy();
         } else {
@@ -399,19 +433,31 @@ class Dapps extends Task
         }
 
         $_SERVER['SESSION_ID']=$session_id;
-        $_SERVER['DAPPS_ID']=$dapps_id;
-        $_SERVER['DAPPS_LOCAL']=$dapps_local;
+	        $_SERVER['DAPPS_ID']=$dapps_id;
+	        $_SERVER['DAPPS_LOCAL']=$dapps_local;
+	        $_SERVER['DAPPS_SESSION_NAMESPACE']=$dapps_session_namespace;
 
-        $cmdData = [
-            'GET_DATA' => $get_data,
-            'POST_DATA' => $post_data,
-            'INPUT_DATA' => $input_data,
-            'SESSION_DATA' => $session_data,
-            'COOKIE_DATA' => $cookie_data,
-            'SERVER' =>$_SERVER,
-        ];
+		$dapp_server = [];
+		$dapp_server_keys = [
+			'REMOTE_ADDR', 'REQUEST_SCHEME', 'HTTP_HOST', 'REQUEST_URI', 'REQUEST_METHOD',
+			'PHP_SELF_BASE', 'REWRITE_URL', 'DAPPS_URL', 'DAPPS_NETWORK', 'DAPPS_CHAIN_ID',
+			'DAPPS_FULL_URL', 'DAPPS_HOSTNAME', 'DAPPS_HASH', 'SESSION_ID', 'DAPPS_ID',
+			'DAPPS_LOCAL', 'DAPPS_SESSION_NAMESPACE', 'HTTP_PHPCRAFT_AJAX',
+		];
+		foreach ($dapp_server_keys as $server_key) {
+			if (array_key_exists($server_key, $_SERVER)) $dapp_server[$server_key] = $_SERVER[$server_key];
+		}
 
-        $output = Sandbox::runDapp($file, $cmdData, $allowed_files, true);
+		$cmdData = [
+	            'GET_DATA' => $get_data,
+	            'POST_DATA' => $post_data,
+	            'INPUT_DATA' => $input_data,
+	            'COOKIE_DATA' => $cookie_data,
+	            'SERVER' =>$dapp_server,
+	        ];
+
+	        $output = Sandbox::runDapp($file, $cmdData, $allowed_files, false,
+			function($request) use ($dapps_id) { return self::handleRpc($request, $dapps_id); });
 
         ob_end_clean();
         ob_start();
@@ -433,12 +479,129 @@ class Dapps extends Task
 
 	}
 
+	public static function handleRpc($request, $dapps_id) {
+		global $_config;
+		if(!is_array($request)) return ['ok'=>false];
+		if(($request['type'] ?? '') === 'peers') {
+			$hostnames = [];
+			foreach(Peer::getAll() as $peer) {
+				if(!empty($peer['hostname']) && Security::isSafePeerUrl($peer['hostname'])) {
+					$hostnames[] = rtrim((string)$peer['hostname'], '/');
+				}
+			}
+			return empty($hostnames) ? ['ok'=>false, 'error'=>'No peers']
+				: ['ok'=>true, 'body'=>base64_encode(implode(PHP_EOL, $hostnames))];
+		}
+		if(in_array(($request['type'] ?? ''), ['dapp_get', 'dapp_post'], true)) {
+			$isPost = ($request['type'] ?? '') === 'dapp_post';
+			$path = ltrim((string)($request['path'] ?? ''), '/');
+			$query = $request['query'] ?? [];
+			$bodyData = (string)($request['body'] ?? '');
+			$remote = !empty($request['remote']);
+			if(!preg_match('/\A[A-Za-z0-9_\/-]+\.php\z/', $path) || !is_array($query) || count($query) > 50
+				|| strlen($bodyData) > 262144) {
+				return ['ok'=>false, 'error'=>'Dapp request rejected'];
+			}
+			foreach($query as $key=>$value) {
+				if(!is_string($key) || (!is_scalar($value) && $value !== null)) return ['ok'=>false, 'error'=>'Dapp request rejected'];
+			}
+			if($isPost && !empty($request['phpcraft_ajax'])) {
+				$phpcraftData = json_decode($bodyData, true);
+				if(!is_array($phpcraftData) || !preg_match('/\A[A-Za-z_][A-Za-z0-9_]*\z/', (string)($phpcraftData['api'] ?? ''))
+					|| !is_array($phpcraftData['params'] ?? null) || count($phpcraftData['params']) > 32) {
+					return ['ok'=>false, 'error'=>'PhpCraft request rejected'];
+				}
+			}
+			$base = rtrim((string)($_config['hostname'] ?? ''), '/');
+			if($remote && !self::isLocal($dapps_id)) {
+				$peer = Peer::findByDappsId($dapps_id);
+				$base = rtrim((string)($peer['hostname'] ?? ''), '/');
+			}
+			if(!Security::isSafePeerUrl($base)) return ['ok'=>false, 'error'=>'Dapp host rejected'];
+			$url = $base.'/dapps.php?'.http_build_query(['url'=>$dapps_id.'/'.$path] + $query);
+			$http = ['method'=>$isPost ? 'POST' : 'GET', 'timeout'=>10, 'ignore_errors'=>true,
+				'follow_location'=>0, 'max_redirects'=>0, 'header'=>"Accept: application/json\r\nConnection: close\r\n"];
+			if($isPost) {
+				$http['header'] .= "Content-Type: application/json\r\n";
+				if(!empty($request['phpcraft_ajax'])) $http['header'] .= "phpcraft-ajax: 1\r\n";
+				$http['content'] = $bodyData;
+			}
+			$context = stream_context_create(['http'=>$http, 'ssl'=>['verify_peer'=>true, 'verify_peer_name'=>true]]);
+			$body = @file_get_contents($url, false, $context, 0, 2 * 1024 * 1024 + 1);
+			if($body === false || strlen($body) > 2 * 1024 * 1024) return ['ok'=>false, 'error'=>'Dapp request failed'];
+			return ['ok'=>true, 'body'=>base64_encode($body)];
+		}
+		if(($request['type'] ?? '') === 'sql') {
+			$query = trim((string)($request['query'] ?? ''));
+			$params = $request['params'] ?? [];
+			if(!self::isLocal($dapps_id) || strlen($query) > 65536 || !is_array($params)
+				|| count($params) > 100 || !preg_match('/\Aselect\s/iu', $query)
+				|| preg_match('/;|--|#|\/\*/', $query)) return ['ok'=>false, 'error'=>'SQL request rejected'];
+			global $db;
+			return ['ok'=>true, 'data'=>$db->select($query, $params)];
+		}
+		if(($request['type'] ?? '') === 'exec_fn') {
+			if(!self::isLocal($dapps_id)) return ['ok'=>false, 'error'=>'Function request rejected'];
+			$fnName = $request['fn_name'] ?? '';
+			$params = $request['params'] ?? [];
+			$functionsFile = ROOT.'/include/dapps.local.inc.php';
+			if(!is_string($fnName) || !preg_match('/\A[A-Za-z_][A-Za-z0-9_]*\z/', $fnName)
+				|| !is_array($params) || count($params) > 32 || !is_file($functionsFile)) {
+				return ['ok'=>false, 'error'=>'Function request rejected'];
+			}
+			require_once $functionsFile;
+			if(!function_exists($fnName)) return ['ok'=>false, 'error'=>'Function not found'];
+			$reflection = new ReflectionFunction($fnName);
+			$definedIn = realpath((string)$reflection->getFileName());
+			$allowedFile = realpath($functionsFile);
+			$dappRoot = realpath(self::getDappsDir().'/'.$dapps_id);
+			if($definedIn === false || ($definedIn !== $allowedFile
+				&& ($dappRoot === false || !str_starts_with($definedIn, $dappRoot.DIRECTORY_SEPARATOR)))) {
+				return ['ok'=>false, 'error'=>'Function source rejected'];
+			}
+			return ['ok'=>true, 'data'=>$reflection->invokeArgs($params)];
+		}
+		if(($request['type'] ?? '') !== 'http') return ['ok'=>false];
+		$method = strtoupper((string)($request['method'] ?? ''));
+		$node = rtrim((string)($request['node'] ?? ''), '/');
+		$api = (string)($request['api'] ?? '');
+		$allowedNodes = [rtrim((string)($_config['hostname'] ?? ''), '/')];
+		foreach(Peer::getAll() as $peer) {
+			if(!empty($peer['hostname'])) $allowedNodes[] = rtrim((string)$peer['hostname'], '/');
+		}
+		if(!in_array($method, ['GET', 'POST'], true) || !Security::isSafePeerUrl($node)
+			|| !in_array($node, $allowedNodes, true)
+			|| strlen($api) < 1 || strlen($api) > 2048 || preg_match('/[\x00-\x1f\x7f#?]/', $api)) {
+			return ['ok'=>false, 'error'=>'RPC request rejected'];
+		}
+		$url = $node.'/api.php?q='.$api;
+		$http = ['method'=>$method, 'timeout'=>5, 'ignore_errors'=>true, 'follow_location'=>0, 'max_redirects'=>0,
+			'header'=>"Accept: application/json\r\nConnection: close\r\n"];
+		if($method === 'POST') {
+			$http['header'] .= "Content-Type: application/x-www-form-urlencoded\r\n";
+			$http['content'] = http_build_query(['data'=>json_encode($request['data'] ?? null)]);
+		}
+		$context = stream_context_create(['http'=>$http, 'ssl'=>['verify_peer'=>true, 'verify_peer_name'=>true]]);
+		$body = @file_get_contents($url, false, $context, 0, 2 * 1024 * 1024 + 1);
+		if($body === false || strlen($body) > 2 * 1024 * 1024) return ['ok'=>false, 'error'=>'RPC request failed'];
+		return ['ok'=>true, 'body'=>base64_encode($body)];
+	}
+
 	static function processAction($out, $dapps_id) {
 		global $_config;
 		$str = str_replace("action:", "", $out);
 		$actionObj = json_decode($str, true);
+		if(!is_array($actionObj) || !isset($actionObj['type']) || !is_string($actionObj['type'])) {
+			http_response_code(502);
+			return;
+		}
 		if($actionObj['type']=="redirect") {
-			header("location: " . $actionObj['url']);
+			$redirect = str_replace(["\r", "\n"], '', (string)($actionObj['url'] ?? ''));
+			if($redirect === '') {
+				http_response_code(400);
+				return;
+			}
+			header("location: " . $redirect);
 			exit;
 		}
 		if($actionObj['type']=="dapps_request") {
@@ -457,9 +620,9 @@ class Dapps extends Task
 			header("location: $url");
 			exit;
 		}
-		if($actionObj['type']=="dapps_exec" && self::isLocal($dapps_id)) {
-			$code = $actionObj['code'];
-			eval($code);
+		if($actionObj['type']=="dapps_exec") {
+			http_response_code(403);
+			echo 'Raw dapp code execution is disabled';
 			exit;
 		}
 		if($actionObj['type']=="dapps_exec_fn" && self::isLocal($dapps_id)) {
@@ -470,8 +633,23 @@ class Dapps extends Task
                 die("Dapps local functions file not exists");
             }
             require_once $dapps_fn_file;
-            if(!function_exists($fn_name)) {
+			if(!is_string($fn_name) || !preg_match('/\A[A-Za-z_][A-Za-z0-9_]*\z/', $fn_name)
+				|| !function_exists($fn_name)) {
 				die("Called function $fn_name not exists");
+			}
+			$reflection = new ReflectionFunction($fn_name);
+			$definitionFile = $reflection->getFileName();
+			$definedIn = is_string($definitionFile) ? realpath($definitionFile) : false;
+			$localFunctions = realpath($dapps_fn_file);
+			$dappRoot = realpath(self::getDappsDir().'/'.$dapps_id);
+			if($definedIn === false || ($definedIn !== $localFunctions
+				&& ($dappRoot === false || !str_starts_with($definedIn, $dappRoot.DIRECTORY_SEPARATOR)))) {
+				http_response_code(403);
+				die('Dapp function is not allowed');
+			}
+			if(!is_array($params) || count($params) > 32) {
+				http_response_code(400);
+				die('Invalid dapp function parameters');
 			}
 			call_user_func($fn_name, ...$params);
 			exit;
@@ -485,15 +663,27 @@ class Dapps extends Task
 		if($actionObj['type']=="dapps_response") {
 			$data = $actionObj['data'];
 			$data = base64_decode($data);
+			$contentType = (string)($actionObj['content_type'] ?? 'application/octet-stream');
+			if(!preg_match('#\A[a-z0-9][a-z0-9.+-]*/[a-z0-9][a-z0-9.+-]*(?:;\s*charset=[a-z0-9_-]+)?\z#i', $contentType)) {
+				http_response_code(400);
+				exit;
+			}
 			ob_end_clean();
-			header('Content-Type: '.$actionObj['content_type']);
+			header('Content-Type: '.$contentType);
 			echo $data;
 			exit;
 		}
-        if($actionObj['type']=="dapps_sql") {
-            $query = $actionObj['query'];
-            $params = $actionObj['params'];
-            global $db;
+	        if($actionObj['type']=="dapps_sql" && self::isLocal($dapps_id)) {
+	            $query = trim((string)($actionObj['query'] ?? ''));
+	            $params = $actionObj['params'] ?? [];
+	            if(strlen($query) > 65536 || !is_array($params) || count($params) > 100
+					|| !preg_match('/\Aselect\s/iu', $query)
+					|| preg_match('/;|--|#|\/\*/', $query)) {
+				http_response_code(403);
+				echo json_encode(['error' => 'Dapp SQL query rejected']);
+				exit;
+			}
+	            global $db;
             $rows = $db->select($query, $params);
             echo json_encode($rows);
             exit;
@@ -508,6 +698,9 @@ class Dapps extends Task
 		global $_config;
 		$dapps_hash = $data['dapps_hash'];
 		$dapps_id = $data['dapps_id'];
+		if(!self::validDappsId($dapps_id)) {
+			api_err("Dapps: Invalid dapps id", 0);
+		}
 		$dapps_signature = $data['dapps_signature'];
 		_log("Dapps: received update dapps dapps_id=$dapps_id dapps_hash=$dapps_hash dapps_signature=$dapps_signature");
 
@@ -564,13 +757,17 @@ class Dapps extends Task
 				api_err("Dapps: Downloaded empty file from remote server", 0);
 			} else {
 				_log("Dapps: Downloaded size $size file=$local_file", 5);
-				$cmd = "cd ".self::getDappsDir()." && rm -rf $dapps_id";
-				shell_exec($cmd);
-				$cmd = "cd ".ROOT." && tar -xzf tmp/dapps.$dapps_id.tar.gz -C . --owner=0 --group=0 --mode=744 --mtime='2020-01-01 00:00:00 UTC'";
-				shell_exec($cmd);
-				$cmd = "cd ".self::getDappsDir()." && find $dapps_id -type f -exec touch {} +";
-				shell_exec($cmd);
-				$cmd = "cd ".self::getDappsDir()." && find $dapps_id -type d -exec touch {} +";
+					if(!self::extractDappsArchive($local_file, $dapps_id, false)) {
+						api_err("Dapps: Rejected unsafe archive", 0);
+					}
+					$cmd = "cd ".escapeshellarg(self::getDappsDir())." && rm -rf ".escapeshellarg($dapps_id);
+					shell_exec($cmd);
+					if(!self::extractDappsArchive($local_file, $dapps_id)) {
+						api_err("Dapps: Rejected unsafe archive", 0);
+					}
+					$cmd = "cd ".escapeshellarg(self::getDappsDir())." && find ".escapeshellarg($dapps_id)." -type f -exec touch {} +";
+					shell_exec($cmd);
+					$cmd = "cd ".escapeshellarg(self::getDappsDir())." && find ".escapeshellarg($dapps_id)." -type d -exec touch {} +";
 				shell_exec($cmd);
 				if (php_sapi_name() == 'cli') {
 					$cmd = "cd ".self::getDappsDir()." && chown -R www-data:www-data $dapps_id";
@@ -618,6 +815,7 @@ class Dapps extends Task
 				self::downloadDapps($dappsPeer['dapps_id']);
 			}
 		} else {
+			if(!self::validDappsId($dapps_id)) return false;
 			if(!Account::valid($dapps_id)) {
 				_log("Dapps: downloadDapps dapps_id=$dapps_id NOT VALID");
 				return false;

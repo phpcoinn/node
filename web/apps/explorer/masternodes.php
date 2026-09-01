@@ -118,7 +118,7 @@ require_once __DIR__. '/../common/include/top.php';
 <form class="row my-3" method="get" action="">
     <div class="col-lg-4">
         <input type="text" class="form-control p-1" placeholder="Address, IP, Public key" name="search[masternode]"
-               value="<?php echo $dm['search']['masternode']?>">
+               value="<?php echo h($dm['search']['masternode'] ?? '') ?>">
     </div>
     <div class="col-lg-2">
         <button type="submit" class="btn btn-primary btn-sm">Search</button>

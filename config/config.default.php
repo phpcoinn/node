@@ -9,7 +9,7 @@ if(!defined("DEFAULT_CHAIN_ID")) {
 }
 
 // Default database connection
-$_config['chain_id'] = trim(file_get_contents(dirname(__DIR__)."/chain_id"));
+$_config['chain_id'] = trim(@file_get_contents(dirname(__DIR__)."/chain_id"));
 $_config['db_connect'] = 'mysql:host=localhost;dbname=phpcoin;charset=utf8';
 $_config['db_user'] = 'phpcoin';
 $_config['db_pass'] = 'phpcoin';
@@ -19,6 +19,17 @@ $_config['public_api'] = true;
 
 // Hosts that are allowed to mine on this node
 $_config['allowed_hosts'] = ['*'];
+
+// If this node is behind a reverse proxy (Cloudflare, nginx), list those proxy IPs.
+// Forwarded client-IP headers are ignored unless REMOTE_ADDR is in this list.
+$_config['trusted_proxies'] = [];
+
+// Browser CORS origin for api.php. Keep '*' so web wallets on other origins keep working.
+$_config['cors_origin'] = '*';
+
+// Keep enabled so the node receives required network updates automatically.
+// Set false only if you will update manually; outdated nodes may be rejected by newer peers.
+$_config['allow_auto_update'] = true;
 
 // The initial peers to sync from
 $_config['initial_peer_list'] = $_config['chain_id'] == "00"  ? [

@@ -53,15 +53,15 @@ if($action == "clear_tmp") {
 
 
 <div class="flex-row d-flex flex-wrap align-items-center mb-2">
-    <a class="btn btn-danger me-2" href="<?php echo APP_URL ?>/?view=utils&action=clean" onclick="if(!confirm('Clean?')) return false">Clean</a>
+    <a class="btn btn-danger me-2" href="<?php echo admin_url(APP_URL.'/?view=utils&action=clean') ?>" onclick="if(!confirm('Clean?')) return false">Clean</a>
     <div class="text-danger">Deletes all block and transactions in database</div>
 </div>
 <div class="flex-row d-flex flex-wrap align-items-center mb-2">
-    <a class="btn btn-info me-2" href="<?php echo APP_URL ?>/?view=utils&action=sync" onclick="if(!confirm('Run sync?')) return false">Run sync</a>
+    <a class="btn btn-info me-2" href="<?php echo admin_url(APP_URL.'/?view=utils&action=sync') ?>" onclick="if(!confirm('Run sync?')) return false">Run sync</a>
     <div>Manualy sync from main node <?php echo $main_node ?></div>
 </div>
 <div class="flex-row d-flex flex-wrap align-items-center mb-2">
-    <a class="btn btn-info me-2" href="<?php echo APP_URL ?>/?view=utils&action=clear_tmp" onclick="if(!confirm('Run sync?')) return false">Clear temp folder</a>
+    <a class="btn btn-info me-2" href="<?php echo admin_url(APP_URL.'/?view=utils&action=clear_tmp') ?>" onclick="if(!confirm('Run sync?')) return false">Clear temp folder</a>
     <div>Clear tmp folder if syncing of node is stuck</div>
 </div>
 
@@ -69,7 +69,7 @@ if($action == "clear_tmp") {
     <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i> Check blocks</h3>
 
     <form class="row gx-3 gy-2 align-items-center" method="post" action="">
-
+        <?php echo admin_csrf_field() ?>
         <input type="hidden" name="action" value="check_blocks"/>
         <div class="col-sm-2">
             <input type="text" class="form-control" id="peer" name="peer" placeholder="Peer" required="required">
@@ -99,6 +99,7 @@ if($action == "clear_tmp") {
     <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i> Clear blocks</h3>
 
     <form class="row gx-3 gy-2 align-items-center" method="post" action="">
+        <?php echo admin_csrf_field() ?>
         <input type="hidden" name="action" value="clear_blocks"/>
         <div class="col-sm-2">
             <input type="text" class="form-control" id="height" name="height" placeholder="From height" required="required">
@@ -115,7 +116,7 @@ if($action == "clear_tmp") {
     <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i>Accounts hash</h3>
     <div class="row">
         <div class="col-sm-2">
-            <a href="<?php echo APP_URL ?>/?view=utils&action=accounts-hash" class="btn btn-info">Calculate</a>
+            <a href="<?php echo admin_url(APP_URL.'/?view=utils&action=accounts-hash') ?>" class="btn btn-info">Calculate</a>
         </div>
         <div class="col-auto">
             <?php if($accountsHash) { ?>
@@ -133,6 +134,7 @@ if($action == "clear_tmp") {
 <div class="mt-4">
     <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i>Blocks hash</h3>
     <form class="row gx-3 gy-2 align-items-center" method="post" action="">
+        <?php echo admin_csrf_field() ?>
         <input type="hidden" name="action" value="blocks-hash"/>
         <div class="col-sm-2">
             <input type="text" class="form-control" id="height" name="height" placeholder="Height">

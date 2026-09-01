@@ -29,6 +29,16 @@ $_config['db_user'] = 'ENTER-DB-USER';
 $_config['db_pass'] = 'ENTER-DB-PASS';
 
 /*
+ * Automatic updates
+ *
+ * The recommended setting is true so the node stays compatible with the
+ * network. Set false only when you accept responsibility for manually
+ * updating the node; an outdated node may stop syncing or be rejected by
+ * newer peers after a required version change.
+ */
+$_config['allow_auto_update'] = true;
+
+/*
 |--------------------------------------------------------------------------
 | Node Configuration
 |--------------------------------------------------------------------------

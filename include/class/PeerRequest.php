@@ -600,6 +600,9 @@ class PeerRequest
         _log("PM: PROCESS MESSAGE $message");
         $msg=json_decode($message,true);
         $sender=$msg['sender'];
+        if(empty($sender) || !Peer::validate($sender) || !isValidURL($sender.'/peer.php')) {
+            api_err("PM: Invalid sender", 0);
+        }
         $response = ["msg"=>$msg, "received"=>time()];
         $res = peer_post($sender.'/peer.php?q=processedMessage',$response);
         _log("PM: send event to master res=".$res);
@@ -626,27 +629,11 @@ class PeerRequest
 	}
 
     static function peerTest() {
-        $t1 = self::$data;
-        _log("PP: received peerTest  data=".json_encode(self::$data));
-        $url = self::$peer['hostname'] . "/peer.php?q=peerTest2";
-        $data['t1']=$t1;
-        $data['t2']=time();
-        $data['t2-t1']=$data['t2'] - $data['t1'];
-        sleep(5);
-        $res = peer_post($url, $data);
-        _log("PP: call back ".self::$peer['hostname']." res=".$res);
-        api_echo($res);
+        api_err("Disabled");
     }
 
     static function peerTest2() {
-        _log("PP: received peerTest2 request data=".json_encode(self::$data));
-        $data = self::$data;
-        $data['t3']=time();
-        $data['t3-t2']=$data['t3']-$data['t2'];
-        $data['t3-t1']=$data['t3']-$data['t1'];
-        sleep(5);
-        _log("PP: send response");
-        api_echo($data);
+        api_err("Disabled");
     }
 
 	static function logSubmitBlock() {
@@ -792,8 +779,14 @@ class PeerRequest
     static function getDbBlocks() {
         global $db;
         $data = self::$data;
-        $height = $data['height'];
-        $limit = $data['limit'];
+        $height = intval($data['height'] ?? 0);
+        $limit = intval($data['limit'] ?? 100);
+        if($limit < 1) {
+            $limit = 1;
+        }
+        if($limit > 100) {
+            $limit = 100;
+        }
         $max_height = $height + $limit;
         $maxheight = Block::getHeight();
 

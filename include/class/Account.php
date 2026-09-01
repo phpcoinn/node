@@ -28,14 +28,17 @@ class Account
         openssl_pkey_export($key1, $pvkey);
 
 		if(PHP_VERSION_ID > 80000) {
-			$in = sys_get_temp_dir() . "/phpcoin.in.pem";
-			$out = sys_get_temp_dir() . "/phpcoin.out.pem";
+			$in = tempnam(sys_get_temp_dir(), 'phpcoin_in_');
+			$out = tempnam(sys_get_temp_dir(), 'phpcoin_out_');
+			if($in === false || $out === false) {
+				return ["address" => "", "public_key" => "", "private_key" => ""];
+			}
 			file_put_contents($in, $pvkey);
-			$cmd = "openssl ec -in $in -out $out >/dev/null 2>&1";
+			$cmd = "openssl ec -in ".escapeshellarg($in)." -out ".escapeshellarg($out)." >/dev/null 2>&1";
 			shell_exec($cmd);
 			$pvkey = file_get_contents($out);
-			unlink($in);
-			unlink($out);
+			@unlink($in);
+			@unlink($out);
 		}
 
         // converts the PEM to a base58 format
@@ -464,19 +467,22 @@ class Account
 
             //print_r($dm);
             $where = "";
-            if(!empty($dm['search'])) {
-                $search = $dm['search'];
-                $search = str_replace("*", "%", $search);
-                $where = " and a.id like '$search'";
+            $params = [];
+            if(!empty($dm['search']) && !is_array($dm['search'])) {
+                $search = str_replace("*", "%", $dm['search']);
+                $where = " and a.id like :search";
+                $params[':search'] = $search;
             }
 
 			$height = Block::getHeight();
 			$maturity = Blockchain::getStakingMaturity($height);
 			$min_balance = Blockchain::getStakingMinBalance($height);
+            $start = (int)$start;
+            $limit = (int)$limit;
 			$sql="select *, ($height - a.height) as maturity,
        			case when $height - a.height >= $maturity and a.balance >= $min_balance then ($height - a.height)*a.balance else 0 end as weight
 				from accounts a where 1 $where $sorting limit $start, $limit";
-			return $db->run($sql);
+			return $db->run($sql, $params);
 		}
 	}
 
@@ -538,6 +544,9 @@ class Account
 
 	// check the validity of a base58 encoded key. At the moment, it checks only the characters to be base58.
 	static function validKey($id) {
+		if(!is_string($id) || strlen($id) < 8 || strlen($id) > 256) {
+			return false;
+		}
 		$chars = str_split("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
 		for ($i = 0; $i < strlen($id);
 		     $i++) {

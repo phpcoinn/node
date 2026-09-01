@@ -20,11 +20,8 @@ require_once dirname(__DIR__).'/vendor/autoload.php';
 define("ROOT", dirname(__DIR__));
 
  error_reporting(E_ALL & ~E_NOTICE);
-//error_reporting(0);
-$version = explode('.', PHP_VERSION);
-if($version[0] > 7) {
-	ini_set('display_errors', 0);
-} else {
+ini_set('display_errors', 0);
+if (defined('DEVELOPMENT') && DEVELOPMENT) {
 	ini_set('display_startup_errors', 1);
 }
 // not accessible directly
@@ -97,7 +94,7 @@ if (!extension_loaded("curl")) {
 if (!defined("PASSWORD_ARGON2I")) {
     api_err("The php version is not compiled with argon2i support");
 }
-if(empty(shell_exec("git --version"))) {
+if (php_sapi_name() === 'cli' && empty(shell_exec("git --version"))) {
     api_err("git must be installed");
 }
 

@@ -13,6 +13,60 @@ const APP_URL = "/apps/admin";
 
 require_once __DIR__. '/../common/include/top.php';
 
+function admin_require_csrf() {
+    Security::requireCsrf();
+}
+
+function admin_csrf_field() {
+    return Security::csrfField();
+}
+
+function admin_url($path) {
+    $separator = strpos($path, '?') === false ? '?' : '&';
+    return $path.$separator.Security::csrfQuery();
+}
+
+function admin_login_rate_file() {
+    $client = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    return ROOT.'/tmp/admin-login-'.hash('sha256', $client).'.json';
+}
+
+function admin_login_rate_state() {
+    $state = @json_decode((string) @file_get_contents(admin_login_rate_file()), true);
+    if (!is_array($state) || time() - (int) ($state['start'] ?? 0) > 300) {
+        return ['start' => time(), 'count' => 0];
+    }
+    return $state;
+}
+
+function admin_login_rate_check() {
+    if ((int) admin_login_rate_state()['count'] >= 5) {
+        http_response_code(429);
+        die('Too many login attempts. Try again later.');
+    }
+}
+
+function admin_login_rate_failure() {
+    $state = admin_login_rate_state();
+    $state['count'] = (int) $state['count'] + 1;
+    file_put_contents(admin_login_rate_file(), json_encode($state), LOCK_EX);
+}
+
+function admin_login_rate_success() {
+    @unlink(admin_login_rate_file());
+}
+
+$login = Security::isLoggedInAdmin();
+$publicActions = ['generate', 'login', 'private-key-login'];
+$requestedAction = $_POST['action'] ?? $_GET['action'] ?? null;
+if ($requestedAction !== null) {
+    if (!$login && !in_array($requestedAction, $publicActions, true)) {
+        http_response_code(403);
+        die('Administrator login required');
+    }
+    admin_require_csrf();
+}
+
 if(isset($_POST['action'])) {
     $action = $_POST['action'];
     if($action == "generate") {
@@ -38,33 +92,53 @@ if(isset($_POST['action'])) {
         }
     }
     if($action == "login") {
-	    $password = $_POST['password'];
-	    $passwordHash = $_config['admin_password'];
-	    $verify = password_verify($password, $passwordHash);
-	    if(!$verify) {
+        admin_login_rate_check();
+        $password = $_POST['password'] ?? '';
+        $passwordHash = $_config['admin_password'];
+        $verify = is_string($passwordHash) && $passwordHash !== '' && password_verify($password, $passwordHash);
+        if(!$verify) {
+		    admin_login_rate_failure();
 		    $msg=[['type'=>'danger', 'msg'=>'Invalid password']];
         } else {
-	        $_SESSION['login']=true;
+		    admin_login_rate_success();
+		    session_regenerate_id(true);
+		    $_SESSION['login']=true;
 	        header("location: ".APP_URL);
 	        exit;
         }
     }
     if($action == "private-key-login") {
-        $nonce = $_POST['nonce'];
-        $signature = $_POST['signature'];
-        $public_key = $_POST['public_key'];
-        $res = ec_verify($nonce, $signature, $public_key);
+        admin_login_rate_check();
+        $nonce = $_POST['nonce'] ?? '';
+        $signature = $_POST['signature'] ?? '';
+        $public_key = $_POST['public_key'] ?? '';
+        $configuredKey = $_config['admin_public_key'] ?? '';
+        $expectedNonce = $_SESSION['admin_login_nonce'] ?? '';
+        unset($_SESSION['admin_login_nonce']);
+        $validNonce = is_string($nonce) && $nonce !== '' && is_string($expectedNonce)
+            && hash_equals($expectedNonce, $nonce);
+        $validKey = is_string($public_key) && is_string($configuredKey) && $configuredKey !== ''
+            && hash_equals($configuredKey, $public_key);
+        $res = $validNonce && $validKey && ec_verify($nonce, $signature, $public_key);
         if(!$res) {
+            admin_login_rate_failure();
             $msg=[['type'=>'danger', 'msg'=>'Invalid private key']];
         } else {
-            $_SESSION['login']=true;
+		    admin_login_rate_success();
+		    session_regenerate_id(true);
+		    $_SESSION['login']=true;
             header("location: ".APP_URL);
             exit;
         }
     }
     if($action == "add_peer") {
-        $peer = $_POST['peer'];
-	    $cmd = "php ".ROOT."/cli/util.php peer " . $peer . " > /dev/null 2>&1 &";
+		$peer = trim($_POST['peer'] ?? '');
+		if ($peer === '' || strlen($peer) > 255 || preg_match('/[\x00-\x1F\x7F]/', $peer)
+			|| !Peer::validate($peer) || !isValidURL($peer)) {
+            http_response_code(400);
+            die('Invalid peer address');
+        }
+        $cmd = 'php '.escapeshellarg(ROOT.'/cli/util.php').' peer '.escapeshellarg($peer).' > /dev/null 2>&1 &';
         $res = shell_exec($cmd);
 	    header("location: ".APP_URL."/?view=peers");
 	    exit;
@@ -79,7 +153,8 @@ if(isset($_POST['action'])) {
 if(isset($_GET['action'])) {
     $action = $_GET['action'];
     if($action == "logout") {
-	    $_SESSION['login']=false;
+		    $_SESSION = [];
+		    session_regenerate_id(true);
 	    header("location: ".APP_URL);
 	    exit;
     }
@@ -104,11 +179,11 @@ if(isset($_GET['action'])) {
 	    exit;
     }
 	if($action == "repeer") {
-		$id = $_GET['id'];
-		$peer = $_GET['peer'];
-		if(!empty($id)) {
+		$id = (int)($_GET['id'] ?? 0);
+		$peer = trim($_GET['peer'] ?? '');
+		if($id > 0 && Peer::validate($peer) && isValidURL($peer)) {
 			Peer::delete($id);
-			$cmd = "php ".ROOT."/cli/util.php peer " . $peer . " > /dev/null 2>&1 &";
+				$cmd = 'php '.escapeshellarg(ROOT.'/cli/util.php').' peer '.escapeshellarg($peer).' > /dev/null 2>&1 &';
 			$res = shell_exec($cmd);
 		}
 		header("location: ".APP_URL."/?view=peers");
@@ -141,7 +216,7 @@ if(isset($_GET['action'])) {
 }
 
 $setAdminPass = !empty($_config['admin_password']);
-$login = $_SESSION['login'];
+$login = !empty($_SESSION['login']);
 
 if(isset($_GET['view'])) {
 	$view = $_GET['view'];
@@ -180,14 +255,17 @@ if($view == "peers") {
 }
 
 $pubKeyLogin = isset($_config['admin_public_key']) && strlen($_config['admin_public_key']) > 0;
-$nonce = uniqid();
+if (!$login && $pubKeyLogin && empty($_SESSION['admin_login_nonce'])) {
+    $_SESSION['admin_login_nonce'] = bin2hex(random_bytes(32));
+}
+$nonce = $_SESSION['admin_login_nonce'] ?? '';
 ?>
 
 <?php if ($login) { ?>
     <div class="row">
         <div class="col-6 h3">Node Admin</div>
         <div class="col-6 text-end">
-            <a href="<?php echo APP_URL ?>/?action=logout" class="btn btn-outline-primary">Logout</a>
+            <a href="<?php echo admin_url(APP_URL.'/?action=logout') ?>" class="btn btn-outline-primary">Logout</a>
         </div>
     </div>
     <hr/>
@@ -217,7 +295,8 @@ $nonce = uniqid();
                     <div class="card-body p-4">
                         <div class="row">
                             <div class="col-lg-12">
-                                <form method="post" action="">
+	                                <form method="post" action="">
+	                                    <?php echo admin_csrf_field() ?>
                                     <input type="hidden" value="" name="public_key">
                                     <input type="hidden" value="<?php echo $nonce ?>" name="nonce">
                                     <input type="hidden" value="" name="signature">
@@ -225,19 +304,6 @@ $nonce = uniqid();
                                     <div class="mb-3">
                                         <label class="form-label" for="password">Private key</label>
                                         <input type="password" class="form-control" id="private_key" name="private_key" value="" required/>
-                                    </div>
-                                    <div class="row mb-4">
-                                        <div class="col">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="rememberPrivateKey">
-                                                <label class="form-check-label" for="rememberPrivateKey">
-                                                    Remember private key
-                                                </label>
-                                            </div>
-                                            <div class="help-block text-muted text-info">
-                                                Private key will be stored only locally in browser
-                                            </div>
-                                        </div>
                                     </div>
                                     <div class="mt-4">
                                         <button type="button" class="btn btn-primary w-md" onclick="login()">Login</button>
@@ -255,15 +321,7 @@ $nonce = uniqid();
         <script src="/apps/common/js/phpcoin-crypto.browser.js" type="text/javascript"></script>
         <script type="text/javascript">
 
-            $(function(){
-                let privateKey = localStorage.getItem("adminPrivateKey")
-                if(privateKey) {
-                    $("form [name=private_key]").val(privateKey)
-                    $("#rememberPrivateKey").attr("checked", true)
-                }
-            })
-
-            function login() {
+	            function login() {
                 try {
                     let chainId = "<?php echo CHAIN_ID ?>"
                     let privateKey = $("form [name=private_key]").val().trim()
@@ -276,11 +334,7 @@ $nonce = uniqid();
                     $("form [name=signature]").val(sig)
                     $("form [name=public_key]").val(publicKey)
                     $("form [name=private_key]").val("")
-                    if($("#rememberPrivateKey").is(":checked")) {
-                        localStorage.setItem("adminPrivateKey", privateKey)
-                    } else {
-                        localStorage.removeItem("adminPrivateKey")
-                    }
+	                    localStorage.removeItem("adminPrivateKey")
                     $("form").submit();
                 } catch (e) {
                     console.log(e)
@@ -313,6 +367,7 @@ $nonce = uniqid();
                             <div class="row">
                                 <div class="col-lg-12">
                                     <form method="post" action="">
+	                                    <?php echo admin_csrf_field() ?>
                                         <div class="mb-3">
                                             <label class="form-label" for="password">Enter password:</label>
                                             <input type="password" class="form-control" id="password" name="password" value="" required/>
@@ -350,6 +405,7 @@ $nonce = uniqid();
                             <div class="row">
                                 <div class="col-lg-12">
                                     <form method="post" action="">
+	                                    <?php echo admin_csrf_field() ?>
                                         <div class="mb-3">
                                             <label class="form-label" for="password">Node password</label>
                                             <input type="text" class="d-none" id="username" value="<?php echo $_config['hostname'] ?>">
@@ -419,8 +475,8 @@ $nonce = uniqid();
         </li>
     </ul>
 
-    <?php if(!empty($view)) { ?>
-	    <?php if($view == "php") {
+	    <?php if(!empty($view)) { ?>
+		    <?php if($view == "php") {
 	        phpinfo();
         } ?>
 		<?php if($view == "db") {
@@ -491,6 +547,7 @@ $nonce = uniqid();
 
             <div class="mt-4">
                 <form class="row gx-3 gy-2 align-items-center" method="post" action="">
+                    <?php echo admin_csrf_field() ?>
                     <input type="hidden" name="action" value="add_peer">
                     <div class="col-sm-2">
                         <input type="text" class="form-control" id="peer" name="peer" placeholder="Peer address" required="required">
@@ -542,8 +599,8 @@ $nonce = uniqid();
                         ?>
                         <tr  class="<?php echo $table_class ?>">
                             <td class="text-nowrap">
-                                <a class="btn btn-danger btn-xs" href="<?php echo APP_URL ?>/?action=delete_peer&id=<?php echo $peer['id']  ?>" onclick="if(!confirm('Delete peer?')) return false;">Delete</a>
-                                <a class="btn btn-warning btn-xs" href="<?php echo APP_URL ?>/?action=repeer&id=<?php echo $peer['id']  ?>&peer=<?php echo $peer['hostname'] ?>">Re-peer</a>
+                                <a class="btn btn-danger btn-xs" href="<?php echo admin_url(APP_URL.'/?action=delete_peer&id='.rawurlencode($peer['id'])) ?>" onclick="if(!confirm('Delete peer?')) return false;">Delete</a>
+                                <a class="btn btn-warning btn-xs" href="<?php echo admin_url(APP_URL.'/?action=repeer&id='.rawurlencode($peer['id']).'&peer='.rawurlencode($peer['hostname'])) ?>">Re-peer</a>
                             </td>
                             <td><?php echo $peer['id'] ?></td>
                             <td>
@@ -586,7 +643,7 @@ $nonce = uniqid();
                     </tbody>
                 </table>
             </div>
-            <a class="btn btn-danger" href="<?php echo APP_URL ?>/?action=delete_peers" onclick="if(!confirm('Delete all?')) return false">Delete all</a>
+            <a class="btn btn-danger" href="<?php echo admin_url(APP_URL.'/?action=delete_peers') ?>" onclick="if(!confirm('Delete all?')) return false">Delete all</a>
 
 
 		<?php } ?>
@@ -595,8 +652,11 @@ $nonce = uniqid();
 
 	        $display_config = $_config;
 			$display_config['db_pass']='****';
+			$display_config['admin_password']='****';
 			$display_config['generator_private_key']='****';
 			$display_config['miner_private_key']='****';
+			$display_config['masternode_private_key']='****';
+			$display_config['dapps_private_key']='****';
 
 	        ?>
 
@@ -625,19 +685,20 @@ $nonce = uniqid();
 
                     <div class="form-check form-switch form-switch-lg mb-3" dir="ltr">
                         <input type="checkbox" class="form-check-input" id="customSwitchsizelg" <?php echo $_config['enable_logging'] ? 'checked=""' : '' ?>
-                               onchange="document.location.href='<?php echo APP_URL ?>/?action=logging&value=<?php echo $_config['enable_logging'] ? 0 : 1 ?>'">
+                               onchange="document.location.href='<?php echo admin_url(APP_URL.'/?action=logging&value='.($_config['enable_logging'] ? 0 : 1)) ?>'">
                         <label class="form-check-label" for="customSwitchsizelg">Logging</label>
                     </div>
 
                     <div class="form-check form-switch form-switch-lg mb-3" dir="ltr">
                         <input type="checkbox" class="form-check-input" id="customSwitchsizelg" <?php echo $_config['offline'] ? 'checked=""' : '' ?>
-                               onchange="document.location.href='<?php echo APP_URL ?>/?action=offline&value=<?php echo $_config['offline'] ? 0 : 1 ?>'">
+                               onchange="document.location.href='<?php echo admin_url(APP_URL.'/?action=offline&value='.($_config['offline'] ? 0 : 1)) ?>'">
                         <label class="form-check-label" for="customSwitchsizelg">Offline</label>
                     </div>
 
                     <div class="mt-4">
                         <h3 class="font-size-16 mb-2"><i class="mdi mdi-arrow-right text-primary me-1"></i>Hostname</h3>
                         <form class="row gx-3 gy-2 align-items-center" method="post" action="">
+                            <?php echo admin_csrf_field() ?>
                             <input type="hidden" name="action" value="set_hostname"/>
                             <div class="col-sm-8">
                                 <input type="text" value="<?php echo $_config['hostname'] ?>" class="form-control" id="hostname" name="hostname" placeholder="" required="required">
@@ -682,10 +743,10 @@ $nonce = uniqid();
             </table>
 
             <?php if ($updateData['appsHash']['calculated'] != $updateData['appsHash']['valid']) { ?>
-                <a href="<?php echo APP_URL ?>/?action=update" class="btn btn-success">Update apps</a>
+                <a href="<?php echo admin_url(APP_URL.'/?action=update') ?>" class="btn btn-success">Update apps</a>
             <?php } ?>
             <?php if ($repoServer) {?>
-                <a href="<?php echo APP_URL ?>/?action=propagate_update" class="btn btn-success">Propagate</a>
+                <a href="<?php echo admin_url(APP_URL.'/?action=propagate_update') ?>" class="btn btn-success">Propagate</a>
             <?php } ?>
 
 
@@ -743,5 +804,3 @@ $nonce = uniqid();
 <?php
 require_once __DIR__ . '/../common/include/bottom.php';
 ?>
-
-

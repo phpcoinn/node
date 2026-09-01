@@ -271,9 +271,8 @@ class Compiler {
     private static function extractClassName($php_file) {
         $content = file_get_contents($php_file);
 
-        if (preg_match('/const SC_CLASS_NAME.*/', $content, $matches)) {
-            eval($matches[0]);
-            return SC_CLASS_NAME;
+        if (preg_match('/const\s+SC_CLASS_NAME\s*=\s*[\'"]([A-Za-z_][A-Za-z0-9_]*)[\'"]/', $content, $matches)) {
+            return $matches[1];
         }
         
         // Simple regex to find class name

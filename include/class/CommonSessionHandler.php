@@ -4,6 +4,11 @@ class CommonSessionHandler implements SessionHandlerInterface {
 
     private $path;
 
+    private static function safeId($id)
+    {
+        return preg_replace('/[^a-zA-Z0-9,-]/', '', (string) $id);
+    }
+
     #[\ReturnTypeWillChange]
     public function close()
     {
@@ -13,8 +18,7 @@ class CommonSessionHandler implements SessionHandlerInterface {
     #[\ReturnTypeWillChange]
     public function destroy($id)
     {
-//        _log("Dapps: destroy session");
-        $sess_file = $this->path."/sess_$id";
+        $sess_file = $this->path."/sess_".self::safeId($id);
         if (!file_exists($sess_file)) return false;
         $ret = @unlink($sess_file);
         return $ret;
@@ -44,7 +48,7 @@ class CommonSessionHandler implements SessionHandlerInterface {
     #[\ReturnTypeWillChange]
     public function read(string $id): string
     {
-        $safeId = preg_replace('/[^a-zA-Z0-9,-]/', '', $id); // Sanitize the session ID to prevent path traversal attacks.
+        $safeId = self::safeId($id);
         $sessionFilePath = $this->path . '/sess_' . $safeId; // Construct the full path to the session file.
         $sessionData = file_get_contents($sessionFilePath);  // returns the data as a string or FALSE on failure
 
@@ -54,8 +58,9 @@ class CommonSessionHandler implements SessionHandlerInterface {
     #[\ReturnTypeWillChange]
     public function write($id, $data)
     {
-        if(empty($data)) return true;
-        $ret= file_put_contents($this->path."/sess_$id", $data) === false ? false : true;
+        $safeId = self::safeId($id);
+        if ($safeId === '') return false;
+        $ret= file_put_contents($this->path."/sess_$safeId", $data, LOCK_EX) === false ? false : true;
         return $ret;
     }
 
@@ -76,8 +81,11 @@ class CommonSessionHandler implements SessionHandlerInterface {
         $deleted = 0;
         $cutoff = time() - $max_lifetime;
 
-        foreach (new DirectoryIterator($sessions_dir) as $file) {
-            if($file->isDot() || !$file->isFile()) {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($sessions_dir, FilesystemIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $file) {
+            if(!$file->isFile()) {
                 continue;
             }
             if(strpos($file->getFilename(), "sess_") !== 0) {
@@ -95,14 +103,31 @@ class CommonSessionHandler implements SessionHandlerInterface {
         return ["checked"=>$checked, "deleted"=>$deleted];
     }
 
-    static function setup($session_id = null) {
+    static function setup($session_id = null, $namespace = null) {
+        ini_set('session.use_strict_mode', '1');
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443);
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'secure' => $isHttps,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
         $handler = new CommonSessionHandler();
         session_set_save_handler($handler, true);
         $sessions_dir = ROOT."/tmp/sessions";
-        @mkdir($sessions_dir);
+        if ($namespace !== null && $namespace !== '') {
+            $sessions_dir .= '/'.hash('sha256', (string) $namespace);
+        }
+        @mkdir($sessions_dir, 0700, true);
         session_save_path($sessions_dir);
         if(!empty($session_id)) {
-            session_id($session_id);
+            $safeId = self::safeId($session_id);
+            if ($safeId === '') {
+                throw new InvalidArgumentException('Invalid session ID');
+            }
+            session_id($safeId);
         }
         @session_start(["gc_probability"=>0]);
     }

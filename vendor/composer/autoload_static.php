@@ -40,6 +40,7 @@ class ComposerStaticInit2194f6688160511c482e6ad0f67eb5d0
         'Propagate' => __DIR__ . '/../..' . '/include/class/Propagate.php',
         'Sandbox' => __DIR__ . '/../..' . '/include/class/sc/Sandbox.php',
         'SdkUtil' => __DIR__ . '/../..' . '/include/class/SdkUtil.php',
+        'Security' => __DIR__ . '/../..' . '/include/class/Security.php',
         'SmartContract' => __DIR__ . '/../..' . '/include/class/SmartContract.php',
         'SmartContractBase' => __DIR__ . '/../..' . '/include/class/sc/SmartContractBase.php',
         'SmartContractContext' => __DIR__ . '/../..' . '/include/class/sc/SmartContractWrapper.php',

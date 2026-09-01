@@ -68,9 +68,12 @@ PeerRequest::processRequest();
 
 
 
-if(method_exists(PeerRequest::class, $q)) {
+PeerRequest::processRequest();
+
+$q = is_string($q) ? $q : '';
+if(Security::isPeerProtocolMethod($q) && method_exists(PeerRequest::class, $q)) {
 	call_user_func([PeerRequest::class, $q]);
 } else {
-	api_err("Invalid request: $q");
+	api_err("Invalid request");
 }
 
