@@ -442,7 +442,7 @@ class Dapps extends Task
 			'REMOTE_ADDR', 'REQUEST_SCHEME', 'HTTP_HOST', 'REQUEST_URI', 'REQUEST_METHOD',
 			'PHP_SELF_BASE', 'REWRITE_URL', 'DAPPS_URL', 'DAPPS_NETWORK', 'DAPPS_CHAIN_ID',
 			'DAPPS_FULL_URL', 'DAPPS_HOSTNAME', 'DAPPS_HASH', 'SESSION_ID', 'DAPPS_ID',
-			'DAPPS_LOCAL', 'DAPPS_SESSION_NAMESPACE',
+			'DAPPS_LOCAL', 'DAPPS_SESSION_NAMESPACE', 'HTTP_PHPCRAFT_AJAX',
 		];
 		foreach ($dapp_server_keys as $server_key) {
 			if (array_key_exists($server_key, $_SERVER)) $dapp_server[$server_key] = $_SERVER[$server_key];
@@ -456,7 +456,8 @@ class Dapps extends Task
 	            'SERVER' =>$dapp_server,
 	        ];
 
-	        $output = Sandbox::runDapp($file, $cmdData, $allowed_files, false);
+	        $output = Sandbox::runDapp($file, $cmdData, $allowed_files, false,
+			function($request) use ($dapps_id) { return self::handleRpc($request, $dapps_id); });
 
         ob_end_clean();
         ob_start();
@@ -476,6 +477,114 @@ class Dapps extends Task
         echo $out;
         exit;
 
+	}
+
+	public static function handleRpc($request, $dapps_id) {
+		global $_config;
+		if(!is_array($request)) return ['ok'=>false];
+		if(($request['type'] ?? '') === 'peers') {
+			$hostnames = [];
+			foreach(Peer::getAll() as $peer) {
+				if(!empty($peer['hostname']) && Security::isSafePeerUrl($peer['hostname'])) {
+					$hostnames[] = rtrim((string)$peer['hostname'], '/');
+				}
+			}
+			return empty($hostnames) ? ['ok'=>false, 'error'=>'No peers']
+				: ['ok'=>true, 'body'=>base64_encode(implode(PHP_EOL, $hostnames))];
+		}
+		if(in_array(($request['type'] ?? ''), ['dapp_get', 'dapp_post'], true)) {
+			$isPost = ($request['type'] ?? '') === 'dapp_post';
+			$path = ltrim((string)($request['path'] ?? ''), '/');
+			$query = $request['query'] ?? [];
+			$bodyData = (string)($request['body'] ?? '');
+			$remote = !empty($request['remote']);
+			if(!preg_match('/\A[A-Za-z0-9_\/-]+\.php\z/', $path) || !is_array($query) || count($query) > 50
+				|| strlen($bodyData) > 262144) {
+				return ['ok'=>false, 'error'=>'Dapp request rejected'];
+			}
+			foreach($query as $key=>$value) {
+				if(!is_string($key) || (!is_scalar($value) && $value !== null)) return ['ok'=>false, 'error'=>'Dapp request rejected'];
+			}
+			if($isPost && !empty($request['phpcraft_ajax'])) {
+				$phpcraftData = json_decode($bodyData, true);
+				if(!is_array($phpcraftData) || !preg_match('/\A[A-Za-z_][A-Za-z0-9_]*\z/', (string)($phpcraftData['api'] ?? ''))
+					|| !is_array($phpcraftData['params'] ?? null) || count($phpcraftData['params']) > 32) {
+					return ['ok'=>false, 'error'=>'PhpCraft request rejected'];
+				}
+			}
+			$base = rtrim((string)($_config['hostname'] ?? ''), '/');
+			if($remote && !self::isLocal($dapps_id)) {
+				$peer = Peer::findByDappsId($dapps_id);
+				$base = rtrim((string)($peer['hostname'] ?? ''), '/');
+			}
+			if(!Security::isSafePeerUrl($base)) return ['ok'=>false, 'error'=>'Dapp host rejected'];
+			$url = $base.'/dapps.php?'.http_build_query(['url'=>$dapps_id.'/'.$path] + $query);
+			$http = ['method'=>$isPost ? 'POST' : 'GET', 'timeout'=>10, 'ignore_errors'=>true,
+				'follow_location'=>0, 'max_redirects'=>0, 'header'=>"Accept: application/json\r\nConnection: close\r\n"];
+			if($isPost) {
+				$http['header'] .= "Content-Type: application/json\r\n";
+				if(!empty($request['phpcraft_ajax'])) $http['header'] .= "phpcraft-ajax: 1\r\n";
+				$http['content'] = $bodyData;
+			}
+			$context = stream_context_create(['http'=>$http, 'ssl'=>['verify_peer'=>true, 'verify_peer_name'=>true]]);
+			$body = @file_get_contents($url, false, $context, 0, 2 * 1024 * 1024 + 1);
+			if($body === false || strlen($body) > 2 * 1024 * 1024) return ['ok'=>false, 'error'=>'Dapp request failed'];
+			return ['ok'=>true, 'body'=>base64_encode($body)];
+		}
+		if(($request['type'] ?? '') === 'sql') {
+			$query = trim((string)($request['query'] ?? ''));
+			$params = $request['params'] ?? [];
+			if(!self::isLocal($dapps_id) || strlen($query) > 65536 || !is_array($params)
+				|| count($params) > 100 || !preg_match('/\Aselect\s/iu', $query)
+				|| preg_match('/;|--|#|\/\*/', $query)) return ['ok'=>false, 'error'=>'SQL request rejected'];
+			global $db;
+			return ['ok'=>true, 'data'=>$db->select($query, $params)];
+		}
+		if(($request['type'] ?? '') === 'exec_fn') {
+			if(!self::isLocal($dapps_id)) return ['ok'=>false, 'error'=>'Function request rejected'];
+			$fnName = $request['fn_name'] ?? '';
+			$params = $request['params'] ?? [];
+			$functionsFile = ROOT.'/include/dapps.local.inc.php';
+			if(!is_string($fnName) || !preg_match('/\A[A-Za-z_][A-Za-z0-9_]*\z/', $fnName)
+				|| !is_array($params) || count($params) > 32 || !is_file($functionsFile)) {
+				return ['ok'=>false, 'error'=>'Function request rejected'];
+			}
+			require_once $functionsFile;
+			if(!function_exists($fnName)) return ['ok'=>false, 'error'=>'Function not found'];
+			$reflection = new ReflectionFunction($fnName);
+			$definedIn = realpath((string)$reflection->getFileName());
+			$allowedFile = realpath($functionsFile);
+			$dappRoot = realpath(self::getDappsDir().'/'.$dapps_id);
+			if($definedIn === false || ($definedIn !== $allowedFile
+				&& ($dappRoot === false || !str_starts_with($definedIn, $dappRoot.DIRECTORY_SEPARATOR)))) {
+				return ['ok'=>false, 'error'=>'Function source rejected'];
+			}
+			return ['ok'=>true, 'data'=>$reflection->invokeArgs($params)];
+		}
+		if(($request['type'] ?? '') !== 'http') return ['ok'=>false];
+		$method = strtoupper((string)($request['method'] ?? ''));
+		$node = rtrim((string)($request['node'] ?? ''), '/');
+		$api = (string)($request['api'] ?? '');
+		$allowedNodes = [rtrim((string)($_config['hostname'] ?? ''), '/')];
+		foreach(Peer::getAll() as $peer) {
+			if(!empty($peer['hostname'])) $allowedNodes[] = rtrim((string)$peer['hostname'], '/');
+		}
+		if(!in_array($method, ['GET', 'POST'], true) || !Security::isSafePeerUrl($node)
+			|| !in_array($node, $allowedNodes, true)
+			|| strlen($api) < 1 || strlen($api) > 2048 || preg_match('/[\x00-\x1f\x7f#?]/', $api)) {
+			return ['ok'=>false, 'error'=>'RPC request rejected'];
+		}
+		$url = $node.'/api.php?q='.$api;
+		$http = ['method'=>$method, 'timeout'=>5, 'ignore_errors'=>true, 'follow_location'=>0, 'max_redirects'=>0,
+			'header'=>"Accept: application/json\r\nConnection: close\r\n"];
+		if($method === 'POST') {
+			$http['header'] .= "Content-Type: application/x-www-form-urlencoded\r\n";
+			$http['content'] = http_build_query(['data'=>json_encode($request['data'] ?? null)]);
+		}
+		$context = stream_context_create(['http'=>$http, 'ssl'=>['verify_peer'=>true, 'verify_peer_name'=>true]]);
+		$body = @file_get_contents($url, false, $context, 0, 2 * 1024 * 1024 + 1);
+		if($body === false || strlen($body) > 2 * 1024 * 1024) return ['ok'=>false, 'error'=>'RPC request failed'];
+		return ['ok'=>true, 'body'=>base64_encode($body)];
 	}
 
 	static function processAction($out, $dapps_id) {

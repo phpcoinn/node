@@ -5,7 +5,8 @@ if(!defined("ROOT")) {
 
 }
 
-$chain_id = trim(file_get_contents(ROOT."/chain_id")) ?? "00";
+require_once ROOT . "/include/network_chain_id.inc.php";
+$chain_id = resolve_chain_id();
 if(!defined("CHAIN_ID")) {
     define("CHAIN_ID", $chain_id);
 }
@@ -15,7 +16,7 @@ require_once ROOT . "/include/common.functions.php";
 require_once ROOT . "/include/class/CommonSessionHandler.php";
 
 if(php_sapi_name() == "cli") {
-    $cmdDataJson = stream_get_contents(STDIN);
+    $cmdDataJson = fgets(STDIN);
     $cmdData = json_decode($cmdDataJson, true);
     $_SERVER=$cmdData['SERVER'];
     $_SERVER['GET_DATA']=$cmdData['GET_DATA'];
@@ -65,6 +66,18 @@ function dapps_post() {
 	$post_data = $_SERVER['POST_DATA']??"";
 	$_POST = json_decode(base64_decode($post_data), true);
 	return $_POST;
+}
+
+/**
+ * Returns the raw request body captured by the parent web process.
+ * STDIN is reserved for sandbox RPC and must not be used as php://input.
+ */
+function dapps_input() {
+	$input_data = $_SERVER['INPUT_DATA'] ?? '';
+	$decoded = base64_decode($input_data, true);
+	if($decoded === false) return '';
+	$input = json_decode($decoded, true);
+	return is_string($input) ? $input : '';
 }
 
 /**
@@ -235,14 +248,35 @@ function dapps_exec_fn($name, ...$params) {
 	exit;
 }
 
+function dapps_exec_fn_rpc($name, ...$params) {
+	$request = ['type'=>'exec_fn', 'fn_name'=>(string)$name, 'params'=>$params];
+	$encoded = json_encode($request);
+	if($encoded === false) return false;
+	echo "\nDAPPS_RPC:".base64_encode($encoded)."\n";
+	flush();
+	$response = fgets(STDIN);
+	if($response === false || strpos($response, 'DAPPS_RPC_RESPONSE:') !== 0) return false;
+	$payload = base64_decode(trim(substr($response, 19)), true);
+	$result = $payload === false ? null : json_decode($payload, true);
+	return is_array($result) && !empty($result['ok']) ? ($result['data'] ?? null) : false;
+}
+
 /**
  * Retrieves random peer from network
  * @return string - url of random peer
  * @throws Exception
  */
 function dapps_get_random_peer() {
-	$main_node = $_SERVER['REQUEST_SCHEME']."://".$_SERVER['HTTP_HOST'];
-	$res = @file_get_contents($main_node."/peers.php");
+	$request = json_encode(['type'=>'peers']);
+	if($request === false) throw new Exception('Can not build peers request');
+	echo "\nDAPPS_RPC:".base64_encode($request)."\n";
+	flush();
+	$frame = fgets(STDIN);
+	$payload = $frame !== false && strpos($frame, 'DAPPS_RPC_RESPONSE:') === 0
+		? base64_decode(trim(substr($frame, 19)), true) : false;
+	$rpc = $payload === false ? null : json_decode($payload, true);
+	$res = is_array($rpc) && !empty($rpc['ok']) ? base64_decode((string)($rpc['body'] ?? ''), true) : false;
+	$main_node = $_SERVER['DAPPS_HOSTNAME'] ?? '';
 	if($res === false) {
 		throw new Exception("Can not contact peers node $main_node");
 	}
@@ -262,6 +296,78 @@ function dapps_get_random_peer() {
 	return $rand_peer;
 }
 
+function dapps_rpc_http($method, $api, $node, $data = null) {
+	$request = [
+		'type' => 'http',
+		'method' => $method,
+		'api' => (string)$api,
+		'node' => (string)$node,
+		'data' => $data,
+	];
+	$encoded = json_encode($request);
+	if ($encoded === false) return false;
+	echo "\nDAPPS_RPC:".base64_encode($encoded)."\n";
+	flush();
+	$response = fgets(STDIN);
+	if ($response === false || strpos($response, 'DAPPS_RPC_RESPONSE:') !== 0) return false;
+	$payload = base64_decode(trim(substr($response, 19)), true);
+	if ($payload === false) return false;
+	$result = json_decode($payload, true);
+	if (!is_array($result) || empty($result['ok'])) return false;
+	return base64_decode((string)($result['body'] ?? ''), true);
+}
+
+function dapps_get_rpc($path, $query = [], $remote = false) {
+	$request = json_encode([
+		'type'=>'dapp_get',
+		'path'=>(string)$path,
+		'query'=>$query,
+		'remote'=>(bool)$remote,
+	]);
+	if($request === false) return false;
+	echo "\nDAPPS_RPC:".base64_encode($request)."\n";
+	flush();
+	$frame = fgets(STDIN);
+	$payload = $frame !== false && strpos($frame, 'DAPPS_RPC_RESPONSE:') === 0
+		? base64_decode(trim(substr($frame, 19)), true) : false;
+	$result = $payload === false ? null : json_decode($payload, true);
+	return is_array($result) && !empty($result['ok'])
+		? base64_decode((string)($result['body'] ?? ''), true) : false;
+}
+
+function dapps_local_get_rpc($path, $query = []) {
+	return dapps_get_rpc($path, $query, false);
+}
+
+function dapps_post_rpc($path, $query = [], $body = '', $remote = false, $phpcraftAjax = false) {
+	$request = json_encode([
+		'type'=>'dapp_post',
+		'path'=>(string)$path,
+		'query'=>$query,
+		'body'=>(string)$body,
+		'remote'=>(bool)$remote,
+		'phpcraft_ajax'=>(bool)$phpcraftAjax,
+	]);
+	if($request === false) return false;
+	echo "\nDAPPS_RPC:".base64_encode($request)."\n";
+	flush();
+	$frame = fgets(STDIN);
+	$payload = $frame !== false && strpos($frame, 'DAPPS_RPC_RESPONSE:') === 0
+		? base64_decode(trim(substr($frame, 19)), true) : false;
+	$result = $payload === false ? null : json_decode($payload, true);
+	return is_array($result) && !empty($result['ok'])
+		? base64_decode((string)($result['body'] ?? ''), true) : false;
+}
+
+function dapps_phpcraft_rpc($path, $api, $params = [], $remote = true) {
+	$body = json_encode(['api'=>(string)$api, 'params'=>$params]);
+	if($body === false) return false;
+	$response = dapps_post_rpc($path, [], $body, $remote, true);
+	if($response === false) return false;
+	$decoded = json_decode($response, true);
+	return is_array($decoded) ? $decoded : false;
+}
+
 /**
  * Calls API function on network node
  * @param null $api - API string to call
@@ -274,8 +380,7 @@ function dapps_api($api=null, $node=null, &$error = null) {
 	if(empty($node)) {
 		$node = $_SERVER['DAPPS_HOSTNAME'];
 	}
-	$url = $node. "/api.php?q=".$api;
-	$res = file_get_contents($url);
+	$res = dapps_rpc_http('GET', $api, $node);
 	$res = json_decode($res, true);
 	if($res !== false && $res['status']=="ok") {
 		$data = $res['data'];
@@ -321,22 +426,7 @@ function dapps_api_post($api=null, $node=null, $data=null, &$error = null) {
     if(empty($node)) {
         $node = $_SERVER['DAPPS_HOSTNAME'];
     }
-	$url = $node. "/api.php?q=".$api;
-    $postdata = http_build_query(
-        [
-            'data' => json_encode($data)
-        ]
-    );
-    $opts = [
-        'http' =>
-            [
-                'method'  => 'POST',
-                'header'  => 'content-type: application/x-www-form-urlencoded',
-                'content' => $postdata,
-            ]
-    ];
-    $context = stream_context_create($opts);
-	$res = file_get_contents($url, false, $context);
+	$res = dapps_rpc_http('POST', $api, $node, $data);
 	$res = json_decode($res, true);
 	if($res !== false && ($res['status'] ?? null)==="ok") return $res['data'];
 	$error = $res; return false;
@@ -345,11 +435,24 @@ function dapps_api_post($api=null, $node=null, $data=null, &$error = null) {
 
 
 function dapps_sql($query, $params) {
-    $action = [
-        "type"=>"dapps_sql",
-        "query"=>$query,
-        "params"=>$params,
-    ];
-    echo "action:" . json_encode($action);
-    exit;
+	$action = [
+		"type"=>"dapps_sql",
+		"query"=>$query,
+		"params"=>$params,
+	];
+	echo "action:" . json_encode($action);
+	exit;
+}
+
+function dapps_sql_rpc($query, $params) {
+	$request = ['type'=>'sql', 'query'=>(string)$query, 'params'=>$params];
+	$encoded = json_encode($request);
+	if($encoded === false) return false;
+	echo "\nDAPPS_RPC:".base64_encode($encoded)."\n";
+	flush();
+	$response = fgets(STDIN);
+	if($response === false || strpos($response, 'DAPPS_RPC_RESPONSE:') !== 0) return false;
+	$payload = base64_decode(trim(substr($response, 19)), true);
+	$result = $payload === false ? null : json_decode($payload, true);
+	return is_array($result) && !empty($result['ok']) ? ($result['data'] ?? []) : false;
 }

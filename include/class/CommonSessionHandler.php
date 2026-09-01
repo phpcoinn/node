@@ -58,7 +58,6 @@ class CommonSessionHandler implements SessionHandlerInterface {
     #[\ReturnTypeWillChange]
     public function write($id, $data)
     {
-        if(empty($data)) return true;
         $safeId = self::safeId($id);
         if ($safeId === '') return false;
         $ret= file_put_contents($this->path."/sess_$safeId", $data, LOCK_EX) === false ? false : true;

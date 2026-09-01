@@ -416,7 +416,7 @@ class Sandbox {
         return $decoded;
     }
 
-    static function runDapp($php_file,$input,$allowed_files,$debug=false)
+    static function runDapp($php_file,$input,$allowed_files,$debug=false,$rpcHandler=null)
     {
 
         $phpFile = realpath($php_file);
@@ -434,6 +434,8 @@ class Sandbox {
 		if ($dappRoot === false || !str_starts_with($phpFile, $dappRoot.DIRECTORY_SEPARATOR)) {
 			throw new InvalidArgumentException('Dapp PHP file is outside selected dapp');
 		}
+		$dappTmp = ROOT.'/tmp/dapps/'.hash('sha256', 'dapp:'.$dappId);
+		@mkdir($dappTmp, 0700, true);
 
 		$iniPath = realpath(__DIR__.'/'.($debug ? 'php-sandbox-debug.ini' : 'php-sandbox.ini'));
 		$bootstrapPath = realpath(__DIR__.'/sandbox_dapp_bootstrap.php');
@@ -451,6 +453,10 @@ class Sandbox {
 		$disabledFunctions = implode(',', [
 			'exec', 'passthru', 'shell_exec', 'system', 'proc_open', 'popen',
 			'pcntl_exec', 'pcntl_fork', 'putenv', 'mail', 'dl', 'set_time_limit',
+			'curl_init', 'curl_setopt', 'curl_setopt_array', 'curl_exec', 'curl_getinfo',
+			'curl_error', 'curl_errno', 'curl_close', 'curl_multi_init', 'curl_multi_exec',
+			'curl_multi_add_handle', 'curl_multi_remove_handle', 'curl_multi_getcontent',
+			'curl_multi_select', 'curl_multi_info_read', 'curl_multi_close',
 			'fsockopen', 'pfsockopen',
 			'stream_socket_client', 'stream_socket_server', 'stream_socket_accept',
 			'socket_create', 'socket_create_listen', 'socket_connect', 'socket_bind',
@@ -476,7 +482,10 @@ class Sandbox {
 		$cmd = 'php -c '.escapeshellarg($iniPath)
 			.' -d auto_prepend_file='.escapeshellarg($bootstrapPath)
 			.' -d open_basedir='.escapeshellarg($openBasedir)
+			.' -d sys_temp_dir='.escapeshellarg($dappTmp)
+			.' -d upload_tmp_dir='.escapeshellarg($dappTmp)
 			.' -d disable_functions='.escapeshellarg($disabledFunctions)
+			.' -d allow_url_fopen=0 -d allow_url_include=0'
 			.' -d max_execution_time=5 -d memory_limit=32M '
 			. $debugCmd . ' '
 			.escapeshellarg($phpFile);
@@ -487,20 +496,42 @@ class Sandbox {
 		}
 		$proc = proc_open($cmd, [
 			0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w'],
-		], $pipes, $dappRoot, ['PATH' => '/usr/local/bin:/usr/bin:/bin']);
+		], $pipes, $dappRoot, [
+			'PATH' => '/usr/local/bin:/usr/bin:/bin',
+			'NETWORK' => defined('NETWORK') ? NETWORK : 'mainnet',
+		]);
 		if (!is_resource($proc)) throw new RuntimeException('Unable to start dapp sandbox');
 
-		fwrite($pipes[0], $inputJson);
-		fclose($pipes[0]);
+		fwrite($pipes[0], $inputJson."\n");
+		fflush($pipes[0]);
 		stream_set_blocking($pipes[1], false);
 		stream_set_blocking($pipes[2], false);
 		$output = '';
+		$stdoutBuffer = '';
 		$errors = '';
 		$deadline = microtime(true) + 6.0;
 		$maxOutput = 2 * 1024 * 1024;
 		$failed = null;
 		while (true) {
-			$output .= (string) fread($pipes[1], 8192);
+			$stdoutBuffer .= (string) fread($pipes[1], 8192);
+			while (($newline = strpos($stdoutBuffer, "\n")) !== false) {
+				$line = substr($stdoutBuffer, 0, $newline);
+				$stdoutBuffer = substr($stdoutBuffer, $newline + 1);
+				if (strpos($line, 'DAPPS_RPC:') === 0 && is_callable($rpcHandler)) {
+					$requestJson = base64_decode(substr($line, 10), true);
+					$request = $requestJson === false ? null : json_decode($requestJson, true);
+					try {
+						$response = is_array($request) ? call_user_func($rpcHandler, $request) : ['ok'=>false];
+					} catch (Throwable $e) {
+						$response = ['ok'=>false, 'error'=>'RPC request failed'];
+					}
+					$frame = json_encode($response);
+					fwrite($pipes[0], 'DAPPS_RPC_RESPONSE:'.base64_encode($frame === false ? '{}' : $frame)."\n");
+					fflush($pipes[0]);
+				} else {
+					$output .= $line."\n";
+				}
+			}
 			$errors .= (string) fread($pipes[2], 8192);
 			if (strlen($output) + strlen($errors) > $maxOutput) {
 				$failed = 'Dapp output limit exceeded';
@@ -509,7 +540,8 @@ class Sandbox {
 			}
 			$status = proc_get_status($proc);
 			if (!$status['running']) {
-				$output .= (string) stream_get_contents($pipes[1]);
+				$stdoutBuffer .= (string) stream_get_contents($pipes[1]);
+				$output .= $stdoutBuffer;
 				$errors .= (string) stream_get_contents($pipes[2]);
 				break;
 			}
@@ -520,6 +552,7 @@ class Sandbox {
 			}
 			usleep(10000);
 		}
+		fclose($pipes[0]);
 		fclose($pipes[1]);
 		fclose($pipes[2]);
 		proc_close($proc);
