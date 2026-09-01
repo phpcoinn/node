@@ -248,6 +248,7 @@ function handleWindowClose(walletWindow, reject) {
             reject('The window has been closed!');
         }
     }, 500); // Checks every 500ms
+    return () => clearInterval(closeTimer);
 }
 
 function connectWallet(options = {}) {
@@ -284,11 +285,15 @@ function connectWallet(options = {}) {
             reject("Wallet connection timeout");
         }, timeoutMs);
 
-        handleWindowClose(walletWindow, reject);
+        const stopCloseTimer = handleWindowClose(walletWindow, error => {
+            cleanup();
+            reject(error);
+        });
 
         function messageHandler(event) {
 
             if (event.origin !== WALLET_ORIGIN) return;
+            if (event.source !== walletWindow) return;
             if (!event.data) return;
 
             const { type, payload } = event.data;
@@ -329,7 +334,9 @@ function connectWallet(options = {}) {
 
                     const parsed = JSON.parse(message);
 
-                    if (parsed.domain !== domain || parsed.nonce !== nonce) {
+                    if (parsed.domain !== domain || parsed.nonce !== nonce
+                        || parsed.issued_at !== issued_at || parsed.address !== address
+                        || phpcoinCrypto.getAddress(publicKey) !== address) {
                         cleanup();
                         reject("Invalid login payload");
                         return;
@@ -353,6 +360,7 @@ function connectWallet(options = {}) {
 
         function cleanup() {
             clearTimeout(timer);
+            stopCloseTimer();
             window.removeEventListener("message", messageHandler);
         }
 
@@ -365,11 +373,15 @@ function signTransactionWithWallet(options = {}) {
 
     const WALLET_URL = options.walletUrl || "https://wallet.phpcoin.net/#/connect";
     const WALLET_ORIGIN = new URL(WALLET_URL).origin;
-    const transaction = options.transaction;
+    const inputTransaction = options.transaction;
     const chainId = options.chainId != null ? String(options.chainId) : "00";
 
-    if (!transaction || typeof transaction !== "object") {
+    if (!inputTransaction || typeof inputTransaction !== "object" || Array.isArray(inputTransaction)) {
         return Promise.reject(new Error("transaction is required"));
+    }
+    const transaction = Object.assign({}, inputTransaction);
+    if (!Number.isFinite(Number(transaction.date)) || Number(transaction.date) <= 0) {
+        transaction.date = Math.floor(Date.now() / 1000);
     }
 
     return new Promise((resolve, reject) => {
@@ -396,11 +408,15 @@ function signTransactionWithWallet(options = {}) {
             reject(new Error("Wallet connection timeout"));
         }, timeoutMs);
 
-        handleWindowClose(walletWindow, reject);
+        const stopCloseTimer = handleWindowClose(walletWindow, error => {
+            cleanup();
+            reject(new Error(error));
+        });
 
         function messageHandler(event) {
 
             if (event.origin !== WALLET_ORIGIN) return;
+            if (event.source !== walletWindow) return;
             if (!event.data) return;
 
             const { type, payload } = event.data;
@@ -425,18 +441,31 @@ function signTransactionWithWallet(options = {}) {
             }
 
             if (type === "PHPCOIN_SIGN_TX_RESPONSE") {
-                cleanup();
-                const signed = payload && payload.signedTransaction;
-                if (!signed) {
-                    reject(new Error("Invalid sign response"));
-                    return;
+                try {
+                    const encoded = payload && payload.signedTransaction;
+                    if (!encoded) throw new Error("Invalid sign response");
+                    const signed = typeof encoded === "string" ? JSON.parse(atob(encoded)) : encoded;
+                    if (!signed || typeof signed !== "object" || Array.isArray(signed)) throw new Error("Invalid signed transaction");
+                    for (const key of Object.keys(transaction)) {
+                        if (JSON.stringify(signed[key]) !== JSON.stringify(transaction[key])) throw new Error("Signed transaction does not match request");
+                    }
+                    const allowedKeys = new Set(Object.keys(transaction).concat(["public_key", "signature"]));
+                    if (Object.keys(signed).some(key => !allowedKeys.has(key))) throw new Error("Signed transaction contains unexpected fields");
+                    if (!signed.public_key || !signed.signature || phpcoinCrypto.getAddress(signed.public_key) !== transaction.src) throw new Error("Signer does not match source address");
+                    const txBase = Number(transaction.val || 0).toFixed(8) + '-' + Number(transaction.fee || 0).toFixed(8) + '-' + (transaction.dst == null ? '' : transaction.dst) + '-' + (transaction.msg || '') + '-' + (transaction.type != null ? transaction.type : 1) + '-' + signed.public_key + '-' + transaction.date;
+                    if (!phpcoinCrypto.verify(chainId + txBase, signed.signature, signed.public_key)) throw new Error("Invalid transaction signature");
+                    cleanup();
+                    resolve(signed);
+                } catch (err) {
+                    cleanup();
+                    reject(err instanceof Error ? err : new Error("Invalid sign response"));
                 }
-                resolve(typeof signed === "string" ? JSON.parse(atob(signed)) : signed);
             }
         }
 
         function cleanup() {
             clearTimeout(timer);
+            stopCloseTimer();
             window.removeEventListener("message", messageHandler);
         }
 
@@ -462,6 +491,7 @@ function walletListen(options = {}) {
     window.addEventListener("message", async (event) => {
 
         if (!event.data) return;
+        if (window.opener && event.source !== window.opener) return;
 
         const msgType = event.data.type;
 
