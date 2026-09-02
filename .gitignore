@@ -15,5 +15,6 @@
 /web/doc/
 /config/dapps.config.inc.php
 /web/apps/wallet2/
+/web/coin-info.json
 /chain_id
 PROJECT_STATUS.md
