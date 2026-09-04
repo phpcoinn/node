@@ -16,16 +16,15 @@ require_once dirname(__DIR__). '/common/include/top.php';
 ?>
 
 <ol class="breadcrumb m-0 ps-0 h4">
-    <li class="breadcrumb-item"><a href="/apps/explorer">Explorer</a></li>
     <li class="breadcrumb-item"><a href="/apps/dex">DEX</a></li>
     <li class="breadcrumb-item active">Nodes</li>
 </ol>
 
 <h3>DEX nodes</h3>
 <p class="text-muted">
-    Each host serves a local copy of the DEX UI. The order book is the same on-chain contract
-    (<?php echo $info['address'] ? explorer_address_link($info['address']) : '<span class="text-muted">not pinned</span>' ?>).
-    Taking one host down does not stop trading.
+    These nodes all show the same market
+    (<?php echo $info['address'] ? explorer_address_link($info['address']) : '<span class="text-muted">not deployed</span>' ?>).
+    If one node is offline, open the DEX on another.
 </p>
 
 <div class="table-responsive">
@@ -41,7 +40,7 @@ require_once dirname(__DIR__). '/common/include/top.php';
         </thead>
         <tbody>
         <?php if (count($nodes) === 0) { ?>
-            <tr><td colspan="5" class="text-muted">No DEX hosts advertised yet. Enable dex_node and let peers sync.</td></tr>
+            <tr><td colspan="5" class="text-muted">No DEX nodes are listed yet.</td></tr>
         <?php } ?>
         <?php foreach ($nodes as $node) { ?>
             <tr>

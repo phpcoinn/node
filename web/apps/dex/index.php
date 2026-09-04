@@ -45,19 +45,15 @@ require_once dirname(__DIR__). '/common/include/top.php';
 ?>
 
 <ol class="breadcrumb m-0 ps-0 h4">
-    <li class="breadcrumb-item"><a href="/apps/explorer">Explorer</a></li>
     <li class="breadcrumb-item active">DEX</li>
 </ol>
 
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <h3 class="mb-0">On-chain DEX</h3>
-    <?php if ($info['dex_node']) { ?>
-        <span class="badge rounded-pill bg-success">This node hosts DEX UI</span>
-    <?php } ?>
+    <h3 class="mb-0">DEX</h3>
     <?php if ($info['verified']) { ?>
-        <span class="badge rounded-pill bg-info text-dark">Contract verified</span>
+        <span class="badge rounded-pill bg-success">Live</span>
     <?php } elseif ($info['deployed']) { ?>
-        <span class="badge rounded-pill bg-danger">Unverified contract</span>
+        <span class="badge rounded-pill bg-danger">Unavailable</span>
     <?php } ?>
     <a class="ms-auto btn btn-outline-primary btn-sm" href="/apps/dex/nodes.php">DEX nodes</a>
 </div>
@@ -69,13 +65,13 @@ require_once dirname(__DIR__). '/common/include/top.php';
                 <div class="row">
                     <div class="col-md-6">
                         <div class="text-muted">Market</div>
-                        <div class="h4 mb-1"><?php echo h($info['name'] ?: 'Not deployed') ?> <?php if ($info['symbol']) { ?><span class="text-muted">(<?php echo h($info['symbol']) ?>)</span><?php } ?></div>
+                        <div class="h4 mb-1"><?php echo h($info['name'] ?: 'Market not live') ?> <?php if ($info['symbol']) { ?><span class="text-muted">(<?php echo h($info['symbol']) ?>)</span><?php } ?></div>
                         <div class="font-size-13">
                             Contract:
                             <?php if ($info['address']) { ?>
                                 <?php echo explorer_address_link($info['address']) ?>
                             <?php } else { ?>
-                                <span class="text-muted">Not pinned yet. Deploy the template and set DEX_CONTRACT_ADDRESS or $_config['dex_contract'].</span>
+                                <span class="text-muted">Not deployed</span>
                             <?php } ?>
                         </div>
                     </div>
@@ -125,13 +121,11 @@ require_once dirname(__DIR__). '/common/include/top.php';
 
 <?php if (!$info['deployed']) { ?>
     <div class="alert alert-warning">
-        The official DEX contract is not on this chain yet. Offers and payouts live on-chain after deploy.
-        Compile include/templates/dex/simple_offer_dex.php, deploy it, then pin the address.
-        This node's UI still works independently of other DEX hosts.
+        The DEX market is not live on this network yet. You can still open this page on any node; trading will start once the market is deployed.
     </div>
 <?php } elseif (!$info['verified']) { ?>
     <div class="alert alert-danger">
-        The pinned contract does not match the DEX interface. This UI will not send trades to it.
+        This market is not available for trading on this DEX.
     </div>
 <?php } ?>
 
@@ -139,7 +133,7 @@ require_once dirname(__DIR__). '/common/include/top.php';
     <div class="col-lg-6">
         <div class="card">
             <div class="card-body">
-                <h4>Sell <?php echo h($symbol) ?> (want PHP)</h4>
+                <h4>Sell <?php echo h($symbol) ?></h4>
                 <div class="table-responsive">
                     <table class="table table-sm table-striped dataTable">
                         <thead class="table-light">
@@ -181,7 +175,7 @@ require_once dirname(__DIR__). '/common/include/top.php';
     <div class="col-lg-6">
         <div class="card">
             <div class="card-body">
-                <h4>Buy <?php echo h($symbol) ?> (locked PHP)</h4>
+                <h4>Buy <?php echo h($symbol) ?></h4>
                 <div class="table-responsive">
                     <table class="table table-sm table-striped dataTable">
                         <thead class="table-light">
@@ -228,7 +222,7 @@ require_once dirname(__DIR__). '/common/include/top.php';
         <div class="card">
             <div class="card-body">
                 <h4>Post sell</h4>
-                <p class="text-muted font-size-13">Lock <?php echo h($symbol) ?> from your balance. Buyer pays the PHP amount with the fill transaction.</p>
+                <p class="text-muted font-size-13">List <?php echo h($symbol) ?> for sale. The buyer pays PHP when they fill the offer.</p>
                 <div class="mb-3">
                     <label class="form-label"><?php echo h($symbol) ?> amount</label>
                     <input class="form-control" type="text" v-model="sellToken">
@@ -245,7 +239,7 @@ require_once dirname(__DIR__). '/common/include/top.php';
         <div class="card">
             <div class="card-body">
                 <h4>Post buy</h4>
-                <p class="text-muted font-size-13">Send PHP with this transaction. A seller fills by delivering <?php echo h($symbol) ?>.</p>
+                <p class="text-muted font-size-13">Lock PHP in a buy offer. A seller fills it by sending <?php echo h($symbol) ?>.</p>
                 <div class="mb-3">
                     <label class="form-label"><?php echo h($symbol) ?> wanted</label>
                     <input class="form-control" type="text" v-model="buyToken">
@@ -308,8 +302,7 @@ require_once dirname(__DIR__). '/common/include/top.php';
 <?php } ?>
 
 <p class="text-muted font-size-13">
-    Offers and payouts are stored on the smart contract. This page is only a local viewer on your node.
-    Another operator going offline or editing their UI does not change the book.
+    Offers and trades are settled on the blockchain. This page is a local interface; the order book is the same on every DEX node.
 </p>
 
 <?php if ($canTrade) { ?>
