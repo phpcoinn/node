@@ -22,6 +22,63 @@ class Dapps extends Task
 		return self::isEnabled() && Account::getAddress($_config['dapps_public_key'])==$dapps_id;
 	}
 
+	private static function ownHostname() {
+		global $_config;
+		return rtrim((string)($_config['hostname'] ?? ''), '/');
+	}
+
+	private static function isOwnHostname($url) {
+		$own = self::ownHostname();
+		return $own !== '' && rtrim((string)$url, '/') === $own;
+	}
+
+	private static function isAllowedDappHost($url) {
+		return self::isOwnHostname($url) || Security::isSafePeerUrl($url);
+	}
+
+	private static function callLocalApi($method, $api, $postData = null)
+	{
+		$q = $api;
+		$extra = [];
+		if (strpos($api, '&') !== false) {
+			$bits = explode('&', $api);
+			$q = array_shift($bits);
+			parse_str(implode('&', $bits), $extra);
+		}
+		if (!is_string($q) || !preg_match('/\A[A-Za-z][A-Za-z0-9_-]*\z/', $q)) {
+			return false;
+		}
+		if (Security::isBlockedDevApiMethod($q)) {
+			return false;
+		}
+		$fn = $q;
+		if (!method_exists(Api::class, $fn)) {
+			$str = str_replace(' ', '', ucwords(str_replace('-', ' ', $q)));
+			$str[0] = strtolower($str[0]);
+			$fn = $str;
+		}
+		if (!method_exists(Api::class, $fn) || Security::isBlockedDevApiMethod($fn)) {
+			return false;
+		}
+		$data = is_array($extra) ? $extra : [];
+		if ($method === 'POST' && is_array($postData)) {
+			$data = array_merge($data, $postData);
+		}
+		$GLOBALS['_api_capture'] = true;
+		$GLOBALS['_api_capture_body'] = null;
+		try {
+			call_user_func([Api::class, $fn], $data);
+		} catch (Throwable $e) {
+			$GLOBALS['_api_capture'] = false;
+			unset($GLOBALS['_api_capture_body']);
+			return false;
+		}
+		$GLOBALS['_api_capture'] = false;
+		$body = $GLOBALS['_api_capture_body'] ?? null;
+		unset($GLOBALS['_api_capture_body']);
+		return is_string($body) ? $body : false;
+	}
+
 	static function calcDappsHash($dapps_id) {
 		$dapps_dir = self::getDappsDir() . "/" . $dapps_id;
 		$dappsHash = null;
@@ -260,20 +317,36 @@ class Dapps extends Task
 			}
 
 			$dapps_root = realpath($dapps_dir);
-			$dapp_root = realpath($dapps_dir . "/" . $dapps_id);
 			if($dapps_root === false) {
-				http_response_code(404);
+				self::createDir();
+				$dapps_root = realpath($dapps_dir);
+			}
+			if($dapps_root === false) {
+				http_response_code(503);
+				header('Content-Type: text/plain; charset=UTF-8');
+				echo 'Dapps directory is not available on this node.';
 				return;
 			}
 
+			$dapp_root = realpath($dapps_dir . "/" . $dapps_id);
 			if($dapp_root === false) {
 				_log("Dapps: Does not exists $dapps_id");
-				$res = Dapps::downloadDapps($dapps_id);
-			if($res) {
-				sleep(5);
-				header("location: " . $_SERVER['REQUEST_URI']);
+				self::downloadDapps($dapps_id);
+				$deadline = microtime(true) + 3.0;
+				do {
+					$dapp_root = realpath($dapps_dir . "/" . $dapps_id);
+					if($dapp_root !== false && is_dir($dapp_root) && dirname($dapp_root) === $dapps_root) {
+						break;
+					}
+					usleep(200000);
+				} while(microtime(true) < $deadline);
+				if($dapp_root === false || !is_dir($dapp_root) || dirname($dapp_root) !== $dapps_root) {
+					http_response_code(503);
+					header('Retry-After: 5');
+					header('Content-Type: text/plain; charset=UTF-8');
+					echo 'This dapp is not on this node yet. It has been requested from the network. Refresh in a few seconds.';
+					return;
 				}
-				return;
 			}
 
 			// A dapp root must be a real directory directly below the dapps root.
@@ -546,7 +619,7 @@ class Dapps extends Task
 				$peer = Peer::findByDappsId($dapps_id);
 				$base = rtrim((string)($peer['hostname'] ?? ''), '/');
 			}
-			if(!Security::isSafePeerUrl($base)) return ['ok'=>false, 'error'=>'Dapp host rejected'];
+			if(!self::isAllowedDappHost($base)) return ['ok'=>false, 'error'=>'Dapp host rejected'];
 			$url = $base.'/dapps.php?'.http_build_query(['url'=>$dapps_id.'/'.$path] + $query);
 			$http = ['method'=>$isPost ? 'POST' : 'GET', 'timeout'=>10, 'ignore_errors'=>true,
 				'follow_location'=>0, 'max_redirects'=>0, 'header'=>"Accept: application/json\r\nConnection: close\r\n"];
@@ -555,7 +628,8 @@ class Dapps extends Task
 				if(!empty($request['phpcraft_ajax'])) $http['header'] .= "phpcraft-ajax: 1\r\n";
 				$http['content'] = $bodyData;
 			}
-			$context = stream_context_create(['http'=>$http, 'ssl'=>['verify_peer'=>true, 'verify_peer_name'=>true]]);
+			$verifySsl = !self::isOwnHostname($base) && (!defined('DEVELOPMENT') || !DEVELOPMENT);
+			$context = stream_context_create(['http'=>$http, 'ssl'=>['verify_peer'=>$verifySsl, 'verify_peer_name'=>$verifySsl]]);
 			$body = @file_get_contents($url, false, $context, 0, 2 * 1024 * 1024 + 1);
 			if($body === false || strlen($body) > 2 * 1024 * 1024) return ['ok'=>false, 'error'=>'Dapp request failed'];
 			return ['ok'=>true, 'body'=>base64_encode($body)];
@@ -568,6 +642,32 @@ class Dapps extends Task
 				|| preg_match('/;|--|#|\/\*/', $query)) return ['ok'=>false, 'error'=>'SQL request rejected'];
 			global $db;
 			return ['ok'=>true, 'data'=>$db->select($query, $params)];
+		}
+		if(($request['type'] ?? '') === 'exec_fn' && ($request['fn_name'] ?? '') === 'miner_fetch_info') {
+			$node = rtrim((string)(($request['params'][0] ?? '')), '/');
+			if($node === '' || !self::isAllowedDappHost($node)) {
+				return ['ok'=>false, 'error'=>'Function request rejected'];
+			}
+			if(self::isOwnHostname($node)) {
+				$mineInfo = Blockchain::getMineInfo();
+				$body = json_encode([
+					'status' => 'ok',
+					'data' => $mineInfo,
+					'coin' => COIN,
+					'version' => VERSION,
+					'network' => NETWORK,
+					'chain_id' => CHAIN_ID,
+				]);
+				return $body === false ? ['ok'=>false, 'error'=>'Function request rejected'] : ['ok'=>true, 'data'=>$body];
+			}
+			$url = $node.'/mine.php?q=info';
+			$http = ['method'=>'GET', 'timeout'=>5, 'ignore_errors'=>true, 'follow_location'=>0, 'max_redirects'=>0,
+				'header'=>"Accept: application/json\r\nConnection: close\r\n"];
+			$verifySsl = !defined('DEVELOPMENT') || !DEVELOPMENT;
+			$context = stream_context_create(['http'=>$http, 'ssl'=>['verify_peer'=>$verifySsl, 'verify_peer_name'=>$verifySsl]]);
+			$body = @file_get_contents($url, false, $context, 0, 2 * 1024 * 1024 + 1);
+			if($body === false || strlen($body) > 2 * 1024 * 1024) return ['ok'=>false, 'error'=>'RPC request failed'];
+			return ['ok'=>true, 'data'=>$body];
 		}
 		if(($request['type'] ?? '') === 'exec_fn') {
 			if(!self::isLocal($dapps_id)) return ['ok'=>false, 'error'=>'Function request rejected'];
@@ -594,23 +694,30 @@ class Dapps extends Task
 		$method = strtoupper((string)($request['method'] ?? ''));
 		$node = rtrim((string)($request['node'] ?? ''), '/');
 		$api = (string)($request['api'] ?? '');
-		$allowedNodes = [rtrim((string)($_config['hostname'] ?? ''), '/')];
+		$own = self::ownHostname();
+		$allowedNodes = [$own];
 		foreach(Peer::getAll() as $peer) {
 			if(!empty($peer['hostname'])) $allowedNodes[] = rtrim((string)$peer['hostname'], '/');
 		}
-		if(!in_array($method, ['GET', 'POST'], true) || !Security::isSafePeerUrl($node)
+		if(!in_array($method, ['GET', 'POST'], true) || !self::isAllowedDappHost($node)
 			|| !in_array($node, $allowedNodes, true)
 			|| strlen($api) < 1 || strlen($api) > 2048 || preg_match('/[\x00-\x1f\x7f#?]/', $api)) {
 			return ['ok'=>false, 'error'=>'RPC request rejected'];
 		}
 		$url = $node.'/api.php?q='.$api;
+		if (self::isOwnHostname($node)) {
+			$body = self::callLocalApi($method, $api, $request['data'] ?? null);
+			if ($body === false || strlen($body) > 2 * 1024 * 1024) return ['ok'=>false, 'error'=>'RPC request failed'];
+			return ['ok'=>true, 'body'=>base64_encode($body)];
+		}
 		$http = ['method'=>$method, 'timeout'=>5, 'ignore_errors'=>true, 'follow_location'=>0, 'max_redirects'=>0,
 			'header'=>"Accept: application/json\r\nConnection: close\r\n"];
 		if($method === 'POST') {
 			$http['header'] .= "Content-Type: application/x-www-form-urlencoded\r\n";
 			$http['content'] = http_build_query(['data'=>json_encode($request['data'] ?? null)]);
 		}
-		$context = stream_context_create(['http'=>$http, 'ssl'=>['verify_peer'=>true, 'verify_peer_name'=>true]]);
+		$verifySsl = !self::isOwnHostname($node) && (!defined('DEVELOPMENT') || !DEVELOPMENT);
+		$context = stream_context_create(['http'=>$http, 'ssl'=>['verify_peer'=>$verifySsl, 'verify_peer_name'=>$verifySsl]]);
 		$body = @file_get_contents($url, false, $context, 0, 2 * 1024 * 1024 + 1);
 		if($body === false || strlen($body) > 2 * 1024 * 1024) return ['ok'=>false, 'error'=>'RPC request failed'];
 		return ['ok'=>true, 'body'=>base64_encode($body)];

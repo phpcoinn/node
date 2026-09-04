@@ -8,5 +8,7 @@ const GENESIS_DATA = [
     "nonce" => 'ea1a46a97bd1db6fd9503537d67ec9b6c048047fa9536a3df604bf7c0eaac654',
     "date" => '1636751245',
     "reward_tx" => '{"5KKJEairgawBSAEshhYoxZTuhQbXUBUDEKY4Y2FAuRLz":{"date":1636751245,"dst":"PgngvvRi27gwQrWQQD43Pj6R3cJaABeLTv","fee":"0.00000000","id":"5KKJEairgawBSAEshhYoxZTuhQbXUBUDEKY4Y2FAuRLz","message":"Marty McFly: If you put your mind to it, you can accomplish anything.","public_key":"PZ8Tyr4Nx8MHsRAGMpZmZ6TWY63dXWSCwV8eomW54A8ffNJhS8h3iq1DpzNaDadZvMBSBp6yqKLuebioGkhPjZCGCe59WCVTMmGAHF1qCXaVzKWmCR7KBNEA","signature":"iKx1CJLcMQBxDTaxH8jPLZKiHM5y17vwvJDs9asLmwy5sUHhq8oZXwNvS35ujH3MKwj9H9g31wP2SCyt8RsTdoXVt2GDAf5t87","src":"PgngvvRi27gwQrWQQD43Pj6R3cJaABeLTv","type":0,"val":"4900010.00000000"}}',
+    "block" => '9aeKHauMRjJC6GzXvjWpYfYcEA4vaFQLxDWitpVDReMQ',
+    "address" => 'PgngvvRi27gwQrWQQD43Pj6R3cJaABeLTv',
 ];
 const GENESIS_TIME = 1636751245;

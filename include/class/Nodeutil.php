@@ -478,11 +478,11 @@ class Nodeutil
 		$memcached = round($mem[5] / 1000000,2);
 		$memavailable = round($mem[6] / 1000000,2);
 		// Linux Connections
-		$connections = `netstat -ntu | grep :80 | grep ESTABLISHED | grep -v LISTEN | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -rn | grep -v 127.0.0.1 | wc -l`;
-		$totalconnections = `netstat -ntu | grep :80 | grep -v LISTEN | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -rn | grep -v 127.0.0.1 | wc -l`;
+		$connections = shell_exec("netstat -ntu | grep :80 | grep ESTABLISHED | grep -v LISTEN | awk '{print \$5}' | cut -d: -f1 | sort | uniq -c | sort -rn | grep -v 127.0.0.1 | wc -l");
+		$totalconnections = shell_exec("netstat -ntu | grep :80 | grep -v LISTEN | awk '{print \$5}' | cut -d: -f1 | sort | uniq -c | sort -rn | grep -v 127.0.0.1 | wc -l");
 
-		$connections=trim($connections);
-		$totalconnections=trim($totalconnections);
+		$connections=trim((string)$connections);
+		$totalconnections=trim((string)$totalconnections);
 
 		$memusage = round(($memavailable/$memtotal)*100);
 		$phpload = round(memory_get_usage() / 1000000,2);
@@ -560,7 +560,7 @@ class Nodeutil
                 'masternode'   => $masternode,
                 'lastBlockTime'=>$current['date'],
                 'php_version' => PHP_VERSION,
-                'pruned_height' => $_config['pruned_height'],
+                'pruned_height' => $_config['pruned_height'] ?? null,
             ];
         }
 
@@ -625,7 +625,7 @@ class Nodeutil
 			'hashRate100'=>$cachedData['hashRate100'],
 			'lastBlockTime'=>$current['date'],
             'php_version' => PHP_VERSION,
-            'pruned_height' => $_config['pruned_height'],
+            'pruned_height' => $_config['pruned_height'] ?? null,
 		];
 	}
 

@@ -480,6 +480,26 @@ class Sandbox {
         return $decoded;
     }
 
+    private static function readGrowingFile($handle)
+    {
+        if (!is_resource($handle)) {
+            return '';
+        }
+        $chunk = '';
+        while (!feof($handle)) {
+            $data = fread($handle, 8192);
+            if ($data === false || $data === '') {
+                break;
+            }
+            $chunk .= $data;
+        }
+        $pos = ftell($handle);
+        if ($pos !== false) {
+            fseek($handle, $pos);
+        }
+        return $chunk;
+    }
+
     static function runDapp($php_file,$input,$allowed_files,$debug=false,$rpcHandler=null)
     {
 

@@ -525,7 +525,10 @@ class Peer
 		global $db;
 		$sql="select max(version) from peers";
 		$max_version = $db->single($sql);
-		$arr = explode(".",$max_version);
+		if($max_version === null || $max_version === false || $max_version === '') {
+			return 0;
+		}
+		$arr = explode(".", (string)$max_version);
 		$build_number = array_pop($arr);
 		return $build_number;
 	}

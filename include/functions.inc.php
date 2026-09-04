@@ -31,25 +31,33 @@ function h($value)
 function api_err($data, $verbosity = 4)
 {
     _log("api_err: ".json_encode($data),$verbosity);
+    $body = json_encode(["status" => "error", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK, "chain_id"=>CHAIN_ID]);
+    if (!empty($GLOBALS['_api_capture'])) {
+        $GLOBALS['_api_capture_body'] = $body;
+        return;
+    }
     if (!headers_sent()) {
         header('Content-Type: application/json');
 	    Security::sendCorsHeaders();
     }
-    echo json_encode(["status" => "error", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK, "chain_id"=>CHAIN_ID]);
-	//Nodeutil::measure();
+    echo $body;
     exit;
 }
 
 // api print ok and exit
 function api_echo($data, $verbosity=5)
 {
+    $body = json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK, "chain_id"=>CHAIN_ID]);
+    if (!empty($GLOBALS['_api_capture'])) {
+        $GLOBALS['_api_capture_body'] = $body;
+        return;
+    }
     if (!headers_sent()) {
         header('Content-Type: application/json');
 	    Security::sendCorsHeaders();
     }
     _log("api_echo: " . json_encode($data), $verbosity);
-    echo json_encode(["status" => "ok", "data" => $data, "coin" => COIN, "version"=>VERSION, "network"=>NETWORK, "chain_id"=>CHAIN_ID]);
-	//Nodeutil::measure();
+    echo $body;
     exit;
 }
 

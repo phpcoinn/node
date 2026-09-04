@@ -4,5 +4,5 @@ require_once dirname(dirname(__DIR__)) . '/include/init.inc.php';
 
 
 global $_config;
-$nodeScore = round($_config['node_score'],2);
+$nodeScore = round((float)($_config['node_score'] ?? 0), 2);
 
