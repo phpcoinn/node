@@ -4,9 +4,9 @@
 const NETWORK = "testnet";
 if(!defined('CHAIN_ID')) define('CHAIN_ID', "01");
 const COIN_PORT = "";
-const VERSION = "1.11.0";
-const BUILD_VERSION = 526;
-const MIN_VERSION = "1.9.2";
+const VERSION = "1.11.1";
+const BUILD_VERSION = 527;
+const MIN_VERSION = "1.11.0";
 const DEVELOPMENT = false;
 const XDEBUG = "&XDEBUG_SESSION_START=PHPSTORM";
 const XDEBUG_CLI = "";
