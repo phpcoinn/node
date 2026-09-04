@@ -211,6 +211,26 @@ CREATE TABLE `smart_contracts` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `smart_contract_transfers`
+--
+
+DROP TABLE IF EXISTS `smart_contract_transfers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `smart_contract_transfers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `height` int(11) NOT NULL,
+  `sc_address` varchar(128) NOT NULL,
+  `to_address` varchar(128) NOT NULL,
+  `amount` decimal(20,8) NOT NULL,
+  `seq` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `smart_contract_transfers_height_index` (`height`),
+  KEY `smart_contract_transfers_sc_height_index` (`sc_address`,`height`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Temporary table structure for view `token_balances`
 --
 

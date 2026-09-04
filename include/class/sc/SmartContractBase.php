@@ -49,18 +49,26 @@ class SmartContractBase
     }
 
     /**
+     * Pay native PHPCoin from this contract to $to.
+     * Applied atomically by the node after this call succeeds.
+     */
+    public function transfer($to, $amount) {
+        Transaction::send($to, $amount);
+    }
+
+    /**
      * Execute a method on another smart contract
-     * 
-     * NOTE: Inter-contract calls are disabled in this version for security reasons.
-     * This feature may be re-enabled in a future version with proper security measures.
-     * 
+     *
+     * Inter-contract calls stay disabled so a DEX should keep its token
+     * ledger in the same contract as the PHP offer book.
+     *
      * @param string $contract Contract address (not used - feature disabled)
      * @param string $method Method name (not used - feature disabled)
      * @param array $params Method parameters (not used - feature disabled)
      * @throws Exception Always throws exception indicating feature is disabled
      */
     public function execSmartContract($contract, $method, $params) {
-        $this->error("Inter-contract calls are disabled in this version. Smart contracts cannot call other smart contracts.");
+        $this->error("Inter-contract calls are disabled. Keep token balances and PHP payouts in the same contract.");
     }
 
     /**
@@ -76,7 +84,7 @@ class SmartContractBase
      * @throws Exception Always throws exception indicating feature is disabled
      */
     public function callSmartContract($contract, $method, $params) {
-        $this->error("Inter-contract calls are disabled in this version. Smart contracts cannot call other smart contracts.");
+        $this->error("Inter-contract calls are disabled. Keep token balances and PHP payouts in the same contract.");
     }
 
     /**

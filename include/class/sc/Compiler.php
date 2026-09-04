@@ -723,6 +723,13 @@ class Compiler {
                 copy($source_file, $dest_file);
             }
         }
+        $sandbox_api = dirname(__DIR__, 2) . '/sc/sandbox_api.php';
+        if (file_exists($sandbox_api)) {
+            $api_dest = $tmp_dir . '/sandbox_api.php';
+            if (!($skip_if_exists && file_exists($api_dest))) {
+                copy($sandbox_api, $api_dest);
+            }
+        }
     }
     
 }

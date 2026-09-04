@@ -73,9 +73,11 @@ The `SmartContractBase` class provides a set of properties and methods for acces
 | **Transaction Data** | `int $this->height` | The current block height. |
 | **Transaction Data** | `string $this->address` | The contract's own address. |
 | **State Reversion** | `void $this->error(string $msg)` | Halts execution, reverts all state changes, and returns the error message. |
-| **Inter-Contract** | `mixed $this->callSmartContract(string $contract, string $method, array $params)` | Performs a read-only call to a method on another smart contract. |
-| **Inter-Contract** | `void $this->execSmartContract(string $contract, string $method, array $params)` | Executes a state-changing transaction on another smart contract. |
-| **Outgoing TX** | `Transaction::send(string $to, float $amount)` | Executes an outgoing transaction from the contract's address to another address. |
+| **Inter-Contract** | `mixed $this->callSmartContract(string $contract, string $method, array $params)` | Disabled. A DEX must keep its token ledger in the same contract as PHP payouts. |
+| **Inter-Contract** | `void $this->execSmartContract(string $contract, string $method, array $params)` | Disabled. A DEX must keep its token ledger in the same contract as PHP payouts. |
+| **Outgoing TX** | `Transaction::send(string $to, float $amount)` | Pays native PHPCoin from the contract. Applied by the node after the call succeeds. Alias: `$this->transfer($to, $amount)`. |
+| **Account** | `Account::valid(string $address)` | Returns whether `$address` is a valid PHPCoin address. |
+| **Account** | `Account::getBalance(string $address)` | Returns the native PHPCoin balance. For the contract itself this includes PHP sent with the current transaction. |
 
 ## 🪙 ERC20 Token Templates
 
@@ -87,6 +89,7 @@ The repository includes a set of pre-built ERC20 token templates that you can ex
 | `erc_20_token_burnable.php` | An ERC20 token that can be "burned" or destroyed, reducing the total supply. |
 | `erc_20_token_mintable.php` | An ERC20 token that allows for the creation of new tokens, increasing the total supply. |
 | `erc_20_token_burnable_mintable.php` | An ERC20 token that is both burnable and mintable. |
+| `dex/simple_offer_dex.php` | Offer-board DEX: trade this contract's token against native PHPCoin (`postSell`/`fillSell`/`postBuy`/`fillBuy`). |
 
 ## 📦 Deployment
 

@@ -118,12 +118,21 @@ class SmartContractEngine
                 "test"=>$test,
                 "virtual"=>$virtual,
                 "dbConfig"=>self::getDbConfig(),
+                "sc_balance"=>self::contractNativeBalance($sc_address, $transactions, $test, $virtual),
 			];
 
             $result = Sandbox::exec($phar_path, $cmd_args, $sc_address, $virtual, $debug);
 
             $data = self::processOutput($result);
             $state_updates = $data['state_updates'];
+
+            $transfers = $data['transfers'] ?? [];
+            if (!empty($transfers)) {
+                if (!defined('UPDATE_18_SC_DEX_APIS') || $height < UPDATE_18_SC_DEX_APIS) {
+                    throw new Exception("Smart contract native transfers are not active at height $height");
+                }
+                SmartContract::applyNativeTransfers($sc_address, $transfers, $height, $test, $virtual, $transactions);
+            }
 
             if(self::$virtual) {
                 self::$debug_logs = $data['debug_logs'];
@@ -331,6 +340,44 @@ class SmartContractEngine
             'db_user' => $_config['db_user'],
             'db_pass' => $_config['db_pass'],
         ];
+    }
+
+    /**
+     * Native PHP balance the contract will see after SC txs in this batch.
+     * During block add (test=false) parse_block has already credited the host connection.
+     */
+    public static function contractNativeBalance($sc_address, $transactions, $test, $virtual = false)
+    {
+        if ($virtual) {
+            return self::adjustBalanceForScTxs("0", $sc_address, $transactions);
+        }
+        $balance = Account::getBalance($sc_address);
+        if ($test) {
+            $balance = self::adjustBalanceForScTxs($balance, $sc_address, $transactions);
+        }
+        return $balance;
+    }
+
+    private static function adjustBalanceForScTxs($balance, $sc_address, $transactions)
+    {
+        $balance = bcadd((string)$balance, "0", 8);
+        foreach ($transactions as $tx) {
+            $type = is_object($tx) ? $tx->type : ($tx['type'] ?? null);
+            $dst = is_object($tx) ? $tx->dst : ($tx['dst'] ?? null);
+            $src = is_object($tx) ? $tx->src : ($tx['src'] ?? null);
+            $val = is_object($tx) ? $tx->val : ($tx['val'] ?? 0);
+            $fee = is_object($tx) ? $tx->fee : ($tx['fee'] ?? 0);
+            $val = bcadd((string)$val, "0", 8);
+            $fee = bcadd((string)$fee, "0", 8);
+            if (($type == TX_TYPE_SC_CREATE || $type == TX_TYPE_SC_EXEC) && $dst == $sc_address) {
+                $balance = bcadd($balance, $val, 8);
+            } else if ($type == TX_TYPE_SC_SEND && $src == $sc_address) {
+                $balance = bcsub($balance, bcadd($val, $fee, 8), 8);
+            } else if ($type == TX_TYPE_SC_SEND && $dst == $sc_address) {
+                $balance = bcadd($balance, $val, 8);
+            }
+        }
+        return $balance;
     }
 
 }

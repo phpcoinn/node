@@ -236,6 +236,11 @@ class SmartContract
 		return try_catch(function () use ($height, &$error) {
 
 			global $db;
+            $res = self::reverseNativeTransfers($height, $error);
+            if($res === false) {
+                return false;
+            }
+
 			$sql="delete from smart_contract_state where height >= :height";
 			$res = $db->run($sql, [":height"=>$height]);
 			if($res === false) {
@@ -253,6 +258,144 @@ class SmartContract
 			return true;
 		}, $error);
 	}
+
+    static function ensureTransfersTable()
+    {
+        global $db;
+        $db->exec("CREATE TABLE IF NOT EXISTS `smart_contract_transfers` (
+            `id` int(11) NOT NULL AUTO_INCREMENT,
+            `height` int(11) NOT NULL,
+            `sc_address` varchar(128) NOT NULL,
+            `to_address` varchar(128) NOT NULL,
+            `amount` decimal(20,8) NOT NULL,
+            `seq` int(11) NOT NULL,
+            PRIMARY KEY (`id`),
+            KEY `smart_contract_transfers_height_index` (`height`),
+            KEY `smart_contract_transfers_sc_height_index` (`sc_address`,`height`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+    }
+
+    static function transfersTableExists()
+    {
+        global $db;
+        $res = $db->single("SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'smart_contract_transfers'");
+        return !empty($res);
+    }
+
+    /**
+     * Move native PHP from a contract after a successful sandbox run.
+     * Skips persisting on mempool/mining dry-runs ($test) and virtual mode.
+     */
+    static function applyNativeTransfers($sc_address, $transfers, $height, $test, $virtual = false, $transactions = [])
+    {
+        if (empty($transfers) || $virtual) {
+            return true;
+        }
+        if (!is_array($transfers)) {
+            throw new Exception("Invalid smart contract transfers");
+        }
+        $total = "0";
+        $normalized = [];
+        foreach ($transfers as $index => $transfer) {
+            $from = $transfer['from'] ?? null;
+            $to = $transfer['to'] ?? null;
+            $amount = bcadd((string)($transfer['amount'] ?? "0"), "0", 8);
+            if ($from !== $sc_address) {
+                throw new Exception("Invalid smart contract transfer source");
+            }
+            if (!Account::valid($to)) {
+                throw new Exception("Invalid smart contract transfer destination");
+            }
+            if (bccomp($amount, "0", 8) <= 0) {
+                throw new Exception("Invalid smart contract transfer amount");
+            }
+            $total = bcadd($total, $amount, 8);
+            $normalized[] = [
+                "from" => $from,
+                "to" => $to,
+                "amount" => $amount,
+                "seq" => $index,
+            ];
+        }
+        $available = SmartContractEngine::contractNativeBalance($sc_address, $transactions, $test, $virtual);
+        if (bccomp($available, $total, 8) < 0) {
+            throw new Exception("Smart contract $sc_address has insufficient balance for native transfers");
+        }
+        if ($test) {
+            return true;
+        }
+        if (!self::transfersTableExists()) {
+            throw new Exception("smart_contract_transfers table is missing; restart the node to create it");
+        }
+
+        $block = Block::get($height);
+        $blockId = $block['id'] ?? null;
+        if (empty($blockId)) {
+            throw new Exception("Cannot apply smart contract transfers without block $height");
+        }
+        global $db;
+        foreach ($normalized as $transfer) {
+            $res = Account::checkAccount($transfer['to'], "", $blockId, $height);
+            if ($res === false) {
+                throw new Exception("Cannot create account for smart contract transfer");
+            }
+            $res = Account::addBalance($sc_address, floatval($transfer['amount']) * -1, $height);
+            $res = $res && Account::addBalance($transfer['to'], floatval($transfer['amount']), $height);
+            if ($res === false) {
+                throw new Exception("Failed to apply smart contract native transfer");
+            }
+            $ins = $db->run(
+                "insert into smart_contract_transfers (height, sc_address, to_address, amount, seq) values (:height, :sc, :to, :amount, :seq)",
+                [
+                    ":height" => $height,
+                    ":sc" => $sc_address,
+                    ":to" => $transfer['to'],
+                    ":amount" => $transfer['amount'],
+                    ":seq" => $transfer['seq'],
+                ]
+            );
+            if ($ins === false) {
+                throw new Exception("Failed to record smart contract native transfer");
+            }
+        }
+        return true;
+    }
+
+    static function reverseNativeTransfers($height, &$error = null)
+    {
+        global $db;
+        try {
+            if (!self::transfersTableExists()) {
+                return true;
+            }
+            $rows = $db->run(
+                "select * from smart_contract_transfers where height >= :height order by id desc",
+                [":height" => $height]
+            );
+            if ($rows === false) {
+                $error = $db->errorInfo()[2];
+                return false;
+            }
+            foreach ($rows as $row) {
+                $amount = floatval($row['amount']);
+                $res = Account::addBalance($row['sc_address'], $amount, $row['height']);
+                $res = $res && Account::addBalance($row['to_address'], $amount * -1, $row['height']);
+                if ($res === false) {
+                    $error = "Failed to reverse smart contract native transfer";
+                    return false;
+                }
+            }
+            $del = $db->run("delete from smart_contract_transfers where height >= :height", [":height" => $height]);
+            if ($del === false) {
+                $error = $db->errorInfo()[2];
+                return false;
+            }
+            return true;
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            return false;
+        }
+    }
 
 	static function compile($address, $file, $phar_file, &$error = null)
 	{

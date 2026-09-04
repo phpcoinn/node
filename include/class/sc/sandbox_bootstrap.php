@@ -39,6 +39,12 @@ if ($sandbox_input_data && $sandbox_input_data !== '') {
 $sandbox_input_data_json = json_decode($sandbox_input_data, true);
 $engine_version = $sandbox_input_data_json['engine_version'];
 $legacy_engine = version_compare($engine_version, '2.0', '<');
+
+// Load sandbox APIs while the file wrapper is still available.
+$sandbox_api = dirname(__DIR__, 2) . '/sc/sandbox_api.php';
+if (file_exists($sandbox_api)) {
+    require_once $sandbox_api;
+}
 //
 // 1. REMOVE ALL STREAM WRAPPERS (NO IO OF ANY KIND)
 // Exception: Keep 'phar' wrapper for PHAR file execution

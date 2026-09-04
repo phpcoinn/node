@@ -34,6 +34,9 @@ class SmartContractWrapper
 	public function run($input, $initial_state) {
         $this->args = $input;
         SmartContractContext::$state = $initial_state;
+        SmartContractContext::$transfers = [];
+        SmartContractContext::$allowSend = false;
+        SmartContractContext::$nativeBalance = bcadd((string)($input['sc_balance'] ?? "0"), "0", 8);
         $method = $this->args['type'];
         $this->connectDb();
         $this->initSmartContractVars();
@@ -448,6 +451,7 @@ class SmartContractWrapper
     public function process() {
         $transactions = $this->args['transactions'];
         $height=$this->args['height'];
+        SmartContractContext::$allowSend = true;
         $this->beginTransaction();
         $res = $this->cleanState($height);
         if($res === false) {
@@ -504,6 +508,7 @@ class SmartContractWrapper
             $this->saveState();
         }
         }
+        SmartContractContext::$allowSend = false;
         $this->endTx();
 		return $this->store();
 	}
@@ -532,13 +537,21 @@ class SmartContractWrapper
 
 	private function outResponse() {
         $sc_state_updates = SmartContractContext::$sc_state_updates;
-        $hash = hash("sha256", json_encode($sc_state_updates));
+        $transfers = SmartContractContext::$transfers ?? [];
+        if (!empty($transfers)) {
+            $hash = hash("sha256", json_encode(["state" => $sc_state_updates, "transfers" => $transfers]));
+        } else {
+            $hash = hash("sha256", json_encode($sc_state_updates));
+        }
         $this->log("SC:".$this->address." hash=".$hash);
 		$out = [
 			"response" => $this->response,
             "hash"=>$hash,
             "state_updates"=>$sc_state_updates
 		];
+        if (!empty($transfers)) {
+            $out["transfers"] = $transfers;
+        }
         if(SmartContractContext::$virtual) {
             $out["debug_logs"]=SmartContractContext::$debug_logs;
             $out['state']=SmartContractContext::$state;
@@ -647,6 +660,9 @@ class SmartContractContext {
     public static $virtual;
     public static $state;
     public static $logs;
+    public static $transfers = [];
+    public static $allowSend = false;
+    public static $nativeBalance = "0";
 }
 
 class SmartContractDB {

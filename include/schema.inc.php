@@ -9,3 +9,7 @@ _log("Check db schema current_version=$dbversion check_version=".DB_SCHEMA_VERSI
 if ($dbversion < DB_SCHEMA_VERSION) {
     Nodeutil::checkDBSchema(false);
 }
+
+if (defined('FEATURE_SMART_CONTRACTS') && FEATURE_SMART_CONTRACTS) {
+    SmartContract::ensureTransfersTable();
+}
