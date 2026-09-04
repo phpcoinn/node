@@ -2224,5 +2224,30 @@ class Api
         api_echo($out);
     }
 
+    static function getDexInfo($data) {
+        if (!Dex::isEnabled()) {
+            api_err("Smart contracts are not enabled");
+        }
+        api_echo(Dex::getInfo());
+    }
+
+    static function getDexOffers($data) {
+        if (!Dex::isEnabled()) {
+            api_err("Smart contracts are not enabled");
+        }
+        $address = Dex::contractAddress();
+        if (empty($address)) {
+            api_echo([]);
+        }
+        api_echo(Dex::getOffers($address));
+    }
+
+    static function getDexNodes($data) {
+        if (!Dex::isEnabled()) {
+            api_err("Smart contracts are not enabled");
+        }
+        api_echo(Dex::getPeerNodes());
+    }
+
 
 }

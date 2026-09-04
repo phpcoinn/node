@@ -89,6 +89,29 @@ class SimpleOfferDex extends SmartContractBase
     }
 
     /**
+     * @SmartContractView
+     */
+    public function openOffers()
+    {
+        $out = [];
+        $all = $this->offers->all();
+        if (!is_array($all)) {
+            return $out;
+        }
+        foreach ($all as $id => $raw) {
+            if (empty($raw)) {
+                continue;
+            }
+            $offer = json_decode($raw, true);
+            if (is_array($offer) && !empty($offer["side"])) {
+                $offer["id"] = (string)$id;
+                $out[] = $offer;
+            }
+        }
+        return $out;
+    }
+
+    /**
      * @SmartContractTransact
      */
     public function transferToken($to, $amount)

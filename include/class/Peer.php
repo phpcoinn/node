@@ -278,6 +278,8 @@ class Peer
 			"dbversion"=>$_config['dbversion'],
             "pruned_height"=>@$_config['pruned_height'],
             "peers" => $peersCount,
+            "dex" => Dex::isDexNode(),
+            "dex_contract" => Dex::contractAddress(),
 		];
 	}
 

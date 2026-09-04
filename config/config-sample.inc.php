@@ -81,3 +81,6 @@ $_config['dapps_public_key']="";
 $_config['dapps_private_key']="";
 $_config['dapps_anonymous']=false;
 $_config['dapps_disable_auto_propagate']=true;
+
+$_config['dex_node']=true;
+//$_config['dex_contract']="";

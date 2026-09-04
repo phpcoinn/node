@@ -244,6 +244,9 @@ global $btcPrice, $usdPrice;
                             </h2>
                         </div>
                     </div>
+                    <div class="mt-2">
+                        <a href="/apps/dex"><i class="fas fa-exchange-alt me-1"></i>DEX</a>
+                    </div>
                 </div>
             </div>
         </div>

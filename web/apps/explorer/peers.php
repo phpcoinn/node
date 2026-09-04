@@ -135,6 +135,9 @@ require_once __DIR__. '/../common/include/top.php';
                         <?php if (!empty($info['pruned_height'])) { ?>
                             <span class="badge rounded-pill bg-warning text-black">DB Pruned</span>
                         <?php } ?>
+                        <?php if (!empty($info['dex'])) { ?>
+                            <a href="<?php echo h(rtrim($peer['hostname'], '/')) ?>/apps/dex" target="_blank" class="badge rounded-pill bg-info text-dark">DEX</a>
+                        <?php } ?>
                     </td>
                     <td>
                         <?php
