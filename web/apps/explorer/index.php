@@ -31,7 +31,7 @@ $circulation = Account::getCirculation();
 $peersCount = Peer::getCount();
 if(FEATURE_SMART_CONTRACTS) {
     $scCount=SmartContract::getCount();
-    $tokensCount = $db->single("select count(*) from tokens");
+    $tokensCount = SmartContract::getTokenCount();
 }
 
 $hashRate10 = round(Blockchain::getHashRate(10),2);
@@ -231,7 +231,7 @@ global $btcPrice, $usdPrice;
                                         <a href="/apps/explorer/smart_contracts.php" style="letter-spacing: -1.5px">Smart Contracts</a>
                                     </span>
                             <h2 class="my-2">
-                                <?php echo $scCount ?>
+                                <?php echo intval($scCount) ?>
                             </h2>
                         </div>
                         <div class="col-6">
@@ -240,7 +240,7 @@ global $btcPrice, $usdPrice;
                                         <a href="/apps/explorer/tokens/list.php">Tokens</a>
                                     </span>
                             <h2 class="my-2">
-                                <?php echo $tokensCount ?>
+                                <?php echo intval($tokensCount) ?>
                             </h2>
                         </div>
                     </div>

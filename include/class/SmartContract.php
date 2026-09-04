@@ -453,4 +453,12 @@ class SmartContract
         return $db->single($sql);
     }
 
+    static function getTokenCount() {
+        global $db;
+        $sql = "select count(*) from smart_contracts
+                where json_unquote(json_extract(metadata,'$.class')) = 'ERC-20'";
+        $n = $db->single($sql);
+        return $n === false ? 0 : intval($n);
+    }
+
 }
