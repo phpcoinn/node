@@ -196,6 +196,20 @@ git config core.fileMode false
 
 echo "PHPCoin: Configure nginx"
 delim
+PHP_VER=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
+PHP_FPM_SOCK="/var/run/php/php${PHP_VER}-fpm.sock"
+if [ ! -S "$PHP_FPM_SOCK" ]; then
+  if [ -S /var/run/php/php-fpm.sock ]; then
+    PHP_FPM_SOCK=/var/run/php/php-fpm.sock
+  else
+    PHP_FPM_SOCK=$(ls -1 /var/run/php/php*-fpm.sock 2>/dev/null | head -n1)
+  fi
+fi
+if [ -z "$PHP_FPM_SOCK" ]; then
+  echo "Error: PHP-FPM socket not found under /var/run/php" >&2
+  exit 1
+fi
+echo "Using PHP-FPM socket: $PHP_FPM_SOCK"
 cat << EOF > /etc/nginx/sites-available/phpcoin-$NETWORK
 server {
     listen $PORT;
@@ -210,7 +224,7 @@ server {
     }
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_pass unix:$PHP_FPM_SOCK;
     }
     location ~ /\.ht {
         deny all;
@@ -220,7 +234,7 @@ EOF
 rm /etc/nginx/sites-enabled/default
 ln -sr /etc/nginx/sites-available/phpcoin-$NETWORK /etc/nginx/sites-enabled/phpcoin-$NETWORK
 service nginx restart
-service php8.1-fpm start
+service "php${PHP_VER}-fpm" start || service php-fpm start || true
 
 echo "PHPCoin: setup config file"
 delim
