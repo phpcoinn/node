@@ -12,16 +12,34 @@ if(!FEATURE_SMART_CONTRACTS) {
 if(isset($_GET['action'])) {
     $action = $_GET['action'];
     $data = json_decode(file_get_contents("php://input"), true);
-    $address = $data['address'];
-    $ext = $data['ext'];
+    if (!is_array($data)) {
+        $data = [];
+    }
+    if($action == "generateTokenAddress") {
+        try {
+            api_echo(SmartContract::generateAddress());
+        } catch (Exception $e) {
+            api_err($e->getMessage());
+        }
+    }
     if($action == "compileTokenSmartContract") {
+        $address = $data['address'] ?? '';
+        $ext = $data['ext'] ?? [];
+        if (!Account::valid($address)) {
+            api_err("Invalid smart contract address");
+        }
+        if (SmartContract::getById($address)) {
+            api_err("That contract address is already in use");
+        }
         $compile_id = uniqid();
-        $compile_dir = ROOT."/tmp/compile/";
-        $compile_dir_source = $compile_dir . "/" . $compile_id;
-        @mkdir($compile_dir_source,0777, true);
-        $template_dir = ROOT . "/include/templates/tokens";
-        $mintable = $ext['mintable'];
-        $burnable = $ext['burnable'];
+        $compile_dir = ROOT . DIRECTORY_SEPARATOR . "tmp" . DIRECTORY_SEPARATOR . "compile";
+        $compile_dir_source = $compile_dir . DIRECTORY_SEPARATOR . $compile_id;
+        if (!is_dir($compile_dir_source) && !@mkdir($compile_dir_source, 0777, true) && !is_dir($compile_dir_source)) {
+            api_err("Cannot create compile directory");
+        }
+        $template_dir = ROOT . DIRECTORY_SEPARATOR . "include" . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "tokens";
+        $mintable = !empty($ext['mintable']);
+        $burnable = !empty($ext['burnable']);
         if(!$mintable && !$burnable) {
             $index_file = "erc_20_token.php";
         } else if ($mintable && !$burnable) {
@@ -31,23 +49,43 @@ if(isset($_GET['action'])) {
         } else {
             $index_file = "erc_20_token_burnable_mintable.php";
         }
-        $files = array_diff(scandir($template_dir), ['.', '..']);
-        foreach ($files as $file) {
-            copy($template_dir."/".$file, $compile_dir_source. "/" . $file);
+        $srcTemplate = $template_dir . DIRECTORY_SEPARATOR . $index_file;
+        if (!is_file($srcTemplate)) {
+            api_err("Token template not found");
         }
-        rename($compile_dir_source . "/" . $index_file, $compile_dir_source . "/index.php");
-        $phar_file = $compile_dir . "/token_$compile_id.phar";
+        $needed = [];
+        if ($index_file === "erc_20_token_mintable.php") {
+            $needed = ["erc_20_token.php"];
+        } else if ($index_file === "erc_20_token_burnable.php") {
+            $needed = ["erc_20_token.php"];
+        } else if ($index_file === "erc_20_token_burnable_mintable.php") {
+            $needed = ["erc_20_token.php", "erc_20_token_mintable.php"];
+        }
+        foreach ($needed as $file) {
+            $src = $template_dir . DIRECTORY_SEPARATOR . $file;
+            if (!is_file($src) || !@copy($src, $compile_dir_source . DIRECTORY_SEPARATOR . $file)) {
+                api_err("Cannot copy token template dependency $file");
+            }
+        }
+        if (!@copy($srcTemplate, $compile_dir_source . DIRECTORY_SEPARATOR . "index.php")) {
+            api_err("Cannot copy token template");
+        }
+        $phar_file = $compile_dir . DIRECTORY_SEPARATOR . "token_$compile_id.phar";
         $res = SmartContract::compile($address, $compile_dir_source, $phar_file, $err);
-        $files = array_diff(scandir($compile_dir_source), ['.', '..']);
-        foreach ($files as $file) {
-            $path = $compile_dir_source . '/' . $file;
-            unlink($path);
+        $files = @scandir($compile_dir_source);
+        if (is_array($files)) {
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..') {
+                    continue;
+                }
+                @unlink($compile_dir_source . DIRECTORY_SEPARATOR . $file);
+            }
         }
-        rmdir($compile_dir_source);
+        @rmdir($compile_dir_source);
         if($res && file_exists($phar_file)) {
             api_echo($compile_id);
         } else {
-            api_err($err);
+            api_err($err ?: "Error compiling token");
         }
     }
 
@@ -71,7 +109,7 @@ if(isset($_GET['action'])) {
             api_err("Token name is required");
         }
         if(strlen($name) > 32) {
-            api_err("Token name can not be longer than 50 characters");
+            api_err("Token name can not be longer than 32 characters");
         }
         if(!preg_match('/^[\w\s\-]{1,32}$/', $name)) {
             api_err("Invalid token name");
@@ -100,7 +138,7 @@ if(isset($_GET['action'])) {
                 api_err("Invalid token image size");
             }
         }
-        $symbol=$data['symbol'];
+        $symbol=strtoupper(trim((string)($data['symbol'] ?? '')));
         if(empty($symbol)) {
             api_err("Token symbol is required");
         }
@@ -108,11 +146,11 @@ if(isset($_GET['action'])) {
             api_err("Invalid token symbol");
         }
         $decimals = $data['decimals'];
-        if(strlen($decimals)==0) {
+        if(strlen((string)$decimals)==0) {
             api_err("Token decimals is required");
         }
         $decimals = intval($decimals);
-        if($decimals < 0 && $decimals > 18) {
+        if($decimals < 0 || $decimals > 18) {
             api_err("Token decimals must be between 0 and 18");
         }
         $initialSupply = $data['initialSupply'];
@@ -161,6 +199,14 @@ if(isset($_SESSION['account'])) {
 }
 
 $createTokenFee = Blockchain::getSmartContractCreateFee();
+$generatedScAddress = '';
+if ($loggedIn) {
+    try {
+        $generatedScAddress = SmartContract::generateAddress();
+    } catch (Exception $e) {
+        $generatedScAddress = '';
+    }
+}
 
 ?>
 
@@ -179,9 +225,12 @@ $createTokenFee = Blockchain::getSmartContractCreateFee();
             <?php } else {?>
                 <div class="mb-3">
                     <label for="token-address" class="form-label">Smart Contract address:</label>
-                    <input class="form-control" type="text" v-model="newToken.address" id="token-address"/>
+                    <div class="input-group">
+                        <input class="form-control" type="text" v-model="newToken.address" id="token-address"/>
+                        <button class="btn btn-outline-secondary" type="button" @click="generateAddress">Generate</button>
+                    </div>
                     <div class="form-text">
-                        Token address is SmartContract address
+                        Unused contract address this token will be deployed to. Generate one or paste a valid unused address.
                     </div>
                 </div>
 
@@ -189,7 +238,7 @@ $createTokenFee = Blockchain::getSmartContractCreateFee();
                     <label for="token-name" class="form-label">Name:</label>
                     <input class="form-control" type="text" v-model="newToken.name" id="token-name"/>
                     <div class="form-text">
-                        Token name must be less than 50 characters without special characters
+                        Token name must be 1-32 letters, numbers, spaces, or hyphens
                     </div>
                 </div>
 
@@ -205,7 +254,7 @@ $createTokenFee = Blockchain::getSmartContractCreateFee();
                     <label for="token-symbol" class="form-label">Symbol:</label>
                     <input class="form-control" type="text" v-model="newToken.symbol" id="token-symbol"/>
                     <div class="form-text">
-                        Token symbol must be less than 10 characters without special characters
+                        3-10 characters: A-Z, 0-9, hyphen, or underscore
                     </div>
                 </div>
 
@@ -296,11 +345,11 @@ $createTokenFee = Blockchain::getSmartContractCreateFee();
         data() {
             return {
                 newToken: {
-                    address: null,
+                    address: <?php echo json_encode($generatedScAddress); ?>,
                     name: null,
                     symbol: null,
                     description: null,
-                    decimals: null,
+                    decimals: 8,
                     initialSupply: null,
                     image: null,
                     ext: {
@@ -323,6 +372,25 @@ $createTokenFee = Blockchain::getSmartContractCreateFee();
             },
             removeImage() {
                 this.newToken.image = null
+            },
+            generateAddress() {
+                axios.post('/apps/explorer/tokens/create.php?action=generateTokenAddress', {}).then(res=>{
+                    if(res.data.status === 'ok' && res.data.data) {
+                        this.newToken.address = res.data.data;
+                        return;
+                    }
+                    Swal.fire({
+                        title: 'Error generating address',
+                        text: (res.data && res.data.data) ? res.data.data : 'Could not generate a contract address',
+                        icon: 'error'
+                    });
+                }).catch(()=>{
+                    Swal.fire({
+                        title: 'Error generating address',
+                        text: 'Error contacting API server',
+                        icon: 'error'
+                    });
+                });
             },
             createToken() {
                 if(!this.newToken.address) {

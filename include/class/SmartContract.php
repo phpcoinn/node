@@ -397,6 +397,23 @@ class SmartContract
         }
     }
 
+	static function generateAddress()
+	{
+		for ($i = 0; $i < 20; $i++) {
+			$hash2 = bin2hex(random_bytes(20));
+			$baseAddress = CHAIN_PREFIX . $hash2;
+			$checksumCalc1 = hash('sha256', $baseAddress);
+			$checksumCalc2 = hash('sha256', $checksumCalc1);
+			$checksumCalc3 = hash('sha256', $checksumCalc2);
+			$checksum = substr($checksumCalc3, 0, 8);
+			$address = base58_encode(hex2bin($baseAddress . $checksum));
+			if (Account::valid($address) && !self::getById($address)) {
+				return $address;
+			}
+		}
+		throw new Exception("Could not generate contract address");
+	}
+
 	static function compile($address, $file, $phar_file, &$error = null)
 	{
 		return try_catch(function () use ($file, $phar_file, $address) {
@@ -404,16 +421,48 @@ class SmartContract
 				throw new Exception("File or folder for deploy $file does not exists");
 			}
 
-            $debug_str="-dxdebug.start_with_request=1";
-            $debug_str="";
-			$cmd = "php $debug_str --define phar.readonly=0 ".ROOT."/utils/sc_compile.php $address $file $phar_file  2>/dev/null";
-			$output = shell_exec($cmd);
-
-			if(@file_exists($output)) {
-				return true;
-			} else {
-				throw new Exception("Error compiling smart contract: $output");
+			$pharDir = dirname($phar_file);
+			if (!is_dir($pharDir) && !@mkdir($pharDir, 0777, true) && !is_dir($pharDir)) {
+				throw new Exception("Cannot create compile directory $pharDir");
 			}
+
+			$cmd = Nodeutil::phpCli() . ' --define phar.readonly=0 '
+				. escapeshellarg(ROOT . '/utils/sc_compile.php') . ' '
+				. escapeshellarg($address) . ' '
+				. escapeshellarg($file) . ' '
+				. escapeshellarg($phar_file);
+
+			$descriptors = [
+				0 => ['pipe', 'r'],
+				1 => ['pipe', 'w'],
+				2 => ['pipe', 'w'],
+			];
+			$proc = proc_open($cmd, $descriptors, $pipes, ROOT);
+			if (!is_resource($proc)) {
+				throw new Exception("Error compiling smart contract: failed to start compiler");
+			}
+			fclose($pipes[0]);
+			$stdout = stream_get_contents($pipes[1]);
+			$stderr = stream_get_contents($pipes[2]);
+			fclose($pipes[1]);
+			fclose($pipes[2]);
+			proc_close($proc);
+			$output = trim($stdout . (strlen((string)$stderr) ? "\n" . $stderr : ''));
+
+			$produced = is_file($phar_file) ? $phar_file : null;
+			if (!$produced) {
+				foreach (array_reverse(preg_split('/\r\n|\r|\n/', $output)) as $line) {
+					$line = trim($line);
+					if ($line !== '' && is_file($line)) {
+						$produced = $line;
+						break;
+					}
+				}
+			}
+			if ($produced) {
+				return true;
+			}
+			throw new Exception("Error compiling smart contract: " . $output);
 
 		}, $error);
 	}
