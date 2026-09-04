@@ -305,6 +305,7 @@ class Nodeutil
 
 	static function phpCli()
 	{
+		// Linux nodes (FPM/Apache) must keep PATH `php`. PHP_BINARY is often php-fpm/php-cgi and cannot run CLI scripts.
 		if (PHP_OS_FAMILY !== 'Windows') {
 			return 'php';
 		}
@@ -974,8 +975,11 @@ class Nodeutil
                 ]
             ];
             file_put_contents($config_file, json_encode($db_updater_config, JSON_PRETTY_PRINT));
-            $cmd = escapeshellarg(PHP_BINARY) . " " . escapeshellarg(ROOT . "/utils/db_updater.phar") . " " . escapeshellarg($schema_file) . " --json --config=" . escapeshellarg($config_file) . " " .
-                ($dry_run ? "--dry-run" : "");
+            $updaterArgs = [$schema_file, "--json", "--config=" . $config_file];
+            if ($dry_run) {
+                $updaterArgs[] = "--dry-run";
+            }
+            $cmd = self::phpScript(ROOT . "/utils/db_updater.phar", $updaterArgs);
             _log($cmd,4);
             _log("DB updater started ...");
             $res = shell_exec($cmd);

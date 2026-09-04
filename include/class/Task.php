@@ -76,7 +76,7 @@ class Task
     static function runTask() {
         $name = static::$name;
             $dir = ROOT . "/cli";
-            $cmd = escapeshellarg(PHP_BINARY) . " " . escapeshellarg("$dir/$name.php");
+            $cmd = Nodeutil::phpScript("$dir/$name.php");
             _log("Task: run $name task",3);
             $user=null;
             if (function_exists('posix_getpwuid') && function_exists('posix_geteuid')) {

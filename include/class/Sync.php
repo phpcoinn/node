@@ -59,13 +59,13 @@ class Sync extends Task
         }
 
         Nodeutil::runAtInterval("checkBlocks", 60*10, function() {
-            Nodeutil::runSingleProcess(escapeshellarg(PHP_BINARY) . " " . escapeshellarg(ROOT."/cli/util.php") . " check-blocks");
+            Nodeutil::runSingleProcess(Nodeutil::phpScript(ROOT."/cli/util.php", ["check-blocks"]));
         });
         Nodeutil::runAtInterval("compareCheckPoints", 60*60, function() {
-            Nodeutil::runSingleProcess(escapeshellarg(PHP_BINARY) . " " . escapeshellarg(ROOT."/cli/util.php") . " compare-check-points");
+            Nodeutil::runSingleProcess(Nodeutil::phpScript(ROOT."/cli/util.php", ["compare-check-points"]));
         });
         Nodeutil::runAtInterval("recheckLastBlocks", 60*10, function() {
-            Nodeutil::runSingleProcess(escapeshellarg(PHP_BINARY) . " " . escapeshellarg(ROOT."/cli/util.php") . " recheck-last-blocks");
+            Nodeutil::runSingleProcess(Nodeutil::phpScript(ROOT."/cli/util.php", ["recheck-last-blocks"]));
         });
 
 
@@ -122,7 +122,7 @@ class Sync extends Task
 		if ($total_peers == 0) {
 
             $dir = ROOT."/cli";
-            $cmd = escapeshellarg(PHP_BINARY) . " " . escapeshellarg("$dir/util.php") . " init-peers";
+            $cmd = Nodeutil::phpScript("$dir/util.php", ["init-peers"]);
             Nodeutil::runSingleProcess($cmd);
             $db->setConfig('node_score', 0);
             return false;
