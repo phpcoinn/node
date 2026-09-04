@@ -303,6 +303,39 @@ class Nodeutil
 		$GLOBALS['measure'][$name]=microtime(true);
 	}
 
+	static function phpCli()
+	{
+		if (PHP_OS_FAMILY !== 'Windows') {
+			return 'php';
+		}
+		$dir = dirname(PHP_BINARY);
+		$candidates = [
+			'C:\\xampp\\php\\php.exe',
+			$dir . DIRECTORY_SEPARATOR . 'php.exe',
+			$dir . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'php' . DIRECTORY_SEPARATOR . 'php.exe',
+			$dir . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'php' . DIRECTORY_SEPARATOR . 'php.exe',
+		];
+		if (preg_match('/php(?:-cgi|-win)?\.exe$/i', PHP_BINARY)) {
+			array_unshift($candidates, PHP_BINARY);
+		}
+		foreach ($candidates as $path) {
+			$real = realpath($path);
+			if ($real !== false && is_file($real) && preg_match('/php(?:-cgi)?\.exe$/i', $real)) {
+				return escapeshellarg($real);
+			}
+		}
+		return 'php';
+	}
+
+	static function phpScript($script, array $args = [])
+	{
+		$cmd = self::phpCli() . ' ' . escapeshellarg($script);
+		foreach ($args as $arg) {
+			$cmd .= ' ' . escapeshellarg((string)$arg);
+		}
+		return $cmd;
+	}
+
 	static function runSingleProcess($cmd, $check_cmd = null, $user=null) {
 		_log("runSingleProcess $cmd", 5);
         if (PHP_OS_FAMILY === 'Windows') {

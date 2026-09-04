@@ -228,7 +228,7 @@ require_once __DIR__. '/../common/include/top.php';
                 <td><?php echo $transaction['confirmations'] ?></td>
                 <td><a href="/apps/explorer/block.php?height=<?php echo $transaction['height'] ?>">
                         <?php echo truncate_hash($transaction['block']) ?></a></td>
-                <td><a href="/apps/explorer/address.php?address=<?php echo $party ?>">
+                <td><a href="/apps/explorer/address.php?address=<?php echo urlencode($party) ?>">
 			            <?php echo truncate_hash($party) ?></a></td>
                 <td>
                     <?php echo Transaction::typeLabel($transaction['type']) ?>

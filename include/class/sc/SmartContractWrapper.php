@@ -37,6 +37,11 @@ class SmartContractWrapper
         SmartContractContext::$transfers = [];
         SmartContractContext::$allowSend = false;
         SmartContractContext::$nativeBalance = bcadd((string)($input['sc_balance'] ?? "0"), "0", 8);
+        SmartContractContext::$icc = !empty($input['icc']);
+        SmartContractContext::$iccDepth = 0;
+        SmartContractContext::$iccStack = [];
+        SmartContractContext::$blacklisted = is_array($input['blacklisted'] ?? null) ? $input['blacklisted'] : [];
+        SmartContractContext::$virtual = !empty($input['virtual']);
         $method = $this->args['type'];
         $this->connectDb();
         $this->initSmartContractVars();
@@ -50,6 +55,27 @@ class SmartContractWrapper
             return $this->error($e, $method);
 		}
 	}
+
+    public function execExternal($caller, $methodName, $params, $write)
+    {
+        $this->db = SmartContractContext::$db;
+        $args = $caller->getExtFields();
+        $args['address'] = $this->address;
+        $args['transaction']['src'] = $caller->address;
+        $this->smartContract->setFields($args);
+        if (empty($this->args) || !is_array($this->args)) {
+            $this->args = [];
+        }
+        $this->args['height'] = $args['height'];
+        $this->args['virtual'] = !empty(SmartContractContext::$virtual);
+        $this->initSmartContractVars();
+        $this->loadState();
+        $this->invoke($methodName, $params);
+        if ($write) {
+            $this->saveState();
+        }
+        return $this->response;
+    }
 
     //TODO - check
     public function execExt($caller, $methodName, $params) {
@@ -663,6 +689,10 @@ class SmartContractContext {
     public static $transfers = [];
     public static $allowSend = false;
     public static $nativeBalance = "0";
+    public static $icc = false;
+    public static $iccDepth = 0;
+    public static $iccStack = [];
+    public static $blacklisted = [];
 }
 
 class SmartContractDB {

@@ -61,7 +61,7 @@ function enterPrivateKey(cb) {
     }
 }
 
-let sendTransaction = (tx, signature_base, privateKey) => {
+let sendTransaction = (tx, signature_base, privateKey, onSent) => {
     console.log("sendTransaction", signature_base, privateKey);
     try {
         let signature = phpcoinCrypto.sign(chainId+signature_base, privateKey);
@@ -77,7 +77,11 @@ let sendTransaction = (tx, signature_base, privateKey) => {
                                 text: 'Your transaction is added to mempool ['+hash+']',
                                 icon: 'success'
                             }
-                        )
+                        ).then(() => {
+                            if (typeof onSent === 'function') {
+                                onSent(hash);
+                            }
+                        })
                     } else{
                         Swal.fire(
                             {

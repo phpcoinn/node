@@ -98,7 +98,9 @@ class PharBuilder {
             // Load base classes before entry point
             $stub_content .= "require_once 'phar://$phar_name/SmartContractBase.php';\n";
             $stub_content .= "require_once 'phar://$phar_name/SmartContractMap.php';\n";
-            $stub_content .= "if (file_exists('phar://$phar_name/sandbox_api.php')) { require_once 'phar://$phar_name/sandbox_api.php'; }\n";
+            $stub_content .= "require_once 'phar://$phar_name/sandbox_api.php';\n";
+            $stub_content .= "if (file_exists('phar://$phar_name/erc_20_host.php')) { require_once 'phar://$phar_name/erc_20_host.php'; }\n";
+            $stub_content .= "require_once 'phar://$phar_name/InterContract.php';\n";
             $stub_content .= "require 'phar://$phar_name/$entry_point';\n";
             $stub_content .= "__HALT_COMPILER();\n";
             

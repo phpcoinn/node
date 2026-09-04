@@ -243,9 +243,15 @@ if ($type == "transaction") {
 	    if(count($r)==0) {
 	        _log("Transaction not propagated - no peers");
 	    }
-		$dir = ROOT . "/cli";
 	    foreach ($r as $x) {
-			Propagate::transactionToPeer($id, $x['hostname']);
+            $hostname = $x['hostname'];
+            $url = $hostname."/peer.php?q=submitTransaction";
+            $res = peer_post($url, $data, 5, $err);
+            if (!$res) {
+                _log("Transaction $id to $hostname - Transaction not accepted: $err");
+            } else {
+                _log("Transaction $id to $hostname - Transaction accepted",2);
+            }
 	    }
 	}
 

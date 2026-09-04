@@ -1797,7 +1797,7 @@ class Api
         if(empty($sc_address)) {
             api_err("Missing sc_address");
         }
-        if(empty($amount)) {
+        if (!isset($amount) || $amount === '' || $amount === null) {
             $amount = 0;
         }
         if(empty($method)) {
@@ -2249,5 +2249,33 @@ class Api
         api_echo(Dex::getPeerNodes());
     }
 
+    static function getDexTokens($data) {
+        if (!Dex::isEnabled()) {
+            api_err("Smart contracts are not enabled");
+        }
+        api_echo([
+            'listed' => Dex::getListedTokens(),
+            'network' => Dex::getNetworkTokens(),
+            'markets' => Dex::getMarketTokens(),
+        ]);
+    }
+
+    static function getDexMarket($data) {
+        if (!Dex::isEnabled()) {
+            api_err("Smart contracts are not enabled");
+        }
+        $token = san($data['token'] ?? '');
+        if ($token === '' || !Account::valid($token)) {
+            api_err("Invalid token");
+        }
+        api_echo(Dex::getMarketView($token));
+    }
+
+    static function getDexTickers($data) {
+        if (!Dex::isEnabled()) {
+            api_err("Smart contracts are not enabled");
+        }
+        api_echo(Dex::getTickers());
+    }
 
 }

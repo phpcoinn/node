@@ -45,15 +45,13 @@ class Propagate
 
 	static function transactionToAll($id) {
 		_log("Propagate: transaction $id to all", 4);
-		$dir = ROOT."/cli";
-		$cmd ="php $dir/propagate.php transaction $id";
+		$cmd = Nodeutil::phpScript(ROOT . "/cli/propagate.php", ["transaction", $id]);
 		Nodeutil::runSingleProcess($cmd);
 	}
 
 	static function transactionToPeer($id, $hostname) {
 		$hostnameb64 = base64_encode($hostname);
-		$dir = ROOT."/cli";
-		$cmd = "php $dir/propagate.php transactionpeer $id $hostnameb64";
+		$cmd = Nodeutil::phpScript(ROOT . "/cli/propagate.php", ["transactionpeer", $id, $hostnameb64]);
 		_log("Propagate: transaction $id to peer $hostname cmd=$cmd", 4);
 		Nodeutil::runSingleProcess($cmd);
 	}

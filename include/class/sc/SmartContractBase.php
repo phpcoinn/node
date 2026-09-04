@@ -57,34 +57,18 @@ class SmartContractBase
     }
 
     /**
-     * Execute a method on another smart contract
-     *
-     * Inter-contract calls stay disabled so a DEX should keep its token
-     * ledger in the same contract as the PHP offer book.
-     *
-     * @param string $contract Contract address (not used - feature disabled)
-     * @param string $method Method name (not used - feature disabled)
-     * @param array $params Method parameters (not used - feature disabled)
-     * @throws Exception Always throws exception indicating feature is disabled
+     * Execute a state-changing method on another smart contract.
+     * Nested spender/sender is this contract's address.
      */
     public function execSmartContract($contract, $method, $params) {
-        $this->error("Inter-contract calls are disabled. Keep token balances and PHP payouts in the same contract.");
+        return InterContract::exec($this, $contract, $method, $params);
     }
 
     /**
-     * Call a view method on another smart contract
-     * 
-     * NOTE: Inter-contract calls are disabled in this version for security reasons.
-     * This feature may be re-enabled in a future version with proper security measures.
-     * 
-     * @param string $contract Contract address (not used - feature disabled)
-     * @param string $method Method name (not used - feature disabled)
-     * @param array $params Method parameters (not used - feature disabled)
-     * @return mixed Never returns - always throws exception
-     * @throws Exception Always throws exception indicating feature is disabled
+     * Call a view method on another smart contract.
      */
     public function callSmartContract($contract, $method, $params) {
-        $this->error("Inter-contract calls are disabled. Keep token balances and PHP payouts in the same contract.");
+        return InterContract::call($this, $contract, $method, $params);
     }
 
     /**

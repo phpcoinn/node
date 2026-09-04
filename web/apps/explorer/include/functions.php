@@ -1,11 +1,8 @@
 <?php
 
 function explorer_address_link($address, $short= false) {
-	$text  = $address;
-	if($short) {
-		$text  = truncate_hash($address);
-	}
-	return '<a href="/apps/explorer/address.php?address='.urlencode($address).'">'.h($text).'</a>';
+	$text = $short ? truncate_hash($address) : h($address);
+	return '<a href="/apps/explorer/address.php?address='.urlencode($address).'">'.$text.'</a>';
 }
 function explorer_address_pubkey($pubkey, $show = 12) {
 	if(!empty($pubkey)) {

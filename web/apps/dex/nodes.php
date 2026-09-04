@@ -22,7 +22,7 @@ require_once dirname(__DIR__). '/common/include/top.php';
 
 <h3>DEX nodes</h3>
 <p class="text-muted">
-    These nodes all show the same market
+    These nodes all show the same DEX
     (<?php echo $info['address'] ? explorer_address_link($info['address']) : '<span class="text-muted">not deployed</span>' ?>).
     If one node is offline, open the DEX on another.
 </p>
@@ -54,7 +54,7 @@ require_once dirname(__DIR__). '/common/include/top.php';
                 <td><?php echo h($node['version']) ?></td>
                 <td>
                     <?php if (!empty($node['dex_contract'])) { ?>
-                        <?php echo explorer_address_link($node['dex_contract'], true) ?>
+                        <?php echo explorer_address_link($node['dex_contract']) ?>
                     <?php } else { ?>
                         <span class="text-muted">—</span>
                     <?php } ?>

@@ -16,6 +16,70 @@ require_once __DIR__ . '/StatePersistence.php';
 
 class Sandbox {
 
+    private static function phpBinary()
+    {
+        if (PHP_OS_FAMILY !== 'Windows') {
+            return 'php';
+        }
+        $dir = dirname(PHP_BINARY);
+        $candidates = [
+            $dir . DIRECTORY_SEPARATOR . 'php.exe',
+            $dir . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'php' . DIRECTORY_SEPARATOR . 'php.exe',
+            $dir . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'php' . DIRECTORY_SEPARATOR . 'php.exe',
+        ];
+        if (preg_match('/php(?:-cgi|-win)?\.exe$/i', PHP_BINARY)) {
+            array_unshift($candidates, PHP_BINARY);
+        }
+        foreach ($candidates as $path) {
+            $real = realpath($path);
+            if ($real !== false && is_file($real) && preg_match('/php(?:-cgi)?\.exe$/i', $real)) {
+                return $real;
+            }
+        }
+        return 'php';
+    }
+
+    private static function phpCli()
+    {
+        $bin = self::phpBinary();
+        return PHP_OS_FAMILY === 'Windows' ? escapeshellarg($bin) : $bin;
+    }
+
+    private static function nullDevice()
+    {
+        return PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null';
+    }
+
+    private static function sandboxEnv($env)
+    {
+        if (PHP_OS_FAMILY !== 'Windows') {
+            return $env;
+        }
+        if (empty($env['PATH'])) {
+            $env['PATH'] = (string)getenv('PATH');
+        }
+        if (empty($env['SystemRoot'])) {
+            $env['SystemRoot'] = (string)(getenv('SystemRoot') ?: 'C:\\Windows');
+        }
+        return $env;
+    }
+
+    private static function windowsExtFlags()
+    {
+        if (PHP_OS_FAMILY !== 'Windows') {
+            return '';
+        }
+        $flags = '';
+        $extDir = ini_get('extension_dir');
+        if ($extDir !== false && $extDir !== '') {
+            $flags .= ' -d ' . escapeshellarg('extension_dir=' . $extDir);
+        }
+        foreach (['pdo_mysql', 'gmp', 'openssl', 'mbstring'] as $ext) {
+            $flags .= ' -d ' . escapeshellarg('extension=' . $ext);
+        }
+        return $flags;
+    }
+
     /**
      * Execute a method from a PHAR file in the sandbox
      *
@@ -171,7 +235,7 @@ class Sandbox {
         $contractFile = escapeshellarg($contract);
 
         // Build command with debug options if enabled
-        $cmd = "php -c $iniFile -d auto_prepend_file=$bootstrapFile";
+        $cmd = self::phpCli() . " -c $iniFile" . self::windowsExtFlags() . " -d auto_prepend_file=$bootstrapFile";
         if ($debug) {
             $cmd .= " -d error_reporting=" . E_ALL;
             // Enable Xdebug for CLI debugging
@@ -221,13 +285,13 @@ class Sandbox {
         $proc = proc_open(
             $cmd,
             [
-                0 => ($debug && $input_file) ? ['file', '/dev/null', 'r'] : ($use_stdin ? ['pipe','r'] : ['file', '/dev/null', 'r']),
+                0 => ($debug && $input_file) ? ['file', self::nullDevice(), 'r'] : ($use_stdin ? ['pipe','r'] : ['file', self::nullDevice(), 'r']),
                 1 => ['pipe','w'],
                 2 => ['pipe','w']
             ],
             $pipes,
             $tmp,
-            $env  // Pass environment variables
+            self::sandboxEnv($env)
         );
 
         if ($use_stdin) {
@@ -307,7 +371,7 @@ class Sandbox {
         // Execute PHAR directly - sandbox bootstrap runs first via auto_prepend_file
         // This ensures all security restrictions apply
         // Build command with debug options if enabled
-        $cmd = "php -c $iniFile -d auto_prepend_file=$bootstrapFile";
+        $cmd = self::phpCli() . " -c $iniFile" . self::windowsExtFlags() . " -d auto_prepend_file=$bootstrapFile";
         $cmd .= " -d max_execution_time=" . SC_MAX_EXEC_TIME;
         $cmd .= " -d memory_limit=" . SC_MEMORY_LIMIT;
         if ($debug) {
@@ -359,13 +423,13 @@ class Sandbox {
         $proc = proc_open(
             $cmd,
             [
-                0 => $use_stdin ? ['pipe','r'] : ['file', '/dev/null', 'r'],
+                0 => $use_stdin ? ['pipe','r'] : ['file', self::nullDevice(), 'r'],
                 1 => ['pipe','w'],
                 2 => ['pipe','w']
             ],
             $pipes,
             null,  // Use current working directory
-            $env   // Pass environment variables
+            self::sandboxEnv($env)
         );
 
         if ($use_stdin) {

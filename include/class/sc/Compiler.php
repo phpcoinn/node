@@ -28,6 +28,7 @@ class Compiler {
         'SmartContractBase.php',
         'SmartContractMap.php',
         'SmartContractWrapper.php',
+        'InterContract.php',
     ];
     
     /**
@@ -728,6 +729,24 @@ class Compiler {
             $api_dest = $tmp_dir . '/sandbox_api.php';
             if (!($skip_if_exists && file_exists($api_dest))) {
                 copy($sandbox_api, $api_dest);
+            }
+        }
+        $erc20 = dirname(__DIR__, 2) . '/templates/tokens/erc_20_token.php';
+        $alreadyHasErc20 = false;
+        foreach (glob($tmp_dir . '/*.php') ?: [] as $existing) {
+            $probe = file_get_contents($existing);
+            if ($probe !== false && preg_match('/class\s+ERC20Token\b/', $probe)) {
+                $alreadyHasErc20 = true;
+                break;
+            }
+        }
+        if (!$alreadyHasErc20 && file_exists($erc20)) {
+            $hostDest = $tmp_dir . '/erc_20_host.php';
+            if (!($skip_if_exists && file_exists($hostDest))) {
+                $host = file_get_contents($erc20);
+                $host = preg_replace('/^const\s+SC_CLASS_NAME\s*=.*$/m', '', $host);
+                $host = preg_replace('/^<\?php\s*/', "<?php\nif (class_exists('ERC20Token', false)) { return; }\n", $host, 1);
+                file_put_contents($hostDest, $host);
             }
         }
     }

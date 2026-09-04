@@ -119,6 +119,8 @@ class SmartContractEngine
                 "virtual"=>$virtual,
                 "dbConfig"=>self::getDbConfig(),
                 "sc_balance"=>self::contractNativeBalance($sc_address, $transactions, $test, $virtual),
+                "icc"=> defined('UPDATE_19_SC_INTERCONTRACT') && $height >= UPDATE_19_SC_INTERCONTRACT,
+                "blacklisted"=> defined('BLACKLISTED_SMART_CONTRACTS') && is_array(BLACKLISTED_SMART_CONTRACTS) ? BLACKLISTED_SMART_CONTRACTS : [],
 			];
 
             $result = Sandbox::exec($phar_path, $cmd_args, $sc_address, $virtual, $debug);
@@ -171,6 +173,8 @@ class SmartContractEngine
                 'height'=>$height,
                 "virtual"=>$virtual,
                 "dbConfig"=>self::getDbConfig(),
+                "icc"=> defined('UPDATE_19_SC_INTERCONTRACT') && $height >= UPDATE_19_SC_INTERCONTRACT,
+                "blacklisted"=> defined('BLACKLISTED_SMART_CONTRACTS') && is_array(BLACKLISTED_SMART_CONTRACTS) ? BLACKLISTED_SMART_CONTRACTS : [],
             ];
             $result = Sandbox::exec($phar_path, $cmd_args, $sc_address, $virtual, $debug);
             $data = self::processOutput($result);
