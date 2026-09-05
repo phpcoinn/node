@@ -75,6 +75,41 @@ $updateAvb = $maxPeerBuildNumber > $currentVersion;
 <?php } ?>
 <script>
 
+    const explorerWalletLogin = document.getElementById('explorer-wallet-login');
+    if (explorerWalletLogin) {
+        explorerWalletLogin.addEventListener('click', async function () {
+            const button = this;
+            button.disabled = true;
+            try {
+                const result = await phpcoinCrypto.connectWallet({
+                    walletUrl: 'https://wallet.phpcoin.net/#/connect',
+                    timeout: 120000
+                });
+                const body = new URLSearchParams({
+                    action: 'login',
+                    token: button.dataset.token,
+                    address: result.address,
+                    public_key: result.publicKey,
+                    message: result.message,
+                    signature: result.signature
+                });
+                const response = await fetch('/apps/explorer/auth.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+                    body: body.toString()
+                });
+                const payload = await response.json();
+                if (!response.ok || payload.status !== 'ok' || !payload.redirect) {
+                    throw new Error(payload.error || 'Explorer login failed');
+                }
+                window.location.assign(payload.redirect);
+            } catch (error) {
+                Swal.fire({text: String(error?.message || error), icon: 'error'});
+                button.disabled = false;
+            }
+        });
+    }
+
     function setCookie(name,value,days) {
         var expires = "";
         if (days) {

@@ -60,6 +60,12 @@ if(isset($_SESSION['account'])) {
 }
 
 $redirect=$_SERVER['REQUEST_URI'];
+$explorerConnectToken = bin2hex(random_bytes(32));
+$_SESSION['explorer_connect'] = [
+    'token' => $explorerConnectToken,
+    'return' => Security::isSafeRedirect($redirect) ? $redirect : '/apps/explorer/',
+    'expires' => time() + 600,
+];
 
 ?>
 <!doctype html>
@@ -68,6 +74,7 @@ $redirect=$_SERVER['REQUEST_URI'];
 	<!-- Required meta tags -->
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, shrink-to-fit=no">
+	<script src="/apps/common/js/phpcoin-crypto.browser.min.js"></script>
 
 
     <!-- preloader css -->
@@ -240,13 +247,8 @@ $redirect=$_SERVER['REQUEST_URI'];
                                 </a>
                             </li>
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle arrow-none" href="/dapps.php?url=<?php echo MAIN_DAPPS_ID ?>/wallet" id="topnav-dashboard" role="button">
+                                <a class="nav-link dropdown-toggle arrow-none" href="https://wallet.phpcoin.net/" target="_blank" rel="noopener noreferrer" id="topnav-dashboard" role="button">
                                     <i class="fas fa-wallet me-2"></i><span data-key="t-dashboards">Wallet</span>
-                                </a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle arrow-none" href="/dapps.php?url=<?php echo MAIN_DAPPS_ID ?>/faucet" id="topnav-dashboard" role="button">
-                                    <i class="fas fa-faucet me-2"></i><span data-key="t-dashboards">Faucet</span>
                                 </a>
                             </li>
                                 <li class="nav-item d-flex align-items-center">
@@ -258,31 +260,28 @@ $redirect=$_SERVER['REQUEST_URI'];
                             <?php if($logged) {
                                 $address_trunc = substr($session_address, 0, 6) . "..." . substr($session_address, -6);
                                 ?>
-                                <li class="nav-item dropdown" id="account-address">
-                                    <a class="nav-link dropdown-toggle arrow-none" title="<?php echo $session_address ?>"
-                                       href="/apps/explorer/address.php?address=<?php echo $session_address ?>" role="button" target="_blank">
-                                        <i class="fas fa-user me-2"></i>
-                                        <span>
+                                <li class="nav-item d-flex align-items-center" id="account-address">
+                                    <div class="nav-link d-flex flex-column align-items-start py-1">
+                                        <a title="<?php echo $session_address ?>"
+                                           href="/apps/explorer/address.php?address=<?php echo $session_address ?>" target="_blank">
                                             <?php echo $address_trunc ?>
-                                        </span>
-                                    </a>
-                                </li>
-                                <li class="nav-item dropdown">
-                                    <span class="nav-link">
-                                        <i class="fas fa-coins me-2"></i>
-                                        <a href="<?php echo "/dapps.php?url=".GATEWAY."/wallet/" ?>">
+                                        </a>
+                                        <a class="small" href="/apps/explorer/address.php?address=<?php echo $session_address ?>">
                                             <?php echo $session_balance ?>
                                         </a>
-                                    </span>
+                                    </div>
                                 </li>
                                 <li class="nav-item d-flex align-items-center">
-                                    <a href="/dapps.php?url=<?php echo GATEWAY ?>/legacywallet?action=top_logout&redirect=<?php echo urlencode($_SERVER['REQUEST_URI']) ?>"
-                                       class="btn btn-outline-primary">Logout</a>
+                                    <form method="post" action="/apps/explorer/auth.php" class="m-0">
+                                        <input type="hidden" name="action" value="logout">
+                                        <input type="hidden" name="token" value="<?php echo $explorerConnectToken ?>">
+                                        <button type="submit" class="btn btn-outline-primary">Logout</button>
+                                    </form>
                                 </li>
                             <?php } else { ?>
                                 <li class="nav-item d-flex align-items-center">
-                                    <a href="/dapps.php?url=<?php echo GATEWAY ?>/legacywallet?action=top_login&redirect=<?php echo urlencode($redirect) ?>"
-                                       class="btn btn-primary">Login</a>
+                                    <button type="button" class="btn btn-primary" id="explorer-wallet-login"
+                                            data-token="<?php echo $explorerConnectToken ?>">Login</button>
                                 </li>
                             <?php } ?>
 	                        <?php if($_config['admin']) { ?>
