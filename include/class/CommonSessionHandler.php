@@ -104,6 +104,9 @@ class CommonSessionHandler implements SessionHandlerInterface {
     }
 
     static function setup($session_id = null, $namespace = null) {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_abort();
+        }
         ini_set('session.use_strict_mode', '1');
         $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443);

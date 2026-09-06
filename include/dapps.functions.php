@@ -13,9 +13,8 @@ if(!defined("CHAIN_ID")) {
 
 require_once ROOT . "/include/coinspec.inc.php";
 require_once ROOT . "/include/common.functions.php";
-require_once ROOT . "/include/class/CommonSessionHandler.php";
 
-if(php_sapi_name() == "cli") {
+if(PHP_SAPI === "cli") {
     $cmdDataJson = fgets(STDIN);
     $cmdData = json_decode($cmdDataJson, true);
     $_SERVER=$cmdData['SERVER'];
@@ -85,10 +84,37 @@ function dapps_input() {
  * @return string id of session
  */
 function dapps_get_session() {
-	$session_id = $_SERVER['SESSION_ID'];
-    $namespace = $_SERVER['DAPPS_SESSION_NAMESPACE'] ?? null;
-    CommonSessionHandler::setup($session_id, $namespace);
+	static $loaded = false;
+	$session_id = (string)($_SERVER['SESSION_ID'] ?? '');
+	if ($loaded) return $session_id;
+	$response = dapps_session_rpc('get');
+	$_SESSION = is_array($response) ? $response : [];
+	// Preserve the existing dapp API: applications can continue to mutate
+	// $_SESSION and the host commits it after the script exits. The callback
+	// only writes an RPC frame; it has no filesystem or network access.
+	if (function_exists('register_shutdown_function')) {
+		register_shutdown_function('dapps_session_commit');
+	}
+	$loaded = true;
 	return $session_id;
+}
+
+function dapps_session_rpc($operation, $data = null) {
+	$request = ['type'=>'session', 'operation'=>(string)$operation];
+	if ($operation === 'set') $request['data'] = is_array($data) ? $data : [];
+	$encoded = json_encode($request);
+	if ($encoded === false) return false;
+	echo "\nDAPPS_RPC:".base64_encode($encoded)."\n";
+	flush();
+	$response = fgets(STDIN);
+	if ($response === false || strpos($response, 'DAPPS_RPC_RESPONSE:') !== 0) return false;
+	$payload = base64_decode(trim(substr($response, 19)), true);
+	$result = $payload === false ? null : json_decode($payload, true);
+	return is_array($result) && !empty($result['ok']) ? ($result['data'] ?? null) : false;
+}
+
+function dapps_session_commit() {
+	if (isset($_SESSION) && is_array($_SESSION)) dapps_session_rpc('set', $_SESSION);
 }
 
 /**
@@ -104,9 +130,14 @@ function dapps_get_cookies() {
 if(!function_exists('_log')) {
 	function _log($log)
 	{
-		$log_file = ROOT . "/tmp/dapps/dapps.log";
-		$log = date("Y-m-d H:i:s") . " [".$_SERVER['REMOTE_ADDR']."]" . " " . $log . PHP_EOL;
-		file_put_contents($log_file, $log, FILE_APPEND);
+		$message = is_scalar($log) ? (string)$log : json_encode($log);
+		if (!is_string($message) || strlen($message) > 4096) return;
+		$request = json_encode(['type'=>'log', 'message'=>$message]);
+		if ($request === false) return;
+		echo "\nDAPPS_RPC:".base64_encode($request)."\n";
+		flush();
+		// Consume the host acknowledgement so the next RPC frame remains aligned.
+		$response = fgets(STDIN);
 	}
 }
 
@@ -130,7 +161,8 @@ function dapps_redirect($location = null) {
  * Destroys session
  */
 function dapps_session_destroy() {
-    @session_destroy();
+	$_SESSION = [];
+	dapps_session_rpc('destroy');
 }
 
 /**

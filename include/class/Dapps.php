@@ -410,9 +410,7 @@ class Dapps extends Task
 				ROOT . "/include/common.functions.php",
 				ROOT . "/include/coinspec.inc.php",
 				ROOT . "/include/network_chain_id.inc.php",
-				ROOT . "/tmp/sessions/".hash('sha256', 'dapp:'.$dapps_id),
 				$tmp_dir,
-				ROOT . "/include/class/CommonSessionHandler.php",
 			];
 
 		if(file_exists(ROOT."/chain_id")) {
@@ -426,11 +424,11 @@ class Dapps extends Task
 			$allowed_files [] = ROOT . "/config/dapps.config.inc.php";
 		}
 
-        if(empty($_SESSION)) {
-            @session_destroy();
-        } else {
-            session_write_close();
-        }
+		$dapp_session_snapshot = is_array($_SESSION) ? $_SESSION : [];
+		// Keep the session record even when currently empty. The sandbox receives
+		// the ID and can commit a newly authenticated state through session IPC;
+		// destroying it here would make strict-mode session IDs unusable.
+		session_write_close();
 
         $_SERVER['SESSION_ID']=$session_id;
 	        $_SERVER['DAPPS_ID']=$dapps_id;
@@ -457,7 +455,32 @@ class Dapps extends Task
 	        ];
 
 	        $output = Sandbox::runDapp($file, $cmdData, $allowed_files, false,
-			function($request) use ($dapps_id) { return self::handleRpc($request, $dapps_id); });
+			function($request) use ($dapps_id, $session_id, &$dapp_session_snapshot) {
+				if (is_array($request) && ($request['type'] ?? '') === 'session') {
+					$operation = (string)($request['operation'] ?? '');
+					if ($operation === 'get') return ['ok'=>true, 'data'=>$dapp_session_snapshot];
+					if ($operation === 'set') {
+						$data = $request['data'] ?? null;
+						if (!is_array($data) || strlen((string)json_encode($data)) > 262144) {
+							return ['ok'=>false, 'error'=>'Session data rejected'];
+						}
+						$dapp_session_snapshot = $data;
+						CommonSessionHandler::setup($session_id, 'dapp:'.$dapps_id);
+						$_SESSION = $data;
+						session_write_close();
+						return ['ok'=>true, 'data'=>true];
+					}
+					if ($operation === 'destroy') {
+						$dapp_session_snapshot = [];
+						CommonSessionHandler::setup($session_id, 'dapp:'.$dapps_id);
+						$_SESSION = [];
+						session_destroy();
+						return ['ok'=>true, 'data'=>true];
+					}
+					return ['ok'=>false, 'error'=>'Session operation rejected'];
+				}
+				return self::handleRpc($request, $dapps_id);
+			});
 
         ob_end_clean();
         ob_start();
@@ -482,6 +505,12 @@ class Dapps extends Task
 	public static function handleRpc($request, $dapps_id) {
 		global $_config;
 		if(!is_array($request)) return ['ok'=>false];
+		if(($request['type'] ?? '') === 'log') {
+			$message = (string)($request['message'] ?? '');
+			if ($message === '' || strlen($message) > 4096) return ['ok'=>false, 'error'=>'Log message rejected'];
+			_log('Dapp['.$dapps_id.'] '.$message);
+			return ['ok'=>true, 'data'=>true];
+		}
 		if(($request['type'] ?? '') === 'peers') {
 			$hostnames = [];
 			foreach(Peer::getAll() as $peer) {

@@ -450,7 +450,11 @@ class Sandbox {
 		}
 		$basedirs[] = $bootstrapPath;
 		$openBasedir = implode(PATH_SEPARATOR, array_values(array_unique($basedirs)));
-		$disabledFunctions = implode(',', [
+		// Dapps are web applications, not deterministic contracts. Keep their
+		// normal date/time and presentation helpers available, but retain a
+		// dedicated compatibility deny-list for process, network, and privilege
+		// escalation APIs. Contract execution continues to use the strict INI.
+		$dappDisabledFunctions = implode(',', [
 			'exec', 'passthru', 'shell_exec', 'system', 'proc_open', 'popen',
 			'pcntl_exec', 'pcntl_fork', 'putenv', 'mail', 'dl', 'set_time_limit',
 			'curl_init', 'curl_setopt', 'curl_setopt_array', 'curl_exec', 'curl_getinfo',
@@ -464,7 +468,6 @@ class Sandbox {
 			'socket_read', 'link', 'symlink', 'chown', 'chgrp', 'chmod', 'lchown', 'lchgrp',
 			'stream_wrapper_register', 'stream_wrapper_restore', 'stream_wrapper_unregister',
 		]);
-
         $debugCmd = '';
         if ($debug) {
             $debugCmd = " -d error_reporting=" . E_ALL;
@@ -484,7 +487,7 @@ class Sandbox {
 			.' -d open_basedir='.escapeshellarg($openBasedir)
 			.' -d sys_temp_dir='.escapeshellarg($dappTmp)
 			.' -d upload_tmp_dir='.escapeshellarg($dappTmp)
-			.' -d disable_functions='.escapeshellarg($disabledFunctions)
+			.' -d disable_functions='.escapeshellarg($dappDisabledFunctions)
 			.' -d allow_url_fopen=0 -d allow_url_include=0'
 			.' -d max_execution_time=5 -d memory_limit=32M '
 			. $debugCmd . ' '
@@ -509,7 +512,7 @@ class Sandbox {
 		$output = '';
 		$stdoutBuffer = '';
 		$errors = '';
-		$deadline = microtime(true) + 6.0;
+		$deadline = microtime(true) + (DEVELOPMENT ? 60 :  6.0);
 		$maxOutput = 2 * 1024 * 1024;
 		$failed = null;
 		while (true) {
