@@ -487,12 +487,14 @@ class SmartContractWrapper
 
         $interface = $this->interface;
         
-        foreach ($transactions as $transaction) {
+        foreach ($transactions as $transactionKey => $transaction) {
             $this->loadState();
             $args['transaction']=$transaction;
             $args['height']=$height;
             $args['address']=$this->address;
-            SmartContractContext::$txId = $transaction['id'] ?? null;
+            SmartContractContext::$txId = is_array($transaction)
+                ? ($transaction['id'] ?? $transactionKey)
+                : ($transaction->id ?? $transactionKey);
             $this->smartContract->setFields($args);
             $msg = $transaction['msg'];
             $type = $transaction['type'];
