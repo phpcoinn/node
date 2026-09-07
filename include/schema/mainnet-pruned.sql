@@ -220,12 +220,14 @@ DROP TABLE IF EXISTS `smart_contract_transfers`;
 CREATE TABLE `smart_contract_transfers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `height` int(11) NOT NULL,
+  `tx_id` varchar(128) DEFAULT NULL,
   `sc_address` varchar(128) NOT NULL,
   `to_address` varchar(128) NOT NULL,
   `amount` decimal(20,8) NOT NULL,
   `seq` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `smart_contract_transfers_height_index` (`height`),
+  KEY `smart_contract_transfers_tx_index` (`tx_id`),
   KEY `smart_contract_transfers_sc_height_index` (`sc_address`,`height`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

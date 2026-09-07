@@ -14,6 +14,15 @@ class SmartContractEngine
 		return ROOT . "/tmp/sc";
 	}
 
+	/** Rebuild cached contract PHARs when the sandbox API has been updated. */
+	private static function pharNeedsRebuild($phar_path) {
+		if (!file_exists($phar_path)) {
+			return true;
+		}
+		$api = dirname(__DIR__) . '/sc/sandbox_api.php';
+		return file_exists($api) && filemtime($api) > filemtime($phar_path);
+	}
+
 
 	static function verifySmartContract($sc_address, $test = false) {
 
@@ -106,7 +115,7 @@ class SmartContractEngine
             $debug = SmartContractEngine::$debug;
 
             $phar_path = self::getRunFolder()."/$sc_address.phar";
-            if(!file_exists($phar_path) || DEVELOPMENT) {
+			if(self::pharNeedsRebuild($phar_path) || DEVELOPMENT) {
                 $phar_path = self::buildPharFile($sc_address, $code);
             }
 
@@ -160,7 +169,7 @@ class SmartContractEngine
             $data = json_decode(base64_decode($code), true);
             $code = base64_decode(@$data['code']);
             $phar_path = self::getRunFolder()."/$sc_address.phar";
-            if(!file_exists($phar_path) || DEVELOPMENT) {
+			if(self::pharNeedsRebuild($phar_path) || DEVELOPMENT) {
                 $phar_path = self::buildPharFile($sc_address, $code);
             }
             $height =  self::$virtual ? 0 : Block::getHeight();

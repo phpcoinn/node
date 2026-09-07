@@ -41,6 +41,7 @@ class Transaction
             "from" => $from,
             "to" => $to,
             "amount" => $normalized,
+            "tx_id" => SmartContractContext::$txId ?? null,
         ];
         SmartContractContext::$transfers = $transfers;
         SmartContractContext::$nativeBalance = bcsub($balance, $normalized, 8);

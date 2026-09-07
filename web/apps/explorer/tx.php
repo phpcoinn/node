@@ -6,7 +6,7 @@ define("PAGE", true);
 define("APP_NAME", "Explorer");
 $id = $_GET['id'];
 $tx = Transaction::get_transaction($id);
-$tx_height = $tx['height'];
+$tx_height = $tx ? $tx['height'] : 0;
 $fee_ratio = Blockchain::getFee($tx_height);
 $mempool = false;
 if(!$tx) {
@@ -18,6 +18,8 @@ if(!$tx) {
         exit;
     }
 }
+
+$nativeTransfers = SmartContract::getNativeTransfersByTx($tx['id']);
 
 $txDataPayload = null;
 if(intval($tx['type']) === TX_TYPE_DATA) {
@@ -233,6 +235,26 @@ require_once __DIR__. '/../common/include/top.php';
                     <td>Params</td>
                     <td><?php echo implode("<br/>", $sc_data['params']) ?></td>
                 </tr>
+            </table>
+        </div>
+    <?php } ?>
+
+    <?php if (!empty($nativeTransfers)) { ?>
+        <h3>Internal PHP transfers</h3>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead class="table-light">
+                <tr><th>From</th><th>To</th><th class="text-end">Amount</th></tr>
+                </thead>
+                <tbody>
+                <?php foreach ($nativeTransfers as $transfer) { ?>
+                    <tr>
+                        <td><?php echo explorer_address_link($transfer['from']) ?></td>
+                        <td><?php echo explorer_address_link($transfer['to']) ?></td>
+                        <td class="text-end"><?php echo h(num($transfer['amount'])) ?> PHP</td>
+                    </tr>
+                <?php } ?>
+                </tbody>
             </table>
         </div>
     <?php } ?>

@@ -1666,7 +1666,19 @@ class Transaction
 		$res = $db->row("select sum(t.val) as total_received, count(t.id) as count_received from transactions t where t.dst = :address", [":address"=>$address]);
 		$data['total_received']=$res['total_received'];
 		$data['count_received']=$res['count_received'];
-        $data['count']=$data['count_sent']+$data['count_received'];
+		// Native PHP transfers emitted by smart contracts are not regular
+		// transactions, but they still change the account's received/sent totals.
+		if (class_exists('SmartContract') && SmartContract::transfersTableExists()) {
+			$res = $db->row("select coalesce(sum(amount),0) as total_sent, count(*) as count_sent
+				from smart_contract_transfers where sc_address = :address", [":address"=>$address]);
+			$data['total_sent'] = bcadd((string)($data['total_sent'] ?? 0), (string)($res['total_sent'] ?? 0), 8);
+			$data['count_sent'] = intval($data['count_sent'] ?? 0) + intval($res['count_sent'] ?? 0);
+			$res = $db->row("select coalesce(sum(amount),0) as total_received, count(*) as count_received
+				from smart_contract_transfers where to_address = :address", [":address"=>$address]);
+			$data['total_received'] = bcadd((string)($data['total_received'] ?? 0), (string)($res['total_received'] ?? 0), 8);
+			$data['count_received'] = intval($data['count_received'] ?? 0) + intval($res['count_received'] ?? 0);
+		}
+		$data['count']=$data['count_sent']+$data['count_received'];
 		return $data;
 	}
 

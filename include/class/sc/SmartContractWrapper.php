@@ -40,6 +40,7 @@ class SmartContractWrapper
         SmartContractContext::$icc = !empty($input['icc']);
         SmartContractContext::$iccDepth = 0;
         SmartContractContext::$iccStack = [];
+        SmartContractContext::$txId = null;
         SmartContractContext::$blacklisted = is_array($input['blacklisted'] ?? null) ? $input['blacklisted'] : [];
         SmartContractContext::$virtual = !empty($input['virtual']);
         $method = $this->args['type'];
@@ -491,6 +492,7 @@ class SmartContractWrapper
             $args['transaction']=$transaction;
             $args['height']=$height;
             $args['address']=$this->address;
+            SmartContractContext::$txId = $transaction['id'] ?? null;
             $this->smartContract->setFields($args);
             $msg = $transaction['msg'];
             $type = $transaction['type'];
@@ -693,6 +695,8 @@ class SmartContractContext {
     public static $iccDepth = 0;
     public static $iccStack = [];
     public static $blacklisted = [];
+    /** Parent blockchain transaction currently executing in the sandbox. */
+    public static $txId;
 }
 
 class SmartContractDB {

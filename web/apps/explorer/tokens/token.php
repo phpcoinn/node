@@ -39,7 +39,22 @@ $transfers_start = $_GET['transfers_start'] ?? 0;
 $rpp = 10;
 
 $sql="select * from token_txs tt where tt.token = ? order by tt.height desc limit $transfers_start, $rpp";
-$transfers = $db->run($sql,[$id], false);
+$transfers = $db->run($sql,[$id], false) ?: [];
+$nestedTokenEvents = SmartContract::getTokenEvents($id);
+$knownTransferIds = [];
+foreach (($transfers ?: []) as $row) {
+    if (!empty($row['id'])) {
+        $knownTransferIds[$row['id']] = true;
+    }
+}
+foreach ($nestedTokenEvents as $event) {
+    if (empty($knownTransferIds[$event['id']])) {
+        $transfers[] = $event;
+    }
+}
+usort($transfers, function ($a, $b) {
+    return (intval($b['height'] ?? 0) <=> intval($a['height'] ?? 0));
+});
 
 $sql="select * from token_mempool_txs mt where mt.token = ? order by mt.height desc";
 $mempoolTransfers = $db->run($sql,[$id], false);
@@ -47,7 +62,21 @@ $mempoolTransfers = $db->run($sql,[$id], false);
 if($loggedIn) {
 
     $sql="select * from token_txs tt where tt.token = ? and (tt.src = ? or tt.dst = ?) order by tt.height desc";
-    $myTransfers = $db->run($sql,[$id, $address, $address], false);
+    $myTransfers = $db->run($sql,[$id, $address, $address], false) ?: [];
+    $knownMyTransferIds = [];
+    foreach (($myTransfers ?: []) as $row) {
+        if (!empty($row['id'])) {
+            $knownMyTransferIds[$row['id']] = true;
+        }
+    }
+    foreach (SmartContract::getTokenEvents($id, $address) as $event) {
+        if (empty($knownMyTransferIds[$event['id']])) {
+            $myTransfers[] = $event;
+        }
+    }
+    usort($myTransfers, function ($a, $b) {
+        return (intval($b['height'] ?? 0) <=> intval($a['height'] ?? 0));
+    });
 
     $sql="select * from token_mempool_txs tt where tt.token = ? and (tt.src = ? or tt.dst = ?) order by tt.height desc";
     $myMempoolTransfers = $db->run($sql,[$id, $address, $address], false);
@@ -283,6 +312,7 @@ $totalSupply = $totalSupply / pow(10, $decimals);
                         <th>Height</th>
                         <th>Date</th>
                         <th>Method</th>
+                        <th>Transaction</th>
                         <th>From</th>
                         <th>To</th>
                         <th>Amount</th>
@@ -295,6 +325,7 @@ $totalSupply = $totalSupply / pow(10, $decimals);
                             <td><?php echo $transfer['height'] ?></td>
                             <td><?php echo display_date($transfer['date']) ?></td>
                             <td><?php echo $transfer['method'] ?></td>
+                            <td><?php echo !empty($transfer['id']) ? explorer_tx_link($transfer['id'], true) : '' ?></td>
                             <td><?php echo $transfer['src'] ?></td>
                             <td><?php echo $transfer['dst'] ?></td>
                             <td><?php echo $transfer['amount'] ?></td>
@@ -313,6 +344,7 @@ $totalSupply = $totalSupply / pow(10, $decimals);
                         <th>Height</th>
                         <th>Date</th>
                         <th>Method</th>
+                        <th>Transaction</th>
                         <th>From</th>
                         <th>To</th>
                         <th style="text-align: right">Amount</th>
@@ -325,9 +357,10 @@ $totalSupply = $totalSupply / pow(10, $decimals);
                             <td><?php echo explorer_height_link($transfer['height']) ?></td>
                             <td><?php echo display_date($transfer['date']) ?></td>
                             <td><?php echo $transfer['method'] ?></td>
+                            <td><?php echo !empty($transfer['id']) ? explorer_tx_link($transfer['id'], true) : '' ?></td>
                             <td><?php echo explorer_address_link($transfer['src']) ?></td>
                             <td><?php echo explorer_address_link($transfer['dst']) ?></td>
-                            <td style="text-align: right"><?php echo num($transfer['amount'],$decimals) ?></td>
+                            <td style="text-align: right"><?php echo !empty($transfer['nested']) ? h($transfer['amount']) : num($transfer['amount'],$decimals) ?></td>
                         </tr>
                     <?php } ?>
                 </tbody>
@@ -384,6 +417,7 @@ $totalSupply = $totalSupply / pow(10, $decimals);
                             <th>Height</th>
                             <th>Date</th>
                             <th>Method</th>
+                            <th>Transaction</th>
                             <th>From</th>
                             <th>To</th>
                             <th>Amount</th>
@@ -396,6 +430,7 @@ $totalSupply = $totalSupply / pow(10, $decimals);
                                 <td><?php echo $transfer['height'] ?></td>
                                 <td><?php echo display_date($transfer['date']) ?></td>
                                 <td><?php echo $transfer['method'] ?></td>
+                                <td><?php echo !empty($transfer['id']) ? explorer_tx_link($transfer['id'], true) : '' ?></td>
                                 <td><?php echo $transfer['src'] ?></td>
                                 <td><?php echo $transfer['dst'] ?></td>
                                 <td><?php echo $transfer['amount'] ?></td>
@@ -414,6 +449,7 @@ $totalSupply = $totalSupply / pow(10, $decimals);
                         <th>Height</th>
                         <th>Date</th>
                         <th>Method</th>
+                        <th>Transaction</th>
                         <th>From</th>
                         <th>To</th>
                         <th class="text-end">Amount</th>
@@ -426,9 +462,10 @@ $totalSupply = $totalSupply / pow(10, $decimals);
                             <td><?php echo explorer_height_link($transfer['height']) ?></td>
                             <td><?php echo display_date($transfer['date']) ?></td>
                             <td><?php echo $transfer['method'] ?></td>
+                            <td><?php echo !empty($transfer['id']) ? explorer_tx_link($transfer['id'], true) : '' ?></td>
                             <td><?php echo explorer_address_link($transfer['src']) ?></td>
                             <td><?php echo explorer_address_link($transfer['dst']) ?></td>
-                            <td class="text-end"><?php echo num($transfer['amount'],$decimals) ?></td>
+                                <td class="text-end"><?php echo !empty($transfer['nested']) ? h($transfer['amount']) : num($transfer['amount'],$decimals) ?></td>
                         </tr>
                     <?php } ?>
                     </tbody>

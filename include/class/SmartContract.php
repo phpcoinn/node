@@ -265,14 +265,26 @@ class SmartContract
         $db->exec("CREATE TABLE IF NOT EXISTS `smart_contract_transfers` (
             `id` int(11) NOT NULL AUTO_INCREMENT,
             `height` int(11) NOT NULL,
+            `tx_id` varchar(128) DEFAULT NULL,
             `sc_address` varchar(128) NOT NULL,
             `to_address` varchar(128) NOT NULL,
             `amount` decimal(20,8) NOT NULL,
             `seq` int(11) NOT NULL,
             PRIMARY KEY (`id`),
             KEY `smart_contract_transfers_height_index` (`height`),
+            KEY `smart_contract_transfers_tx_index` (`tx_id`),
             KEY `smart_contract_transfers_sc_height_index` (`sc_address`,`height`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+        // Nodes upgrading from the original table need the parent transaction
+        // link so explorers can show internal transfers under their cause.
+        $hasTxId = $db->single("SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'smart_contract_transfers'
+              AND COLUMN_NAME = 'tx_id'");
+        if (!$hasTxId) {
+            $db->exec("ALTER TABLE `smart_contract_transfers`
+                ADD COLUMN `tx_id` varchar(128) DEFAULT NULL,
+                ADD KEY `smart_contract_transfers_tx_index` (`tx_id`)");
+        }
     }
 
     static function transfersTableExists()
@@ -280,6 +292,52 @@ class SmartContract
         global $db;
         $res = $db->single("SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'smart_contract_transfers'");
         return !empty($res);
+    }
+
+    /** Return native PHP transfers emitted by one parent smart-contract tx. */
+    static function getNativeTransfersByTx($txId)
+    {
+        if (empty($txId) || !self::transferTxColumnExists()) {
+            return [];
+        }
+        global $db;
+        $rows = $db->run(
+            "select height, tx_id, sc_address as `from`, to_address as `to`, amount, seq
+             from smart_contract_transfers where tx_id = ? order by seq, id",
+            [$txId]
+        );
+        return is_array($rows) ? $rows : [];
+    }
+
+    /** Return native PHP transfers involving an address for explorer views. */
+    static function getNativeTransfersForAddress($address, $limit = 100)
+    {
+        if (empty($address) || !self::transfersTableExists()) {
+            return [];
+        }
+        global $db;
+        $limit = max(1, min(500, intval($limit)));
+        $txSelect = self::transferTxColumnExists() ? 'tx_id' : 'NULL as tx_id';
+        $rows = $db->run(
+            "select height, {$txSelect}, sc_address as `from`, to_address as `to`, amount, seq
+             from smart_contract_transfers
+             where sc_address = ? or to_address = ?
+             order by height desc, id desc limit {$limit}",
+            [$address, $address]
+        );
+        return is_array($rows) ? $rows : [];
+    }
+
+    static function transferTxColumnExists()
+    {
+        global $db;
+        try {
+            return (bool)$db->single("SELECT COUNT(*) FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'smart_contract_transfers'
+                  AND COLUMN_NAME = 'tx_id'");
+        } catch (Throwable $e) {
+            return false;
+        }
     }
 
     /**
@@ -291,6 +349,7 @@ class SmartContract
         if (empty($transfers) || $virtual) {
             return true;
         }
+        self::ensureTransfersTable();
         if (!is_array($transfers)) {
             throw new Exception("Invalid smart contract transfers");
         }
@@ -314,6 +373,7 @@ class SmartContract
                 "from" => $from,
                 "to" => $to,
                 "amount" => $amount,
+                "tx_id" => $transfer['tx_id'] ?? null,
                 "seq" => $index,
             ];
         }
@@ -345,9 +405,10 @@ class SmartContract
                 throw new Exception("Failed to apply smart contract native transfer");
             }
             $ins = $db->run(
-                "insert into smart_contract_transfers (height, sc_address, to_address, amount, seq) values (:height, :sc, :to, :amount, :seq)",
+                "insert into smart_contract_transfers (height, tx_id, sc_address, to_address, amount, seq) values (:height, :tx_id, :sc, :to, :amount, :seq)",
                 [
                     ":height" => $height,
+                    ":tx_id" => $transfer['tx_id'],
                     ":sc" => $sc_address,
                     ":to" => $transfer['to'],
                     ":amount" => $transfer['amount'],
@@ -494,6 +555,69 @@ class SmartContract
             }
         }
         return $state;
+    }
+
+    /** Read ERC-20 events persisted in the contract state, including events
+     * emitted by nested calls from another smart contract. */
+    static function getTokenEvents($address, $onlyAddress = null)
+    {
+        $state = self::getState($address);
+        $events = $state['events'] ?? [];
+        if (!is_array($events)) {
+            return [];
+        }
+        $decimals = intval($state['decimals'] ?? 8);
+        global $db;
+        $out = [];
+        foreach ($events as $txId => $raw) {
+            $event = is_array($raw) ? $raw : json_decode((string)$raw, true);
+            if (!is_array($event) || empty($event['event']) || !is_array($event['data'] ?? null)) {
+                continue;
+            }
+            $name = (string)$event['event'];
+            $data = $event['data'];
+            if ($name === 'Transfer') {
+                $from = (string)($data['from'] ?? '');
+                $to = (string)($data['to'] ?? '');
+                if ($onlyAddress && $from !== $onlyAddress && $to !== $onlyAddress) {
+                    continue;
+                }
+                $amount = Dex::tokenToDisplay($data['value'] ?? '0', $decimals);
+                $method = 'Transfer';
+                $src = $from;
+                $dst = $to;
+            } elseif ($name === 'Approval') {
+                $owner = (string)($data['owner'] ?? '');
+                $spender = (string)($data['spender'] ?? '');
+                if ($onlyAddress && $owner !== $onlyAddress && $spender !== $onlyAddress) {
+                    continue;
+                }
+                $amount = Dex::tokenToDisplay($data['value'] ?? '0', $decimals);
+                $method = 'Approval';
+                $src = $owner;
+                $dst = $spender;
+            } else {
+                continue;
+            }
+            $tx = $db->row("select height, date from transactions where id = ?", [$txId]);
+            if (!$tx && class_exists('Transaction')) {
+                $tx = Transaction::get_transaction($txId);
+            }
+            $out[] = [
+                'id' => (string)$txId,
+                'height' => intval($tx['height'] ?? 0),
+                'date' => intval($tx['date'] ?? 0),
+                'method' => $method,
+                'src' => $src,
+                'dst' => $dst,
+                'amount' => $amount,
+                'nested' => true,
+            ];
+        }
+        usort($out, function ($a, $b) {
+            return ($b['height'] <=> $a['height']) ?: strcmp($b['id'], $a['id']);
+        });
+        return $out;
     }
 
     static function getCount() {

@@ -37,6 +37,13 @@ $transactions = Account::getTransactions($address, $dm);
 $addressStat = Transaction::getAddressStat($address);
 
 $mempool = Account::getMempoolTransactions($address);
+$nativeTransfers = SmartContract::getNativeTransfersForAddress($address, 100);
+$nativeTransfersByTx = [];
+foreach ($nativeTransfers as $transfer) {
+    if (!empty($transfer['tx_id'])) {
+        $nativeTransfersByTx[$transfer['tx_id']][] = $transfer;
+    }
+}
 
 $addressTypes = Block::getAddressTypes($address);
 
@@ -166,6 +173,51 @@ require_once __DIR__. '/../common/include/top.php';
     </div>
 <?php } ?>
 
+<?php if(!empty(array_filter($nativeTransfers, function ($transfer) { return empty($transfer['tx_id']); }))) { ?>
+    <h4>Smart-contract PHP transfers</h4>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead class="table-light">
+            <tr>
+                <th>Height</th>
+                <th>Transaction</th>
+                <th>From/To</th>
+                <th class="text-end">Amount</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach($nativeTransfers as $transfer) {
+                if (!empty($transfer['tx_id'])) continue;
+                $incoming = $transfer['to'] === $address;
+                $party = $incoming ? $transfer['from'] : $transfer['to'];
+                ?>
+                <tr>
+                    <td><?php echo explorer_height_link($transfer['height']) ?></td>
+                    <td>
+                        <?php if(!empty($transfer['tx_id'])) { ?>
+                            <a href="/apps/explorer/tx.php?id=<?php echo urlencode($transfer['tx_id']) ?>">
+                                <?php echo truncate_hash($transfer['tx_id']) ?>
+                            </a>
+                        <?php } else { ?>
+                            <span class="text-muted">legacy</span>
+                        <?php } ?>
+                    </td>
+                    <td>
+                        <span class="<?php echo $incoming ? 'text-success' : 'text-danger' ?>">
+                            <?php echo $incoming ? '+' : '-' ?>
+                        </span>
+                        <?php echo explorer_address_link($party) ?>
+                    </td>
+                    <td class="text-end <?php echo $incoming ? 'text-success' : 'text-danger' ?>">
+                        <?php echo ($incoming ? '+' : '-') . h(num($transfer['amount'])) ?> PHP
+                    </td>
+                </tr>
+            <?php } ?>
+            </tbody>
+        </table>
+    </div>
+<?php } ?>
+
 <div class="d-flex justify-content-between align-items-center mb-2">
     <h4 class="mb-0">Transactions</h4>
     <form method="get" class="mb-0">
@@ -266,6 +318,29 @@ require_once __DIR__. '/../common/include/top.php';
     <?php
             if ($show_balances) {
                 $running_balance = Account::reverseTransactionBalance($running_balance, $transaction, $address);
+            }
+
+            foreach (($nativeTransfersByTx[$transaction['id']] ?? []) as $transfer) {
+                $incoming = $transfer['to'] === $address;
+                $party = $incoming ? $transfer['from'] : $transfer['to'];
+                ?>
+                <tr class="table-info">
+                    <td>
+                        <a href="/apps/explorer/tx.php?id=<?php echo urlencode($transaction['id']) ?>">
+                            <?php echo truncate_hash($transaction['id']) ?>
+                        </a>
+                    </td>
+                    <td><?php echo display_date($transaction['date']) ?></td>
+                    <td><a href="/apps/explorer/block.php?height=<?php echo $transaction['height'] ?>"><?php echo $transaction['height'] ?></a></td>
+                    <td><?php echo $transaction['confirmations'] ?></td>
+                    <td><a href="/apps/explorer/block.php?height=<?php echo $transaction['height'] ?>"><?php echo truncate_hash($transaction['block']) ?></a></td>
+                    <td><a href="/apps/explorer/address.php?address=<?php echo urlencode($party) ?>"><?php echo truncate_hash($party) ?></a></td>
+                    <td>Smart-contract transfer</td>
+                    <td class="<?php echo $incoming ? 'text-success' : 'text-danger' ?> text-end"><?php echo $incoming ? '+' : '-' ?><?php echo h(num($transfer['amount'])) ?></td>
+                    <?php if ($show_balances) { ?><td></td><?php } ?>
+                    <td class="text-end"></td>
+                </tr>
+                <?php
             }
         } ?>
     </tbody>
