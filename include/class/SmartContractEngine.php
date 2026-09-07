@@ -148,21 +148,6 @@ class SmartContractEngine
 
             $transfers = $data['transfers'] ?? [];
             if (!empty($transfers)) {
-                // Older deployed PHARs do not include tx_id in sandbox transfers.
-                // A contract execution normally contains one parent transaction;
-                // attach that ID here before persisting the internal transfers.
-                if (is_array($transfers) && count($transactions) === 1) {
-                    $parent = reset($transactions);
-                    $parentId = is_array($parent) ? ($parent['id'] ?? null) : ($parent->id ?? null);
-                    if ($parentId) {
-                        foreach ($transfers as &$transfer) {
-                            if (empty($transfer['tx_id'])) {
-                                $transfer['tx_id'] = $parentId;
-                            }
-                        }
-                        unset($transfer);
-                    }
-                }
                 if (!defined('UPDATE_18_SC_DEX_APIS') || $height < UPDATE_18_SC_DEX_APIS) {
                     throw new Exception("Smart contract native transfers are not active at height $height");
                 }
