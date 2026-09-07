@@ -349,7 +349,6 @@ class SmartContract
         if (empty($transfers) || $virtual) {
             return true;
         }
-        self::ensureTransfersTable();
         if (!is_array($transfers)) {
             throw new Exception("Invalid smart contract transfers");
         }
