@@ -19,8 +19,17 @@ class SmartContractEngine
 		if (!file_exists($phar_path)) {
 			return true;
 		}
-		$api = dirname(__DIR__) . '/sc/sandbox_api.php';
-		return file_exists($api) && filemtime($api) > filemtime($phar_path);
+		$root = dirname(__DIR__);
+		$dependencies = [
+			$root . '/sc/sandbox_api.php',
+			$root . '/class/sc/SmartContractWrapper.php',
+		];
+		foreach ($dependencies as $dependency) {
+			if (file_exists($dependency) && filemtime($dependency) > filemtime($phar_path)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 
