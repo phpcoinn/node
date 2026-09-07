@@ -303,8 +303,8 @@ class SmartContract
         global $db;
         $rows = $db->run(
             "select height, tx_id, sc_address as `from`, to_address as `to`, amount, seq
-             from smart_contract_transfers where tx_id = ? order by seq, id",
-            [$txId]
+             from smart_contract_transfers where tx_id = :tx_id order by seq, id",
+            [":tx_id" => $txId]
         );
         return is_array($rows) ? $rows : [];
     }
@@ -321,9 +321,9 @@ class SmartContract
         $rows = $db->run(
             "select height, {$txSelect}, sc_address as `from`, to_address as `to`, amount, seq
              from smart_contract_transfers
-             where sc_address = ? or to_address = ?
+             where sc_address = :address_from or to_address = :address_to
              order by height desc, id desc limit {$limit}",
-            [$address, $address]
+            [":address_from" => $address, ":address_to" => $address]
         );
         return is_array($rows) ? $rows : [];
     }
@@ -599,7 +599,7 @@ class SmartContract
             } else {
                 continue;
             }
-            $tx = $db->row("select height, date from transactions where id = ?", [$txId]);
+            $tx = $db->row("select height, date from transactions where id = :tx_id", [":tx_id" => $txId]);
             if (!$tx && class_exists('Transaction')) {
                 $tx = Transaction::get_transaction($txId);
             }
