@@ -14,16 +14,21 @@ $error = null;
 $deploy = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $address = trim((string)($_POST['address'] ?? ''));
-    if (!Account::valid($address)) {
-        $error = 'Invalid smart-contract address';
-    } elseif (SmartContract::getById($address)) {
-        $error = 'That smart-contract address is already deployed';
-    } elseif (empty($_FILES['phar']['tmp_name']) || $_FILES['phar']['error'] !== UPLOAD_ERR_OK) {
+    if (empty($_FILES['phar']['tmp_name']) || $_FILES['phar']['error'] !== UPLOAD_ERR_OK) {
         $error = 'Please upload a PHAR file';
     } elseif ($_FILES['phar']['size'] > 20 * 1024 * 1024) {
         $error = 'PHAR file is too large';
     } else {
+        $compiledInterface = Compiler::readInterface($_FILES['phar']['tmp_name']);
+        $address = $compiledInterface['address'] ?? '';
+        if (!Account::valid($address)) {
+            $error = 'The PHAR does not contain a valid compiled contract address';
+        } elseif (SmartContract::getById($address)) {
+            $error = 'That smart-contract address is already deployed';
+        }
+        if ($error) {
+            // Keep the upload validation flow below from processing an invalid address.
+        } else {
         $codeBytes = file_get_contents($_FILES['phar']['tmp_name']);
         $code = base64_encode($codeBytes);
         $interface = SmartContractEngine::verifyCode($code, $verifyError, $address);
@@ -63,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
         }
         }
+        }
     }
 }
 
@@ -91,11 +97,6 @@ require_once __DIR__ . '/../common/include/top.php';
                     <div class="mb-3">
                         <label class="form-label" for="metadata">Additional metadata (JSON object)</label>
                         <textarea class="form-control" id="metadata" name="metadata" rows="3">{}</textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="address">Contract address</label>
-                        <input class="form-control" id="address" name="address" required>
-                        <div class="form-text">Compile the PHAR for this exact unused address.</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="phar">Compiled PHAR</label>
