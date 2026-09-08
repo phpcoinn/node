@@ -19,6 +19,10 @@ require_once __DIR__. '/../common/include/top.php';
 	<li class="breadcrumb-item">Smart contracts</li>
 </ol>
 
+<div class="mb-3">
+    <a class="btn btn-primary" href="/apps/explorer/smart_contract_deploy.php">Deploy smart contract</a>
+</div>
+
 <div class="table-responsive">
     <table class="table table-sm table-striped dataTable">
         <thead class="table-light">
