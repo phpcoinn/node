@@ -641,7 +641,6 @@ class Sandbox {
 		}
 		fclose($pipes[0]);
 		fclose($pipes[1]);
-        fclose($pipes[2]);
 		fclose($pipes[2]);
 		proc_close($proc);
 		if ($failed !== null) {

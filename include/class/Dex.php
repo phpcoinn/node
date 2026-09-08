@@ -32,7 +32,7 @@ class Dex
 
     public static function isEnabled()
     {
-        return defined('FEATURE_SMART_CONTRACTS') && FEATURE_SMART_CONTRACTS;
+        return defined('FEATURE_SMART_CONTRACTS') && FEATURE_SMART_CONTRACTS && defined('FEATURE_DEX') && FEATURE_DEX;
     }
 
     public static function isDexNode()

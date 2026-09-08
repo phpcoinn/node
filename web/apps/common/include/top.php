@@ -260,7 +260,7 @@ $wallet_app_url = (defined('NETWORK') && NETWORK === 'testnet')
                                     <i class="fas fa-wallet me-2"></i><span data-key="t-dashboards">Wallet</span>
                                 </a>
                             </li>
-                            <?php if (defined('FEATURE_SMART_CONTRACTS') && FEATURE_SMART_CONTRACTS) { ?>
+                            <?php if (Dex::isEnabled()) { ?>
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle arrow-none <?php if (APP_NAME == "Dex") { ?>active<?php } ?>" href="/apps/dex" id="topnav-dex" role="button">
                                         <i class="fas fa-exchange-alt me-2"></i><span data-key="t-dashboards">DEX</span>
