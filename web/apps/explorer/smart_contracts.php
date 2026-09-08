@@ -21,6 +21,7 @@ require_once __DIR__. '/../common/include/top.php';
 
 <div class="mb-3">
     <a class="btn btn-primary" href="/apps/explorer/smart_contract_deploy.php">Deploy smart contract</a>
+    <a class="btn btn-outline-secondary" href="/apps/explorer/sc_transfers.php">Smart-contract transfers</a>
 </div>
 
 <div class="table-responsive">

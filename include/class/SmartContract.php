@@ -309,6 +309,21 @@ class SmartContract
         return is_array($rows) ? $rows : [];
     }
 
+    /** Return recent native transfers emitted by smart contracts. */
+    static function getNativeTransfers($limit = 200)
+    {
+        if (!self::transfersTableExists()) {
+            return [];
+        }
+        global $db;
+        $limit = max(1, min(1000, intval($limit)));
+        $rows = $db->run(
+            "select id, height, tx_id, sc_address as `from`, to_address as `to`, amount, seq
+             from smart_contract_transfers order by height desc, id desc limit {$limit}"
+        );
+        return is_array($rows) ? $rows : [];
+    }
+
     /** Return native PHP transfers involving an address for explorer views. */
     static function getNativeTransfersForAddress($address, $limit = 100)
     {
