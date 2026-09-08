@@ -3,12 +3,12 @@
 require_once ROOT . '/include/class/sc/Compiler.php';
 
 $address = $argv[1] ?? 'PdEvtfZwNsbddKLCZQcjTgjpdcznS1w3pG';
-$source = ROOT . '/include/templates/dex/simple_offer_dex.php';
+$source = ROOT . '/include/templates/dex/multi_token_dex.php';
 $outDir = ROOT . '/tmp';
 if (!is_dir($outDir)) {
     @mkdir($outDir, 0777, true);
 }
-$phar = $outDir . '/simple_offer_dex.phar';
+$phar = $outDir . '/multi_token_dex.phar';
 
 try {
     $pharFile = Compiler::compile($source, $address, $phar);
