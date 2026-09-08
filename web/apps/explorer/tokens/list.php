@@ -80,9 +80,9 @@ if($loggedIn) {
             } else {
                 $tokenBalance = 0;
             }
-            $image = $metadata['image'];
+            $image = $metadata['image'] ?? '';
             $name = $metadata['name'];
-            $symbol = $metadata['symbol'];
+            $symbol = $metadata['symbol'] ?? '';
             $color = stringToHex($token['address']);
             $indexes=[5,10,15,20,25,30];
             $c= "";
@@ -104,7 +104,7 @@ if($loggedIn) {
                     <a href="/apps/explorer/tokens/token.php?id=<?php echo $token['address'] ?>">
                         <?php echo $metadata['name'] ?>
                     </a>
-                    <?php if(strlen($metadata['description']) > 0) { ?>
+                    <?php if(strlen($metadata['description']??'') > 0) { ?>
                         <spna class="fa fa-info-circle" title="<?php echo $metadata['description'] ?>" data-bs-toggle="tooltip"></spna>
                     <?php } ?>
                 </td>
@@ -115,7 +115,7 @@ if($loggedIn) {
                     <?php echo explorer_address_link($token['address']) ?>
                 </td>
                 <td>
-                    <?php if($metadata['initialSupply']) echo num($metadata['initialSupply'], $metadata['decimals']) ?>
+                    <?php if($metadata['initialSupply']??false) echo num($metadata['initialSupply'], $metadata['decimals']) ?>
                 </td>
                 <td>
                     <?php echo num($token['totalSupply'],$token['decimals']) ?>

@@ -1,7 +1,7 @@
 <?php
 
 function num($val, $dec = COIN_DECIMALS) {
-	return @number_format($val, $dec, '.', '');
+	return @number_format($val, intval($dec), '.', '');
 }
 
 function floatvalue($val) {
