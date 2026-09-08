@@ -34,20 +34,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'name' => trim((string)($_POST['name'] ?? '')),
                 'description' => trim((string)($_POST['description'] ?? '')),
             ];
+            $amount = trim((string)($_POST['amount'] ?? '0'));
+            $params = json_decode((string)($_POST['params'] ?? '[]'), true);
+            $extraMetadata = json_decode((string)($_POST['metadata'] ?? '{}'), true);
+            if (!is_numeric($amount) || (float)$amount < 0) {
+                $error = 'Invalid deployment amount';
+            } elseif (!is_array($params) || !is_array($extraMetadata)) {
+                $error = 'Constructor parameters and metadata must be valid JSON arrays/objects';
+            } else {
+                $metadata = array_merge($extraMetadata, $metadata);
+            }
+        if (!$error) {
             $deployData = [
                 'code' => $code,
-                'amount' => num(0),
-                'params' => [],
+                'amount' => num($amount),
+                'params' => $params,
                 'interface' => $interface,
                 'metadata' => $metadata,
             ];
             $deploy = [
                 'address' => $address,
                 'code' => $code,
+                'amount' => num($amount),
+                'params' => $params,
                 'interface' => $interface,
                 'metadata' => $metadata,
                 'signatureBase' => base64_encode(json_encode($deployData)),
             ];
+        }
         }
     }
 }
@@ -66,6 +80,18 @@ require_once __DIR__ . '/../common/include/top.php';
             <form method="post" enctype="multipart/form-data" class="card">
                 <div class="card-header"><h4 class="mb-0">Deploy smart contract</h4></div>
                 <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="amount">Deployment amount (PHP)</label>
+                        <input class="form-control" id="amount" name="amount" value="0" inputmode="decimal">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="params">Constructor parameters (JSON array)</label>
+                        <textarea class="form-control" id="params" name="params" rows="3">[]</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="metadata">Additional metadata (JSON object)</label>
+                        <textarea class="form-control" id="metadata" name="metadata" rows="3">{}</textarea>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label" for="address">Contract address</label>
                         <input class="form-control" id="address" name="address" required>
@@ -119,10 +145,10 @@ document.getElementById('deploy-button').addEventListener('click', function () {
         axios.post('/api.php?q=generateSmartContractDeployTx', {
             public_key: publicKey,
             sc_address: deployment.address,
-            amount: 0,
+            amount: deployment.amount,
             sc_signature: scSignature,
             code: deployment.code,
-            params: [],
+            params: deployment.params,
             metadata: deployment.metadata
         }).then(function (response) {
             if (response.data.status !== 'ok') throw new Error(response.data.data);
