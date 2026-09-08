@@ -174,8 +174,7 @@ $createTokenFee = Blockchain::getSmartContractCreateFee();
         <div class="card-body">
             <?php if(!$loggedIn) { ?>
                 <div class="alert alert-info d-flex align-items-center">
-                    <div class="fw-bold">You must be logged in with account to create new token</div>
-                    <a class="btn btn-info ms-auto" href="/dapps.php?url=PeC85pqFgRxmevonG6diUwT4AfF7YUPSm3/wallet?redirect=%2Fapps%2Fexplorer%2Ftokens%2Fcreate.php">Login</a>
+                    <div class="fw-bold">You must be logged in with an account to create a new token. Use the Wallet Connect Login button in the top menu.</div>
                 </div>
             <?php } else {?>
                 <div class="mb-3">

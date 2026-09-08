@@ -66,6 +66,11 @@ $_SESSION['explorer_connect'] = [
     'return' => Security::isSafeRedirect($redirect) ? $redirect : '/apps/explorer/',
     'expires' => time() + 600,
 ];
+$wallet_app_url = (defined('NETWORK') && NETWORK === 'testnet')
+    ? ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
+        . '://' . (string)($_SERVER['HTTP_HOST'] ?? 'localhost')
+        . '/dapps.php?url=' . GATEWAY . '/wallet')
+    : 'https://wallet.phpcoin.net/';
 
 ?>
 <!doctype html>
@@ -247,7 +252,7 @@ $_SESSION['explorer_connect'] = [
                                 </a>
                             </li>
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle arrow-none" href="https://wallet.phpcoin.net/" target="_blank" rel="noopener noreferrer" id="topnav-dashboard" role="button">
+                                <a class="nav-link dropdown-toggle arrow-none" href="<?php echo htmlspecialchars($wallet_app_url, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" id="topnav-dashboard" role="button">
                                     <i class="fas fa-wallet me-2"></i><span data-key="t-dashboards">Wallet</span>
                                 </a>
                             </li>

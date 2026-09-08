@@ -82,7 +82,10 @@ $updateAvb = $maxPeerBuildNumber > $currentVersion;
             button.disabled = true;
             try {
                 const result = await phpcoinCrypto.connectWallet({
-                    walletUrl: 'https://wallet.phpcoin.net/#/connect',
+                    walletUrl: <?php echo json_encode(
+                        isset($wallet_app_url) ? $wallet_app_url . '#/connect' : 'https://wallet.phpcoin.net/#/connect',
+                        JSON_UNESCAPED_SLASHES
+                    ); ?>,
                     timeout: 120000
                 });
                 const body = new URLSearchParams({
