@@ -66,8 +66,12 @@ $_SESSION['explorer_connect'] = [
     'return' => Security::isSafeRedirect($redirect) ? $redirect : '/apps/explorer/',
     'expires' => time() + 600,
 ];
+$forwarded_proto = strtolower(trim(explode(',', (string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''), 2)[0]));
+$request_host = strtolower((string)($_SERVER['HTTP_HOST'] ?? 'localhost'));
+$local_host = in_array(preg_replace('/:\\d+$/', '', $request_host), ['localhost', 'phpcoin', '127.0.0.1', '::1'], true);
+$request_scheme = (!$local_host || (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $forwarded_proto === 'https') ? 'https' : 'http';
 $wallet_app_url = (defined('NETWORK') && NETWORK === 'testnet')
-    ? ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
+    ? ($request_scheme
         . '://' . (string)($_SERVER['HTTP_HOST'] ?? 'localhost')
         . '/dapps.php?url=' . GATEWAY . '/wallet')
     : 'https://wallet.phpcoin.net/';
