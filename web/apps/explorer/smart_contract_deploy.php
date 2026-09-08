@@ -19,9 +19,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($_FILES['phar']['size'] > 20 * 1024 * 1024) {
         $error = 'PHAR file is too large';
     } else {
-        $compiledInterface = Compiler::readInterface($_FILES['phar']['tmp_name']);
+        $uploadPhar = ROOT . '/tmp/deploy_' . bin2hex(random_bytes(8)) . '.phar';
+        @copy($_FILES['phar']['tmp_name'], $uploadPhar);
+        try {
+            $compiledInterface = Compiler::readInterface($uploadPhar);
+        } catch (Throwable $e) {
+            $compiledInterface = null;
+            $error = 'Invalid PHAR file: ' . $e->getMessage();
+        }
+        @unlink($uploadPhar);
+        if (!is_array($compiledInterface)) {
+            $compiledInterface = [];
+        }
         $address = $compiledInterface['address'] ?? '';
-        if (!Account::valid($address)) {
+        if ($error) {
+            // Keep the PHAR validation error.
+        } elseif (!Account::valid($address)) {
             $error = 'The PHAR does not contain a valid compiled contract address';
         } elseif (SmartContract::getById($address)) {
             $error = 'That smart-contract address is already deployed';
