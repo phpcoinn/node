@@ -13,7 +13,7 @@ $loggedIn = isset($_SESSION['account']);
 $error = null;
 $deploy = null;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $loggedIn) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $address = trim((string)($_POST['address'] ?? ''));
     if (!Account::valid($address)) {
         $error = 'Invalid smart-contract address';
@@ -61,9 +61,6 @@ require_once __DIR__ . '/../common/include/top.php';
         <li class="breadcrumb-item active">Deploy smart contract</li>
     </ol>
 
-    <?php if (!$loggedIn) { ?>
-        <div class="alert alert-warning">Log in to a wallet before deploying a contract.</div>
-    <?php } else { ?>
         <?php if ($error) { ?><div class="alert alert-danger"><?php echo h($error) ?></div><?php } ?>
         <?php if (!$deploy) { ?>
             <form method="post" enctype="multipart/form-data" class="card">
@@ -100,7 +97,6 @@ require_once __DIR__ . '/../common/include/top.php';
             <button id="deploy-button" class="btn btn-success">Sign and deploy</button>
             <a href="/apps/explorer/smart_contract_deploy.php" class="btn btn-light">Cancel</a>
         <?php } ?>
-    <?php } ?>
 </div>
 
 <?php if ($deploy) { ?>
@@ -110,11 +106,11 @@ require_once __DIR__ . '/../common/include/top.php';
 <script src="/apps/explorer/tokens/tokens.js"></script>
 <script>
 const chainId = '<?php echo h(CHAIN_ID) ?>';
-const publicKey = '<?php echo h($_SESSION['account']['public_key']) ?>';
 const deployment = <?php echo json_encode($deploy, JSON_UNESCAPED_SLASHES) ?>;
 document.getElementById('deploy-button').addEventListener('click', function () {
     enterPrivateKey(function (privateKey) {
         if (!privateKey) return;
+        const publicKey = phpcoinCrypto.getPublicKey(privateKey);
         const scSignature = phpcoinCrypto.sign(chainId + deployment.signatureBase, privateKey);
         if (!scSignature) {
             Swal.fire('Error', 'Could not sign the contract payload', 'error');
