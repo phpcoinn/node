@@ -305,6 +305,10 @@ class Nodeutil
 
 	static function runSingleProcess($cmd, $check_cmd = null, $user=null) {
 		_log("runSingleProcess $cmd", 5);
+        if (PHP_OS_FAMILY === 'Windows') {
+            pclose(popen('start /B "" ' . $cmd, 'r'));
+            return;
+        }
         $exec_cmd = "$cmd > /dev/null 2>&1  &";
         if(!empty($user)) {
             $exec_cmd="sudo -u $user ".escapeshellcmd($exec_cmd);
@@ -937,7 +941,7 @@ class Nodeutil
                 ]
             ];
             file_put_contents($config_file, json_encode($db_updater_config, JSON_PRETTY_PRINT));
-            $cmd="php " .ROOT . "/utils/db_updater.phar ".escapeshellarg($schema_file)." --json --config=".escapeshellarg($config_file)." ".
+            $cmd = escapeshellarg(PHP_BINARY) . " " . escapeshellarg(ROOT . "/utils/db_updater.phar") . " " . escapeshellarg($schema_file) . " --json --config=" . escapeshellarg($config_file) . " " .
                 ($dry_run ? "--dry-run" : "");
             _log($cmd,4);
             _log("DB updater started ...");

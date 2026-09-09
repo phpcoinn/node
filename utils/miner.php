@@ -70,7 +70,7 @@ echo "Network:        ".$res['network'].PHP_EOL;
 
 $_config['enable_logging'] = true;
 $_config['log_verbosity']=0;
-$_config['log_file']="/dev/null";
+$_config['log_file'] = PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null';
 $_config['chain_id'] = $res['chain_id'];
 
 define("ROOT", __DIR__);

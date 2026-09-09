@@ -50,7 +50,7 @@ if ((empty($peer) || $peer == 'all') && $type == "block") {
     }
 	$r = Peer::getLimitedPeersForPropagate();
 
-	if(Propagate::PROPAGATE_BY_FORKING) {
+	if(Propagate::PROPAGATE_BY_FORKING && function_exists('pcntl_fork')) {
 		_log("PropagateFork: start propagate block id=$id peer=$peer", 5);
 		_log("PropagateFork: found ".count($r)." peeers", 5);
 		global $_config, $db;
@@ -169,7 +169,7 @@ if ($type == "transaction") {
 	$r = Peer::getPeersForPropagate($peers_limit);
 	_log("PropagateFork: Transaction propagate peers: ".count($r),3);
 
-	if(Propagate::PROPAGATE_BY_FORKING) {
+	if(Propagate::PROPAGATE_BY_FORKING && function_exists('pcntl_fork')) {
 		global $db;
 		$info = Peer::getInfo();
 		$start = microtime(true);

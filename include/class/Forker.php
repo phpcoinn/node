@@ -28,6 +28,13 @@ class Forker {
         if(count($this->childs)==0) {
             return;
         }
+        if (!function_exists('pcntl_fork')) {
+            foreach ($this->childs as $child) {
+                $res = $child[0]->call($this, ...$child[1]);
+                $this->send(json_encode($res));
+            }
+            return;
+        }
         $sockets = [];
         foreach ($this->childs as $i=>$child) {
             $socket = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
@@ -61,6 +68,12 @@ class Forker {
             $this->parent[0]->call($this, ...$this->parent[1]);
         }
         if(count($this->childs)==0) {
+            return;
+        }
+        if (!function_exists('pcntl_fork')) {
+            foreach ($this->childs as $child) {
+                $child[0]->call($this, ...$child[1]);
+            }
             return;
         }
         foreach ($this->childs as $i=>$child) {

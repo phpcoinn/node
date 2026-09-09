@@ -217,10 +217,11 @@ class Peer
 			),
 		);
 		$list = file_get_contents(self::PRELOAD_LIST, false, stream_context_create($arrContextOptions));
-		$list = explode(PHP_EOL, $list);
+		$list = preg_split('/\r\n|\n|\r/', (string)$list);
 		$peerList = [];
 		foreach ($list as $item) {
-			if(strlen(trim($item))>0) {
+			$item = trim($item);
+			if($item !== '' && Peer::validate($item)) {
 				$peerList[]=$item;
 			}
 		}

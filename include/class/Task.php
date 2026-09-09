@@ -53,15 +53,17 @@ class Task
             exit();
         }
 
-        function signalHandler($signal) {
-            switch($signal) {
-                case SIGTERM:
-                case SIGINT:
-                    exit;
+        if (function_exists('pcntl_signal')) {
+            function signalHandler($signal) {
+                switch($signal) {
+                    case SIGTERM:
+                    case SIGINT:
+                        exit;
+                }
             }
+            pcntl_signal(SIGTERM, 'signalHandler', false);
+            pcntl_signal(SIGINT, 'signalHandler', false);
         }
-        pcntl_signal(SIGTERM, 'signalHandler', false);
-        pcntl_signal(SIGINT, 'signalHandler', false);
 
         register_shutdown_function(function() use ($pid, $lock_dir,$name){
             if($pid==getmypid()){
@@ -74,12 +76,14 @@ class Task
     static function runTask() {
         $name = static::$name;
             $dir = ROOT . "/cli";
-            $cmd = "php $dir/$name.php";
+            $cmd = escapeshellarg(PHP_BINARY) . " " . escapeshellarg("$dir/$name.php");
             _log("Task: run $name task",3);
-            $userInfo = posix_getpwuid(posix_geteuid());
             $user=null;
-        if($userInfo['name']!="www-data" && $userInfo['name']=="root") {
-                $user="www-data";
+            if (function_exists('posix_getpwuid') && function_exists('posix_geteuid')) {
+                $userInfo = posix_getpwuid(posix_geteuid());
+                if($userInfo && $userInfo['name']!="www-data" && $userInfo['name']=="root") {
+                    $user="www-data";
+                }
             }
             Nodeutil::runSingleProcess($cmd, null, $user);
     }
@@ -88,8 +92,13 @@ class Task
         $name = static::$name;
         self::checkLock();
         self::processArgs();
-        $userInfo = posix_getpwuid(posix_geteuid());
-        $user=$userInfo['name'];
+        $user = PHP_OS_FAMILY === 'Windows' ? 'windows' : 'unknown';
+        if (function_exists('posix_getpwuid') && function_exists('posix_geteuid')) {
+            $userInfo = posix_getpwuid(posix_geteuid());
+            if ($userInfo) {
+                $user=$userInfo['name'];
+            }
+        }
         try {
             $t1=microtime(true);
             static::process();
