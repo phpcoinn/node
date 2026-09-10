@@ -51,14 +51,19 @@ if(Security::isBlockedDevApiMethod($q)) {
 	return;
 }
 
-if(method_exists(Api::class, $q)) {
-	call_user_func([Api::class, $q], $data);
+$allowedApiMethods = array_diff(get_class_methods(Api::class), ['checkAccess', 'getData']);
+$allowedApiMethodsMap = array_combine($allowedApiMethods, $allowedApiMethods);
+
+$safeMethod = $allowedApiMethodsMap[$q] ?? null;
+if($safeMethod !== null) {
+	(new ReflectionMethod(Api::class, $safeMethod))->invoke(null, $data);
 	return;
 } else {
 	$str = str_replace(' ', '', ucwords(str_replace('-', ' ', $q)));
 	$str[0] = strtolower($str[0]);
-	if(method_exists(Api::class, $str) && !Security::isBlockedDevApiMethod($str)) {
-		call_user_func([Api::class, $str], $data);
+	$safeMethod = $allowedApiMethodsMap[$str] ?? null;
+	if($safeMethod !== null && !Security::isBlockedDevApiMethod($str)) {
+		(new ReflectionMethod(Api::class, $safeMethod))->invoke(null, $data);
 		return;
 	} else {
 		api_err("Invalid request");
