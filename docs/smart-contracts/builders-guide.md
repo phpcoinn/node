@@ -89,7 +89,6 @@ The repository includes a set of pre-built ERC20 token templates that you can ex
 | `erc_20_token_burnable.php` | An ERC20 token that can be "burned" or destroyed, reducing the total supply. |
 | `erc_20_token_mintable.php` | An ERC20 token that allows for the creation of new tokens, increasing the total supply. |
 | `erc_20_token_burnable_mintable.php` | An ERC20 token that is both burnable and mintable. |
-| `dex/simple_offer_dex.php` | Single-token offer board (legacy). |
 | `dex/multi_token_dex.php` | Multi-token DEX: list PHPCoin ERC-20s and trade them against native PHP. |
 
 ## 📦 Deployment
