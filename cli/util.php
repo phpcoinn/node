@@ -116,7 +116,7 @@ download-dapps <dapps_id>                               - request download dapps
 recalculate-masternodes                                 - recalculate masternodes from blockchain
 propagate-apps <peer>									- propagate apps update to peer (only for repo server)
 peer-call <peer> <method> <data>						- call peer post method
-check-accounts 									        - check and correct accounts table
+check-accounts [--dry-run] [--force]                    - check or correct accounts table; --force is unavailable on pruned nodes
 ";
 	}
 }

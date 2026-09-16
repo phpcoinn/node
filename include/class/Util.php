@@ -1750,33 +1750,41 @@ class Util
 
 	static function checkAccounts() {
 		global $db, $argv;
-		Config::setSync(1);
+		$dryRun = !empty($argv) && in_array('--dry-run', $argv, true);
+		$force = !empty($argv) && in_array('--force', $argv, true);
+		if ($force && Config::isPruned()) {
+			fwrite(STDERR, "Cannot force-rebuild accounts on a pruned database.\n");
+			exit(1);
+		}
+		if (!$dryRun) {
+			Config::setSync(1);
+		}
+		// Each row is one address's net change from a ledger source. Native
+		// smart-contract transfers are recorded outside the transactions table.
+		$contributions = "
+			select t.dst as id, max(t.height) as max_height, sum(t.val) as val, min(t.height) as min_height
+			from transactions t where t.dst is not null group by t.dst
+			union all
+			select t.src as id, max(t.height) as max_height, sum((t.val + t.fee) * -1) as val, min(t.height) as min_height
+			from transactions t where t.src is not null group by t.src
+			union all
+			select st.to_address as id, max(st.height) as max_height, sum(st.amount) as val, min(st.height) as min_height
+			from smart_contract_transfers st group by st.to_address
+			union all
+			select st.sc_address as id, max(st.height) as max_height, sum(st.amount * -1) as val, min(st.height) as min_height
+			from smart_contract_transfers st group by st.sc_address";
 
 		try {
 			_log("start check accounts");
 			$db->beginTransaction();
 
-			$sql="select count(*) from (
-			 select distinct t.src as id
-			 from transactions t
-			 where t.src is not null
-			 union
-			 select distinct t.dst as id
-			 from transactions t
-			 where t.dst is not null) as ids";
+			$sql="select count(distinct id) from ($contributions) as ids";
 			$calc_acc_cnt = $db->single($sql);
 
 			$sql="select count(*) from accounts";
 			$real_acc_cnt = $db->single($sql);
 
-			$sql= "select sum(val) from (
-		 select sum((t.val+t.fee)*(-1)) as val
-		 from transactions t
-		 where t.src is not null
-		 union
-		 select sum(t.val) as val
-		 from transactions t
-		 where t.dst is not null) as vals";
+			$sql="select sum(val) from ($contributions) as vals";
 
 			$calc_acc_sum = $db->single($sql);
 
@@ -1784,8 +1792,27 @@ class Util
 			$real_acc_sum = $db->single($sql);
 
 			_log("calc_acc_cnt=$calc_acc_cnt real_acc_cnt=$real_acc_cnt calc_acc_sum=$calc_acc_sum real_acc_sum=$real_acc_sum");
+			if ($dryRun) {
+				$sql = "select calc.id, calc.balance as expected, a.balance as actual
+					from (select id, sum(val) as balance from ($contributions) as ledger group by id) as calc
+					left join accounts a on a.id = calc.id
+					where a.id is null or calc.balance <> a.balance
+					order by calc.id limit 20";
+				$differences = $db->run($sql);
+				if ($differences === false) {
+					throw new Exception('Failed to compare account balances: ' . $db->error);
+				}
+				echo json_encode([
+					'calculated_count' => (int)$calc_acc_cnt,
+					'actual_count' => (int)$real_acc_cnt,
+					'calculated_sum' => $calc_acc_sum,
+					'actual_sum' => $real_acc_sum,
+					'balance_differences_sample' => $differences,
+				], JSON_PRETTY_PRINT), PHP_EOL;
+				return;
+			}
 
-			if($calc_acc_cnt <>  $real_acc_cnt || (!empty($argv) && in_array("--force", $argv))) {
+			if($calc_acc_cnt <>  $real_acc_cnt || $force) {
 				_log("Accounts rows are different");
 				_log("delete accounts");
                 if(Config::isPruned()) {
@@ -1803,17 +1830,7 @@ class Util
 		                (select b.id from blocks b where b.height = min(min_height)) as block,
 		                sum(val) as balance,
 		                max(max_height) as height
-		         from (
-		                  select t.dst as id, max(t.height) as max_height, sum(t.val) as val, min(t.height) as min_height
-		                  from transactions t
-		                  where t.dst is not null
-		                  group by t.dst
-		                  union
-		                  select t.src as id, max(t.height) as max_height, sum((t.val + t.fee)*(-1)) as val, min(t.height) as min_height
-		                  from transactions t
-		                  where t.src is not null
-		                  group by t.src
-		              ) as ids
+		         from ($contributions) as ids
 		         group by ids.id
 			     ) as calc";
 				$db->exec($sql);
@@ -1827,17 +1844,7 @@ class Util
                              select ids.id,
                                     sum(val) as balance,
                                     max(max_height) as height
-                             from (
-                                      select t.dst as id, max(t.height) as max_height, sum(t.val) as val, min(t.height) as min_height
-                                      from transactions t
-                                      where t.dst is not null
-                                      group by t.dst
-                                      union
-                                      select t.src as id, max(t.height) as max_height, sum((t.val + t.fee)*(-1)) as val, min(t.height) as min_height
-                                      from transactions t
-                                      where t.src is not null
-                                      group by t.src
-                                  ) as ids
+                             from ($contributions) as ids
                              group by ids.id
                          ) as calc
                              left join accounts a on (calc.id = a.id)
@@ -1857,17 +1864,7 @@ class Util
 		                (select b.id from blocks b where b.height = min(min_height)) as block,
 		                sum(val) as balance,
 		                max(max_height) as height
-		         from (
-		                  select t.dst as id, max(t.height) as max_height, sum(t.val) as val, min(t.height) as min_height
-		                  from transactions t
-		                  where t.dst is not null
-		                  group by t.dst
-		                  union
-		                  select t.src as id, max(t.height) as max_height, sum((t.val + t.fee)*(-1)) as val, min(t.height) as min_height
-		                  from transactions t
-		                  where t.src is not null
-		                  group by t.src
-		              ) as ids
+		         from ($contributions) as ids
 		         group by ids.id
 				     ) as calc
 				         left join accounts a on (calc.id = a.id)
@@ -1887,17 +1884,7 @@ class Util
 			                (select b.id from blocks b where b.height = min(min_height)) as block,
 			                sum(val) as balance,
 			                max(max_height) as height
-			         from (
-			                  select t.dst as id, max(t.height) as max_height, sum(t.val) as val, min(t.height) as min_height
-			                  from transactions t
-			                  where t.dst is not null
-			                  group by t.dst
-			                  union
-			                  select t.src as id, max(t.height) as max_height, sum((t.val + t.fee)*(-1)) as val, min(t.height) as min_height
-			                  from transactions t
-			                  where t.src is not null
-			                  group by t.src
-			              ) as ids
+		         from ($contributions) as ids
 			         group by ids.id
 			) as calc
 			    left join accounts a on (calc.id = a.id)
@@ -1949,11 +1936,18 @@ class Util
             }
 
 			$db->commit();
-			Config::setSync(0);
 		} catch (Exception $e) {
 			_log("Error checking accounts ".$e->getMessage());
-			$db->rollBack();
-			Config::setSync(0);
+			if ($dryRun) {
+				echo "Account check failed: ", $e->getMessage(), PHP_EOL;
+			}
+		} finally {
+			if ($db->inTransaction()) {
+				$db->rollBack();
+			}
+			if (!$dryRun) {
+				Config::setSync(0);
+			}
 		}
 
 
@@ -2171,6 +2165,11 @@ class Util
         $start = time();
         _log("Starting pruning database at height $prune_height");
         Config::setSync(1);
+
+        // Keep every smart_contract_transfers row, including rows below the
+        // prune height. These native PHP movements remain part of account
+        // reconstruction and the smart-contract transfers hash. This table
+        // has no foreign key to transactions, whose older rows are condensed.
 
         // Lock tables to prevent concurrent access during this destructive operation
         // IMPORTANT: DDL operations (CREATE TABLE, DROP TABLE, RENAME TABLE) automatically 
