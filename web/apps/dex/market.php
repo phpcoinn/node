@@ -147,7 +147,8 @@ $marketTitle = h($symbol) . ' / PHP';
                         <?php if (!$loggedIn) { ?>
                             Login to trade this pair.
                             <div class="mt-3">
-                                <a class="btn btn-warning btn-sm" href="/apps/common/login.php?app=Dex&redirect=<?php echo urlencode($_SERVER['REQUEST_URI']) ?>">Login</a>
+                                <a class="btn btn-warning btn-sm" href="#explorer-wallet-login"
+                                   onclick="event.preventDefault(); var login = document.getElementById('explorer-wallet-login'); if (login) login.click();">Login</a>
                             </div>
                         <?php } else { ?>
                             Trading is not available on this market yet.
@@ -250,6 +251,9 @@ $marketTitle = h($symbol) . ' / PHP';
         'scAddress' => $info['address'],
         'tokenBalance' => $tokenBalance,
         'chainId' => CHAIN_ID,
+        'walletUrl' => (defined('NETWORK') && NETWORK === 'testnet')
+            ? 'https://node1.phpcoin.net/dapps.php?url=' . GATEWAY . '/wallet#/connect'
+            : 'https://wallet.phpcoin.net/#/connect',
     ]) ?>;
     window.DEX_PUBLIC_KEY = <?php echo json_encode($loggedIn ? $_SESSION['account']['public_key'] : null) ?>;
 </script>

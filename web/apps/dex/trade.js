@@ -6,9 +6,8 @@
     const dexMulti = !!cfg.multi;
     const myAddress = cfg.address || '';
     const symbol = cfg.symbol || 'TOKEN';
-    const storageKey = 'phpcoin-dex-jobs-' + (selectedToken || scAddress || 'dex');
+    const storageKey = 'phpcoin-dex-jobs-' + (selectedToken || scAddress || 'dex') + '-' + (myAddress || 'guest');
     const jobs = [];
-    let sessionPk = null;
     let running = {};
 
     function sleep(ms) {
@@ -28,20 +27,18 @@
         });
     }
 
-    function rememberedKey() {
-        try { return localStorage.getItem('privateKey'); } catch (e) { return null; }
-    }
-
-    function activeKey() {
-        return sessionPk || rememberedKey();
-    }
-
     function loadJobs() {
         try {
             const raw = sessionStorage.getItem(storageKey);
             const data = raw ? JSON.parse(raw) : [];
             if (Array.isArray(data)) {
-                data.forEach(function (job) { jobs.push(job); });
+                data.forEach(function (job) {
+                    if (job.status === 'queued' && !job.sellHash && !job.approveHash) {
+                        job.status = 'error';
+                        job.error = 'This attempt was interrupted before a transaction was submitted.';
+                    }
+                    jobs.push(job);
+                });
             }
         } catch (e) {}
     }
@@ -160,7 +157,7 @@
             if (job.status === 'needs_signature') {
                 action += '<button type="button" class="btn btn-primary btn-sm" data-dex-continue="' + escapeHtml(job.id) + '">Sign</button> ';
             }
-            if (job.status === 'posted' || job.status === 'error' || job.status === 'needs_signature') {
+            if (job.status === 'posted' || job.status === 'error' || job.status === 'needs_signature' || job.status === 'queued') {
                 action += '<button type="button" class="btn btn-outline-secondary btn-sm" data-dex-dismiss="' + escapeHtml(job.id) + '">Dismiss</button>';
             }
             const amt = parseFloat(job.tokenAmount);
@@ -239,18 +236,19 @@
         });
     }
 
-    function signAndSend(tx, signatureBase, privateKey) {
-        let signature;
-        try {
-            signature = phpcoinCrypto.sign(String(cfg.chainId || '') + signatureBase, privateKey);
-        } catch (e) {
-            return Promise.reject(new Error('Check if your private key is correct'));
-        }
-        if (!signature) {
-            return Promise.reject(new Error('Check if your private key is correct'));
-        }
-        tx.signature = signature;
-        return axios.post('/api.php?q=sendTransactionJson', tx).then(function (res) {
+    function signAndSend(tx) {
+        const walletTx = Object.assign({}, tx, { msg: tx.message });
+        delete walletTx.id;
+        delete walletTx.signature;
+        delete walletTx.public_key;
+        return phpcoinCrypto.signTransactionWithWallet({
+            walletUrl: cfg.walletUrl || 'https://wallet.phpcoin.net/#/connect',
+            transaction: walletTx,
+            chainId: String(cfg.chainId || ''),
+            timeout: 120000
+        }).then(function (signedTx) {
+            return axios.post('/api.php?q=sendTransactionJson', signedTx);
+        }).then(function (res) {
             if (res.data.status === 'ok' && res.data.data) {
                 return res.data.data;
             }
@@ -283,6 +281,20 @@
         return null;
     }
 
+    async function clearConfirmedJobs() {
+        const posted = jobs.filter(function (job) { return job.status === 'posted' && job.sellHash; });
+        if (!posted.length) return;
+        const confirmed = await Promise.all(posted.map(async function (job) {
+            return isConfirmed(await getTx(job.sellHash)) ? job.id : null;
+        }));
+        const confirmedIds = new Set(confirmed.filter(Boolean));
+        if (!confirmedIds.size) return;
+        for (let i = jobs.length - 1; i >= 0; i--) {
+            if (confirmedIds.has(jobs[i].id)) jobs.splice(i, 1);
+        }
+        saveJobs();
+    }
+
     async function getCurrentBlock() {
         try {
             const res = await axios.get('/api.php', { params: { q: 'currentBlock' } });
@@ -291,7 +303,7 @@
         return null;
     }
 
-    async function waitUntilSpendable(needed, job, privateKey) {
+    async function waitUntilSpendable(needed, job) {
         const deadline = Date.now() + 10 * 60 * 1000;
         let lastResend = 0;
         while (Date.now() < deadline) {
@@ -314,18 +326,12 @@
                     detail += '. Last block ' + blockAge + 's ago (height ' + (block.height || '?') + ')';
                 }
                 const txAge = tx.date ? Math.floor(Date.now() / 1000 - parseInt(tx.date, 10)) : 0;
-                if (txAge > 240 && !privateKey) {
-                    job.status = 'needs_signature';
-                    job.detail = 'Approve sat in the mempool too long and expired. Sign to send a fresh one.';
-                    saveJobs();
-                    throw new Error(job.detail);
-                }
-                if (txAge > 240 && privateKey && Date.now() - lastResend > 30000) {
+                if (txAge > 240 && Date.now() - lastResend > 30000) {
                     detail = 'Approve sat too long in mempool; sending a fresh approve';
                     job.detail = detail;
                     saveJobs();
                     const amount = approveAmount(needed);
-                    job.approveHash = await sendMethod(privateKey, 'approve', [scAddress, amount], 0, selectedToken);
+                    job.approveHash = await sendMethod('approve', [scAddress, amount], 0, selectedToken);
                     lastResend = Date.now();
                 }
             } else if (hash) {
@@ -361,32 +367,27 @@
         return String(needed);
     }
 
-    async function sendMethod(privateKey, method, params, amount, toAddress) {
+    async function sendMethod(method, params, amount, toAddress) {
         const gen = await generateExec(method, params, amount, toAddress);
-        const hash = txId(await signAndSend(gen.tx, gen.signature_base, privateKey));
+        const hash = txId(await signAndSend(gen.tx));
         if (typeof window.dexRefresh === 'function') window.dexRefresh();
         return hash;
     }
 
-    async function ensureAllowance(privateKey, needed, job) {
+    async function ensureAllowance(needed, job) {
         const have = await readAllowance();
         if (have + 1e-12 >= parseFloat(needed)) {
             return;
         }
         if (!job.approveHash) {
-            if (!privateKey) {
-                job.status = 'needs_signature';
-                saveJobs();
-                throw new Error('Sign to send the approve transaction');
-            }
             job.status = 'sending_approve';
             saveJobs();
             const amount = approveAmount(needed);
-            job.approveHash = await sendMethod(privateKey, 'approve', [scAddress, amount], 0, selectedToken);
+            job.approveHash = await sendMethod('approve', [scAddress, amount], 0, selectedToken);
             job.status = 'waiting_approve';
             saveJobs();
         }
-        await waitUntilSpendable(needed, job, privateKey);
+        await waitUntilSpendable(needed, job);
     }
 
     function failJob(job, err) {
@@ -397,42 +398,27 @@
         showError('Order failed', job.error);
     }
 
-    async function runJob(job, privateKey) {
+    async function runJob(job) {
         if (running[job.id]) return;
         running[job.id] = true;
-        if (privateKey) sessionPk = privateKey;
         try {
             if (job.kind === 'sell') {
                 if (dexMulti) {
-                    await ensureAllowance(privateKey, job.tokenAmount, job);
-                }
-                const pk = activeKey();
-                if (!pk) {
-                    job.status = 'needs_signature';
-                    saveJobs();
-                    running[job.id] = false;
-                    return;
+                    await ensureAllowance(job.tokenAmount, job);
                 }
                 job.status = 'sending';
                 saveJobs();
                 const params = dexMulti
                     ? [selectedToken, job.tokenAmount, job.phpAmount]
                     : [job.tokenAmount, job.phpAmount];
-                job.sellHash = await sendMethod(pk, 'postSell', params, 0, scAddress);
+                job.sellHash = await sendMethod('postSell', params, 0, scAddress);
             } else if (job.kind === 'fillBuy') {
                 if (dexMulti && selectedToken) {
-                    await ensureAllowance(privateKey, job.tokenAmount, job);
-                }
-                const pk = activeKey();
-                if (!pk) {
-                    job.status = 'needs_signature';
-                    saveJobs();
-                    running[job.id] = false;
-                    return;
+                    await ensureAllowance(job.tokenAmount, job);
                 }
                 job.status = 'sending';
                 saveJobs();
-                job.sellHash = await sendMethod(pk, 'fillBuy', [job.offerId], 0, scAddress);
+                job.sellHash = await sendMethod('fillBuy', [job.offerId], 0, scAddress);
             } else if (job.kind === 'buy' || (job.kind === 'exec' && job.method === 'postBuy')) {
                 const tok = amountString(job.tokenAmount);
                 const php = amountString(job.phpAmount || job.amount);
@@ -442,18 +428,18 @@
                 job.status = 'sending';
                 saveJobs();
                 const params = dexMulti ? [selectedToken, tok] : [tok];
-                job.sellHash = await sendMethod(privateKey, 'postBuy', params, php, scAddress);
+                job.sellHash = await sendMethod('postBuy', params, php, scAddress);
             } else if (job.kind === 'exec') {
                 job.status = 'sending';
                 saveJobs();
-                job.sellHash = await sendMethod(privateKey, job.method, job.params, job.amount, job.toAddress);
+                job.sellHash = await sendMethod(job.method, job.params, job.amount, job.toAddress);
             }
             job.status = 'posted';
             saveJobs();
             if (typeof window.dexRefresh === 'function') window.dexRefresh();
         } catch (err) {
             const msg = err && err.message ? err.message : String(err);
-            if (job.approveHash && /allowance|sign|private key/i.test(msg)) {
+            if (job.approveHash && /allowance|sign|wallet/i.test(msg)) {
                 job.status = 'needs_signature';
                 job.error = msg;
                 saveJobs();
@@ -464,20 +450,9 @@
         running[job.id] = false;
     }
 
-    function withPrivateKey(then) {
-        const have = activeKey();
-        if (have) {
-            Promise.resolve(then(have)).catch(function (err) {
-                showError('Error sending transaction', friendlyError(err));
-            });
-            return;
-        }
-        enterPrivateKey(function (privateKey) {
-            if (!privateKey) return;
-            sessionPk = privateKey;
-            Promise.resolve(then(privateKey)).catch(function (err) {
-                showError('Error sending transaction', friendlyError(err));
-            });
+    function withWallet(then) {
+        Promise.resolve(then()).catch(function (err) {
+            showError('Error sending transaction', friendlyError(err));
         });
     }
 
@@ -490,18 +465,15 @@
         if (box && box.scrollIntoView) {
             box.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        withPrivateKey(function (pk) { return runJob(job, pk); });
+        withWallet(function () { return runJob(job); });
         return job;
     }
 
     function resumeOpenJobs() {
         jobs.forEach(function (job) {
             if (job.status === 'posted' || job.status === 'error' || job.status === 'needs_signature') return;
-            const pk = activeKey();
-            if (pk) {
-                runJob(job, pk);
-            } else if (job.approveHash && (job.status === 'waiting_approve' || job.status === 'sending_approve')) {
-                runJob(job, null);
+            if (job.approveHash && (job.status === 'waiting_approve' || job.status === 'sending_approve')) {
+                runJob(job);
             }
         });
     }
@@ -520,7 +492,7 @@
             const id = cont.getAttribute('data-dex-continue');
             const job = jobs.find(function (j) { return j.id === id; });
             if (!job) return;
-            withPrivateKey(function (pk) { return runJob(job, pk); });
+            withWallet(function () { return runJob(job); });
             return;
         }
         const cancelBtn = ev.target.closest('[data-dex-cancel-id]');
@@ -597,4 +569,6 @@
     loadJobs();
     paintMyOrders();
     resumeOpenJobs();
+    clearConfirmedJobs();
+    setInterval(clearConfirmedJobs, 5000);
 })();

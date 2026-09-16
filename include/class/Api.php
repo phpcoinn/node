@@ -1899,6 +1899,33 @@ class Api
     }
 
     /**
+     * @api            {get} /api.php?q=getScTransfersHash  getScTransfersHash
+     * @apiName        getScTransfersHash
+     * @apiGroup       SC
+     * @apiDescription Calculates a deterministic hash of native smart-contract transfers through a block height
+     *
+     * @apiParam {numeric} [height=current] Last included block height
+     *
+     * @apiSuccess {object} data Transfer hash information
+     * @apiSuccess {numeric} data.height Last included block height
+     * @apiSuccess {numeric} data.count Number of transfers
+     * @apiSuccess {string} data.hash SHA-256 hash of canonical transfer records
+     */
+    static function getScTransfersHash($data) {
+        $tip = (int)Block::getHeight();
+        $requested = $data['height'] ?? null;
+        if ($requested === null || $requested === '') {
+            $height = $tip;
+        } elseif (!is_scalar($requested) || !ctype_digit((string)$requested) || (float)$requested > $tip) {
+            api_err('Invalid height');
+            return;
+        } else {
+            $height = (int)$requested;
+        }
+        api_echo(SmartContract::calculateNativeTransfersHash($height));
+    }
+
+    /**
      * @api            {get} /api.php?q=getScState  getScState
      * @apiName        getScState
      * @apiGroup       SC

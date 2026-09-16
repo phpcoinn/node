@@ -324,6 +324,37 @@ class SmartContract
         return is_array($rows) ? $rows : [];
     }
 
+    /** Hash native contract transfers through a block height without relying on local row IDs. */
+    static function calculateNativeTransfersHash($height)
+    {
+        if (!self::transfersTableExists()) {
+            throw new Exception("smart_contract_transfers table is missing");
+        }
+        global $db;
+        $stmt = $db->prepare(
+            "SELECT height, tx_id, sc_address, to_address, amount, seq
+             FROM smart_contract_transfers
+             WHERE height <= :height
+             ORDER BY height, tx_id, sc_address, to_address, amount, seq"
+        );
+        $stmt->execute([':height' => $height]);
+        $hash = hash_init('sha256');
+        $count = 0;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $record = [
+                (int)$row['height'],
+                $row['tx_id'],
+                $row['sc_address'],
+                $row['to_address'],
+                $row['amount'],
+                (int)$row['seq'],
+            ];
+            hash_update($hash, json_encode($record, JSON_THROW_ON_ERROR) . "\n");
+            $count++;
+        }
+        return ['height' => $height, 'count' => $count, 'hash' => hash_final($hash)];
+    }
+
     /** Return native PHP transfers involving an address for explorer views. */
     static function getNativeTransfersForAddress($address, $limit = 100)
     {
