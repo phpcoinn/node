@@ -10,6 +10,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Login tokens are single-use and are consumed when the wallet signs in.
+// Logout must therefore not require the already-consumed connect token.
+if (($_POST['action'] ?? '') === 'logout') {
+    unset($_SESSION['account']);
+    header('Location: /apps/explorer/');
+    exit;
+}
+
 $pending = isset($_SESSION['explorer_connect']) && is_array($_SESSION['explorer_connect'])
     ? $_SESSION['explorer_connect']
     : null;
@@ -30,12 +38,6 @@ if (!$validRequest) {
 $return = (string)($pending['return'] ?? '/apps/explorer/');
 if (!str_starts_with($return, '/') || str_starts_with($return, '//') || !Security::isSafeRedirect($return)) {
     $return = '/apps/explorer/';
-}
-
-if (($_POST['action'] ?? '') === 'logout') {
-    unset($_SESSION['account']);
-    header('Location: ' . $return);
-    exit;
 }
 
 header('Content-Type: application/json');

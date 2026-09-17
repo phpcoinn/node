@@ -45,6 +45,42 @@ foreach ($nativeTransfers as $transfer) {
     }
 }
 
+// Token transactions are represented by a view over type-6 transactions.
+// Also include ERC-20 events emitted by nested contract calls (for example
+// DEX transferFrom/transfer), which are not separate blockchain transactions.
+$tokenTransactions = $db->run(
+    "select tt.*, t.name as token_name, t.metadata as token_metadata
+     from token_txs tt left join tokens t on t.address = tt.token
+     where tt.src = ? or tt.dst = ?
+     order by tt.height desc limit 100",
+    [$address, $address], false
+) ?: [];
+$tokenTransactionIds = [];
+foreach ($tokenTransactions as $row) {
+    $tokenTransactionIds[$row['id']] = true;
+}
+$tokenContracts = $db->run("select address from tokens", [], false) ?: [];
+foreach ($tokenContracts as $tokenContract) {
+    foreach (SmartContract::getTokenEvents($tokenContract['address'], $address) as $event) {
+        if (empty($tokenTransactionIds[$event['id']])) {
+            $event['token'] = $tokenContract['address'];
+            $event['token_name'] = '';
+            $event['formatted_amount'] = true;
+            $tokenTransactions[] = $event;
+            $tokenTransactionIds[$event['id']] = true;
+        }
+    }
+}
+usort($tokenTransactions, function ($a, $b) {
+    return intval($b['height'] ?? 0) <=> intval($a['height'] ?? 0);
+});
+$tokenBalances = $db->run(
+    "select tb.token, tb.balance, t.name as token_name, t.metadata as token_metadata
+     from token_balances tb left join tokens t on t.address = tb.token
+     where tb.address = ? order by tb.token",
+    [$address], false
+) ?: [];
+
 $addressTypes = Block::getAddressTypes($address);
 
 if(NETWORK == "mainnet") {
@@ -121,9 +157,15 @@ require_once __DIR__. '/../common/include/top.php';
     </tr>
 </table>
 
+<div class="btn-group mb-3" role="tablist" aria-label="Address transaction type">
+    <button type="button" class="btn btn-primary" id="native-transactions-tab">Native transactions</button>
+    <button type="button" class="btn btn-outline-primary" id="token-transactions-tab" <?php echo empty($tokenTransactions) ? 'disabled' : '' ?>>Token transactions</button>
+    <button type="button" class="btn btn-outline-primary" id="token-balances-tab" <?php echo empty($tokenBalances) ? 'disabled' : '' ?>>Token balances</button>
+</div>
+
 <?php if(!empty($mempool)) { ?>
-    <h4>Mempool transactions</h4>
-    <div class="table-responsive">
+    <h4 class="native-content">Mempool transactions</h4>
+    <div class="table-responsive native-content">
         <table class="table table-sm table-striped">
             <thead class="table-light">
             <tr>
@@ -174,8 +216,8 @@ require_once __DIR__. '/../common/include/top.php';
 <?php } ?>
 
 <?php if(!empty(array_filter($nativeTransfers, function ($transfer) { return empty($transfer['tx_id']); }))) { ?>
-    <h4>Smart-contract PHP transfers</h4>
-    <div class="table-responsive">
+    <h4 class="native-content">Smart-contract PHP transfers</h4>
+    <div class="table-responsive native-content">
         <table class="table table-sm table-striped">
             <thead class="table-light">
             <tr>
@@ -218,6 +260,83 @@ require_once __DIR__. '/../common/include/top.php';
     </div>
 <?php } ?>
 
+<?php if(!empty($tokenTransactions)) { ?>
+    <div id="token-transactions" style="display:none">
+    <h4>Token transactions</h4>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead class="table-light">
+            <tr>
+                <th>Height</th>
+                <th>Date</th>
+                <th>Token</th>
+                <th>Method</th>
+                <th>Transaction</th>
+                <th>From/To</th>
+                <th class="text-end">Amount</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach($tokenTransactions as $tokenTransaction) {
+                $incoming = ($tokenTransaction['dst'] ?? '') === $address;
+                $party = $incoming ? ($tokenTransaction['src'] ?? '') : ($tokenTransaction['dst'] ?? '');
+                $metadata = json_decode($tokenTransaction['token_metadata'] ?? '', true) ?: [];
+                $decimals = intval($metadata['decimals'] ?? 8);
+                $amount = !empty($tokenTransaction['formatted_amount'])
+                    ? $tokenTransaction['amount']
+                    : num($tokenTransaction['amount'] ?? '0', $decimals);
+                $symbol = $metadata['symbol'] ?? ($tokenTransaction['token_name'] ?? '');
+                ?>
+                <tr>
+                    <td><?php echo explorer_height_link($tokenTransaction['height']) ?></td>
+                    <td><?php echo display_date($tokenTransaction['date']) ?></td>
+                    <td><?php echo explorer_address_link($tokenTransaction['token']) ?><?php echo $symbol ? ' ('.h($symbol).')' : '' ?></td>
+                    <td><?php echo h($tokenTransaction['method']) ?></td>
+                    <td><?php echo !empty($tokenTransaction['id']) ? explorer_tx_link($tokenTransaction['id'], true) : '' ?></td>
+                    <td>
+                        <span class="<?php echo $incoming ? 'text-success' : 'text-danger' ?>"><?php echo $incoming ? '+' : '-' ?></span>
+                        <?php echo $party ? explorer_address_link($party) : '' ?>
+                    </td>
+                    <td class="text-end <?php echo $incoming ? 'text-success' : 'text-danger' ?>"><?php echo ($incoming ? '+' : '-') . h($amount) ?></td>
+                </tr>
+            <?php } ?>
+            </tbody>
+        </table>
+    </div>
+    </div>
+<?php } ?>
+
+<?php if(!empty($tokenBalances)) { ?>
+    <div id="token-balances" style="display:none">
+        <h4>Token balances</h4>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead class="table-light">
+                <tr>
+                    <th>Token</th>
+                    <th>Contract</th>
+                    <th class="text-end">Balance</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach($tokenBalances as $tokenBalance) {
+                    $metadata = json_decode($tokenBalance['token_metadata'] ?? '', true) ?: [];
+                    $decimals = intval($metadata['decimals'] ?? 8);
+                    $symbol = $metadata['symbol'] ?? ($tokenBalance['token_name'] ?? '');
+                    ?>
+                    <tr>
+                        <td><?php echo h($tokenBalance['token_name'] ?? '') ?><?php echo $symbol ? ' ('.h($symbol).')' : '' ?></td>
+                        <td><?php echo explorer_address_link($tokenBalance['token']) ?></td>
+                        <td class="text-end"><?php echo h(Dex::tokenToDisplay($tokenBalance['balance'], $decimals)) ?><?php echo $symbol ? ' '.h($symbol) : '' ?></td>
+                    </tr>
+                <?php } ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<?php } ?>
+
+<div class="native-content">
 <div class="d-flex justify-content-between align-items-center mb-2">
     <h4 class="mb-0">Transactions</h4>
     <form method="get" class="mb-0">
@@ -347,6 +466,36 @@ require_once __DIR__. '/../common/include/top.php';
 </table>
 </div>
 <?php echo $dm['paginator'] ?>
+</div>
+<script>
+    (() => {
+        const nativeTab = document.getElementById('native-transactions-tab');
+        const tokenTab = document.getElementById('token-transactions-tab');
+        const tokenSection = document.getElementById('token-transactions');
+        const balancesTab = document.getElementById('token-balances-tab');
+        const balancesSection = document.getElementById('token-balances');
+        const nativeSections = document.querySelectorAll('.native-content');
+        const selectTab = (active) => {
+            nativeSections.forEach((section) => section.style.display = active === 'native' ? '' : 'none');
+            if (tokenSection) tokenSection.style.display = active === 'tokens' ? '' : 'none';
+            if (balancesSection) balancesSection.style.display = active === 'balances' ? '' : 'none';
+            nativeTab.className = active === 'native' ? 'btn btn-primary' : 'btn btn-outline-primary';
+            tokenTab.className = active === 'tokens' ? 'btn btn-primary' : 'btn btn-outline-primary';
+            balancesTab.className = active === 'balances' ? 'btn btn-primary' : 'btn btn-outline-primary';
+        };
+        nativeTab.addEventListener('click', () => {
+            selectTab('native');
+        });
+        tokenTab.addEventListener('click', () => {
+            if (!tokenSection) return;
+            selectTab('tokens');
+        });
+        balancesTab.addEventListener('click', () => {
+            if (!balancesSection) return;
+            selectTab('balances');
+        });
+    })();
+</script>
 <?php
 require_once __DIR__ . '/../common/include/bottom.php';
 ?>
